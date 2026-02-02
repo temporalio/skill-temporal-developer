@@ -1,7 +1,7 @@
 ---
-name: temporal-python
+name: temporal-dev
 description: "Start, stop, debug, and troubleshoot Temporal workflows for Python projects. Use when: starting workers, executing workflows, workflow is stalled/failed, non-determinism errors, checking workflow status, or managing temporal server start-dev lifecycle."
-version: 1.1.0
+version: 0.1.0
 allowed-tools: "Bash(.claude/skills/temporal/scripts/*:*), Read"
 ---
 
