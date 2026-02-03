@@ -155,6 +155,10 @@ Available scripts in `scripts/` for worker and workflow management:
 - **`references/core/patterns.md`** - Conceptual patterns (signals, queries, saga)
 - **`references/core/versioning.md`** - Versioning strategies and concepts
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
+- **`references/core/error-reference.md`** - Common error types, workflow status reference
+- **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
+- **`references/core/tool-reference.md`** - Script options and worker management details
+- **`references/core/logs.md`** - Log file locations and search patterns
 - **`references/core/ai-integration.md`** - AI/LLM integration patterns
 
 ### Python References

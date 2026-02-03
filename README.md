@@ -21,6 +21,10 @@ temporal-dev/
 │   │   ├── patterns.md         # Signals, queries, saga, child workflows
 │   │   ├── versioning.md       # Patching, workflow types, worker versioning
 │   │   ├── troubleshooting.md  # Decision trees, recovery procedures
+│   │   ├── error-reference.md  # Common error types, workflow status
+│   │   ├── interactive-workflows.md # Testing signals, updates, queries
+│   │   ├── tool-reference.md   # Script options, worker management
+│   │   ├── logs.md             # Log file locations, search patterns
 │   │   └── ai-integration.md   # AI/LLM integration concepts
 │   ├── python/                 # Python SDK references
 │   │   ├── python.md           # SDK overview, quick start
