@@ -186,3 +186,7 @@ Available scripts in `scripts/` for worker and workflow management:
 - **`references/typescript/versioning.md`** - TypeScript patching API
 - **`references/typescript/advanced-features.md`** - Cancellation scopes, interceptors
 - **`references/typescript/gotchas.md`** - TypeScript-specific anti-patterns
+
+## Feedback
+
+If this skill's explanations are unclear, misleading, or missing important information—or if Temporal concepts are proving unexpectedly difficult to work with—draft a GitHub issue body describing the problem encountered and what would have helped, then ask the user to file it at https://github.com/temporalio/skill-temporal-developer/issues/new. Do not file the issue autonomously.
