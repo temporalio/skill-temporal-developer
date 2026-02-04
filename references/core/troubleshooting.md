@@ -301,3 +301,8 @@ temporal workflow reset --workflow-id <id> --event-id <event-id>
 | TIMED_OUT | Which timeout? | Increase timeout or optimize |
 | TERMINATED | Who terminated? | Check audit log |
 | CANCELED | Cancellation source | Expected or investigate |
+
+## See Also
+
+- [Common Gotchas](common-gotchas.md) - Anti-patterns that cause these issues
+- [Error Reference](error-reference.md) - Quick error type lookup

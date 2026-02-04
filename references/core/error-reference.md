@@ -22,3 +22,8 @@
 | `CANCELED` | Explicitly canceled | Review reason |
 | `TERMINATED` | Force-stopped | Review reason |
 | `TIMED_OUT` | Exceeded timeout | Increase timeout |
+
+## See Also
+
+- [Common Gotchas](common-gotchas.md) - Anti-patterns that cause these errors
+- [Troubleshooting](troubleshooting.md) - Decision trees for diagnosing issues

@@ -156,6 +156,7 @@ Available scripts in `scripts/` for worker and workflow management:
 - **`references/core/versioning.md`** - Versioning strategies and concepts
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
+- **`references/core/common-gotchas.md`** - Anti-patterns and common mistakes
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
 - **`references/core/tool-reference.md`** - Script options and worker management details
 - **`references/core/logs.md`** - Log file locations and search patterns
@@ -173,6 +174,7 @@ Available scripts in `scripts/` for worker and workflow management:
 - **`references/python/versioning.md`** - Python patching API
 - **`references/python/advanced-features.md`** - Continue-as-new, interceptors
 - **`references/python/ai-patterns.md`** - Python AI Cookbook patterns
+- **`references/python/gotchas.md`** - Python-specific anti-patterns
 
 ### TypeScript References
 - **`references/typescript/typescript.md`** - TypeScript SDK overview, quick start
@@ -183,3 +185,4 @@ Available scripts in `scripts/` for worker and workflow management:
 - **`references/typescript/observability.md`** - Sinks, logging
 - **`references/typescript/versioning.md`** - TypeScript patching API
 - **`references/typescript/advanced-features.md`** - Cancellation scopes, interceptors
+- **`references/typescript/gotchas.md`** - TypeScript-specific anti-patterns
