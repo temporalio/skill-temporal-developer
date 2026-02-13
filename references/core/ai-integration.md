@@ -4,7 +4,9 @@
 
 Temporal provides durable execution for AI/LLM applications, handling retries, rate limits, and long-running operations automatically. These patterns apply across languages, with Python being the most mature for AI integration.
 
-For Python-specific implementation details and code examples, see `references/python/ai-patterns.md`.
+For Python-specific implementation details and code examples, see `references/python/ai-patterns.md`. Temporal's Python SDK also provides pre-built integrations with several LLM and agent SDKs, which can be leveraged to create agentic workflows with minimal effort (when working in Python).
+
+The remainder of this document describes general principles to follow when building AI/LLM applications in Temporal, particularly when from scratch instead of with an integration.
 
 ## Why Temporal for AI?
 
@@ -19,28 +21,24 @@ For Python-specific implementation details and code examples, see `references/py
 
 ## Core Patterns
 
-### Pattern 1: Generic LLM Activity
+### Pattern 1: Activities should Wrap LLM Calls
 
-Create flexible, reusable activities for LLM calls:
-
-```
-Activity: call_llm_generic(
-    model: string,
-    system_instructions: string,
-    user_input: string,
-    tools?: list,
-    response_format?: schema
-) -> response
-```
+- activity: call_llm
+  - inputs:
+    - model_id -> internally activity can route to different models, so we don't need 1 activity per unique model.
+    - prompt / chat history
+    - tools
+    - etc.
+  - returns model response, as a typed structured output
 
 **Benefits**:
 - Single activity handles multiple use cases
 - Consistent retry handling
 - Centralized configuration
 
-### Pattern 2: Activity-Based Separation
+### Pattern 2: Non-deterministic / heavy tools in Activities
 
-Isolate each operation in its own activity:
+Tools which are non-deterministic and/or heavy actions (file system, hitting APIs, etc.) should be placed in activities:
 
 ```
 Workflow:
@@ -55,20 +53,25 @@ Workflow:
 - Easier testing and mocking
 - Failure isolation
 
-### Pattern 3: Centralized Retry Management
+### Pattern 3: Tools that Mutate Agent State can be in the Workflow directly
 
-**Critical**: Disable retries in LLM client libraries, let Temporal handle retries.
+Generally, agent state is in bijection with workflow state. Thus, tools which mutate agent state and are deterministic (like TODO tools, just updating a hash map) typically belong in the workflow code rather than an activity.
 
 ```
-LLM Client Config:
-  max_retries = 0  ← Disable client retries
-
-Activity Retry Policy:
-  initial_interval = 1s
-  backoff_coefficient = 2.0
-  maximum_attempts = 5
-  maximum_interval = 60s
+Workflow:
+  ├── Activity: call_llm (tool selection: todos_write tool)
+  ├── Write new TODOs to workflow state (not in activity)
+  └── Activity: call_llm (continuing agent flow...)
 ```
+
+### Pattern 4: Centralized Retry Management
+
+Disable retries in LLM client libraries, let Temporal handle retries.
+
+- LLM Client Config:
+  - max_retries = 0  ← Disable client retries at the LLM client level
+
+Use either the default activity retry policy, or customize it as needed for the situation.
 
 **Why**:
 - Temporal retries are durable (survive crashes)
@@ -76,34 +79,6 @@ Activity Retry Policy:
 - Better visibility into retry attempts
 - Consistent backoff behavior
 
-### Pattern 4: Tool-Calling Agent
-
-Three-phase workflow for LLM agents with tools:
-
-```
-┌─────────────────────────────────────────────┐
-│ Phase 1: Tool Selection                      │
-│   Activity: Present tools to LLM             │
-│   LLM returns: tool_name, arguments          │
-└─────────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│ Phase 2: Tool Execution                      │
-│   Activity: Execute selected tool            │
-│   (Separate activity per tool type)          │
-└─────────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│ Phase 3: Result Interpretation               │
-│   Activity: Send results back to LLM         │
-│   LLM returns: final response or next tool   │
-└─────────────────────────────────────────────┘
-                    │
-                    ▼
-        Loop until LLM returns final answer
-```
 
 ### Pattern 5: Multi-Agent Orchestration
 
@@ -126,21 +101,6 @@ Deep Research Example:
 ```
 
 **Key Pattern**: Use parallel execution with `return_exceptions=True` to continue with partial results when some searches fail.
-
-### Pattern 6: Structured Outputs
-
-Define schemas for LLM responses:
-
-```
-Input: Raw LLM prompt
-Schema: { action: string, confidence: float, reasoning: string }
-Output: Validated, typed response
-```
-
-**Benefits**:
-- Type safety
-- Automatic validation
-- Easier downstream processing
 
 ## Timeout Recommendations
 
@@ -165,27 +125,14 @@ Output: Validated, typed response
 
 Parse rate limit info from API responses:
 
-```
-Response Headers:
-  Retry-After: 30
-  X-RateLimit-Remaining: 0
+- Response Headers:
+  - Retry-After: 30
+  - X-RateLimit-Remaining: 0
 
-Activity:
-  If rate limited:
-    Raise retryable error with retry_after hint
-    Temporal handles the delay
-```
-
-### Retry Policy Configuration
-
-```
-Retry Policy:
-  initial_interval: 1s (or from Retry-After header)
-  backoff_coefficient: 2.0
-  maximum_interval: 60s
-  maximum_attempts: 10
-  non_retryable_errors: [InvalidAPIKey, InvalidInput]
-```
+- Activity:
+  - If rate limited:
+    - Raise retryable error with retry_after hint
+    - Temporal handles the delay
 
 ## Error Handling
 
@@ -209,15 +156,13 @@ Retry Policy:
 4. **Use structured outputs** - For type safety and validation
 5. **Handle partial failures** - Continue with available results
 6. **Monitor costs** - Track LLM calls at activity level
-7. **Version prompts** - Track prompt changes in code
-8. **Test with mocks** - Mock LLM responses in tests
+7. **Test with mocks** - Mock LLM responses in tests
 
 ## Observability
 
-- **Activity duration**: Track LLM latency
-- **Retry counts**: Monitor rate limiting
-- **Token usage**: Log in activity output
-- **Cost attribution**: Tag workflows with cost centers
+See `references/python/observability.md` (or the language you are working in) for documentation on observability in Temporal. It is generally recommended to add observability for:
+- Token usage, via activity logging
+- any else to help track LLM usage and debug agentic flows, within moderation.
 
 ## Language-Specific Resources
 
