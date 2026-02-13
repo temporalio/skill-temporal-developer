@@ -95,6 +95,24 @@ Math.random()   // Returns seeded PRNG value
 new Date()      // Deterministic
 ```
 
+### Go `workflowcheck` static analyzer
+The Go SDK provides a workflowcheck CLI tool that:
+- Statically analyzes registered Workflow Definitions and their call graph
+- Flags common sources of non-determinism (e.g., time.Now, time.Sleep, goroutines, channels, map iteration, global math/rand, stdio)
+- Helps catch invalid constructs early in development, but cannot detect all issues (e.g., global var mutation, some reflection)
+
+```bash
+# Install
+go install go.temporal.io/sdk/contrib/tools/workflowcheck@latest
+
+# Run from your module root to scan all packages
+workflowcheck ./...
+
+# Optional: configure overrides / skips in workflowcheck.config.yaml
+# (e.g., mark a function as deterministic or skip files)
+workflowcheck -config workflowcheck.config.yaml ./...
+```
+
 ## Detecting Non-Determinism
 
 ### During Execution
