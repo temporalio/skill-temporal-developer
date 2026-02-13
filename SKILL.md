@@ -1,10 +1,10 @@
 ---
-name: Temporal Development
+name: temporal-developer
 description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development. Provides multi-language guidance for Python and TypeScript with operational scripts.
 version: 1.0.0
 ---
 
-# Temporal Development
+# Skill: temporal-developer
 
 ## Overview
 
