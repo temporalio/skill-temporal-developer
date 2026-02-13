@@ -8,7 +8,7 @@ Temporal workflows must be deterministic because of **history replay** - the mec
 
 ### The Replay Mechanism
 
-When a Worker needs to restore workflow state (after crash, cache eviction, or continuing after a long timer), it **re-executes the workflow code from the beginning**. But instead of re-running activities, it uses results stored in the Event History.
+When a Worker needs to restore workflow state (after crash, cache eviction, or continuing after a long timer), it **re-executes the workflow code from the beginning**. But instead of re-running external actions, it uses results stored in the Event History.
 
 ```
 Initial Execution:
@@ -22,7 +22,7 @@ Replay (Recovery):
 
 ### Commands and Events
 
-Every workflow operation generates a Command that becomes an Event:
+Every workflow operation generates a Command that becomes an Event, here are some examples:
 
 | Workflow Code | Command Generated | Event Stored |
 |--------------|-------------------|--------------|
