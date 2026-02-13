@@ -14,34 +14,30 @@ Common mistakes and anti-patterns in Temporal development. Learning from these s
 
 **The Fix**: Always use idempotency keys when calling external services. Use the workflow ID, activity ID, or a domain-specific identifier (like order ID) as the key.
 
-### Local Activities
-
-Local Activities skip the task queue for lower latency, but they're still subject to retries. The same idempotency rules apply.
+**Note:** Local Activities skip the task queue for lower latency, but they're still subject to retries. The same idempotency rules apply.
 
 ## Replay Safety Violations
 
-### Side Effects in Workflow Code
+### Side Effects & Non-Determinism in Workflow Code
 
-**The Problem**: Code in workflow functions runs on first execution AND on every replay. Any side effect (logging, notifications, metrics) will happen multiple times.
+**The Problem**: Code in workflow functions runs on first execution AND on every replay. Any side effect (logging, notifications, metrics, etc.) will happen multiple times and non-deterministic code (IO, current time, random numbers, threading, etc.) won't replay correctly.
 
 **Symptoms**:
+- Non-determinism errors
+- Sandbox violations, depending on SDK language
 - Duplicate log entries
 - Multiple notifications for the same event
 - Inflated metrics
 
 **The Fix**:
-- Use the SDK's replay-aware logger (only logs on first execution)
-- Put all side effects in Activities
+- Use Temporal replay-aware managed side effects for common, non-business logic cases:
+    - Temporal workflow logging
+    - Temporal date time (`workflow.now()` in Python, `Date.now()` is auto-replaced in TypeScript)
+    - Temporal UUID generation
+    - Temporal random number generation
+- Put all other side effects in Activities
 
-### Non-Deterministic Time
-
-**The Problem**: Using system time (`datetime.now()`, `Date.now()`) in workflow code returns different values on replay, causing non-determinism errors.
-
-**Symptoms**:
-- Non-determinism errors mentioning time-based decisions
-- Workflows that worked once but fail on replay
-
-**The Fix**: Use the SDK's deterministic time function (`workflow.now()` in Python, `Date.now()` is auto-replaced in TypeScript).
+See `references/core/determinism.md` for more info.
 
 ## Worker Management Issues
 
