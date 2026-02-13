@@ -2,9 +2,7 @@
 
 Common mistakes and anti-patterns in Temporal development. Learning from these saves significant debugging time.
 
-## Idempotency Issues
-
-### Non-Idempotent Activities
+## Non-Idempotent Activities
 
 **The Problem**: Activities may execute more than once due to retries or Worker failures. If an activity calls an external service without an idempotency key, you may charge a customer twice, send duplicate emails, or create duplicate records.
 
@@ -16,9 +14,7 @@ Common mistakes and anti-patterns in Temporal development. Learning from these s
 
 **Note:** Local Activities skip the task queue for lower latency, but they're still subject to retries. The same idempotency rules apply.
 
-## Replay Safety Violations
-
-### Side Effects & Non-Determinism in Workflow Code
+## Side Effects & Non-Determinism in Workflow Code
 
 **The Problem**: Code in workflow functions runs on first execution AND on every replay. Any side effect (logging, notifications, metrics, etc.) will happen multiple times and non-deterministic code (IO, current time, random numbers, threading, etc.) won't replay correctly.
 
@@ -39,9 +35,7 @@ Common mistakes and anti-patterns in Temporal development. Learning from these s
 
 See `references/core/determinism.md` for more info.
 
-## Worker Management Issues
-
-### Multiple Workers with Different Code
+## Multiple Workers with Different Code
 
 **The Problem**: If Worker A runs part of a workflow with code v1, then Worker B (with code v2) picks it up, replay may produce different Commands.
 
@@ -51,70 +45,45 @@ See `references/core/determinism.md` for more info.
 
 **The Fix**:
 - Use Worker Versioning for production deployments
+- Use patching APIs
 - During development: kill old workers before starting new ones
 - Ensure all workers run identical code
 
-### Stale Workflows During Development
+**Note:** Workflows started with old code continue running after you change the code, which can then induce the above issues. During development (NOT production), you may want to terminate stale workflows (`temporal workflow terminate --workflow-id <id>`), or use `find-stalled-workflows.sh` included in this skill to detect stuck workflows.
 
-**The Problem**: Workflows started with old code continue running after you change the code.
+See `references/core/versioning.md` for more info.
 
-**Symptoms**:
-- Workflows behave unexpectedly after code changes
-- Non-determinism errors on previously-working workflows
+## Failing Activities Too Quickly
 
-**The Fix**:
-- Terminate stale workflows: `temporal workflow terminate --workflow-id <id>`
-- Use `find-stalled-workflows.sh` to detect stuck workflows
-- In production, use versioning for backward compatibility
-
-## Workflow Design Anti-Patterns
-
-### The Mega Workflow
-
-**The Problem**: Putting too much logic in a single workflow.
-
-**Issues**:
-- Hard to test and maintain
-- Event history grows unbounded
-- Single point of failure
-- Difficult to reason about
-
-**The Fix**:
-- Keep workflows focused on a single responsibility
-- Use Child Workflows for sub-processes
-- Use Continue-as-New for long-running workflows
-
-### Failing Too Quickly
-
-**The Problem**: Using aggressive retry policies that give up too easily.
+**The Problem**: Using aggressive activity retry policies that give up too easily.
 
 **Symptoms**:
 - Workflows failing on transient errors
 - Unnecessary workflow failures during brief outages
 
-**The Fix**: Use appropriate retry policies. Let Temporal handle transient failures with exponential backoff. Reserve `maximum_attempts=1` for truly non-retryable operations.
+**The Fix**: Use appropriate activity retry policies. Let Temporal handle transient failures with exponential backoff. Reserve `maximum_attempts=1` for truly non-retryable operations.
 
-## Query Handler Mistakes
+## Query Handler & Update Validator Mistakes
 
-### Modifying State in Queries
+### Modifying State in Queries & Update Validators
 
-**The Problem**: Queries are read-only. Modifying state in a query handler causes non-determinism on replay because queries don't generate history events.
+**The Problem**: Queries and update validators are read-only. Modifying state causes non-determinism on replay, and must strictly be avoided.
 
 **Symptoms**:
 - State inconsistencies after workflow replay
 - Non-determinism errors
 
-**The Fix**: Queries must only read state. Use Updates for operations that need to modify state AND return a result.
+**The Fix**: Queries and update validators must only read state. Use Updates for operations that need to modify state AND return a result.
 
-### Blocking in Queries
+### Blocking in Queries & Update Validators
 
-**The Problem**: Queries must return immediately. They cannot await activities, child workflows, timers, or conditions.
+**The Problem**: Queries and update validators must return immediately. They cannot await activities, child workflows, timers, or conditions.
 
 **Symptoms**:
-- Query timeouts
+- Query / update validators timeouts
 - Deadlocks
 
-**The Fix**: Queries return current state only. Use Signals or Updates to trigger async operations.
+**The Fix**: Queries and update validators must only look at current state. Use Signals or Updates to trigger async operations.
 
 ### Query vs Signal vs Update
 
