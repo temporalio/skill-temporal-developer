@@ -41,7 +41,17 @@ Workflow stuck in RUNNING?
 │           ├─▶ NondeterminismError in logs?
 │           │   └─▶ Go to: "Non-Determinism" section
 │           │
-│           └─▶ No errors?
+│           ├─▶ Check history for task failures
+│           │   └─▶ Run: `temporal workflow show --workflow-id <id>`
+│           │       │
+│           │       ├─▶ WorkflowTaskFailed event?
+│           │       │   └─▶ Check error type in event details
+│           │       │       └─▶ Go to relevant section in error-reference.md
+│           │       │
+│           │       └─▶ ActivityTaskFailed event?
+│           │           └─▶ Go to: "Activity Keeps Retrying" section
+│           │
+│           └─▶ No errors in logs or history?
 │               └─▶ Check if workflow is waiting for signal/timer
 ```
 
@@ -75,14 +85,20 @@ NondeterminismError?
 │
 ├─▶ Was code intentionally changed?
 │   │
-│   ├─▶ YES: Use patching API
-│   │   └─▶ See: references/core/versioning.md
+│   ├─▶ YES: Do you need to support in-flight workflows?
+│   │   │
+│   │   ├─▶ YES (production): Use patching API
+│   │   │   └─▶ See: references/core/versioning.md
+│   │   │
+│   │   └─▶ NO (local dev/testing): Terminate or reset workflow
+│   │       └─▶ `temporal workflow terminate --workflow-id <id>`
+│   │       └─▶ Then start fresh with new code
 │   │
 │   └─▶ NO: Accidental change
 │       │
 │       ├─▶ Can you identify the change?
 │       │   │
-│       │   ├─▶ YES: Revert and restart worker
+│       │   ├─▶ YES: Revert and restart worker. Note, this doesn't always work if workflow has progressed past the change (may induce other code paths), so may need to reset workflow.
 │       │   │
 │       │   └─▶ NO: Compare current code to expected history
 │       │       └─▶ Check: Activity names, order, parameters
@@ -90,24 +106,24 @@ NondeterminismError?
 
 ### Common Causes
 
-1. **Changed activity order**
+1. **Changed call order**
    ```
    # Before           # After (BREAKS)
    await activity_a   await activity_b
    await activity_b   await activity_a
    ```
 
-2. **Changed activity name**
+2. **Changed call name**
    ```
    # Before                    # After (BREAKS)
    await process_order(...)    await handle_order(...)
    ```
 
-3. **Added/removed activity call**
+3. **Added/removed call**
    - Adding new activity mid-workflow
    - Removing activity that was previously called
 
-4. **Using non-deterministic values**
+4. **Using non-deterministic code**
    - `datetime.now()` in workflow (use `workflow.now()`)
    - `random.random()` in workflow (use `workflow.random()`)
 
@@ -176,7 +192,7 @@ Timeout error?
 ├─▶ Which timeout?
 │   │
 │   ├─▶ Workflow timeout
-│   │   └─▶ Increase timeout or optimize workflow
+│   │   └─▶ Increase timeout or optimize workflow. Better yet, consider removing the workflow timeout, as it is generally discourged unless *necessary* for your use case.
 │   │
 │   ├─▶ ScheduleToCloseTimeout
 │   │   └─▶ Activity taking too long overall (including retries)
