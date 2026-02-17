@@ -7,7 +7,6 @@ A comprehensive skill for building Temporal applications in Python and TypeScrip
 This skill provides multi-language guidance for Temporal development, combining:
 - **Core concepts** shared across languages (determinism, patterns, versioning)
 - **Language-specific references** for Python and TypeScript
-- **Operational scripts** for worker and workflow management
 - **AI/LLM integration patterns** for building durable AI applications
 
 ## Structure
@@ -23,7 +22,7 @@ temporal-dev/
 │   │   ├── troubleshooting.md  # Decision trees, recovery procedures
 │   │   ├── error-reference.md  # Common error types, workflow status
 │   │   ├── interactive-workflows.md # Testing signals, updates, queries
-│   │   ├── tool-reference.md   # Script options, worker management
+│   │   ├── dev-management.md   # Dev cycle & management of server and workers
 │   │   ├── logs.md             # Log file locations, search patterns
 │   │   └── ai-integration.md   # AI/LLM integration concepts
 │   ├── python/                 # Python SDK references
@@ -47,21 +46,6 @@ temporal-dev/
 │       ├── observability.md    # Sinks, logging
 │       ├── versioning.md       # TypeScript patching API
 │       └── advanced-features.md # Cancellation scopes
-├── scripts/                    # Operational utilities
-│   ├── ensure-server.sh        # Start Temporal dev server
-│   ├── ensure-worker.sh        # Start worker for project
-│   ├── list-workers.sh         # List running workers
-│   ├── kill-worker.sh          # Stop specific worker
-│   ├── kill-all-workers.sh     # Stop ALL workers
-│   ├── monitor-worker-health.sh # Check worker health
-│   ├── list-recent-workflows.sh # Show recent executions
-│   ├── get-workflow-result.sh  # Get workflow output
-│   ├── find-stalled-workflows.sh # Find stuck workflows
-│   ├── analyze-workflow-error.sh # Diagnose failures
-│   ├── bulk-cancel-workflows.sh # Cancel multiple workflows
-│   ├── wait-for-workflow-status.sh # Poll workflow status
-│   ├── wait-for-worker-ready.sh # Poll worker startup
-│   └── find-project-workers.sh # Helper: find worker PIDs
 ```
 
 ## Progressive Disclosure
@@ -83,14 +67,6 @@ The skill uses progressive loading to manage context efficiently:
    - SDK-specific implementations
    - Language-specific gotchas
    - Testing patterns
-
-## Content Sources
-
-This skill merges content from multiple sources:
-- **Steve's temporal-dev skill** - Operational scripts, troubleshooting
-- **Max's temporal-claude-skill** - Multi-SDK structure, AI integration
-- **Mason's python-sdk skill** - Python deep-dive, sandbox, sync/async
-- **Mason's typescript-sdk skill** - TypeScript patterns, V8 isolation
 
 ## Trigger Phrases
 

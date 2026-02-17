@@ -30,7 +30,7 @@ Workflow stuck in RUNNING?
 ├─▶ Is a worker running?
 │   │
 │   ├─▶ NO: Start a worker
-│   │   └─▶ scripts/ensure-worker.sh
+│   │   └─▶ See references/core/dev-management.md
 │   │
 │   └─▶ YES: Is it on the correct task queue?
 │       │
@@ -48,8 +48,7 @@ Workflow stuck in RUNNING?
 ### Common Causes
 
 1. **No worker running**
-   - Check: `scripts/list-workers.sh`
-   - Fix: `scripts/ensure-worker.sh <project-dir>`
+   - See references/core/dev-management.md
 
 2. **Worker on wrong task queue**
    - Check: Worker logs for task queue name
@@ -255,7 +254,7 @@ Worker won't start?
 │
 ├─▶ Connection error
 │   └─▶ Check Temporal server is running
-│       └─▶ scripts/ensure-server.sh
+│       └─▶ `temporal server start-dev` (start in background, see references/core/dev-management.md)
 │
 ├─▶ Registration error
 │   └─▶ Check workflow/activity definitions are valid

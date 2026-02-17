@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development. Provides multi-language guidance for Python and TypeScript with operational scripts.
+description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
 version: 1.0.0
 ---
 
@@ -118,36 +118,6 @@ To safely change workflow code while workflows are running:
 
 See `references/core/versioning.md` for concepts, language-specific files for implementation.
 
-## Scripts (Operational)
-
-Available scripts in `scripts/` for worker and workflow management:
-
-### Server & Worker Lifecycle
-| Script | Purpose |
-|--------|---------|
-| `ensure-server.sh` | Start Temporal dev server if not running |
-| `ensure-worker.sh` | Start worker for project (kills existing first) |
-| `list-workers.sh` | List running workers |
-| `kill-worker.sh` | Stop a specific worker |
-| `kill-all-workers.sh` | Stop ALL workers (cleanup) |
-| `monitor-worker-health.sh` | Check worker health, uptime, recent errors |
-
-### Workflow Operations
-| Script | Purpose |
-|--------|---------|
-| `list-recent-workflows.sh` | Show recent workflow executions |
-| `get-workflow-result.sh` | Get output/result from completed workflow |
-| `find-stalled-workflows.sh` | Find workflows not making progress |
-| `analyze-workflow-error.sh` | Diagnose workflow failures |
-| `bulk-cancel-workflows.sh` | Cancel multiple workflows by ID or pattern |
-
-### Utilities (used by other scripts)
-| Script | Purpose |
-|--------|---------|
-| `wait-for-workflow-status.sh` | Poll until workflow reaches target status |
-| `wait-for-worker-ready.sh` | Poll log file for worker startup |
-| `find-project-workers.sh` | Helper to find worker PIDs for a project |
-
 ## Additional Resources
 
 ### Core References (Language-Agnostic)
@@ -158,7 +128,7 @@ Available scripts in `scripts/` for worker and workflow management:
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
 - **`references/core/common-gotchas.md`** - Anti-patterns and common mistakes
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
-- **`references/core/tool-reference.md`** - Script options and worker management details
+- **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/logs.md`** - Log file locations and search patterns
 - **`references/core/ai-integration.md`** - AI/LLM integration patterns
 

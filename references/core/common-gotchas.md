@@ -49,7 +49,7 @@ See `references/core/determinism.md` for more info.
 - During development: kill old workers before starting new ones
 - Ensure all workers run identical code
 
-**Note:** Workflows started with old code continue running after you change the code, which can then induce the above issues. During development (NOT production), you may want to terminate stale workflows (`temporal workflow terminate --workflow-id <id>`), or use `find-stalled-workflows.sh` included in this skill to detect stuck workflows.
+**Note:** Workflows started with old code continue running after you change the code, which can then induce the above issues. During development (NOT production), you may want to terminate stale workflows (`temporal workflow terminate --workflow-id <id>`).
 
 See `references/core/versioning.md` for more info.
 
