@@ -1,6 +1,6 @@
 # Interactive Workflows
 
-Interactive workflows pause and wait for external input (signals or updates).
+Interactive workflows are workflows that use Temporal features such as signals or updates to pause and wait for external input. When testing and debugging these types of workflows you can send them input via the Temporal CLI.
 
 ## Signals
 
@@ -12,9 +12,6 @@ temporal workflow signal \
   --workflow-id <id> \
   --name "signal_name" \
   --input '{"key": "value"}'
-
-# Or via interact script (if available)
-uv run interact --workflow-id <id> --signal-name "signal_name" --data '{"key": "value"}'
 ```
 
 ## Updates
@@ -23,7 +20,7 @@ Request-response style interaction (returns a value).
 
 ```bash
 # Send update to workflow
-temporal workflow update \
+temporal workflow update execute \
   --workflow-id <id> \
   --name "update_name" \
   --input '{"approved": true}'
@@ -40,14 +37,14 @@ temporal workflow query \
   --name "get_status"
 ```
 
-## Testing Interactive Workflows
+## Typical Steps for Testing Interactive Workflows
 
 ```bash
-./scripts/ensure-worker.sh
-uv run starter  # Get workflow_id
-./scripts/wait-for-workflow-status.sh --workflow-id $workflow_id --status RUNNING
-uv run interact --workflow-id $workflow_id --signal-name "approval" --data '{"approved": true}'
-./scripts/wait-for-workflow-status.sh --workflow-id $workflow_id --status COMPLETED
-./scripts/get-workflow-result.sh --workflow-id $workflow_id
-./scripts/kill-worker.sh  # CLEANUP
+TEMPORAL_WORKER_CMD=<...> ./scripts/ensure-worker.sh # 1. Kill old workers, start fresh one. TEMPORAL_WORKER_CMD might be uv run worker, or whatever is appropriate for your project.
+# 2. Run whatever code in order to start a workflow. This code should output the workflow ID, if not, modify it to.
+./scripts/wait-for-workflow-status.sh --workflow-id <WORKFLOW_ID> --status RUNNING # 3. Wait until workflow is running
+temporal workflow signal --workflow-id <WORKFLOW_ID> --name "signal_name" --input '{"key": "value"}' # 4. Send it interactive events, e.g. a signal. 
+./scripts/wait-for-workflow-status.sh --workflow-id <WORKFLOW_ID> --status COMPLETED # 5. Wait for workflow to complete
+./scripts/get-workflow-result.sh --workflow-id <WORKFLOW_ID> # 6. Read workflow result
+./scripts/kill-worker.sh  # 7. CLEANUP
 ```
