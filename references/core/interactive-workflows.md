@@ -40,11 +40,10 @@ temporal workflow query \
 ## Typical Steps for Testing Interactive Workflows
 
 ```bash
-TEMPORAL_WORKER_CMD=<...> ./scripts/ensure-worker.sh # 1. Kill old workers, start fresh one. TEMPORAL_WORKER_CMD might be uv run worker, or whatever is appropriate for your project.
-# 2. Run whatever code in order to start a workflow. This code should output the workflow ID, if not, modify it to.
-./scripts/wait-for-workflow-status.sh --workflow-id <WORKFLOW_ID> --status RUNNING # 3. Wait until workflow is running
-temporal workflow signal --workflow-id <WORKFLOW_ID> --name "signal_name" --input '{"key": "value"}' # 4. Send it interactive events, e.g. a signal. 
-./scripts/wait-for-workflow-status.sh --workflow-id <WORKFLOW_ID> --status COMPLETED # 5. Wait for workflow to complete
-./scripts/get-workflow-result.sh --workflow-id <WORKFLOW_ID> # 6. Read workflow result
-./scripts/kill-worker.sh  # 7. CLEANUP
+# 1. Start worker (command is project dependent)
+# 2. Start workflow (command is project dependent) This code should output the workflow ID, if not, modify it to.
+temporal workflow signal --workflow-id <WORKFLOW_ID> --name "signal_name" --input '{"key": "value"}' # 3. Send it interactive events, e.g. a signal. 
+# 4. Wait for workflow to complete (use Temporal CLI to check status)
+# 5. Read workflow result, using the Temporal CLI
+# 6. Cleanup the worker process if needed.
 ```
