@@ -2,7 +2,7 @@
 
 ## Overview
 
-Common patterns for building robust Temporal workflows. For language-specific implementations, see the Python or TypeScript references.
+Common patterns for building robust Temporal workflows. See the language-specific references for the language you are working in.
 
 ## Signals
 
@@ -45,6 +45,7 @@ Client                    Workflow
 - Read-only - must not modify state
 - Not recorded in history
 - Executes on the worker, not persisted
+- Can run even on completed workflows
 
 **Example Flow**:
 ```
@@ -68,7 +69,7 @@ Client                    Workflow
 **Characteristics**:
 - Synchronous - caller waits for completion
 - Can mutate state AND return values
-- Supports validators to reject invalid updates
+- Supports validators to reject invalid updates before they even get persisted into history
 - Recorded in history
 
 **Example Flow**:
@@ -82,12 +83,9 @@ Client                    Workflow
 
 ## Child Workflows
 
-**Purpose**: Break complex workflows into smaller, reusable pieces.
-
 **When to Use**:
 - Prevent history from growing too large
 - Isolate failure domains (child can fail without failing parent)
-- Reuse workflow logic across multiple parents
 - Different retry policies for different parts
 
 **Characteristics**:
@@ -100,6 +98,8 @@ Client                    Workflow
 - `TERMINATE` - Child terminated when parent closes (default)
 - `ABANDON` - Child continues running independently
 - `REQUEST_CANCEL` - Cancellation requested but not forced
+
+**Note:** Do not need to use child workflows simply for breaking complex logic down into smaller pieces. Standard programming abstractions within a workflow can already be used for that. 
 
 ## Continue-as-New
 
@@ -166,7 +166,7 @@ On failure at step 3:
 - Reducing total workflow duration
 
 **Patterns**:
-- `Promise.all()` / `asyncio.gather()` - Wait for all
+- `Promise` / `asyncio` - Use traditional concurrency helpers (e.g. wait for all, wait for first, etc)
 - Partial failure handling - Continue with successful results
 
 ## Entity Workflow Pattern
@@ -208,22 +208,53 @@ Entity Workflow (user-123)
 **Characteristics**:
 - Timers are durable (persisted in history)
 - Can be cancelled
-- Combine with cancellation scopes for timeouts
 
-## Polling Pattern
+## Polling Patterns
 
-**Purpose**: Repeatedly check external state until condition met.
+### Frequent Polling
+
+**Purpose**: Frequently (once per second of faster) repeatedly check external state until condition met.
 
 **Implementation**:
+
 ```
+# Inside Activity (polling_activity):
 while not condition_met:
-    result = await check_activity()
+    result = await call_external_api()
     if result.done:
         break
+    activity.heartbeat("Invoking activity")
     await sleep(poll_interval)
+
+
+# In workflow code:
+workflow.execute_activity(
+    polling_activity,
+    PollingActivityInput(...),
+    start_to_close_timeout=timedelta(seconds=60),
+    heartbeat_timeout=timedelta(seconds=2),
+)
 ```
 
-**Best Practice**: Use exponential backoff for polling intervals.
+To ensure that polling_activity is restarted in a timely manner, we make sure that it heartbeats on every iteration. Note that heartbeating only works if we set the heartbeat_timeout to a shorter value than the Activity start_to_close_timeout timeout
+
+**Advantage:** Because the polling loop is inside the activity, this does not pollute the workflow history.
+
+### Infrequent Polling
+
+**Purpose**: Infrequently (once per minute or slower) repeatedly poll an external service.
+
+**Implementation**:
+
+Define an Activty which fails (raises an exception) exactly when polling is not completed.
+
+The polling loop is accomplised via activity retries, by setting the following Retry options:
+- backoff_coefficient: to 1
+- initial_interval: to the polling interval (e.g. 60 seconds)
+
+This will enable the Activity to be retried exactly on the set interval.
+
+**Advantage:**  Individual Activity retries are not recorded in Workflow History, so this approach can poll for a very long time without affecting the history size.
 
 ## Choosing Between Patterns
 
