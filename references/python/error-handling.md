@@ -119,57 +119,6 @@ class MyWorkflow:
 
 **Note:** Do not use `non_retryable=` with `ApplicationError` inside a worklow (as opposed to an activity).
 
-## Idempotency Patterns
-
-When Activities interact with external systems, making them idempotent ensures correctness during retries and replay.
-
-### Using Workflow IDs as Idempotency Keys
-
-```python
-from temporalio import activity
-
-@activity.defn
-async def charge_payment(order_id: str, amount: float) -> str:
-    # Use order_id as idempotency key with payment provider
-    result = await payment_api.charge(
-        amount=amount,
-        idempotency_key=f"order-{order_id}",  # Prevents duplicate charges
-    )
-    return result.transaction_id
-```
-
-### Tracking Operation Status in Workflow State
-
-```python
-from datetime import timedelta
-from temporalio import workflow
-
-@workflow.defn
-class OrderWorkflow:
-    def __init__(self):
-        self._payment_completed = False
-        self._transaction_id: str | None = None
-
-    @workflow.run
-    async def run(self, order: Order) -> str:
-        if not self._payment_completed:
-            self._transaction_id = await workflow.execute_activity(
-                charge_payment, order.id, order.total,
-                start_to_close_timeout=timedelta(minutes=5),
-            )
-            self._payment_completed = True
-
-        # Continue with order processing...
-        return self._transaction_id
-```
-
-### Designing Idempotent Activities
-
-1. **Use unique identifiers** as idempotency keys (workflow ID, activity ID, or business ID)
-2. **Check before acting**: Query external system state before making changes
-3. **Make operations repeatable**: Ensure calling twice produces the same result
-4. **Record outcomes**: Store transaction IDs or results for verification
-
 ## Best Practices
 
 1. Use specific error types for different failure modes

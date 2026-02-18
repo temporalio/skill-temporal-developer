@@ -259,6 +259,75 @@ This will enable the Activity to be retried exactly on the set interval.
 
 **Advantage:**  Individual Activity retries are not recorded in Workflow History, so this approach can poll for a very long time without affecting the history size.
 
+## Idempotency Patterns
+
+**Purpose**: Ensure activities can be safely retried and replayed without causing duplicate side effects.
+
+**Why It Matters**: Temporal may re-execute activities during retries (on failure) or replay (on worker restart). Without idempotency, this can cause duplicate charges, duplicate emails, duplicate database entries, etc.
+
+### Using Idempotency Keys
+
+Pass a unique identifier to external services so they can detect and deduplicate repeated requests:
+
+```
+Activity: charge_payment(order_id, amount)
+    │
+    └── Call payment API with:
+            amount: $100
+            idempotency_key: "order-{order_id}"
+        │
+        └── Payment provider deduplicates based on key
+            (second call with same key returns original result)
+```
+
+**Good idempotency key sources**:
+- Workflow ID (unique per workflow execution)
+- Business identifier (order ID, transaction ID)
+- Workflow ID + activity name + attempt number
+
+### Check-Before-Act Pattern
+
+Query the external system's state before making changes:
+
+```
+Activity: send_welcome_email(user_id)
+    │
+    ├── Check: Has welcome email been sent for user_id?
+    │   │
+    │   ├── YES: Return early (already done)
+    │   │
+    │   └── NO: Send email, mark as sent
+```
+
+### Designing Idempotent Activities
+
+1. **Use unique identifiers** as idempotency keys with external APIs
+2. **Check before acting**: Query current state before making changes
+3. **Make operations repeatable**: Ensure calling twice produces the same result
+4. **Record outcomes**: Store transaction IDs or results for verification
+5. **Leverage external system features**: Many APIs (Stripe, AWS, etc.) have built-in idempotency key support
+
+### Tracking State in Workflows
+
+For complex multi-step operations, track completion status in workflow state:
+
+```
+Workflow State:
+    payment_completed: false
+    shipment_created: false
+
+Run:
+    if not payment_completed:
+        charge_payment(...)
+        payment_completed = true
+
+    if not shipment_created:
+        create_shipment(...)
+        shipment_created = true
+```
+
+This ensures that on replay, already-completed steps are skipped.
+
 ## Choosing Between Patterns
 
 | Need | Pattern |
@@ -271,3 +340,4 @@ This will enable the Activity to be retried exactly on the set interval.
 | Rollback on failure | Saga |
 | Process items concurrently | Parallel Execution |
 | Long-lived stateful entity | Entity Workflow |
+| Safe retries/replays | Idempotency |
