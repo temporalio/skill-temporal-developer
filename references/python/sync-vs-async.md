@@ -28,7 +28,7 @@ The Python async event loop runs in a single thread. When any task runs, no othe
 
 ### Synchronous Activities
 
-- Run in the `activity_executor` (thread pool by default)
+- Run in the `activity_executor`, which you must provide
 - Protected from accidentally blocking the global event loop
 - Multiple activities run in parallel via OS thread scheduling
 - Thread pool provides preemptive switching between tasks
@@ -142,22 +142,10 @@ If experiencing sporadic bugs, hangs, or timeouts:
 
 ### Multi-Core Usage
 
-For CPU-bound work or true parallelism:
+For CPU-bound work and multi-core usage:
 
-- Use multiple worker processes
-- Or use `ProcessPoolExecutor` for synchronous activities
-
-```python
-from concurrent.futures import ProcessPoolExecutor
-
-with ProcessPoolExecutor(max_workers=4) as executor:
-    worker = Worker(
-        client,
-        task_queue="cpu-intensive-queue",
-        activities=[cpu_bound_activity],
-        activity_executor=executor,
-    )
-```
+- Prefer multiple worker processes and/or threaded synchronous activities.
+- Use ProcessPoolExecutor for synchronous activities only if you understand and accept the extra complexity and different cancellation semantics.
 
 ### Separate Workers for Workflows vs Activities
 
