@@ -165,12 +165,6 @@ result = some_library.cached_operation()  # Cache changes between replays
 
 **Fix**: Move to activity or use pass-through with caution.
 
-### Slow Worker Startup
-
-Large workflow files slow down worker initialization because they're reloaded frequently.
-
-**Fix**: Keep workflow files minimal, move logic to activities.
-
 ## Best Practices
 
 1. **Separate workflow and activity files** for performance
