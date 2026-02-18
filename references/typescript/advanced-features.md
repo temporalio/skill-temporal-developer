@@ -272,47 +272,6 @@ await handle.trigger();  // Run immediately
 await handle.delete();
 ```
 
-## Interceptors
-
-Interceptors allow cross-cutting concerns like logging, metrics, and auth.
-
-### Creating a Custom Interceptor
-
-```typescript
-import {
-  ActivityInboundCallsInterceptor,
-  ActivityExecuteInput,
-  Next,
-} from '@temporalio/worker';
-
-class LoggingActivityInterceptor implements ActivityInboundCallsInterceptor {
-  async execute(
-    input: ActivityExecuteInput,
-    next: Next<ActivityInboundCallsInterceptor, 'execute'>
-  ): Promise<unknown> {
-    console.log(`Activity starting: ${input.activity.name}`);
-    try {
-      const result = await next(input);
-      console.log(`Activity completed: ${input.activity.name}`);
-      return result;
-    } catch (err) {
-      console.error(`Activity failed: ${input.activity.name}`, err);
-      throw err;
-    }
-  }
-}
-
-// Apply to worker
-const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
-  activities,
-  taskQueue: 'my-queue',
-  interceptors: {
-    activity: [() => new LoggingActivityInterceptor()],
-  },
-});
-```
-
 ## Sinks
 
 Sinks allow workflows to emit events for side effects (logging, metrics).
@@ -432,7 +391,6 @@ export async function dynamicWorkflow(
 2. Prefer updates over signals when you need a response
 3. Use sinks with `callDuringReplay: false` for logging
 4. Use CancellationScope.nonCancellable for critical cleanup operations
-5. Configure interceptors for cross-cutting concerns like tracing
-6. Use `ActivityCancellationType.WAIT_CANCELLATION_COMPLETED` when cleanup is important
-7. Store progress in heartbeat details for resumable long-running activities
-8. Use Nexus for cross-namespace service communication
+5. Use `ActivityCancellationType.WAIT_CANCELLATION_COMPLETED` when cleanup is important
+6. Store progress in heartbeat details for resumable long-running activities
+7. Use Nexus for cross-namespace service communication

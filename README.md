@@ -35,7 +35,7 @@ temporal-dev/
 │   │   ├── data-handling.md    # Pydantic, encryption
 │   │   ├── observability.md    # Logging, metrics
 │   │   ├── versioning.md       # Python patching API
-│   │   ├── advanced-features.md # Continue-as-new, interceptors
+│   │   ├── advanced-features.md # Continue-as-new, updates, schedules, dynamic workflows, and more
 │   │   └── ai-patterns.md      # Python AI Cookbook patterns
 │   └── typescript/             # TypeScript SDK references
 │       ├── typescript.md       # SDK overview, quick start
@@ -45,7 +45,7 @@ temporal-dev/
 │       ├── data-handling.md    # Data converters
 │       ├── observability.md    # Sinks, logging
 │       ├── versioning.md       # TypeScript patching API
-│       └── advanced-features.md # Cancellation scopes
+│       └── advanced-features.md # Sinks, updates, schedules and more
 ```
 
 ## Progressive Disclosure
