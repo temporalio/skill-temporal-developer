@@ -35,7 +35,7 @@ temporal-dev/
 │   │   ├── data-handling.md    # Pydantic, encryption
 │   │   ├── observability.md    # Logging, metrics
 │   │   ├── versioning.md       # Python patching API
-│   │   ├── advanced-features.md # Continue-as-new, updates, schedules, dynamic workflows, and more
+│   │   ├── advanced-features.md # Continue-as-new, updates, schedules, and more
 │   │   └── ai-patterns.md      # Python AI Cookbook patterns
 │   └── typescript/             # TypeScript SDK references
 │       ├── typescript.md       # SDK overview, quick start

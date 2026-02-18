@@ -142,7 +142,7 @@ See `references/core/versioning.md` for concepts, language-specific files for im
 - **`references/python/data-handling.md`** - Pydantic, encryption
 - **`references/python/observability.md`** - Logging, metrics, tracing
 - **`references/python/versioning.md`** - Python patching API
-- **`references/python/advanced-features.md`** - Continue-as-new, updates, schedules, dynamic workflows, and more
+- **`references/python/advanced-features.md`** - Continue-as-new, updates, schedules, and more
 - **`references/python/ai-patterns.md`** - Python AI Cookbook patterns
 - **`references/python/gotchas.md`** - Python-specific anti-patterns
 

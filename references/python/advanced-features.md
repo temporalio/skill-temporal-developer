@@ -122,35 +122,6 @@ await schedule.trigger()  # Run immediately
 await schedule.delete()
 ```
 
-## Dynamic Workflows and Activities
-
-Handle workflows/activities not known at compile time.
-
-### Dynamic Workflow Handler
-
-```python
-@workflow.defn(dynamic=True)
-class DynamicWorkflow:
-    @workflow.run
-    async def run(self, args: Sequence[RawValue]) -> Any:
-        workflow_type = workflow.info().workflow_type
-        # Route based on type
-        if workflow_type == "order-workflow":
-            return await self._handle_order(args)
-        elif workflow_type == "refund-workflow":
-            return await self._handle_refund(args)
-```
-
-### Dynamic Activity Handler
-
-```python
-@activity.defn(dynamic=True)
-async def dynamic_activity(args: Sequence[RawValue]) -> Any:
-    activity_type = activity.info().activity_type
-    # Handle based on type
-    ...
-```
-
 ## Async Activity Completion
 
 For activities that complete asynchronously (e.g., human tasks, external callbacks).
