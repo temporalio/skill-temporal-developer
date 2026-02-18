@@ -415,8 +415,6 @@ async def run(self) -> str:
 - **High-frequency calls** - When task queue overhead is significant
 - **Low-latency requirements** - When you can't afford task queue round-trip
 
-**Note:** Local activities are experimental in Python SDK.
-
 ```python
 @workflow.run
 async def run(self) -> str:
