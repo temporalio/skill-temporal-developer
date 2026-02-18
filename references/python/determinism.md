@@ -8,46 +8,26 @@ The Python SDK runs workflows in a sandbox that provides automatic protection ag
 
 Temporal achieves durability through **history replay**. Understanding this mechanism is key to writing correct Workflow code.
 
-### How Replay Works
+## Forbidden Operations
 
-1. **Initial Execution**: When your Workflow runs for the first time, the SDK records Commands (like "schedule activity") to the Event History stored by Temporal Server.
+- Direct I/O (network, filesystem)
+- Threading operations
+- `subprocess` calls
+- Global mutable state modification
+- `time.sleep()` (use `asyncio.sleep()`)
+- and so on
 
-2. **Recovery/Continuation**: When a Worker restarts, loses connectivity, or picks up a Workflow Task, it must restore the Workflow's state by replaying the code from the beginning.
+## Safe Builtin Alternatives to Common Non Deterministic Things
 
-3. **Command Matching**: During replay, the SDK re-executes your Workflow code but doesn't actually run Activities again. Instead, it compares the Commands your code generates against the Events in history. If there's a match, it uses the stored result.
+| Forbidden | Safe Alternative |
+|-----------|------------------|
+| `datetime.now()` | `workflow.now()` |
+| `datetime.utcnow()` | `workflow.now()` |
+| `random.random()` | `rng = workflow.new_random() ; rng.randint(1, 100)` |
+| `uuid.uuid4()` | `workflow.uuid4()` |
+| `time.time()` | `workflow.now().timestamp()` |
 
-4. **Non-determinism Detection**: If your code generates different Commands than what's in history (e.g., different Activity name, different order), the SDK raises a `NondeterminismError`.
-
-### Example: Why datetime.now() Breaks Replay
-
-```python
-# BAD - Non-deterministic
-@workflow.defn
-class BadWorkflow:
-    @workflow.run
-    async def run(self) -> str:
-        import datetime
-        if datetime.datetime.now().hour < 12:  # Different value on replay!
-            await workflow.execute_activity(morning_activity, ...)
-        else:
-            await workflow.execute_activity(afternoon_activity, ...)
-```
-
-If this runs at 11:59 AM initially and replays at 12:01 PM, it will try to schedule a different Activity, causing `NondeterminismError`.
-
-```python
-# GOOD - Deterministic
-@workflow.defn
-class GoodWorkflow:
-    @workflow.run
-    async def run(self) -> str:
-        if workflow.now().hour < 12:  # Consistent during replay
-            await workflow.execute_activity(morning_activity, ...)
-        else:
-            await workflow.execute_activity(afternoon_activity, ...)
-```
-
-### Testing Replay Compatibility
+## Testing Replay Compatibility
 
 Use the `Replayer` class to verify your code changes are compatible with existing histories:
 
@@ -73,64 +53,7 @@ The sandbox:
 - Restricts non-deterministic library calls via proxy objects
 - Passes through standard library with restrictions
 
-## Safe Alternatives
-
-| Forbidden | Safe Alternative |
-|-----------|------------------|
-| `datetime.now()` | `workflow.now()` |
-| `datetime.utcnow()` | `workflow.now()` |
-| `random.random()` | `workflow.random().random()` |
-| `random.randint()` | `workflow.random().randint()` |
-| `uuid.uuid4()` | `workflow.uuid4()` |
-| `time.time()` | `workflow.now().timestamp()` |
-
-## Pass-Through Pattern
-
-For third-party libraries that need to bypass sandbox restrictions:
-
-```python
-with workflow.unsafe.imports_passed_through():
-    import pydantic
-    from my_module import my_activity
-```
-
-## Disabling Sandbox
-
-```python
-# Per-workflow
-@workflow.defn(sandboxed=False)
-class UnsandboxedWorkflow:
-    pass
-
-# Per-block
-with workflow.unsafe.sandbox_unrestricted():
-    # Unrestricted code
-    pass
-
-# Globally (worker level)
-from temporalio.worker import UnsandboxedWorkflowRunner
-Worker(..., workflow_runner=UnsandboxedWorkflowRunner())
-```
-
-## Forbidden Operations
-
-- Direct I/O (network, filesystem)
-- Threading operations
-- `subprocess` calls
-- Global mutable state modification
-- `time.sleep()` (use `asyncio.sleep()`)
-
-## Commands and Events
-
-Understanding the relationship between your code and the Event History:
-
-| Workflow Code | Command Generated | Event Created |
-|--------------|-------------------|---------------|
-| `workflow.execute_activity()` | ScheduleActivityTask | ActivityTaskScheduled |
-| `asyncio.sleep()` / `workflow.sleep()` | StartTimer | TimerStarted |
-| `workflow.execute_child_workflow()` | StartChildWorkflowExecution | ChildWorkflowExecutionStarted |
-| `workflow.continue_as_new()` | ContinueAsNewWorkflowExecution | WorkflowExecutionContinuedAsNew |
-| Return from `@workflow.run` | CompleteWorkflowExecution | WorkflowExecutionCompleted |
+See more info at `references/python/sandbox.md`
 
 ## Best Practices
 
