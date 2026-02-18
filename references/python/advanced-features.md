@@ -125,6 +125,10 @@ await schedule.delete()
 ## Async Activity Completion
 
 For activities that complete asynchronously (e.g., human tasks, external callbacks).
+If you configure a heartbeat_timeout on this activity, the external completer is responsible for sending heartbeats via the async handle.
+If you do NOT set a heartbeat_timeout, no heartbeats are required.
+
+**Note:** If the external system that completes the asynchronous action can reliably be trusted to do the task and Signal back with the result, and it doesn't need to Heartbeat or receive Cancellation, then consider using **signals** instead.
 
 ```python
 from temporalio import activity
@@ -138,7 +142,7 @@ async def request_approval(request_id: str) -> None:
     # Store task token for later completion (e.g., in database)
     await store_task_token(request_id, task_token)
 
-    # Raise to indicate async completion
+    # Mark this activity as waiting for external completion
     activity.raise_complete_async()
 
 # Later, complete the activity from another process
@@ -146,12 +150,16 @@ async def complete_approval(request_id: str, approved: bool):
     client = await Client.connect("localhost:7233")
     task_token = await get_task_token(request_id)
 
+    handle = client.get_async_activity_handle(task_token=task_token)
+
+    # Optional: if a heartbeat_timeout was set, you can periodically:
+    # await handle.heartbeat(progress_details)
+
     if approved:
-        await client.get_async_activity_handle(task_token).complete("approved")
+        await handle.complete("approved")
     else:
-        await client.get_async_activity_handle(task_token).fail(
-            ApplicationError("Rejected")
-        )
+        # You can also fail or report cancellation via the handle
+        await handle.fail(ApplicationError("Rejected"))
 ```
 
 ## Sandbox Customization
