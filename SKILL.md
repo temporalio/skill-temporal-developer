@@ -142,7 +142,7 @@ See `references/core/versioning.md` for concepts, language-specific files for im
 - **`references/python/data-handling.md`** - Pydantic, encryption
 - **`references/python/observability.md`** - Logging, metrics, tracing
 - **`references/python/versioning.md`** - Python patching API
-- **`references/python/advanced-features.md`** - Continue-as-new, interceptors
+- **`references/python/advanced-features.md`** - Continue-as-new, updates, schedules, dynamic workflows, and more
 - **`references/python/ai-patterns.md`** - Python AI Cookbook patterns
 - **`references/python/gotchas.md`** - Python-specific anti-patterns
 
@@ -154,7 +154,7 @@ See `references/core/versioning.md` for concepts, language-specific files for im
 - **`references/typescript/data-handling.md`** - Data converters
 - **`references/typescript/observability.md`** - Sinks, logging
 - **`references/typescript/versioning.md`** - TypeScript patching API
-- **`references/typescript/advanced-features.md`** - Cancellation scopes, interceptors
+- **`references/typescript/advanced-features.md`** - Sinks, updates, schedules and more
 - **`references/typescript/gotchas.md`** - TypeScript-specific anti-patterns
 
 ## Feedback

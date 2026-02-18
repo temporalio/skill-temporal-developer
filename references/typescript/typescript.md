@@ -116,6 +116,6 @@ See `determinism.md` for detailed rules.
 - **`testing.md`** - TestWorkflowEnvironment, time-skipping
 - **`patterns.md`** - Signals, queries, cancellation scopes
 - **`observability.md`** - Replay-aware logging, metrics, OpenTelemetry, debugging
-- **`advanced-features.md`** - Interceptors, sinks, updates, schedules
+- **`advanced-features.md`** - Sinks, updates, schedules and more
 - **`data-handling.md`** - Search attributes, workflow memo, data converters
 - **`versioning.md`** - Patching API, workflow type versioning, Worker Versioning
