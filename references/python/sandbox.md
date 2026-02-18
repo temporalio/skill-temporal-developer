@@ -62,12 +62,12 @@ class OrderWorkflow:
         await workflow.execute_activity(
             process_payment,
             order_id,
-            schedule_to_close_timeout=timedelta(minutes=5),
+            start_to_close_timeout=timedelta(minutes=5),
         )
         return await workflow.execute_activity(
             ship_order,
             order_id,
-            schedule_to_close_timeout=timedelta(minutes=10),
+            start_to_close_timeout=timedelta(minutes=10),
         )
 ```
 

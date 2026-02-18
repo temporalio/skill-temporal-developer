@@ -86,7 +86,7 @@ class StatusWorkflow:
             self._progress = i
             await workflow.execute_activity(
                 process_item, i,
-                schedule_to_close_timeout=timedelta(minutes=1)
+                start_to_close_timeout=timedelta(minutes=1)
             )
         self._status = "completed"
         return "done"
@@ -166,7 +166,7 @@ async def run(self, items: list[str]) -> list[str]:
     tasks = [
         workflow.execute_activity(
             process_item, item,
-            schedule_to_close_timeout=timedelta(minutes=5)
+            start_to_close_timeout=timedelta(minutes=5)
         )
         for item in items
     ]
@@ -232,25 +232,25 @@ async def run(self, order: Order) -> str:
     try:
         await workflow.execute_activity(
             reserve_inventory, order,
-            schedule_to_close_timeout=timedelta(minutes=5)
+            start_to_close_timeout=timedelta(minutes=5)
         )
         compensations.append(lambda: workflow.execute_activity(
             release_inventory, order,
-            schedule_to_close_timeout=timedelta(minutes=5)
+            start_to_close_timeout=timedelta(minutes=5)
         ))
 
         await workflow.execute_activity(
             charge_payment, order,
-            schedule_to_close_timeout=timedelta(minutes=5)
+            start_to_close_timeout=timedelta(minutes=5)
         )
         compensations.append(lambda: workflow.execute_activity(
             refund_payment, order,
-            schedule_to_close_timeout=timedelta(minutes=5)
+            start_to_close_timeout=timedelta(minutes=5)
         ))
 
         await workflow.execute_activity(
             ship_order, order,
-            schedule_to_close_timeout=timedelta(minutes=5)
+            start_to_close_timeout=timedelta(minutes=5)
         )
 
         return "Order completed"
@@ -279,7 +279,7 @@ async def run(self) -> str:
     try:
         await workflow.execute_activity(
             long_running_activity,
-            schedule_to_close_timeout=timedelta(hours=1),
+            start_to_close_timeout=timedelta(hours=1),
         )
         return "completed"
     except asyncio.CancelledError:
@@ -288,7 +288,7 @@ async def run(self) -> str:
         # Cleanup activities still run even after cancellation
         await workflow.execute_activity(
             cleanup_activity,
-            schedule_to_close_timeout=timedelta(minutes=5),
+            start_to_close_timeout=timedelta(minutes=5),
         )
         raise  # Re-raise to mark workflow as cancelled
 ```
@@ -375,13 +375,13 @@ async def run(self) -> str:
         # New implementation
         greeting = await workflow.execute_activity(
             new_greet_activity,
-            schedule_to_close_timeout=timedelta(minutes=1)
+            start_to_close_timeout=timedelta(minutes=1)
         )
     else:
         # Old implementation (for replay)
         greeting = await workflow.execute_activity(
             old_greet_activity,
-            schedule_to_close_timeout=timedelta(minutes=1)
+            start_to_close_timeout=timedelta(minutes=1)
         )
 
     return greeting
@@ -423,7 +423,7 @@ async def run(self) -> str:
     result = await workflow.execute_local_activity(
         quick_lookup,
         "key",
-        schedule_to_close_timeout=timedelta(seconds=5),
+        start_to_close_timeout=timedelta(seconds=5),
     )
     return result
 ```

@@ -291,14 +291,14 @@ async def call_api():
 # BAD - Gives up too easily
 result = await workflow.execute_activity(
     flaky_api_call,
-    schedule_to_close_timeout=timedelta(seconds=30),
+    start_to_close_timeout=timedelta(seconds=30),
     retry_policy=RetryPolicy(maximum_attempts=1),
 )
 
 # GOOD - Resilient to transient failures
 result = await workflow.execute_activity(
     flaky_api_call,
-    schedule_to_close_timeout=timedelta(minutes=10),
+    start_to_close_timeout=timedelta(minutes=10),
     retry_policy=RetryPolicy(
         initial_interval=timedelta(seconds=1),
         maximum_interval=timedelta(minutes=1),
@@ -307,6 +307,8 @@ result = await workflow.execute_activity(
     ),
 )
 ```
+
+Generally, prefer to use the default RetryPolicy.
 
 ## Heartbeating
 

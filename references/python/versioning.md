@@ -25,13 +25,13 @@ class ShippingWorkflow:
             # New code path
             await workflow.execute_activity(
                 send_email,
-                schedule_to_close_timeout=timedelta(minutes=5),
+                start_to_close_timeout=timedelta(minutes=5),
             )
         else:
             # Old code path (for replay of existing workflows)
             await workflow.execute_activity(
                 send_fax,
-                schedule_to_close_timeout=timedelta(minutes=5),
+                start_to_close_timeout=timedelta(minutes=5),
             )
 ```
 
@@ -56,14 +56,14 @@ class OrderWorkflow:
             await workflow.execute_activity(
                 check_fraud,
                 order,
-                schedule_to_close_timeout=timedelta(minutes=2),
+                start_to_close_timeout=timedelta(minutes=2),
             )
 
         # Original payment logic runs for both paths
         return await workflow.execute_activity(
             process_payment,
             order,
-            schedule_to_close_timeout=timedelta(minutes=5),
+            start_to_close_timeout=timedelta(minutes=5),
         )
 ```
 
@@ -82,13 +82,13 @@ class OrderWorkflow:
         await workflow.execute_activity(
             check_fraud,
             order,
-            schedule_to_close_timeout=timedelta(minutes=2),
+            start_to_close_timeout=timedelta(minutes=2),
         )
 
         return await workflow.execute_activity(
             process_payment,
             order,
-            schedule_to_close_timeout=timedelta(minutes=5),
+            start_to_close_timeout=timedelta(minutes=5),
         )
 ```
 
@@ -104,13 +104,13 @@ class OrderWorkflow:
         await workflow.execute_activity(
             check_fraud,
             order,
-            schedule_to_close_timeout=timedelta(minutes=2),
+            start_to_close_timeout=timedelta(minutes=2),
         )
 
         return await workflow.execute_activity(
             process_payment,
             order,
-            schedule_to_close_timeout=timedelta(minutes=5),
+            start_to_close_timeout=timedelta(minutes=5),
         )
 ```
 
@@ -127,19 +127,19 @@ class NotificationWorkflow:
             # Latest: SMS notifications
             await workflow.execute_activity(
                 send_sms,
-                schedule_to_close_timeout=timedelta(minutes=5),
+                start_to_close_timeout=timedelta(minutes=5),
             )
         elif workflow.patched("use-email"):
             # Intermediate: Email notifications
             await workflow.execute_activity(
                 send_email,
-                schedule_to_close_timeout=timedelta(minutes=5),
+                start_to_close_timeout=timedelta(minutes=5),
             )
         else:
             # Original: Fax notifications
             await workflow.execute_activity(
                 send_fax,
-                schedule_to_close_timeout=timedelta(minutes=5),
+                start_to_close_timeout=timedelta(minutes=5),
             )
 ```
 
@@ -274,7 +274,7 @@ class StableWorkflow:
         # This workflow will always run on its assigned version
         return await workflow.execute_activity(
             process_order,
-            schedule_to_close_timeout=timedelta(minutes=5),
+            start_to_close_timeout=timedelta(minutes=5),
         )
 ```
 

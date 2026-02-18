@@ -19,7 +19,7 @@ class MyWorkflow:
 
         result = await workflow.execute_activity(
             my_activity,
-            schedule_to_close_timeout=timedelta(minutes=5),
+            start_to_close_timeout=timedelta(minutes=5),
         )
 
         workflow.logger.info("Activity completed", extra={"result": result})
