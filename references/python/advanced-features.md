@@ -164,11 +164,11 @@ async def complete_approval(request_id: str, approved: bool):
 
 ## Sandbox Customization
 
-The Python SDK runs workflows in a sandbox to ensure determinism. You can customize sandbox restrictions when needed.
+The Python SDK runs workflows in a sandbox to help you ensure determinism. You can customize sandbox restrictions when needed.
 
 ### Passing Through Modules
 
-If you need to use modules that are blocked by the sandbox:
+For performance and behavior reasons, you are encouraged to pass through all modules whose calls will be deterministic.
 
 ```python
 from temporalio.worker import Worker
@@ -194,26 +194,131 @@ worker = Worker(
 restrictions = SandboxRestrictions.default.with_passthrough_all_modules()
 ```
 
-### Temporary Passthrough in Workflow Code
+### Temporary Passthrough Context Manager
 
 ```python
+from temporalio import workflow
+from datetime import timedelta
+
+# Mark imports inside this block as passthrough
+with workflow.unsafe.imports_passed_through():
+    from activities import say_hello  # your activity
+    import pydantic                   # or other deterministic third‑party libs
+
 @workflow.run
 async def run(self) -> str:
-    # Temporarily disable sandbox restrictions for imports
-    with workflow.unsafe.imports_passed_through():
-        import some_restricted_module
-        # Use the module...
+    # ... use the imports here
 ```
+
+**Note:** The imports, even when using `imports_passed_through`, should all be at the top of the file. Runtime imports are an anti-pattern.
+
+### Temporary Unrestricted Sandbox
+
+```python
+from temporalio import workflow
+
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self) -> None:
+        # Normal sandboxed code here
+
+        with workflow.unsafe.sandbox_unrestricted():
+            # Code here runs without sandbox restrictions
+            # e.g., a restricted os/path call or special logging
+            do_something_non_sandbox_safe()
+```
+
+- Per‑block escape hatch from runtime restrictions; imports unchanged.
+- Use when: You need to call something the sandbox would normally block (e.g., a restricted stdlib call) in a very small, controlled section.
+- **IMPORTANT:** Use it sparingly; you lose determinism checks inside the block
+- Genuinely non-deterministic code still *MUST* go into activities.
+
 
 ### Customizing Invalid Module Members
 
+`invalid_module_members` includes modules that cannot be accessed.
+
+Checks are compared against the fully qualified path to the item.
+
 ```python
-# Allow specific members that are normally blocked
-restrictions = SandboxRestrictions.default
-restrictions = restrictions.with_invalid_module_member_children(
-    "datetime", {"datetime": {"now"}}  # Block datetime.datetime.now
+import dataclasses
+from temporalio.worker import Worker
+from temporalio.worker.workflow_sandbox import (
+  SandboxedWorkflowRunner,
+  SandboxMatcher,
+  SandboxRestrictions,
+)
+
+# Example 1: Remove a restriction on datetime.date.today():
+restrictions = dataclasses.replace(
+    SandboxRestrictions.default,
+    invalid_module_members=SandboxRestrictions.invalid_module_members_default.with_child_unrestricted(
+      "datetime", "date", "today",
+    ),
+)
+
+# Example 2: Restrict the datetime.date class from being used
+restrictions = dataclasses.replace(
+    SandboxRestrictions.default,
+    invalid_module_members=SandboxRestrictions.invalid_module_members_default | SandboxMatcher(
+      children={"datetime": SandboxMatcher(use={"date"})},
+    ),
 )
 ```
+
+### Import Notification Policy
+
+Control warnings/errors for sandbox import issues. Recommended for catching potential problems:
+
+```python
+from temporalio import workflow
+from temporalio.worker.workflow_sandbox import SandboxedWorkflowRunner, SandboxRestrictions
+
+restrictions = SandboxRestrictions.default.with_import_notification_policy(
+    workflow.SandboxImportNotificationPolicy.WARN_ON_DYNAMIC_IMPORT
+    | workflow.SandboxImportNotificationPolicy.WARN_ON_UNINTENTIONAL_PASSTHROUGH
+)
+
+worker = Worker(
+    ...,
+    workflow_runner=SandboxedWorkflowRunner(restrictions=restrictions),
+)
+```
+
+- `WARN_ON_DYNAMIC_IMPORT` (default) - warns on imports after initial workflow load
+- `WARN_ON_UNINTENTIONAL_PASSTHROUGH` - warns when modules are imported into sandbox without explicit passthrough (not default, but highly recommended for catching missing passthroughs)
+- `RAISE_ON_UNINTENTIONAL_PASSTHROUGH` - raise instead of warn
+
+Override per-import with the context manager:
+
+```python
+with workflow.unsafe.sandbox_import_notification_policy(
+    workflow.SandboxImportNotificationPolicy.SILENT
+):
+    import pydantic  # No warning for this import
+```
+
+### Disable Lazy sys.modules Passthrough
+
+By default, passthrough modules are lazily added to the sandbox's `sys.modules` when accessed. To require explicit imports:
+
+```python
+import dataclasses
+from temporalio.worker.workflow_sandbox import SandboxedWorkflowRunner, SandboxRestrictions
+
+restrictions = dataclasses.replace(
+    SandboxRestrictions.default,
+    disable_lazy_sys_module_passthrough=True,
+)
+
+worker = Worker(
+    ...,
+    workflow_runner=SandboxedWorkflowRunner(restrictions=restrictions),
+)
+```
+
+When `True`, passthrough modules must be explicitly imported to appear in the sandbox's `sys.modules`.
 
 ## Gevent Compatibility Warning
 
@@ -249,7 +354,9 @@ worker = Worker(
 
 ## Workflow Init Decorator
 
-Use `@workflow.init` to run initialization code when a workflow is first created (not on replay).
+Use `@workflow.init` to run initialization code when a workflow is first created.
+
+**Purpose:** Execute some setup code before signal/update happens or run is invoked.
 
 ```python
 @workflow.defn
@@ -268,7 +375,12 @@ class MyWorkflow:
 
 ## Workflow Failure Exception Types
 
-Control which exceptions cause workflow task failures vs workflow failures:
+Control which exceptions cause workflow task failures vs workflow failures.
+
+- Special case: if you include temporalio.workflow.NondeterminismError (or a superclass), non-determinism errors will fail the workflow instead of leaving it in a retrying state
+- **Tip for testing:** Set to `[Exception]` in tests so any unhandled exception fails the workflow immediately rather than retrying the workflow task forever. This surfaces bugs faster.
+
+### Per-Workflow Configuration
 
 ```python
 @workflow.defn(
@@ -280,3 +392,15 @@ class MyWorkflow:
     async def run(self) -> str:
         raise ValueError("This fails the workflow, not just the task")
 ```
+
+### Worker-Level Configuration
+
+```python
+worker = Worker(
+    client,
+    task_queue="my-queue",
+    workflows=[MyWorkflow],
+    workflow_failure_exception_types=[ValueError, CustomBusinessError],
+)
+```
+
