@@ -45,6 +45,7 @@ class OrderWorkflow:
 # Configure client with Pydantic support
 client = await Client.connect(
     "localhost:7233",
+    namespace="default",
     data_converter=pydantic_data_converter,
 )
 ```
@@ -70,6 +71,7 @@ custom_converter = DataConverter(
 
 client = await Client.connect(
     "localhost:7233",
+    namespace="default",
     data_converter=custom_converter,
 )
 ```
@@ -112,6 +114,7 @@ class EncryptionCodec(PayloadCodec):
 # Apply encryption codec
 client = await Client.connect(
     "localhost:7233",
+    namespace="default",
     data_converter=DataConverter(
         payload_codec=EncryptionCodec(encryption_key),
     ),

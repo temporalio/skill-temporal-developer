@@ -84,6 +84,7 @@ runtime = Runtime(
 
 client = await Client.connect(
     "localhost:7233",
+    namespace="default",
     runtime=runtime,
 )
 ```
@@ -114,6 +115,7 @@ tracing_interceptor = TracingInterceptor()
 # Apply to client and worker
 client = await Client.connect(
     "localhost:7233",
+    namespace="default",
     interceptors=[tracing_interceptor],
 )
 

@@ -448,6 +448,7 @@ class OrderWorkflow:
 # Client setup with Pydantic support
 client = await Client.connect(
     "localhost:7233",
+    namespace="default",
     data_converter=pydantic_data_converter,
 )
 ```
