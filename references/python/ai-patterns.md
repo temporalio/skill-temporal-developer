@@ -14,6 +14,7 @@ from temporalio.contrib.pydantic import pydantic_data_converter
 
 client = await Client.connect(
     "localhost:7233",
+    namespace="default",
     data_converter=pydantic_data_converter,
 )
 ```

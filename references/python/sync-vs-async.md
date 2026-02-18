@@ -185,7 +185,7 @@ def greet_in_spanish(name: str) -> str:
     return response.text
 
 async def main():
-    client = await Client.connect("localhost:7233")
+    client = await Client.connect("localhost:7233", namespace="default")
 
     with ThreadPoolExecutor(max_workers=100) as executor:
         worker = Worker(
@@ -219,7 +219,7 @@ class TranslateActivities:
             return await response.text()
 
 async def main():
-    client = await Client.connect("localhost:7233")
+    client = await Client.connect("localhost:7233", namespace="default")
 
     async with aiohttp.ClientSession() as session:
         activities = TranslateActivities(session)

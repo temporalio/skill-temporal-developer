@@ -42,7 +42,7 @@ from activities.greet import greet
 from workflows.greeting import GreetingWorkflow
 
 async def main():
-    client = await Client.connect("localhost:7233")
+    client = await Client.connect("localhost:7233", namespace="default")
     async with Worker(client, task_queue="greeting-queue",
                       workflows=[GreetingWorkflow], activities=[greet]):
         result = await client.execute_workflow(

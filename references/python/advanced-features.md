@@ -147,7 +147,7 @@ async def request_approval(request_id: str) -> None:
 
 # Later, complete the activity from another process
 async def complete_approval(request_id: str, approved: bool):
-    client = await Client.connect("localhost:7233")
+    client = await Client.connect("localhost:7233", namespace="default")
     task_token = await get_task_token(request_id)
 
     handle = client.get_async_activity_handle(task_token=task_token)
