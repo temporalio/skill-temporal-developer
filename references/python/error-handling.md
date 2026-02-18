@@ -55,8 +55,6 @@ result = await workflow.execute_activity(
     my_activity,
     start_to_close_timeout=timedelta(minutes=10),
     retry_policy=RetryPolicy(
-        initial_interval=timedelta(seconds=1),
-        backoff_coefficient=2.0,
         maximum_interval=timedelta(minutes=1),
         maximum_attempts=5,
         non_retryable_error_types=["ValidationError", "PaymentError"],

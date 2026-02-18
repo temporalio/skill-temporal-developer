@@ -299,12 +299,7 @@ result = await workflow.execute_activity(
 result = await workflow.execute_activity(
     flaky_api_call,
     start_to_close_timeout=timedelta(minutes=10),
-    retry_policy=RetryPolicy(
-        initial_interval=timedelta(seconds=1),
-        maximum_interval=timedelta(minutes=1),
-        backoff_coefficient=2.0,
-        maximum_attempts=10,
-    ),
+    retry_policy=RetryPolicy(maximum_attempts=10),
 )
 ```
 
