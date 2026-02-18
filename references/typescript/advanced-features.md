@@ -362,29 +362,6 @@ export async function workflowWithCancellation(): Promise<string> {
 }
 ```
 
-## Dynamic Workflows and Activities
-
-Handle workflows/activities not known at compile time.
-
-```typescript
-// Dynamic workflow registration
-import { proxyActivities } from '@temporalio/workflow';
-
-export async function dynamicWorkflow(
-  workflowType: string,
-  args: unknown[]
-): Promise<unknown> {
-  switch (workflowType) {
-    case 'order':
-      return handleOrderWorkflow(args);
-    case 'refund':
-      return handleRefundWorkflow(args);
-    default:
-      throw new Error(`Unknown workflow type: ${workflowType}`);
-  }
-}
-```
-
 ## Best Practices
 
 1. Use continue-as-new for long-running workflows to prevent history growth

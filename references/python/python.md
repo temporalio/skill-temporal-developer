@@ -171,6 +171,6 @@ with workflow.unsafe.imports_passed_through():
 - **`testing.md`** - WorkflowEnvironment, time-skipping, activity mocking
 - **`patterns.md`** - Signals, queries, child workflows, saga pattern
 - **`observability.md`** - Logging, metrics, tracing, Search Attributes
-- **`advanced-features.md`** - Continue-as-new, updates, schedules, dynamic workflows, and more
+- **`advanced-features.md`** - Continue-as-new, updates, schedules, and more
 - **`data-handling.md`** - Data converters, Pydantic, payload encryption
 - **`versioning.md`** - Patching API, workflow type versioning, Worker Versioning
