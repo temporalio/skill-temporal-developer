@@ -22,18 +22,24 @@ async def validate_order(order: Order) -> None:
 ## Non-Retryable Errors
 
 ```python
+from dataclasses import dataclass
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
+@dataclass
+class ChargeCardInput:
+    card_number: str
+    amount: float
+
 @activity.defn
-async def charge_card(card_number: str, amount: float) -> str:
-    if not is_valid_card(card_number):
+async def charge_card(input: ChargeCardInput) -> str:
+    if not is_valid_card(input.card_number):
         raise ApplicationError(
             "Permanent failure - invalid credit card",
             type="PaymentError",
             non_retryable=True,  # Will not retry activity
         )
-    return await process_payment(card_number, amount)
+    return await process_payment(input.card_number, input.amount)
 ```
 
 ## Handling Activity Errors

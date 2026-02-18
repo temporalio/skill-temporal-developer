@@ -5,18 +5,23 @@ Python-specific mistakes and anti-patterns. See also [Common Gotchas](../core/co
 ## Idempotency
 
 ```python
+@dataclass
+class ChargePaymentInput:
+    order_id: str
+    amount: float
+
 # BAD - May charge customer multiple times on retry
 @activity.defn
-async def charge_payment(order_id: str, amount: float) -> str:
-    return await payment_api.charge(customer_id, amount)
+async def charge_payment(input: ChargePaymentInput) -> str:
+    return await payment_api.charge(input.customer_id, input.amount)
 
 # GOOD - Safe for retries
 @activity.defn
-async def charge_payment(order_id: str, amount: float) -> str:
+async def charge_payment(input: ChargePaymentInput) -> str:
     return await payment_api.charge(
-        customer_id,
-        amount,
-        idempotency_key=f"order-{order_id}"
+        input.customer_id,
+        input.amount,
+        idempotency_key=f"order-{input.order_id}"
     )
 ```
 
