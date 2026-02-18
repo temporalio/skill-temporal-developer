@@ -16,9 +16,10 @@ The default converter handles:
 
 Use Pydantic models for validated, typed data.
 
+In your workflow definition, just use input and result types that subclass `pydantic.BaseModel`:
+
 ```python
 from pydantic import BaseModel
-from temporalio.contrib.pydantic import pydantic_data_converter
 
 class OrderInput(BaseModel):
     order_id: str
@@ -41,7 +42,12 @@ class OrderWorkflow:
             status="completed",
             tracking_number="TRK123",
         )
+```
 
+And when you configure the client, pass the `pydantic_data_converter`:
+
+```python
+from temporalio.contrib.pydantic import pydantic_data_converter
 # Configure client with Pydantic support
 client = await Client.connect(
     "localhost:7233",
@@ -50,31 +56,13 @@ client = await Client.connect(
 )
 ```
 
-## Custom Data Converter
+## Custom Data Conversion
 
-Create custom converters for special serialization needs.
+Usually the easiest way to do this is via implementing an EncodingPayloadConverter and CompositePayloadConverter. See:
+- https://raw.githubusercontent.com/temporalio/samples-python/refs/heads/main/custom_converter/shared.py
+- https://raw.githubusercontent.com/temporalio/samples-python/refs/heads/main/custom_converter/starter.py
 
-```python
-from temporalio.converter import (
-    DataConverter,
-    PayloadConverter,
-    DefaultPayloadConverter,
-)
-
-class CustomPayloadConverter(PayloadConverter):
-    # Implement encoding_payload_converters and decoding_payload_converters
-    pass
-
-custom_converter = DataConverter(
-    payload_converter_class=CustomPayloadConverter,
-)
-
-client = await Client.connect(
-    "localhost:7233",
-    namespace="default",
-    data_converter=custom_converter,
-)
-```
+for an extended example.
 
 ## Payload Encryption
 
@@ -94,7 +82,8 @@ class EncryptionCodec(PayloadCodec):
         return [
             Payload(
                 metadata={"encoding": b"binary/encrypted"},
-                data=self._fernet.encrypt(p.SerializeToString()),
+                # Since encryption uses C extensions that give up the GIL, we can avoid blocking the async event loop here.
+                data=await asyncio.to_thread(self._fernet.encrypt, p.SerializeToString()),
             )
             for p in payloads
         ]
@@ -103,7 +92,7 @@ class EncryptionCodec(PayloadCodec):
         result = []
         for p in payloads:
             if p.metadata.get("encoding") == b"binary/encrypted":
-                decrypted = self._fernet.decrypt(p.data)
+                decrypted = await asyncio.to_thread(self._fernet.decrypt, p.data)
                 decoded = Payload()
                 decoded.ParseFromString(decrypted)
                 result.append(decoded)
@@ -126,32 +115,37 @@ client = await Client.connect(
 Custom searchable fields for workflow visibility.
 
 ```python
-from temporalio.common import SearchAttributes, SearchAttributeKey
+from temporalio.common import (
+    SearchAttributeKey,
+    SearchAttributePair,
+    TypedSearchAttributes,
+)
+from datetime import datetime
+from datetime import timezone
 
-# Define typed keys
 ORDER_ID = SearchAttributeKey.for_keyword("OrderId")
 ORDER_STATUS = SearchAttributeKey.for_keyword("OrderStatus")
 ORDER_TOTAL = SearchAttributeKey.for_float("OrderTotal")
 CREATED_AT = SearchAttributeKey.for_datetime("CreatedAt")
 
-# Set at workflow start
-await client.execute_workflow(
+# At workflow start
+handle = await client.start_workflow(
     OrderWorkflow.run,
     order,
     id=f"order-{order.id}",
     task_queue="orders",
-    search_attributes=SearchAttributes.from_pairs([
-        (ORDER_ID, order.id),
-        (ORDER_STATUS, "pending"),
-        (ORDER_TOTAL, order.total),
-        (CREATED_AT, datetime.now(timezone.utc)),
+    search_attributes=TypedSearchAttributes([
+        SearchAttributePair(ORDER_ID, order.id),
+        SearchAttributePair(ORDER_STATUS, "pending"),
+        SearchAttributePair(ORDER_TOTAL, order.total),
+        SearchAttributePair(CREATED_AT, datetime.now(timezone.utc)),
     ]),
 )
 
-# Upsert from within workflow
-workflow.upsert_search_attributes([
-    (ORDER_STATUS, "completed"),
-])
+# Inside workflow: upsert
+workflow.upsert_search_attributes(TypedSearchAttributes([
+    SearchAttributePair(ORDER_STATUS, "completed"),
+]))
 ```
 
 ## Workflow Memo
@@ -170,14 +164,15 @@ await client.execute_workflow(
         "notes": "Priority customer",
     },
 )
+```
 
+```python
 # Read memo from workflow
 @workflow.defn
 class OrderWorkflow:
     @workflow.run
     async def run(self, order: Order) -> str:
-        memo = workflow.memo()
-        notes = memo.get("notes", "")
+        notes: str = workflow.memo_value("notes", type_hint=str)
         ...
 ```
 
