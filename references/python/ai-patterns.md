@@ -110,10 +110,6 @@ class LLMWorkflow:
             ),
             start_to_close_timeout=timedelta(seconds=30),
             retry_policy=RetryPolicy(
-                initial_interval=timedelta(seconds=1),
-                backoff_coefficient=2.0,
-                maximum_interval=timedelta(seconds=60),
-                maximum_attempts=5,
                 non_retryable_error_types=["InvalidAPIKeyError"],
             ),
         )
