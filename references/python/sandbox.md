@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Python SDK runs workflows in a sandbox that provides automatic protection against non-deterministic operations. This is unique to Python - TypeScript uses V8 isolation with automatic replacements instead.
+The Python SDK runs workflows in a sandbox that provides automatic protection against non-deterministic operations. This is unique to the Python SDK.
 
 ## How the Sandbox Works
 
@@ -12,18 +12,15 @@ The sandbox:
 - Passes through standard library with restrictions
 - Reloads workflow files on each execution
 
-## Safe Alternatives
+## Forbidden Operations
 
-| Forbidden | Safe Alternative |
-|-----------|------------------|
-| `datetime.now()` | `workflow.now()` |
-| `datetime.utcnow()` | `workflow.now()` |
-| `random.random()` | `workflow.random().random()` |
-| `random.randint()` | `workflow.random().randint()` |
-| `uuid.uuid4()` | `workflow.uuid4()` |
-| `time.time()` | `workflow.now().timestamp()` |
-| `asyncio.wait()` | `workflow.wait()` (deterministic ordering) |
-| `asyncio.as_completed()` | `workflow.as_completed()` |
+These operations will fail in the sandbox:
+
+- **Direct I/O**: Network calls, file reads/writes
+- **Threading**: `threading` module operations
+- **Subprocess**: `subprocess` calls
+- **Global state**: Modifying mutable global variables
+- **Blocking sleep**: `time.sleep()` (use `asyncio.sleep()`)
 
 ## Pass-Through Pattern
 
@@ -42,6 +39,9 @@ with workflow.unsafe.imports_passed_through():
 - Serialization libraries
 - Type definitions
 - Any library that doesn't do I/O or non-deterministic operations
+- Performance, as many non-passthrough imports can be slower
+
+**Note:** The imports, even when using `imports_passed_through`, should all be at the top of the file. Runtime imports are an anti-pattern.
 
 ## Importing Activities
 
@@ -73,19 +73,6 @@ class OrderWorkflow:
 
 ## Disabling the Sandbox
 
-### Per-Workflow
-
-```python
-@workflow.defn(sandboxed=False)
-class UnsandboxedWorkflow:
-    @workflow.run
-    async def run(self) -> str:
-        # No sandbox protection - use with caution
-        return "result"
-```
-
-### Per-Block
-
 ```python
 @workflow.defn
 class MyWorkflow:
@@ -97,29 +84,100 @@ class MyWorkflow:
         return "result"
 ```
 
-### Globally (Worker Level)
+- Per‑block escape hatch from runtime restrictions; imports unchanged.
+- Use when: You need to call something the sandbox would normally block (e.g., a restricted stdlib call) in a very small, controlled section.
+- **IMPORTANT:** Use it sparingly; you lose determinism checks inside the block
+- Genuinely non-deterministic code still *MUST* go into activities.
+
+## Customizing Invalid Module Members
+
+`invalid_module_members` includes modules that cannot be accessed.
+
+Checks are compared against the fully qualified path to the item.
 
 ```python
-from temporalio.worker import Worker, UnsandboxedWorkflowRunner
+import dataclasses
+from temporalio.worker import Worker
+from temporalio.worker.workflow_sandbox import (
+  SandboxedWorkflowRunner,
+  SandboxMatcher,
+  SandboxRestrictions,
+)
+
+# Example 1: Remove a restriction on datetime.date.today():
+restrictions = dataclasses.replace(
+    SandboxRestrictions.default,
+    invalid_module_members=SandboxRestrictions.invalid_module_members_default.with_child_unrestricted(
+      "datetime", "date", "today",
+    ),
+)
+
+# Example 2: Restrict the datetime.date class from being used
+restrictions = dataclasses.replace(
+    SandboxRestrictions.default,
+    invalid_module_members=SandboxRestrictions.invalid_module_members_default | SandboxMatcher(
+      children={"datetime": SandboxMatcher(use={"date"})},
+    ),
+)
 
 worker = Worker(
-    client,
-    task_queue="my-queue",
-    workflows=[MyWorkflow],
-    activities=[my_activity],
-    workflow_runner=UnsandboxedWorkflowRunner(),
+    ...,
+    workflow_runner=SandboxedWorkflowRunner(restrictions=restrictions),
 )
 ```
 
-## Forbidden Operations
+## Import Notification Policy
 
-These operations will fail or cause non-determinism in the sandbox:
+Control warnings/errors for sandbox import issues. Recommended for catching potential problems:
 
-- **Direct I/O**: Network calls, file reads/writes
-- **Threading**: `threading` module operations
-- **Subprocess**: `subprocess` calls
-- **Global state**: Modifying mutable global variables
-- **Blocking sleep**: `time.sleep()` (use `asyncio.sleep()`)
+```python
+from temporalio import workflow
+from temporalio.worker.workflow_sandbox import SandboxedWorkflowRunner, SandboxRestrictions
+
+restrictions = SandboxRestrictions.default.with_import_notification_policy(
+    workflow.SandboxImportNotificationPolicy.WARN_ON_DYNAMIC_IMPORT
+    | workflow.SandboxImportNotificationPolicy.WARN_ON_UNINTENTIONAL_PASSTHROUGH
+)
+
+worker = Worker(
+    ...,
+    workflow_runner=SandboxedWorkflowRunner(restrictions=restrictions),
+)
+```
+
+- `WARN_ON_DYNAMIC_IMPORT` (default) - warns on imports after initial workflow load
+- `WARN_ON_UNINTENTIONAL_PASSTHROUGH` - warns when modules are imported into sandbox without explicit passthrough (not default, but highly recommended for catching missing passthroughs)
+- `RAISE_ON_UNINTENTIONAL_PASSTHROUGH` - raise instead of warn
+
+Override per-import with the context manager:
+
+```python
+with workflow.unsafe.sandbox_import_notification_policy(
+    workflow.SandboxImportNotificationPolicy.SILENT
+):
+    import pydantic  # No warning for this import
+```
+
+## Disable Lazy sys.modules Passthrough
+
+By default, passthrough modules are lazily added to the sandbox's `sys.modules` when accessed. To require explicit imports:
+
+```python
+import dataclasses
+from temporalio.worker.workflow_sandbox import SandboxedWorkflowRunner, SandboxRestrictions
+
+restrictions = dataclasses.replace(
+    SandboxRestrictions.default,
+    disable_lazy_sys_module_passthrough=True,
+)
+
+worker = Worker(
+    ...,
+    workflow_runner=SandboxedWorkflowRunner(restrictions=restrictions),
+)
+```
+
+When `True`, passthrough modules must be explicitly imported to appear in the sandbox's `sys.modules`.
 
 ## File Organization
 
@@ -148,6 +206,7 @@ Error: Cannot import 'pydantic' in sandbox
 ```
 
 **Fix**: Use pass-through:
+
 ```python
 with workflow.unsafe.imports_passed_through():
     import pydantic
