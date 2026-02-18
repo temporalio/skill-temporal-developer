@@ -38,7 +38,7 @@ async def run(self) -> str:
     try:
         return await workflow.execute_activity(
             risky_activity,
-            schedule_to_close_timeout=timedelta(minutes=5),
+            start_to_close_timeout=timedelta(minutes=5),
         )
     except ActivityError as e:
         workflow.logger.error(f"Activity failed: {e}")
@@ -53,7 +53,7 @@ from temporalio.common import RetryPolicy
 
 result = await workflow.execute_activity(
     my_activity,
-    schedule_to_close_timeout=timedelta(minutes=10),
+    start_to_close_timeout=timedelta(minutes=10),
     retry_policy=RetryPolicy(
         initial_interval=timedelta(seconds=1),
         backoff_coefficient=2.0,
@@ -120,7 +120,7 @@ class OrderWorkflow:
         if not self._payment_completed:
             self._transaction_id = await workflow.execute_activity(
                 charge_payment, order.id, order.total,
-                schedule_to_close_timeout=timedelta(minutes=5),
+                start_to_close_timeout=timedelta(minutes=5),
             )
             self._payment_completed = True
 

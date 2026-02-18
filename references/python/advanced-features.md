@@ -13,7 +13,7 @@ class BatchProcessingWorkflow:
             # Process next batch
             state = await workflow.execute_activity(
                 process_batch, state,
-                schedule_to_close_timeout=timedelta(minutes=5),
+                start_to_close_timeout=timedelta(minutes=5),
             )
 
             # Check history size and continue-as-new if needed
