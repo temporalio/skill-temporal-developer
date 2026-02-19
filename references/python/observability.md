@@ -50,21 +50,16 @@ Activity logger includes:
 - Workflow ID and run ID
 - Attempt number (for retries)
 
-### Custom Logger Configuration
+### Customizing Logger Configuration
 
 ```python
 import logging
 
-# Configure a custom handler
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-))
-
-# Apply to Temporal's logger
-temporal_logger = logging.getLogger("temporalio")
-temporal_logger.addHandler(handler)
-temporal_logger.setLevel(logging.INFO)
+# Applies to temporalio.workflow.logger and temporalio.activity.logger, as Temporal inherits the default logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 ```
 
 ## Metrics
@@ -75,18 +70,19 @@ temporal_logger.setLevel(logging.INFO)
 from temporalio.client import Client
 from temporalio.runtime import Runtime, TelemetryConfig, PrometheusConfig
 
-# Configure Prometheus metrics endpoint
+# Create a custom runtime
 runtime = Runtime(
     telemetry=TelemetryConfig(
-        metrics=PrometheusConfig(bind_address="0.0.0.0:9090")
+        metrics=PrometheusConfig(bind_address="0.0.0.0:9000")
     )
 )
 
-client = await Client.connect(
-    "localhost:7233",
-    namespace="default",
-    runtime=runtime,
-)
+# Set it as the global default BEFORE any Client/Worker is created
+# Do this only ONCE.
+Runtime.set_default(runtime, error_if_already_set=True)
+# error_if_already_set can be False if you want to overwrite an existing default without raising.
+
+# ...elsewhere, client = ... as usual
 ```
 
 ### Key SDK Metrics
@@ -130,59 +126,9 @@ worker = Worker(
 
 ## Search Attributes (Visibility)
 
-### Setting Search Attributes at Start
+See the Search Attributes section of `references/python/data-handling.md`
 
-```python
-from temporalio.common import SearchAttributes, SearchAttributeKey
 
-# Define typed search attribute keys
-ORDER_ID = SearchAttributeKey.for_keyword("OrderId")
-CUSTOMER_TYPE = SearchAttributeKey.for_keyword("CustomerType")
-ORDER_TOTAL = SearchAttributeKey.for_float("OrderTotal")
-
-# Start workflow with search attributes
-await client.execute_workflow(
-    OrderWorkflow.run,
-    order,
-    id=f"order-{order.id}",
-    task_queue="orders",
-    search_attributes=SearchAttributes.from_pairs([
-        (ORDER_ID, order.id),
-        (CUSTOMER_TYPE, order.customer_type),
-        (ORDER_TOTAL, order.total),
-    ]),
-)
-```
-
-### Upserting Search Attributes from Workflow
-
-```python
-@workflow.defn
-class OrderWorkflow:
-    @workflow.run
-    async def run(self, order: Order) -> str:
-        # Update status as workflow progresses
-        workflow.upsert_search_attributes([
-            (ORDER_STATUS, "processing"),
-        ])
-
-        await workflow.execute_activity(process_order, order, ...)
-
-        workflow.upsert_search_attributes([
-            (ORDER_STATUS, "completed"),
-        ])
-        return "done"
-```
-
-### Querying Workflows by Search Attributes
-
-```python
-# List workflows using search attributes
-async for workflow in client.list_workflows(
-    'OrderStatus = "processing" AND CustomerType = "premium"'
-):
-    print(f"Workflow {workflow.id} is still processing")
-```
 
 ## Best Practices
 
