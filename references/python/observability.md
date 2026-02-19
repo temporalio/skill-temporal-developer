@@ -92,43 +92,10 @@ Runtime.set_default(runtime, error_if_already_set=True)
 - `temporal_activity_execution_latency` - Activity execution time
 - `temporal_workflow_task_replay_latency` - Replay duration
 
-## Tracing
-
-### OpenTelemetry Integration
-
-```python
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from temporalio.contrib.opentelemetry import TracingInterceptor
-
-# Set up OpenTelemetry
-provider = TracerProvider()
-trace.set_tracer_provider(provider)
-
-# Create tracing interceptor
-tracing_interceptor = TracingInterceptor()
-
-# Apply to client and worker
-client = await Client.connect(
-    "localhost:7233",
-    namespace="default",
-    interceptors=[tracing_interceptor],
-)
-
-worker = Worker(
-    client,
-    task_queue="my-queue",
-    workflows=[MyWorkflow],
-    activities=[my_activity],
-    interceptors=[tracing_interceptor],
-)
-```
 
 ## Search Attributes (Visibility)
 
 See the Search Attributes section of `references/python/data-handling.md`
-
-
 
 ## Best Practices
 
@@ -136,4 +103,3 @@ See the Search Attributes section of `references/python/data-handling.md`
 2. Don't use print() in workflows - it will produce duplicate output on replay
 3. Configure metrics for production monitoring
 4. Use Search Attributes for business-level visibility
-5. Add tracing for distributed debugging
