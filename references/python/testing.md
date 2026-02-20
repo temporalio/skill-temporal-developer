@@ -111,6 +111,34 @@ async def test_signals():
             result = await handle.result()
 ```
 
+### Testing Failure Cases
+
+Below shows an example of how to test failure cases:
+
+```python
+# Test failure scenarios
+@pytest.mark.asyncio
+async def test_activity_failure_handling():
+    async with await WorkflowEnvironment.start_local() as env:
+        # An example activity that always fails
+        @activity.defn
+        async def failing_activity() -> str:
+            raise ApplicationError("Simulated failure", non_retryable=True)
+
+        async with Worker(
+            env.client,
+            task_queue="test",
+            workflows=[MyWorkflow],
+            activities=[failing_activity],
+        ):
+            with pytest.raises(WorkflowFailureError):
+                await env.client.execute_workflow(
+                    MyWorkflow.run,
+                    id="test-failure",
+                    task_queue="test",
+                )
+```
+
 ## Best Practices
 
 1. Use time-skipping for workflows with timers
