@@ -398,10 +398,6 @@ async def run(self) -> str:
 ```python
 @workflow.run
 async def run(self) -> str:
-    # Wait for 1 hour
-    await asyncio.sleep(3600)
-
-    # Or with workflow-specific API
     await workflow.sleep(timedelta(hours=1))
 
     return "Timer fired"

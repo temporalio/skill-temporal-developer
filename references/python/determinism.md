@@ -14,7 +14,7 @@ Temporal achieves durability through **history replay**. Understanding this mech
 - Threading operations
 - `subprocess` calls
 - Global mutable state modification
-- `time.sleep()` (use `asyncio.sleep()`)
+- `time.sleep()` (use `workflow.sleep(timedelta(...))`)
 - and so on
 
 ## Safe Builtin Alternatives to Common Non Deterministic Things
