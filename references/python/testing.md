@@ -2,89 +2,79 @@
 
 ## Overview
 
-The Python SDK provides `WorkflowEnvironment` for testing workflows with time-skipping support and `ActivityEnvironment` for isolated activity testing.
+You test Temporal Python Workflows using the Temporal testing package plus a normal Python test framework like pytest. The Temporal Python SDK provides `WorkflowEnvironment` for testing workflows in a local environment and `ActivityEnvironment` for isolated activity testing.
 
-## Time-Skipping Test Environment
+## Workflow Test Environment
+
+The core pattern is:
+
+1. Start a test WorkflowEnvironment (`WorkflowEnvironment.start_local()`).
+2. Start a Worker in that environment with your Workflow and Activities registered.
+3. Use the environment’s client to execute the Workflow, using a fresh UUID for the task queue name and workflow ID.
+4. Assert on the result or status.
+
+`WorkflowEnvironment.start_local` configures a ready-to-go local environment for running and testing workflows:
 
 ```python
+import uuid
 import pytest
+
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker
 
+from activities import my_activity
+from workflows import MyWorkflow
+
 @pytest.mark.asyncio
 async def test_workflow():
-    async with await WorkflowEnvironment.start_time_skipping() as env:
+    task_queue_name = str(uuid.uuid4())
+    async with await WorkflowEnvironment.start_local() as env:
         async with Worker(
             env.client,
-            task_queue="test-queue",
+            task_queue=task_queue_name,
             workflows=[MyWorkflow],
             activities=[my_activity],
         ):
             result = await env.client.execute_workflow(
                 MyWorkflow.run,
                 "input",
-                id="test-workflow-id",
-                task_queue="test-queue",
+                id=str(uuid.uuid4()),
+                task_queue=task_queue_name,
             )
-            assert result == "expected"
 ```
 
-## Local Test Environment
+Conveniently, the local `env` can be shared among tests, e.g. via a pytest fixture.
 
-For tests that don't need time-skipping:
-
-```python
-async with await WorkflowEnvironment.start_local() as env:
-    # Real-time execution
-    pass
-```
-
-## Activity Testing
-
-```python
-from temporalio.testing import ActivityEnvironment
-
-@pytest.mark.asyncio
-async def test_activity():
-    env = ActivityEnvironment()
-
-    # Optionally customize activity info
-    # env.info = ActivityInfo(...)
-
-    result = await env.run(my_activity, "arg1", "arg2")
-    assert result == "expected"
-```
+If your workflows / tests involve long durations (such as using Temporal timers / sleeps), then you can use the time-skipping environment, via `WorkflowEnvironment.start_time_skipping()`.
+Only use time-skipping if you must. It can *not* be shared among tests.
 
 ## Mocking Activities
 
 ```python
-async def mock_activity(input: str) -> str:
+import uuid
+import pytest
+
+from temporalio import activity
+from temporalio.testing import WorkflowEnvironment
+from temporalio.worker import Worker
+
+from workflows import MyWorkflow
+
+@activity.defn(name="compose_greeting")
+async def compose_greeting_mocked(input: str) -> str:
     return "mocked result"
 
 @pytest.mark.asyncio
 async def test_with_mock():
-    async with await WorkflowEnvironment.start_time_skipping() as env:
+    task_queue_name = str(uuid.uuid4())
+    async with await WorkflowEnvironment.start_local() as env:
         async with Worker(
             env.client,
-            task_queue="test-queue",
+            task_queue=task_queue_name,
             workflows=[MyWorkflow],
-            activities=[mock_activity],  # Use mock
+            activities=[compose_greeting_mocked],
         ):
             result = await env.client.execute_workflow(...)
-```
-
-## Workflow Replay Testing
-
-```python
-from temporalio.worker import Replayer
-
-async def test_replay():
-    replayer = Replayer(workflows=[MyWorkflow])
-
-    # From JSON file
-    await replayer.replay_workflow(
-        WorkflowHistory.from_json("workflow-id", history_json)
-    )
 ```
 
 ## Testing Signals and Queries
@@ -92,13 +82,9 @@ async def test_replay():
 ```python
 @pytest.mark.asyncio
 async def test_signals():
-    async with await WorkflowEnvironment.start_time_skipping() as env:
+    async with await WorkflowEnvironment.start_local() as env:
         async with Worker(...):
-            handle = await env.client.start_workflow(
-                MyWorkflow.run,
-                id="test-wf",
-                task_queue="test-queue",
-            )
+            handle = await env.client.start_workflow(...) # same arguments as to execute_workflow
 
             # Send signal
             await handle.signal(MyWorkflow.my_signal, "data")
@@ -111,7 +97,7 @@ async def test_signals():
             result = await handle.result()
 ```
 
-### Testing Failure Cases
+## Testing Failure Cases
 
 Below shows an example of how to test failure cases:
 
@@ -125,24 +111,55 @@ async def test_activity_failure_handling():
         async def failing_activity() -> str:
             raise ApplicationError("Simulated failure", non_retryable=True)
 
-        async with Worker(
-            env.client,
-            task_queue="test",
-            workflows=[MyWorkflow],
-            activities=[failing_activity],
-        ):
+        async with Worker(...):
             with pytest.raises(WorkflowFailureError):
-                await env.client.execute_workflow(
-                    MyWorkflow.run,
-                    id="test-failure",
-                    task_queue="test",
-                )
+                await env.client.execute_workflow(...)
+```
+
+## Workflow Replay Testing
+
+```python
+import json
+import pytest
+import uuid
+from temporalio.client import WorkflowHistory
+from temporalio.worker import Replayer
+
+from workflows import MyWorkflow
+
+@pytest.mark.asyncio
+async def test_replay():
+    with open("example-history.json", "r") as f:
+        history_json = json.load(f)
+
+    replayer = Replayer(workflows=[MyWorkflow])
+
+    # From JSON file
+    await replayer.replay_workflow(
+        WorkflowHistory.from_json(workflow_id=str(uuid.uuid4()), history_json)
+    )
+```
+
+
+## Activity Testing
+
+```python
+import pytest
+
+from temporalio.testing import ActivityEnvironment
+
+@pytest.mark.asyncio
+async def test_activity():
+    env = ActivityEnvironment()
+    result = await env.run(my_activity, "arg1", "arg2")
+    assert result == "expected"
 ```
 
 ## Best Practices
 
-1. Use time-skipping for workflows with timers
-2. Mock external dependencies in activities
-3. Test replay compatibility when changing workflow code
-4. Test signal/query handlers explicitly
-5. Use unique workflow IDs per test to avoid conflicts
+1. Use the `WorkflowEnvironment.start_local` environment for most testing
+2. Use time-skipping environment for workflows with durable timers / durable sleeps.
+3. Mock external dependencies in activities
+4. Test replay compatibility, especially when changing workflow code
+5. Test signal/query handlers explicitly
+6. Use unique workflow IDs and task queues per test to avoid conflicts. Easiest is a `uuid.uuid4()`
