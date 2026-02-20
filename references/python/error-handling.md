@@ -87,6 +87,9 @@ class MyWorkflow:
         return result
 ```
 
+Only set options such as maximum_interval, maximum_attempts etc. if you have a domain-specific reason to.
+If not, prefer to leave them at their defaults.
+
 ## Timeout Configuration
 
 ```python
@@ -101,7 +104,7 @@ class MyWorkflow:
             my_activity,
             start_to_close_timeout=timedelta(minutes=5),      # Single attempt
             schedule_to_close_timeout=timedelta(minutes=30),  # Including retries
-            heartbeat_timeout=timedelta(seconds=30),          # Between heartbeats
+            heartbeat_timeout=timedelta(minutes=2),          # Between heartbeats
         )
 ```
 
