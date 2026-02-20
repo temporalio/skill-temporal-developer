@@ -165,46 +165,8 @@ await workflow.execute_activity(
 
 ### Not Testing Failures
 
-Below shows an example of how to test failure cases:
-
-```python
-# Test failure scenarios
-@pytest.mark.asyncio
-async def test_activity_failure_handling():
-    async with await WorkflowEnvironment.start_local() as env:
-        # An example activity that always fails
-        @activity.defn
-        async def failing_activity() -> str:
-            raise ApplicationError("Simulated failure", non_retryable=True)
-
-        async with Worker(
-            env.client,
-            task_queue="test",
-            workflows=[MyWorkflow],
-            activities=[failing_activity],
-        ):
-            with pytest.raises(WorkflowFailureError):
-                await env.client.execute_workflow(
-                    MyWorkflow.run,
-                    id="test-failure",
-                    task_queue="test",
-                )
-```
+It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see `references/python/testing.md` for more info.
 
 ### Not Testing Replay
 
-Replay tests let you test that you do not have hidden sources of non-determinism bugs in your workflow code:
-
-```python
-from temporalio.worker import Replayer
-
-async def test_replay_compatibility():
-    replayer = Replayer(workflows=[MyWorkflow])
-
-    # Load history from file (captured from production/staging)
-    with open("workflow_history.json") as f:
-        history = WorkflowHistory.from_json("workflow-id", f.read())
-
-    # Fails if current code is incompatible with history
-    await replayer.replay_workflow(history)
-```
+Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code, and should be considered in addition to standard testing. Please see `references/python/testing.md` for more info.
