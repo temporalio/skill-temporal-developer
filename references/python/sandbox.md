@@ -20,7 +20,7 @@ These operations will fail in the sandbox:
 - **Threading**: `threading` module operations
 - **Subprocess**: `subprocess` calls
 - **Global state**: Modifying mutable global variables
-- **Blocking sleep**: `time.sleep()` (use `asyncio.sleep()`)
+- **Blocking sleep**: `time.sleep()` (use `workflow.sleep(timedelta(...))`)
 
 ## Pass-Through Pattern
 

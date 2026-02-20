@@ -57,6 +57,44 @@ Temporal achieves durability through **history replay**:
 
 See `references/core/determinism.md` for detailed explanation.
 
+## Getting Started
+
+### Ensure Temporal CLI is installed
+
+Check if `temporal` CLI is installed. If not, follow these instructions:
+
+#### macOS
+
+```
+brew install temporal
+```
+
+#### Linux
+
+Check your machine's architecture and download the appropriate archive:
+
+- [Linux amd64](https://temporal.download/cli/archive/latest?platform=linux&arch=amd64)
+- [Linux arm64](https://temporal.download/cli/archive/latest?platform=linux&arch=arm64)
+
+Once you've downloaded the file, extract the downloaded archive and add the temporal binary to your PATH by copying it to a directory like /usr/local/bin
+
+#### Windows
+
+Check your machine's architecture and download the appropriate archive:
+
+- [Windows amd64](https://temporal.download/cli/archive/latest?platform=windows&arch=amd64)
+- [Windows arm64](https://temporal.download/cli/archive/latest?platform=windows&arch=arm64)
+
+Once you've downloaded the file, extract the downloaded archive and add the temporal.exe binary to your PATH.
+
+### Read All Relevant References
+
+1. First, read the getting started guide for the language you are working in:
+    - Python -> read `references/python/python.md`
+    - TypeScript -> read `references/typescript/typescript.md`
+2. Second, read appropriate `core` and language-specific references for the task at hand.
+
+
 ## Determinism Quick Reference
 
 | Forbidden | Python | TypeScript |
@@ -64,7 +102,7 @@ See `references/core/determinism.md` for detailed explanation.
 | Current time | `workflow.now()` | `Date.now()` (auto-replaced) |
 | Random | `workflow.random()` | `Math.random()` (auto-replaced) |
 | UUID | `workflow.uuid4()` | `uuid4()` from workflow |
-| Sleep | `asyncio.sleep()` | `sleep()` from workflow |
+| Sleep | `workflow.sleep(timedelta(...))` | `sleep()` from workflow |
 
 **Python sandbox**: Explicit protection, use `workflow.unsafe.imports_passed_through()` for libraries
 **TypeScript sandbox**: V8 isolation, automatic replacements, use type-only imports for activities
@@ -87,14 +125,16 @@ See `references/core/determinism.md` for detailed explanation.
 
 ## Pattern Index
 
-| Pattern | Use Case | Python | TypeScript |
-|---------|----------|--------|------------|
-| **Signals** | Fire-and-forget events to running workflow | `references/python/patterns.md` | `references/typescript/patterns.md` |
-| **Queries** | Read-only state inspection | `references/python/patterns.md` | `references/typescript/patterns.md` |
-| **Updates** | Synchronous state modification with response | `references/python/patterns.md` | `references/typescript/patterns.md` |
-| **Child Workflows** | Break down large workflows, isolate failures | `references/python/patterns.md` | `references/typescript/patterns.md` |
-| **Continue-as-New** | Prevent unbounded history growth | `references/python/advanced-features.md` | `references/typescript/advanced-features.md` |
-| **Saga** | Distributed transactions with compensation | `references/python/patterns.md` | `references/typescript/patterns.md` |
+| Pattern | Use Case | Reference File |
+|---------|----------|--------|
+| **Signals** | Fire-and-forget events to running workflow | `references/{your_language}/patterns.md` |
+| **Queries** | Read-only state inspection | `references/{your_language}/patterns.md` |
+| **Updates** | Synchronous state modification with response | `references/{your_language}/patterns.md` |
+| **Child Workflows** | Break down large workflows, isolate failures | `references/{your_language}/patterns.md` |
+| **Continue-as-New** | Prevent unbounded history growth | `references/{your_language}/advanced-features.md` |
+| **Saga** | Distributed transactions with compensation | `references/{your_language}/patterns.md` |
+
+where `{your_language}` is either `python` or `typescript`.
 
 ## Troubleshooting Quick Reference
 
