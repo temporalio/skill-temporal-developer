@@ -304,7 +304,7 @@ from temporalio.worker import Worker
 
 @pytest.fixture
 async def workflow_environment():
-    async with await WorkflowEnvironment.start_time_skipping() as env:
+    async with await WorkflowEnvironment.start_local() as env:
         yield env
 
 async def test_llm_workflow(workflow_environment):
