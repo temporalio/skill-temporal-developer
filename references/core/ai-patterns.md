@@ -1,4 +1,4 @@
-# AI/LLM Integration with Temporal
+# AI/LLM Integration Patterns with Temporal
 
 ## Overview
 
@@ -160,23 +160,7 @@ Parse rate limit info from API responses:
 
 ## Observability
 
-See `references/python/observability.md` (or the language you are working in) for documentation on observability in Temporal. It is generally recommended to add observability for:
+See `references/{your_language}/observability.md` for the langauge you are working in for documentation on implementing observability in Temporal. It is generally recommended to add observability for:
 - Token usage, via activity logging
 - any else to help track LLM usage and debug agentic flows, within moderation.
 
-## Language-Specific Resources
-
-### Python
-See `references/python/ai-patterns.md` for:
-- Pydantic data converter setup
-- OpenAI client configuration
-- LiteLLM multi-model support
-- OpenAI Agents SDK integration
-- Complete code examples
-- Testing patterns
-
-### TypeScript
-AI integration patterns in TypeScript follow the same concepts:
-- Use `proxyActivities` for LLM activities
-- Configure timeouts per activity type
-- Handle errors with `ApplicationFailure`

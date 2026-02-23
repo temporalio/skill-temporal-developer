@@ -275,8 +275,8 @@ Worker won't start?
 ├─▶ Registration error
 │   └─▶ Check workflow/activity definitions are valid
 │
-└─▶ Import error
-    └─▶ Check Python imports, TypeScript bundling
+└─▶ Other errors (imports, etc.)
+    └─▶ Debug those errors as usual.
 ```
 
 ### Worker Crashing
@@ -319,5 +319,5 @@ temporal workflow reset --workflow-id <id> --event-id <event-id>
 
 ## See Also
 
-- [Common Gotchas](common-gotchas.md) - Anti-patterns that cause these issues
+- [Common Gotchas](gotchas.md) - Anti-patterns that cause these issues
 - [Error Reference](error-reference.md) - Quick error type lookup

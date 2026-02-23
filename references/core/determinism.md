@@ -1,5 +1,7 @@
 # Determinism in Temporal Workflows
 
+This document provides a conceptual-level overview to determinism in Temporal. Additional language-specific determinism information is available at `references/{your_language}/determinism.md`.
+
 ## Overview
 
 Temporal workflows must be deterministic because of **history replay** - the mechanism that enables durable execution.
@@ -56,7 +58,7 @@ Result: Commands don't match history → NondeterminismError
 - Different value on each execution
 
 ### External State
-- Reading files, environment variables, databases
+- Reading files, environment variables, databases, networking / HTTP calls
 - State may change between executions
 
 ### Non-Deterministic Iteration
@@ -67,51 +69,17 @@ Result: Commands don't match history → NondeterminismError
 - Race conditions produce different outcomes
 - Non-deterministic ordering
 
+## **Central Concept**: Place Non-Determinism within Activities
+
+In Temporal, activities are the primary mechanism for making non-deterministic code durable and peristed in workflow history. Generally speaking, you should place sources of non-determinism in activities, which provides durability and recording of results, as well as automated retries and more. See `references/{your_language}/{your_language}.md` for the language you are working in for how to do this in practice.
+
+For a few simple cases, like timestamps, random values, UUIDs, etc. the Temporal SDK in your language may provide durable variants that are simple to use. See `references/{your_language}/determinism.md` for the language you are working in for more info.
+
 ## SDK Protection Mechanisms
+Each Temporal SDK language provides a protection mechanism to make it easier to catch non-determinism errors earlier in development:
 
-### Python Sandbox
-The Python SDK runs workflows in a sandbox that:
-- Intercepts non-deterministic calls
-- Raises errors for forbidden operations
-- Requires explicit pass-through for libraries
+- Python: The Python SDK runs workflows in a sandbox that intercepts and aborts non-deterministic calls at runtime.
 
-```python
-# Python: Use SDK alternatives
-workflow.now()      # Instead of datetime.now()
-workflow.random()   # Instead of random
-workflow.uuid4()    # Instead of uuid.uuid4()
-```
-
-### TypeScript V8 Isolation
-The TypeScript SDK runs workflows in an isolated V8 context that:
-- Automatically replaces `Date.now()`, `Math.random()` with deterministic versions
-- Prevents access to Node.js APIs
-- Bundles workflow code separately from activities
-
-```typescript
-// TypeScript: Auto-replaced to be deterministic
-Date.now()      // Returns workflow task start time
-Math.random()   // Returns seeded PRNG value
-new Date()      // Deterministic
-```
-
-### Go `workflowcheck` static analyzer
-The Go SDK provides a workflowcheck CLI tool that:
-- Statically analyzes registered Workflow Definitions and their call graph
-- Flags common sources of non-determinism (e.g., time.Now, time.Sleep, goroutines, channels, map iteration, global math/rand, stdio)
-- Helps catch invalid constructs early in development, but cannot detect all issues (e.g., global var mutation, some reflection)
-
-```bash
-# Install
-go install go.temporal.io/sdk/contrib/tools/workflowcheck@latest
-
-# Run from your module root to scan all packages
-workflowcheck ./...
-
-# Optional: configure overrides / skips in workflowcheck.config.yaml
-# (e.g., mark a function as deterministic or skip files)
-workflowcheck -config workflowcheck.config.yaml ./...
-```
 
 ## Detecting Non-Determinism
 
@@ -120,23 +88,8 @@ workflowcheck -config workflowcheck.config.yaml ./...
 - Workflow becomes blocked until code is fixed
 
 ### Testing with Replay
-Export workflow history and replay against new code:
 
-```python
-# Python
-from temporalio.worker import Replayer
-replayer = Replayer(workflows=[MyWorkflow])
-await replayer.replay_workflow(history)  # Raises if incompatible
-```
-
-```typescript
-// TypeScript
-import { Worker } from '@temporalio/worker';
-await Worker.runReplayHistory({
-  workflowsPath: require.resolve('./workflows'),
-  history,
-});
-```
+Replay tests verify that workflows follow identical code paths when re-run, by attempting to replay recorded executions. See the replay testing section of `references/{your_language}/testing.md` for information on how to write these tests.
 
 ## Recovery from Non-Determinism
 

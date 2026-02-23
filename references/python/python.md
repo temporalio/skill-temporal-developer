@@ -170,5 +170,5 @@ See `references/python/testing.md` for info on writing tests.
 - **`references/python/advanced-features.md`** - Continue-as-new, updates, schedules, and more
 - **`references/python/data-handling.md`** - Data converters, Pydantic, payload encryption
 - **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
-- **`references/python/sandbox.md`** - Python sandbox specifics, forbidden operations, pass-through imports
+- **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
 - **`references/python/ai-patterns.md`** - LLM integration, Pydantic data converter, AI workflow patterns

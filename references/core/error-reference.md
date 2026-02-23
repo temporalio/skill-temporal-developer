@@ -28,5 +28,5 @@
 
 ## See Also
 
-- [Common Gotchas](common-gotchas.md) - Anti-patterns that cause these errors
+- [Common Gotchas](gotchas.md) - Anti-patterns that cause these errors
 - [Troubleshooting](troubleshooting.md) - Decision trees for diagnosing issues

@@ -53,7 +53,7 @@ The sandbox:
 - Restricts non-deterministic library calls via proxy objects
 - Passes through standard library with restrictions
 
-See more info at `references/python/sandbox.md`
+See more info at `references/python/determinism-protection.md`
 
 ## Best Practices
 
