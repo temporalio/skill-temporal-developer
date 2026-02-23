@@ -102,7 +102,7 @@ Deep Research Example:
 
 **Key Pattern**: Use parallel execution with `return_exceptions=True` to continue with partial results when some searches fail.
 
-## Timeout Recommendations
+## Approximate Timeout Recommendations
 
 | Operation Type | Recommended Timeout |
 |----------------|---------------------|
@@ -131,7 +131,7 @@ Parse rate limit info from API responses:
 
 - Activity:
   - If rate limited:
-    - Raise retryable error with retry_after hint
+    - Raise retryable error with a next retry delay
     - Temporal handles the delay
 
 ## Error Handling

@@ -48,7 +48,9 @@ litellm.num_retries = 0  # Disable LiteLLM retries
 Flexible, reusable activity for LLM calls:
 
 ```python
+import openai
 from temporalio import activity
+from temporalio.exceptions import ApplicationError
 from pydantic import BaseModel
 from typing import Optional, Any
 
@@ -68,21 +70,61 @@ class LLMResponse(BaseModel):
 @activity.defn
 async def call_llm(request: LLMRequest) -> LLMResponse:
     """Generic LLM activity supporting multiple use cases."""
-    response = await openai_client.chat.completions.create(
-        model=request.model,
-        messages=[
-            {"role": "system", "content": request.system_prompt},
-            {"role": "user", "content": request.user_input},
-        ],
-        tools=request.tools,
-        temperature=request.temperature,
-    )
+    try:
+        # As an example, calling OpenAI. This could be any chat API you wish though...
+        response = await openai_client.chat.completions.create(
+            model=request.model,
+            messages=[
+                {"role": "system", "content": request.system_prompt},
+                {"role": "user", "content": request.user_input},
+            ],
+            tools=request.tools,
+            temperature=request.temperature,
+        )
+        return LLMResponse(
+            content=response.choices[0].message.content or "",
+            tool_calls=response.choices[0].message.tool_calls,
+            usage=response.usage.model_dump(),
+        )
 
-    return LLMResponse(
-        content=response.choices[0].message.content or "",
-        tool_calls=response.choices[0].message.tool_calls,
-        usage=response.usage.model_dump(),
-    )
+    # Some example error cases to handle. These are not necessarily exhaustive, and depend on the API you are actually calling!
+    except openai.AuthenticationError as e:
+        # Invalid API key - permanent failure, don't retry
+        raise ApplicationError(
+            f"Invalid API key: {e}",
+            type="AuthenticationError",
+            non_retryable=True,
+        )
+
+    except openai.RateLimitError as e:
+        # Rate limited - transient, let Temporal retry with backoff
+        raise ApplicationError(
+            f"Rate limited: {e}",
+            type="RateLimitError",
+            next_retry_delay=... # parse this from headers
+        )
+
+    except openai.APIStatusError as e:
+        if e.status_code >= 500:
+            # Server error - transient, retry
+            raise ApplicationError(
+                f"OpenAI server error ({e.status_code}): {e}",
+                type="ServerError",
+            )
+        else:
+            # Other client errors (400, etc.) - likely permanent
+            raise ApplicationError(
+                f"OpenAI client error ({e.status_code}): {e}",
+                type="ClientError",
+                non_retryable=True,
+            )
+
+    except openai.APIConnectionError as e:
+        # Network error - transient, retry
+        raise ApplicationError(
+            f"Connection error: {e}",
+            type="ConnectionError",
+        )
 ```
 
 ## Activity Retry Policy
@@ -101,6 +143,8 @@ with workflow.unsafe.imports_passed_through():
 class LLMWorkflow:
     @workflow.run
     async def run(self, prompt: str) -> str:
+        # Note that because call_llm classfies different types of exceptions as retryable / non-retryable,
+        # we automatically get correct retry behavior just by calling it.
         response = await workflow.execute_activity(
             call_llm,
             LLMRequest(
@@ -109,9 +153,6 @@ class LLMWorkflow:
                 user_input=prompt,
             ),
             start_to_close_timeout=timedelta(seconds=30),
-            retry_policy=RetryPolicy(
-                non_retryable_error_types=["InvalidAPIKeyError"],
-            ),
         )
         return response.content
 ```
@@ -121,17 +162,23 @@ class LLMWorkflow:
 ```python
 from temporalio import workflow
 from datetime import timedelta
+from pydantic import BaseModel
 
 with workflow.unsafe.imports_passed_through():
     from activities.llm import call_llm, LLMRequest, LLMResponse
     from activities.tools import execute_tool
     from models.tools import ToolDefinition
 
+class AgentWorkflowInput(BaseModel):
+    user_request: str
+    tools: list[ToolDefinition]
+
 @workflow.defn
 class AgentWorkflow:
     @workflow.run
-    async def run(self, user_request: str, tools: list[ToolDefinition]) -> str:
+    async def run(self, input: AgentWorkflowInput) -> str:
         messages = []
+        current_input = input.user_request
 
         while True:
             # Phase 1: Get LLM response with tools
@@ -140,8 +187,8 @@ class AgentWorkflow:
                 LLMRequest(
                     model="gpt-4",
                     system_prompt="You are a helpful agent with tools.",
-                    user_input=user_request,
-                    tools=[t.to_openai_format() for t in tools],
+                    user_input=current_input,
+                    tools=[t.to_openai_format() for t in input.tools],
                 ),
                 start_to_close_timeout=timedelta(seconds=30),
             )
@@ -164,7 +211,7 @@ class AgentWorkflow:
                 })
 
             # Phase 3: Continue conversation with tool results
-            user_request = f"Tool results: {messages}"
+            current_input = f"Tool results: {messages}"
 ```
 
 ## Structured Outputs
@@ -192,28 +239,6 @@ async def analyze_text(text: str) -> AnalysisResult:
         response_format=AnalysisResult,
     )
     return response.choices[0].message.parsed
-```
-
-## Rate Limit Handling
-
-Parse rate limit headers and raise retryable errors:
-
-```python
-from temporalio import activity
-from temporalio.exceptions import ApplicationError
-
-@activity.defn
-async def call_llm_with_rate_limit(request: LLMRequest) -> LLMResponse:
-    try:
-        response = await openai_client.chat.completions.create(...)
-        return LLMResponse(...)
-    except openai.RateLimitError as e:
-        # Extract retry-after if available
-        retry_after = e.response.headers.get("retry-after", 30)
-        raise ApplicationError(
-            f"Rate limited, retry after {retry_after}s",
-            non_retryable=False,  # Allow Temporal to retry
-        )
 ```
 
 ## Multi-Agent Pipeline (Deep Research)
@@ -255,6 +280,7 @@ class DeepResearchWorkflow:
                 search_web,
                 query,
                 start_to_close_timeout=timedelta(seconds=300),
+                schedule_to_close_timeout=timedelta(seconds=900), # We set a schedule to close timeout, so that if one search task repeatadly fails, then it won't hang up all the rest, in the below gather step.
             )
             for query in queries
         ]
@@ -275,76 +301,25 @@ class DeepResearchWorkflow:
 
 ## OpenAI Agents SDK Integration
 
-Using Temporal's OpenAI contrib module:
+If using the OpenAI Agent SDK to create an agent, use Temporal's OpenAI contrib module to create a Temporal-aware durable agent:
 
 ```python
+from temporalio import workflow
 from temporalio.contrib.openai import create_workflow_agent
 from agents import Agent, Runner
-
-# Create a Temporal-aware agent
-agent = create_workflow_agent(
-    model="gpt-4",
-    tools=[search_tool, calculator_tool],
-)
 
 @workflow.defn
 class DurableAgentWorkflow:
     @workflow.run
     async def run(self, task: str) -> str:
+        # Create a Temporal-aware agent
+        agent = create_workflow_agent(
+            model="gpt-4",
+            tools=[search_tool, calculator_tool],
+        )
+        # Run it. Under the hood, the automatically dispatches to activities for LLM calls, etc.
         result = await agent.run(task)
         return result.output
-```
-
-## Testing with Mocks
-
-```python
-import pytest
-from temporalio.testing import WorkflowEnvironment
-from temporalio.worker import Worker
-
-@pytest.fixture
-async def workflow_environment():
-    async with await WorkflowEnvironment.start_local() as env:
-        yield env
-
-async def test_llm_workflow(workflow_environment):
-    # Mock LLM activity
-    async def mock_call_llm(request):
-        return LLMResponse(
-            content="Mocked response",
-            tool_calls=None,
-            usage={"total_tokens": 100},
-        )
-
-    async with Worker(
-        workflow_environment.client,
-        task_queue="test-queue",
-        workflows=[LLMWorkflow],
-        activities=[mock_call_llm],  # Use mock
-    ):
-        result = await workflow_environment.client.execute_workflow(
-            LLMWorkflow.run,
-            "test prompt",
-            id="test-workflow",
-            task_queue="test-queue",
-        )
-        assert result == "Mocked response"
-```
-
-## Timeout Recommendations
-
-```python
-# Simple LLM calls (GPT-4, Claude-3)
-start_to_close_timeout=timedelta(seconds=30)
-
-# Reasoning models (o1, o3)
-start_to_close_timeout=timedelta(seconds=300)
-
-# Web searches
-start_to_close_timeout=timedelta(seconds=300)
-
-# Tool execution
-start_to_close_timeout=timedelta(seconds=60)
 ```
 
 ## Best Practices
