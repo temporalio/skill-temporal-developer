@@ -1,91 +1,5 @@
 # Python SDK Advanced Features
 
-## Continue-as-New
-
-Use continue-as-new to prevent unbounded history growth in long-running workflows.
-
-```python
-@workflow.defn
-class BatchProcessingWorkflow:
-    @workflow.run
-    async def run(self, state: ProcessingState) -> str:
-        while not state.is_complete:
-            # Process next batch
-            state = await workflow.execute_activity(
-                process_batch, state,
-                start_to_close_timeout=timedelta(minutes=5),
-            )
-
-            # Check history size and continue-as-new if needed
-            if workflow.info().get_current_history_length() > 10000:
-                workflow.continue_as_new(args=[state])
-
-        return "completed"
-```
-
-### Continue-as-New with Different Arguments
-
-```python
-# Continue with modified state
-workflow.continue_as_new(args=[new_state])
-
-# Continue with memo and search attributes
-workflow.continue_as_new(
-    args=[new_state],
-    memo={"last_processed": item_id},
-    search_attributes=SearchAttributes.from_pairs([
-        (BATCH_NUMBER, state.batch + 1),
-    ]),
-)
-```
-
-## Workflow Updates
-
-Updates allow synchronous interaction with running workflows.
-
-### Defining Update Handlers
-
-```python
-@workflow.defn
-class OrderWorkflow:
-    def __init__(self):
-        self._items: list[str] = []
-
-    @workflow.update
-    async def add_item(self, item: str) -> int:
-        """Add item and return new count."""
-        self._items.append(item)
-        return len(self._items)
-
-    @workflow.update
-    async def add_item_with_validation(self, item: str) -> int:
-        """Update with validation."""
-        # This runs before the update is accepted
-        if not item:
-            raise ValueError("Item cannot be empty")
-        self._items.append(item)
-        return len(self._items)
-
-    # Validator runs in the handler but before main logic
-    @add_item_with_validation.validator
-    def validate_add_item(self, item: str) -> None:
-        if len(self._items) >= 100:
-            raise ValueError("Order is full")
-```
-
-### Calling Updates from Client
-
-```python
-handle = client.get_workflow_handle("order-123")
-
-# Execute update and wait for result
-count = await handle.execute_update(
-    OrderWorkflow.add_item,
-    "new-item",
-)
-print(f"Order now has {count} items")
-```
-
 ## Schedules
 
 Create recurring workflow executions.
@@ -164,7 +78,7 @@ async def complete_approval(request_id: str, approved: bool):
 
 ## Sandbox Customization
 
-The Python SDK runs workflows in a sandbox to help you ensure determinism. You can customize sandbox restrictions when needed. See `references/python/sandbox.md`
+The Python SDK runs workflows in a sandbox to help you ensure determinism. You can customize sandbox restrictions when needed. See `references/python/determinism-protection.md`
 
 ## Gevent Compatibility Warning
 

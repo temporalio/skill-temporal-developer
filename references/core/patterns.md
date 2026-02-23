@@ -34,7 +34,7 @@ Client                    Workflow
 ```
 
 **Note:** A related but distinct pattern to signals is async activity completion. This is an advanced feature, which you may consider if the external system that would deliver the signal is unreliable and might fail to Signal, or
-you want the external process to Heartbeat or receive Cancellation. If this may be the case, look at language-specific advanced features for your SDK language (e.g. references/python/advanced-features.md).
+you want the external process to Heartbeat or receive Cancellation. If this may be the case, look at language-specific advanced features for your SDK language (`references/{your_language}/advanced-features.md`).
 
 ## Queries
 

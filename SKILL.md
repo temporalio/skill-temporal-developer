@@ -95,107 +95,26 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
 
-## Determinism Quick Reference
-
-| Forbidden | Python | TypeScript |
-|-----------|--------|------------|
-| Current time | `workflow.now()` | `Date.now()` (auto-replaced) |
-| Random | `workflow.random()` | `Math.random()` (auto-replaced) |
-| UUID | `workflow.uuid4()` | `uuid4()` from workflow |
-| Sleep | `workflow.sleep(timedelta(...))` | `sleep()` from workflow |
-
-**Python sandbox**: Explicit protection, use `workflow.unsafe.imports_passed_through()` for libraries
-**TypeScript sandbox**: V8 isolation, automatic replacements, use type-only imports for activities
-
-## Language Selection
-
-### Python
-- Decorators: `@workflow.defn`, `@workflow.run`, `@activity.defn`
-- Async/await throughout
-- Explicit sandbox with pass-through pattern
-- **Critical**: Separate workflow and activity files for performance
-- See `references/python/python.md`
-
-### TypeScript
-- Functions exported from workflow file
-- `proxyActivities()` with type-only imports
-- V8 sandbox with automatic replacements
-- Webpack bundling for workflows
-- See `references/typescript/typescript.md`
-
-## Pattern Index
-
-| Pattern | Use Case | Reference File |
-|---------|----------|--------|
-| **Signals** | Fire-and-forget events to running workflow | `references/{your_language}/patterns.md` |
-| **Queries** | Read-only state inspection | `references/{your_language}/patterns.md` |
-| **Updates** | Synchronous state modification with response | `references/{your_language}/patterns.md` |
-| **Child Workflows** | Break down large workflows, isolate failures | `references/{your_language}/patterns.md` |
-| **Continue-as-New** | Prevent unbounded history growth | `references/{your_language}/advanced-features.md` |
-| **Saga** | Distributed transactions with compensation | `references/{your_language}/patterns.md` |
-
-where `{your_language}` is either `python` or `typescript`.
-
-## Troubleshooting Quick Reference
-
-| Symptom | Likely Cause | Action |
-|---------|--------------|--------|
-| Workflow stuck (RUNNING but no progress) | Worker not running or wrong task queue | Check worker, verify task queue name |
-| `NondeterminismError` | Code changed mid-execution | Use patching API or reset workflow |
-| Activity keeps retrying | Activity throwing errors | Check activity logs, fix root cause |
-| Workflow FAILED | Unhandled exception in workflow | Check workflow error, fix code |
-| Timeout errors | Timeout too short or activity stuck | Increase timeout or add heartbeats |
-
-See `references/core/troubleshooting.md` for decision trees and detailed recovery steps.
-
-## Versioning
-
-To safely change workflow code while workflows are running:
-
-1. **Patching API** - Code-level branching for old vs new paths
-2. **Workflow Type Versioning** - New workflow type for incompatible changes
-3. **Worker Versioning** - Deployment-level control with Build IDs
-
-See `references/core/versioning.md` for concepts, language-specific files for implementation.
-
-## Additional Resources
-
-### Core References (Language-Agnostic)
-- **`references/core/determinism.md`** - Why determinism matters, replay mechanics
+## Primary References
+- **`references/core/determinism.md`** - Why determinism matters, replay mechanics, basic concepts of activities
+    + Langauge-specific info at `references/{your_language}/determinism.md`
 - **`references/core/patterns.md`** - Conceptual patterns (signals, queries, saga)
-- **`references/core/versioning.md`** - Versioning strategies and concepts
+    + Langauge-specific info at `references/{your_language}/determinism.md`
+- **`references/core/gotchas.md`** - Anti-patterns and common mistakes
+    + Langauge-specific info at `references/{your_language}/determinism.md`
+- **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
+    + Langauge-specific info at `references/{your_language}/determinism.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
-- **`references/core/common-gotchas.md`** - Anti-patterns and common mistakes
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
-- **`references/core/logs.md`** - Log file locations and search patterns
-- **`references/core/ai-integration.md`** - AI/LLM integration patterns
+- **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
+    + Langauge-specific info at `references/{your_language}/determinism.md`
 
-### Python References
-- **`references/python/python.md`** - Python SDK overview, quick start
-- **`references/python/sandbox.md`** - Python sandbox mechanics
-- **`references/python/sync-vs-async.md`** - Activity type selection, event loop
-- **`references/python/patterns.md`** - Python pattern implementations
-- **`references/python/testing.md`** - WorkflowEnvironment, mocking
-- **`references/python/error-handling.md`** - ApplicationError, retries
-- **`references/python/data-handling.md`** - Pydantic, encryption
-- **`references/python/observability.md`** - Logging, metrics, tracing
-- **`references/python/versioning.md`** - Python patching API
-- **`references/python/advanced-features.md`** - Continue-as-new, updates, schedules, and more
-- **`references/python/ai-patterns.md`** - Python AI Cookbook patterns
-- **`references/python/gotchas.md`** - Python-specific anti-patterns
+## Additional Topics
+- **`references/{your_langauge}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
+- **`references/{your_langauge}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
 
-### TypeScript References
-- **`references/typescript/typescript.md`** - TypeScript SDK overview, quick start
-- **`references/typescript/patterns.md`** - TypeScript pattern implementations
-- **`references/typescript/testing.md`** - TestWorkflowEnvironment
-- **`references/typescript/error-handling.md`** - ApplicationFailure, retries
-- **`references/typescript/data-handling.md`** - Data converters
-- **`references/typescript/observability.md`** - Sinks, logging
-- **`references/typescript/versioning.md`** - TypeScript patching API
-- **`references/typescript/advanced-features.md`** - Sinks, updates, schedules and more
-- **`references/typescript/gotchas.md`** - TypeScript-specific anti-patterns
 
 ## Feedback
 

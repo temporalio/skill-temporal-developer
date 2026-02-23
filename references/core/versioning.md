@@ -1,5 +1,7 @@
 # Workflow Versioning Concepts
 
+This document provides core conceptual explanations of workflow versioning in Temporal. For language-specific implementation details see `references/{your_language}/versioning.md`, for the language you are working in.
+
 ## Overview
 
 Workflow versioning allows safe deployment of code changes without breaking running workflows. Three approaches available:
@@ -166,7 +168,3 @@ temporal workflow list --query \
 2. **Not testing with replay** - Catches issues before production
 3. **Patching non-Command changes** - Unnecessary complexity
 4. **Forgetting to deprecate** - Accumulates dead code
-
-For language-specific implementation details, see:
-- `references/python/versioning.md`
-- `references/typescript/versioning.md`

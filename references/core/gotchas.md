@@ -2,6 +2,8 @@
 
 Common mistakes and anti-patterns in Temporal development. Learning from these saves significant debugging time.
 
+This document provides a general overview of conceptual-level gotchas in Temporal. The exact form that these take and symptoms can vary by SDK language. See `references/{your_language}/gotchas.md` for language-specific info on common mistakes.
+
 ## Non-Idempotent Activities
 
 **The Problem**: Activities may execute more than once due to retries or Worker failures. If an activity calls an external service without an idempotency key, you may charge a customer twice, send duplicate emails, or create duplicate records.
@@ -28,7 +30,7 @@ Common mistakes and anti-patterns in Temporal development. Learning from these s
 **The Fix**:
 - Use Temporal replay-aware managed side effects for common, non-business logic cases:
     - Temporal workflow logging
-    - Temporal date time (`workflow.now()` in Python, `Date.now()` is auto-replaced in TypeScript)
+    - Temporal date time
     - Temporal UUID generation
     - Temporal random number generation
 - Put all other side effects in Activities
@@ -148,8 +150,3 @@ See language-specific gotchas for details.
 **The Fix**:
 - **Retryable**: Network errors, timeouts, rate limits, temporary unavailability
 - **Non-retryable**: Invalid input, authentication failures, business rule violations, resource not found
-
-## Language-Specific Gotchas
-
-- [Python Gotchas](../python/gotchas.md)
-- [TypeScript Gotchas](../typescript/gotchas.md)
