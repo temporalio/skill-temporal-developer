@@ -2,18 +2,6 @@
 
 ## Signals
 
-### WHY: Use signals to send data or commands to a running workflow from external sources
-### WHEN:
-- **Order approval workflows** - Wait for human approval before proceeding
-- **Live configuration updates** - Change workflow behavior without restarting
-- **Fire-and-forget communication** - Notify workflow of external events
-- **Workflow coordination** - Allow workflows to communicate with each other
-
-**Signals vs Queries vs Updates:**
-- Signals: Fire-and-forget, no response, can modify state
-- Queries: Read-only, returns data, cannot modify state
-- Updates: Synchronous, returns response, can modify state
-
 ```python
 @workflow.defn
 class OrderWorkflow:
@@ -55,13 +43,6 @@ class DynamicSignalWorkflow:
 
 ## Queries
 
-### WHY: Read workflow state without affecting execution - queries are read-only
-### WHEN:
-- **Progress tracking dashboards** - Display workflow progress to users
-- **Status endpoints** - Check workflow state for API responses
-- **Debugging** - Inspect internal workflow state
-- **Health checks** - Verify workflow is functioning correctly
-
 **Important:** Queries must NOT modify workflow state or have side effects.
 
 ```python
@@ -102,80 +83,85 @@ def handle_query(self, name: str, args: Sequence[RawValue]) -> Any:
         return getattr(self, f"_{field_name}", None)
 ```
 
-## Child Workflows
-
-### WHY: Break complex workflows into smaller, manageable units with independent failure domains
-### WHEN:
-- **Failure domain isolation** - Child failures don't automatically fail parent
-- **Different retry policies** - Each child can have its own retry configuration
-- **Reusability** - Share workflow logic across multiple parent workflows
-- **Independent scaling** - Child workflows can run on different task queues
-- **History size management** - Each child has its own event history
-
-**Use activities instead when:** Operation is short-lived, doesn't need its own failure domain, or doesn't need independent retry policies.
+## Updates
 
 ```python
-@workflow.run
-async def run(self, orders: list[Order]) -> list[str]:
-    results = []
-    for order in orders:
-        result = await workflow.execute_child_workflow(
-            ProcessOrderWorkflow.run,
-            order,
-            id=f"order-{order.id}",
-            # Control what happens to child when parent completes
-            parent_close_policy=workflow.ParentClosePolicy.ABANDON,
-        )
-        results.append(result)
-    return results
+@workflow.defn
+class OrderWorkflow:
+    def __init__(self):
+        self._items: list[str] = []
+
+    @workflow.update
+    async def add_item(self, item: str) -> int:
+        self._items.append(item)
+        return len(self._items)  # Returns new count to caller
+
+    @add_item.validator
+    def validate_add_item(self, item: str) -> None:
+        if not item:
+            raise ValueError("Item cannot be empty")
+        if len(self._items) >= 100:
+            raise ValueError("Order is full")
 ```
 
-## External Workflows
-
-### WHY: Interact with workflows that are not children of the current workflow
-### WHEN:
-- **Cross-workflow coordination** - Coordinate between independent workflows
-- **Signaling existing workflows** - Send signals to workflows started elsewhere
-- **Cancellation of other workflows** - Cancel workflows from a coordinating workflow
+## Child Workflows
 
 ```python
-@workflow.run
-async def run(self, target_workflow_id: str) -> None:
-    # Get handle to external workflow
-    handle = workflow.get_external_workflow_handle(target_workflow_id)
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self, orders: list[Order]) -> list[str]:
+        results = []
+        for order in orders:
+            result = await workflow.execute_child_workflow(
+                ProcessOrderWorkflow.run,
+                order,
+                id=f"order-{order.id}",
+                # Control what happens to child when parent completes
+                parent_close_policy=workflow.ParentClosePolicy.ABANDON,
+            )
+            results.append(result)
+        return results
+```
 
-    # Signal the external workflow
-    await handle.signal(TargetWorkflow.data_ready, data_payload)
+## Handles to External Workflows
 
-    # Or cancel it
-    await handle.cancel()
+```python
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self, target_workflow_id: str) -> None:
+        # Get handle to external workflow
+        handle = workflow.get_external_workflow_handle(target_workflow_id)
+
+        # Signal the external workflow
+        await handle.signal(TargetWorkflow.data_ready, data_payload)
+
+        # Or cancel it
+        await handle.cancel()
 ```
 
 ## Parallel Execution
 
-### WHY: Execute multiple independent operations concurrently for better throughput
-### WHEN:
-- **Batch processing** - Process multiple items simultaneously
-- **Fan-out patterns** - Distribute work across multiple activities
-- **Independent operations** - Operations that don't depend on each other's results
-
 ```python
-@workflow.run
-async def run(self, items: list[str]) -> list[str]:
-    # Execute activities in parallel
-    tasks = [
-        workflow.execute_activity(
-            process_item, item,
-            start_to_close_timeout=timedelta(minutes=5)
-        )
-        for item in items
-    ]
-    return await asyncio.gather(*tasks)
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self, items: list[str]) -> list[str]:
+        # Execute activities in parallel
+        tasks = [
+            workflow.execute_activity(
+                process_item, item,
+                start_to_close_timeout=timedelta(minutes=5)
+            )
+            for item in items
+        ]
+        return await asyncio.gather(*tasks)
 ```
 
 ### Deterministic Alternatives to asyncio
 
-Use Temporal's deterministic alternatives for safer concurrent operations:
+Generally, asyncio is OK to use in Temoral workflows. But some asyncio calls are non-deterministic. Use Temporal's deterministic alternatives for safer concurrent operations:
 
 ```python
 # workflow.wait() - like asyncio.wait()
@@ -185,135 +171,126 @@ done, pending = await workflow.wait(
 )
 
 # workflow.as_completed() - like asyncio.as_completed()
-for future in workflow.as_completed(futures):
+async for future in workflow.as_completed(futures):
     result = await future
     # Process each result as it completes
 ```
 
 ## Continue-as-New
 
-### WHY: Prevent unbounded event history growth in long-running or infinite workflows
-### WHEN:
-- **Event history approaching 10,000+ events** - Temporal recommends continue-as-new before hitting limits
-- **Infinite/long-running workflows** - Polling, subscription, or daemon-style workflows
-- **Memory optimization** - Reset workflow state to reduce memory footprint
-
-**Recommendation:** Check history length periodically and continue-as-new around 10,000 events.
-
 ```python
-@workflow.run
-async def run(self, state: WorkflowState) -> str:
-    while True:
-        state = await process_batch(state)
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self, state: WorkflowState) -> str:
+        while True:
+            state = await process_batch(state)
 
-        if state.is_complete:
-            return "done"
+            if state.is_complete:
+                return "done"
 
-        # Continue with fresh history before hitting limits
-        if workflow.info().get_current_history_length() > 10000:
-            workflow.continue_as_new(args=[state])
+            # Continue with fresh history before hitting limits
+            if workflow.info().is_continue_as_new_suggested():
+                workflow.continue_as_new(args=[state])
 ```
 
 ## Saga Pattern (Compensations)
 
-### WHY: Implement distributed transactions with compensating actions for rollback
-### WHEN:
-- **Multi-step transactions** - Operations that span multiple services
-- **Eventual consistency** - When you can't use traditional ACID transactions
-- **Rollback requirements** - When partial failures require undoing previous steps
-
-**Important:** Compensation activities should be idempotent - they may be retried.
+**Important:** Compensation activities should be idempotent - they may be retried (as with ALL activities).
 
 ```python
-@workflow.run
-async def run(self, order: Order) -> str:
-    compensations: list[Callable[[], Awaitable[None]]] = []
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self, order: Order) -> str:
+        compensations: list[Callable[[], Awaitable[None]]] = []
 
-    try:
-        await workflow.execute_activity(
-            reserve_inventory, order,
-            start_to_close_timeout=timedelta(minutes=5)
-        )
-        compensations.append(lambda: workflow.execute_activity(
-            release_inventory, order,
-            start_to_close_timeout=timedelta(minutes=5)
-        ))
+        try:
+            # Note - we save the compensation before running the activity,
+            # because the following could happen:
+            # 1. reserve_inventory starts running
+            # 2. it does successfully reserve inventory
+            # 3. but then fails for some other reason (timeout, reporting metrics, etc.)
+            # 4. in that case, the activity would have failed, but we still did the effect of reserving inventory
+            # So, we need to make sure we have a compensation already on the stack to handle that.
+            # This means the compensation needs to handle both the cases of reserved or unreserved inventory.
+            compensations.append(lambda: workflow.execute_activity(
+                release_inventory_if_reserved, order,
+                start_to_close_timeout=timedelta(minutes=5)
+            ))
+            await workflow.execute_activity(
+                reserve_inventory, order,
+                start_to_close_timeout=timedelta(minutes=5)
+            )
 
-        await workflow.execute_activity(
-            charge_payment, order,
-            start_to_close_timeout=timedelta(minutes=5)
-        )
-        compensations.append(lambda: workflow.execute_activity(
-            refund_payment, order,
-            start_to_close_timeout=timedelta(minutes=5)
-        ))
+            compensations.append(lambda: workflow.execute_activity(
+                refund_payment_if_charged, order,
+                start_to_close_timeout=timedelta(minutes=5)
+            ))
+            await workflow.execute_activity(
+                charge_payment, order,
+                start_to_close_timeout=timedelta(minutes=5)
+            )
 
-        await workflow.execute_activity(
-            ship_order, order,
-            start_to_close_timeout=timedelta(minutes=5)
-        )
+            await workflow.execute_activity(
+                ship_order, order,
+                start_to_close_timeout=timedelta(minutes=5)
+            )
 
-        return "Order completed"
+            return "Order completed"
 
-    except Exception as e:
-        workflow.logger.error(f"Order failed: {e}, running compensations")
-        for compensate in reversed(compensations):
-            try:
-                await compensate()
-            except Exception as comp_err:
-                workflow.logger.error(f"Compensation failed: {comp_err}")
-        raise
+        except Exception as e:
+            workflow.logger.error(f"Order failed: {e}, running compensations")
+            for compensate in reversed(compensations):
+                try:
+                    await compensate()
+                except Exception as comp_err:
+                    workflow.logger.error(f"Compensation failed: {comp_err}")
+            raise
 ```
 
-## Cancellation Handling
-
-### WHY: Gracefully handle workflow cancellation requests and perform cleanup
-### WHEN:
-- **Graceful shutdown** - Clean up resources when workflow is cancelled
-- **External cancellation** - Respond to cancellation requests from clients
-- **Cleanup activities** - Run cleanup logic even after cancellation
+## Cancellation Handling - leverages standard asyncio cancellation
 
 ```python
-@workflow.run
-async def run(self) -> str:
-    try:
-        await workflow.execute_activity(
-            long_running_activity,
-            start_to_close_timeout=timedelta(hours=1),
-        )
-        return "completed"
-    except asyncio.CancelledError:
-        # Workflow was cancelled - perform cleanup
-        workflow.logger.info("Workflow cancelled, running cleanup")
-        # Cleanup activities still run even after cancellation
-        await workflow.execute_activity(
-            cleanup_activity,
-            start_to_close_timeout=timedelta(minutes=5),
-        )
-        raise  # Re-raise to mark workflow as cancelled
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self) -> str:
+        try:
+            await workflow.execute_activity(
+                long_running_activity,
+                start_to_close_timeout=timedelta(hours=1),
+            )
+            return "completed"
+        except asyncio.CancelledError:
+            # Workflow was cancelled - perform cleanup
+            workflow.logger.info("Workflow cancelled, running cleanup")
+            # Cleanup activities still run even after cancellation
+            await workflow.execute_activity(
+                cleanup_activity,
+                start_to_close_timeout=timedelta(minutes=5),
+            )
+            raise  # Re-raise to mark workflow as cancelled
 ```
 
 ## Wait Condition with Timeout
 
-### WHY: Wait for a condition with a deadline
-### WHEN:
-- **Approval workflows with deadlines** - Auto-reject if not approved in time
-- **Conditional waits with timeouts** - Proceed with default after timeout
-
 ```python
-@workflow.run
-async def run(self) -> str:
-    self._approved = False
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self) -> str:
+        self._approved = False
 
-    # Wait for approval with 24-hour timeout
-    try:
-        await workflow.wait_condition(
-            lambda: self._approved,
-            timeout=timedelta(hours=24)
-        )
-        return "approved"
-    except asyncio.TimeoutError:
-        return "auto-rejected due to timeout"
+        # Wait for approval with 24-hour timeout
+        try:
+            await workflow.wait_condition(
+                lambda: self._approved,
+                timeout=timedelta(hours=24)
+            )
+            return "approved"
+        except asyncio.TimeoutError:
+            return "auto-rejected due to timeout"
 ```
 
 ## Waiting for All Handlers to Finish
@@ -324,16 +301,18 @@ async def run(self) -> str:
 - **Before continue-as-new** - Ensure handlers complete before resetting
 
 ```python
-@workflow.run
-async def run(self) -> str:
-    # ... main workflow logic ...
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self) -> str:
+        # ... main workflow logic ...
 
-    # Before exiting, wait for all handlers to finish
-    await workflow.wait_condition(workflow.all_handlers_finished)
-    return "done"
+        # Before exiting, wait for all handlers to finish
+        await workflow.wait_condition(workflow.all_handlers_finished)
+        return "done"
 ```
 
-## Activity Heartbeat Details
+## Activity Heartbeat Details - Updatable side-data usable in long-running activities
 
 ### WHY: Resume activity progress after worker failure
 ### WHEN:
@@ -342,7 +321,7 @@ async def run(self) -> str:
 
 ```python
 @activity.defn
-async def process_large_file(file_path: str) -> str:
+def process_large_file(file_path: str) -> str:
     # Get heartbeat details from previous attempt (if any)
     heartbeat_details = activity.info().heartbeat_details
     start_line = heartbeat_details[0] if heartbeat_details else 0
@@ -360,89 +339,35 @@ async def process_large_file(file_path: str) -> str:
     return "completed"
 ```
 
-## Versioning with Patching
-
-### WHY: Safely deploy workflow code changes without breaking running workflows
-### WHEN:
-- **Adding new steps** - New code path for new executions, old path for replays
-- **Changing activity calls** - Modify activity parameters or logic
-- **Deprecating features** - Gradually remove old code paths
-
-```python
-@workflow.run
-async def run(self) -> str:
-    if workflow.patched("new-greeting"):
-        # New implementation
-        greeting = await workflow.execute_activity(
-            new_greet_activity,
-            start_to_close_timeout=timedelta(minutes=1)
-        )
-    else:
-        # Old implementation (for replay)
-        greeting = await workflow.execute_activity(
-            old_greet_activity,
-            start_to_close_timeout=timedelta(minutes=1)
-        )
-
-    return greeting
-```
-
 ## Timers
 
-### WHY: Schedule delays or deadlines within workflows in a durable way
-### WHEN:
-- **Scheduled delays** - Wait for a specific duration before continuing
-- **Deadlines** - Set timeouts for operations
-- **Reminder patterns** - Schedule future notifications
-
 ```python
-@workflow.run
-async def run(self) -> str:
-    await workflow.sleep(timedelta(hours=1))
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self) -> str:
+        await workflow.sleep(timedelta(hours=1))
 
-    return "Timer fired"
+        return "Timer fired"
 ```
 
 ## Local Activities
 
-### WHY: Reduce latency for short, lightweight operations by skipping the task queue
-### WHEN:
-- **Short operations** - Activities completing in milliseconds/seconds
-- **High-frequency calls** - When task queue overhead is significant
-- **Low-latency requirements** - When you can't afford task queue round-trip
+**Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.
 
 ```python
-@workflow.run
-async def run(self) -> str:
-    result = await workflow.execute_local_activity(
-        quick_lookup,
-        "key",
-        start_to_close_timeout=timedelta(seconds=5),
-    )
-    return result
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self) -> str:
+        result = await workflow.execute_local_activity(
+            quick_lookup,
+            "key",
+            start_to_close_timeout=timedelta(seconds=5),
+        )
+        return result
 ```
 
 ## Using Pydantic Models
 
-```python
-from pydantic import BaseModel
-from temporalio.contrib.pydantic import pydantic_data_converter
-
-class OrderInput(BaseModel):
-    order_id: str
-    items: list[str]
-    total: float
-
-@workflow.defn
-class OrderWorkflow:
-    @workflow.run
-    async def run(self, input: OrderInput) -> str:
-        return f"Processed order {input.order_id}"
-
-# Client setup with Pydantic support
-client = await Client.connect(
-    "localhost:7233",
-    namespace="default",
-    data_converter=pydantic_data_converter,
-)
-```
+See `references/python/data-handling.md`.

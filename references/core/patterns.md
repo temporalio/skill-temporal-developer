@@ -2,7 +2,10 @@
 
 ## Overview
 
-Common patterns for building robust Temporal workflows. See the language-specific references for the language you are working in.
+Common patterns for building robust Temporal workflows. 
+See the language-specific references for the language you are working in:
+- `references/{language}/{language}.md` for the root level documentation for that language
+- `references/{language}/patterns.md` for language-specific example code of the patterns in this file.
 
 ## Signals
 
@@ -328,6 +331,26 @@ Run:
 
 This ensures that on replay, already-completed steps are skipped.
 
+## Local Activities
+
+**Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.
+
+**When to Use**:
+- Short operations completing in milliseconds/seconds
+- High-frequency calls where task queue overhead is significant
+- Low-latency requirements where you can't afford task queue round-trip
+
+**Characteristics**:
+- Executes on the same worker that runs the workflow
+- No task queue round-trip (lower latency)
+- Still recorded in history
+- Should complete quickly (default timeout is short)
+
+**Trade-offs**:
+- Less visibility in Temporal UI (no separate task)
+- Must complete on the same worker
+- Not suitable for long-running operations
+
 ## Choosing Between Patterns
 
 | Need | Pattern |
@@ -341,3 +364,4 @@ This ensures that on replay, already-completed steps are skipped.
 | Process items concurrently | Parallel Execution |
 | Long-lived stateful entity | Entity Workflow |
 | Safe retries/replays | Idempotency |
+| Low-latency short operations | Local Activities |
