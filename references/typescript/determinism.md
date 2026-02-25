@@ -41,7 +41,7 @@ Most non-determinism and side effects, such as the above, should be wrapped in A
 
 ## Testing Replay Compatibility
 
-Use the `Replayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/python/testing.md`.
+Use the `Replayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/typescript/testing.md`.
 
 ## Best Practices
 

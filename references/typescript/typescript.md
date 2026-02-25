@@ -108,14 +108,20 @@ See `determinism.md` for detailed rules.
 4. **Missing `proxyActivities`** - Required to call activities from workflows
 5. **Forgetting to bundle workflows** - Worker needs workflowsPath
 
+## Writing Tests
+
+See `references/typescript/testing.md` for info on writing tests.
+
 ## Additional Resources
 
 ### Reference Files
-- **`determinism.md`** - V8 sandbox, bundling, safe operations, WHY determinism matters
-- **`error-handling.md`** - ApplicationFailure, retry policies, idempotency keys
-- **`testing.md`** - TestWorkflowEnvironment, time-skipping
-- **`patterns.md`** - Signals, queries, cancellation scopes
-- **`observability.md`** - Replay-aware logging, metrics, OpenTelemetry, debugging
-- **`advanced-features.md`** - Sinks, updates, schedules and more
-- **`data-handling.md`** - Search attributes, workflow memo, data converters
-- **`versioning.md`** - Patching API, workflow type versioning, Worker Versioning
+- **`references/python/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
+- **`references/python/determinism.md`** - Essentials of determinism in TypeScript
+- **`references/python/gotchas.md`** - TypeScript-specific mistakes and anti-patterns
+- **`references/python/error-handling.md`** - ApplicationError, retry policies, non-retryable errors, idempotency
+- **`references/python/observability.md`** - Logging, metrics, tracing, Search Attributes
+- **`references/python/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
+- **`references/python/advanced-features.md`** - Schedules, worker tuning, and more
+- **`references/python/data-handling.md`** - Data converters, payload encryption, etc.
+- **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
+- **`references/python/determinism-protection.md`** - V8 sandbox and bundling
