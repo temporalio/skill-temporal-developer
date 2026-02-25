@@ -2,14 +2,6 @@
 
 ## Signals
 
-**WHY**: Signals allow external clients or other workflows to send data to a running workflow asynchronously. Unlike queries (read-only), signals can mutate workflow state.
-
-**WHEN to use**:
-- Sending events to a running workflow (e.g., approval, cancellation request)
-- Adding items to a workflow's queue or collection
-- Notifying a workflow about external state changes
-- Implementing human-in-the-loop workflows
-
 ```typescript
 import { defineSignal, setHandler, condition } from '@temporalio/workflow';
 
@@ -33,15 +25,32 @@ export async function orderWorkflow(): Promise<string> {
 }
 ```
 
+## Dynamic Signal Handlers
+
+For handling signals with names not known at compile time:
+
+```typescript
+import { setHandler, condition } from '@temporalio/workflow';
+
+export async function dynamicSignalWorkflow(): Promise<Record<string, unknown[]>> {
+  const signals: Record<string, unknown[]> = {};
+
+  setHandler(
+    (signalName: string) => true, // Accept all signal names
+    (signalName: string, ...args: unknown[]) => {
+      if (!signals[signalName]) {
+        signals[signalName] = [];
+      }
+      signals[signalName].push(args);
+    }
+  );
+
+  await condition(() => signals['done'] !== undefined);
+  return signals;
+}
+```
+
 ## Queries
-
-**WHY**: Queries provide a synchronous, read-only way to inspect workflow state. They execute instantly without modifying workflow state or history.
-
-**WHEN to use**:
-- Exposing workflow progress or status to external systems
-- Building dashboards or monitoring UIs
-- Debugging workflow state during development
-- Implementing "get current state" endpoints
 
 ```typescript
 import { defineQuery, setHandler } from '@temporalio/workflow';
@@ -64,17 +73,31 @@ export async function progressWorkflow(): Promise<void> {
 }
 ```
 
+## Dynamic Query Handlers
+
+For handling queries with names not known at compile time:
+
+```typescript
+import { setHandler } from '@temporalio/workflow';
+
+export async function dynamicQueryWorkflow(): Promise<void> {
+  const state: Record<string, unknown> = {
+    status: 'running',
+    progress: 0,
+  };
+
+  setHandler(
+    (queryName: string) => true, // Accept all query names
+    (queryName: string) => {
+      return state[queryName];
+    }
+  );
+
+  // ... workflow logic
+}
+```
+
 ## Updates
-
-**WHY**: Updates combine the state mutation capability of signals with the synchronous response of queries. The caller waits for the update handler to complete and receives a return value.
-
-**WHEN to use**:
-- Operations that modify state AND need to return a result (e.g., "add item and return new count")
-- Validation before accepting a change (use validators to reject invalid updates)
-- Synchronous request-response patterns within a workflow
-- Replacing signal+query combos where you signal then immediately query
-
-### Defining Update Handlers
 
 ```typescript
 import { defineUpdate, setHandler, condition } from '@temporalio/workflow';
@@ -113,59 +136,7 @@ export async function orderWorkflow(): Promise<string> {
 }
 ```
 
-### Calling Updates from Client
-
-```typescript
-import { Client } from '@temporalio/client';
-import { addItemUpdate } from './workflows';
-
-const client = new Client();
-const handle = client.workflow.getHandle('order-123');
-
-// Execute update and wait for result
-const count = await handle.executeUpdate(addItemUpdate, { args: ['new-item'] });
-console.log(`Order now has ${count} items`);
-
-// Start update and get handle for later result retrieval
-const updateHandle = await handle.startUpdate(addItemUpdate, {
-  args: ['another-item'],
-  waitForStage: 'ACCEPTED',
-});
-const result = await updateHandle.result();
-```
-
-## Signal-with-Start
-
-**WHY**: Atomically starts a workflow and sends it a signal in a single operation. Avoids race conditions where the workflow might complete before receiving the signal.
-
-**WHEN to use**:
-- Starting a workflow and immediately sending it data
-- Idempotent "create or update" patterns
-- Ensuring a signal is delivered even if the workflow needs to be started first
-
-```typescript
-import { Client } from '@temporalio/client';
-import { orderSignal } from './workflows';
-
-const client = new Client();
-
-const handle = await client.workflow.signalWithStart('orderWorkflow', {
-  workflowId: `order-${customerId}`,
-  taskQueue: 'orders',
-  args: [customerId],
-  signal: orderSignal,
-  signalArgs: [{ item: 'product-123', quantity: 2 }],
-});
-```
-
 ## Child Workflows
-
-**WHY**: Child workflows decompose complex workflows into smaller, reusable units. Each child has its own history, preventing history bloat.
-
-**WHEN to use**:
-- Breaking down large workflows to prevent history growth
-- Reusing workflow logic across multiple parent workflows
-- Isolating failures - a child can fail without failing the parent
 
 ```typescript
 import { executeChild } from '@temporalio/workflow';
@@ -204,14 +175,24 @@ const result = await executeChild(childWorkflow, {
 });
 ```
 
+## Handles to External Workflows
+
+```typescript
+import { getExternalWorkflowHandle } from '@temporalio/workflow';
+import { mySignal } from './other-workflows';
+
+export async function coordinatorWorkflow(targetWorkflowId: string): Promise<void> {
+  const handle = getExternalWorkflowHandle(targetWorkflowId);
+
+  // Signal the external workflow
+  await handle.signal(mySignal, { data: 'payload' });
+
+  // Or cancel it
+  await handle.cancel();
+}
+```
+
 ## Parallel Execution
-
-**WHY**: Running multiple operations concurrently improves workflow performance when operations are independent.
-
-**WHEN to use**:
-- Processing multiple independent items
-- Calling multiple APIs that don't depend on each other
-- Fan-out/fan-in patterns
 
 ```typescript
 export async function parallelWorkflow(items: string[]): Promise<string[]> {
@@ -222,13 +203,6 @@ export async function parallelWorkflow(items: string[]): Promise<string[]> {
 ```
 
 ## Continue-as-New
-
-**WHY**: Prevents unbounded history growth by completing the current workflow and starting a new run with the same workflow ID.
-
-**WHEN to use**:
-- Long-running workflows that would accumulate too much history
-- Entity/subscription workflows that run indefinitely
-- Batch processing with large numbers of iterations
 
 ```typescript
 import { continueAsNew, workflowInfo } from '@temporalio/workflow';
@@ -249,44 +223,7 @@ export async function longRunningWorkflow(state: State): Promise<string> {
 }
 ```
 
-## Cancellation Scopes
-
-**WHY**: Control how cancellation propagates to activities and child workflows. Essential for cleanup logic and timeout behavior.
-
-**WHEN to use**:
-- Ensuring cleanup activities run even when workflow is cancelled
-- Implementing timeouts for activity groups
-- Manual cancellation of specific operations
-
-```typescript
-import { CancellationScope, sleep } from '@temporalio/workflow';
-
-export async function scopedWorkflow(): Promise<void> {
-  // Non-cancellable scope - runs even if workflow cancelled
-  await CancellationScope.nonCancellable(async () => {
-    await cleanupActivity();
-  });
-
-  // Timeout scope
-  await CancellationScope.withTimeout('5 minutes', async () => {
-    await longRunningActivity();
-  });
-
-  // Manual cancellation
-  const scope = new CancellationScope();
-  const promise = scope.run(() => someActivity());
-  scope.cancel();
-}
-```
-
 ## Saga Pattern
-
-**WHY**: Implement distributed transactions by tracking compensation actions. If any step fails, previously completed steps are rolled back in reverse order.
-
-**WHEN to use**:
-- Multi-step business transactions that span multiple services
-- Operations where partial completion requires cleanup
-- Financial transactions, order processing, booking systems
 
 ```typescript
 export async function sagaWorkflow(order: Order): Promise<string> {
@@ -314,35 +251,28 @@ export async function sagaWorkflow(order: Order): Promise<string> {
 }
 ```
 
-## Entity Workflow Pattern
+## Cancellation Scopes
 
-**WHY**: Model a long-lived entity as a single workflow that handles events over its lifetime.
-
-**WHEN to use**:
-- Modeling stateful entities that exist for extended periods
-- Subscription management, user sessions
-- Any entity that receives events and must maintain consistent state
+Cancellation scopes control how cancellation propagates to activities and child workflows. Use them for cleanup logic, timeouts, and manual cancellation.
 
 ```typescript
-import { defineSignal, defineQuery, setHandler, condition, continueAsNew, workflowInfo } from '@temporalio/workflow';
+import { CancellationScope, sleep } from '@temporalio/workflow';
 
-const eventSignal = defineSignal<[Event]>('event');
-const stateQuery = defineQuery<EntityState>('state');
-
-export async function entityWorkflow(entityId: string, initialState: EntityState): Promise<void> {
-  let state = initialState;
-
-  setHandler(stateQuery, () => state);
-  setHandler(eventSignal, (event: Event) => {
-    state = applyEvent(state, event);
+export async function scopedWorkflow(): Promise<void> {
+  // Non-cancellable scope - runs even if workflow cancelled
+  await CancellationScope.nonCancellable(async () => {
+    await cleanupActivity();
   });
 
-  while (!state.deleted) {
-    await condition(() => state.deleted || workflowInfo().continueAsNewSuggested);
-    if (workflowInfo().continueAsNewSuggested && !state.deleted) {
-      await continueAsNew<typeof entityWorkflow>(entityId, state);
-    }
-  }
+  // Timeout scope
+  await CancellationScope.withTimeout('5 minutes', async () => {
+    await longRunningActivity();
+  });
+
+  // Manual cancellation
+  const scope = new CancellationScope();
+  const promise = scope.run(() => someActivity());
+  scope.cancel();
 }
 ```
 
@@ -369,14 +299,76 @@ export async function triggerWorkflow(): Promise<string> {
 }
 ```
 
+## Wait Condition with Timeout
+
+```typescript
+import { condition, CancelledFailure } from '@temporalio/workflow';
+
+export async function approvalWorkflow(): Promise<string> {
+  let approved = false;
+
+  setHandler(approveSignal, () => {
+    approved = true;
+  });
+
+  // Wait for approval with 24-hour timeout
+  const gotApproval = await condition(() => approved, '24 hours');
+
+  if (gotApproval) {
+    return 'approved';
+  } else {
+    return 'auto-rejected due to timeout';
+  }
+}
+```
+
+## Waiting for All Handlers to Finish
+
+### WHY: Ensure all signal/update handlers complete before workflow exits
+### WHEN:
+- **Workflows with async handlers** - Prevent data loss from in-flight handlers
+- **Before continue-as-new** - Ensure handlers complete before resetting
+
+```typescript
+import { condition, workflowInfo } from '@temporalio/workflow';
+
+export async function handlerAwareWorkflow(): Promise<string> {
+  // ... main workflow logic ...
+
+  // Before exiting, wait for all handlers to finish
+  await condition(() => workflowInfo().unsafe.isReplaying || allHandlersFinished());
+  return 'done';
+}
+```
+
+## Activity Heartbeat Details
+
+### WHY: Resume activity progress after worker failure
+### WHEN:
+- **Long-running activities** - Track progress for resumability
+- **Checkpointing** - Save progress periodically
+
+```typescript
+import { heartbeat, activityInfo } from '@temporalio/activity';
+
+export async function processLargeFile(filePath: string): Promise<string> {
+  const info = activityInfo();
+  // Get heartbeat details from previous attempt (if any)
+  const startLine: number = info.heartbeatDetails ?? 0;
+
+  const lines = await readFileLines(filePath);
+
+  for (let i = startLine; i < lines.length; i++) {
+    await processLine(lines[i]);
+    // Heartbeat with progress
+    heartbeat(i + 1);
+  }
+
+  return 'completed';
+}
+```
+
 ## Timers
-
-**WHY**: Durable timers that survive worker restarts. Use sleep() for delays instead of JavaScript setTimeout.
-
-**WHEN to use**:
-- Implementing delays between steps
-- Scheduling future actions
-- Timeout patterns (combined with cancellation scopes)
 
 ```typescript
 import { sleep, CancellationScope } from '@temporalio/workflow';
@@ -400,23 +392,20 @@ export async function timerWorkflow(): Promise<string> {
 }
 ```
 
-## uuid4() Utility
+## Local Activities
 
-**WHY**: Generate deterministic UUIDs safe to use in workflows. Uses the workflow seeded PRNG, so the same UUID is generated during replay.
-
-**WHEN to use**:
-- Generating unique IDs for child workflows
-- Creating idempotency keys
-- Any situation requiring unique identifiers in workflow code
+**Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.
 
 ```typescript
-import { uuid4 } from '@temporalio/workflow';
+import { executeLocalActivity } from '@temporalio/workflow';
+import type * as activities from './activities';
 
-export async function workflowWithIds(): Promise<void> {
-  const childWorkflowId = uuid4();
-  await executeChild(childWorkflow, {
-    workflowId: childWorkflowId,
-    args: [input],
-  });
+const { quickLookup } = proxyLocalActivities<typeof activities>({
+  startToCloseTimeout: '5 seconds',
+});
+
+export async function localActivityWorkflow(): Promise<string> {
+  const result = await quickLookup('key');
+  return result;
 }
 ```
