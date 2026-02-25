@@ -1,6 +1,6 @@
 # TypeScript advanced-features.md Edits
 
-## Status: PENDING
+## Status: DONE
 
 ---
 

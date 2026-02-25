@@ -2,112 +2,6 @@
 
 TypeScript-specific mistakes and anti-patterns. See also [Common Gotchas](../core/gotchas.md) for language-agnostic concepts.
 
-## Idempotency
-
-```typescript
-// BAD - May charge customer multiple times on retry
-export async function chargePayment(orderId: string, amount: number): Promise<string> {
-  return await paymentApi.charge(customerId, amount);
-}
-
-// GOOD - Safe for retries
-export async function chargePayment(orderId: string, amount: number): Promise<string> {
-  return await paymentApi.charge(customerId, amount, {
-    idempotencyKey: `order-${orderId}`,
-  });
-}
-```
-
-## Replay Safety
-
-### Side Effects in Workflows
-
-```typescript
-// BAD - console.log runs on every replay
-export async function notificationWorkflow(): Promise<void> {
-  console.log('Starting workflow'); // Runs on replay too
-  await sendSlackNotification('Started'); // Side effect in workflow!
-  await activities.doWork();
-}
-
-// GOOD - Use workflow logger and activities for side effects
-import { log } from '@temporalio/workflow';
-
-export async function notificationWorkflow(): Promise<void> {
-  log.info('Starting workflow'); // Only logs on first execution
-  await activities.sendNotification('Started');
-}
-```
-
-### Non-Deterministic Operations
-
-The TypeScript SDK automatically replaces some non-deterministic operations:
-
-```typescript
-// These are SAFE - automatically replaced by SDK
-const now = Date.now();           // Deterministic
-const random = Math.random();     // Deterministic
-const id = crypto.randomUUID();   // Deterministic (if using workflow's crypto)
-
-// For explicit deterministic UUID, use:
-import { uuid4 } from '@temporalio/workflow';
-const id = uuid4();
-```
-
-## Query Handlers
-
-### Modifying State
-
-```typescript
-// BAD - Query modifies state
-const queues = new Map<string, string[]>();
-
-export const getNextItemQuery = defineQuery<string | undefined, [string]>('getNextItem');
-
-export async function queueWorkflow(queueId: string): Promise<void> {
-  const queue: string[] = [];
-
-  setHandler(getNextItemQuery, () => {
-    return queue.shift(); // Mutates state!
-  });
-
-  await condition(() => false);
-}
-
-// GOOD - Query reads, Update modifies
-export const peekQuery = defineQuery<string | undefined>('peek');
-export const dequeueUpdate = defineUpdate<string | undefined>('dequeue');
-
-export async function queueWorkflow(): Promise<void> {
-  const queue: string[] = [];
-
-  setHandler(peekQuery, () => queue[0]);
-
-  setHandler(dequeueUpdate, () => queue.shift());
-
-  await condition(() => false);
-}
-```
-
-### Blocking in Queries
-
-```typescript
-// BAD - Queries cannot await
-setHandler(getDataQuery, async () => {
-  if (!data) {
-    data = await activities.fetchData(); // Cannot await in query!
-  }
-  return data;
-});
-
-// GOOD - Query returns state, signal triggers refresh
-setHandler(refreshSignal, async () => {
-  data = await activities.fetchData();
-});
-
-setHandler(getDataQuery, () => data);
-```
-
 ## Activity Imports
 
 ### Importing Implementations Instead of Types
@@ -187,80 +81,23 @@ All `@temporalio/*` packages must have the same version:
 }
 ```
 
-## Error Handling
+## Wrong Retry Classification
 
-### Swallowing Errors
+A common mistake is treating transient errors as permanent (or vice versa):
 
-```typescript
-// BAD - Error is hidden
-export async function riskyWorkflow(): Promise<void> {
-  try {
-    await activities.riskyOperation();
-  } catch {
-    // Error is lost!
-  }
-}
-
-// GOOD - Handle appropriately
-import { log } from '@temporalio/workflow';
-
-export async function riskyWorkflow(): Promise<void> {
-  try {
-    await activities.riskyOperation();
-  } catch (err) {
-    log.error('Activity failed', { error: err });
-    throw err; // Or use fallback, compensate, etc.
-  }
-}
-```
-
-### Wrong Retry Classification
+- **Transient errors** (retry): network timeouts, temporary service unavailability, rate limits
+- **Permanent errors** (don't retry): invalid input, authentication failure, resource not found
 
 ```typescript
-// BAD - Network errors should be retried
-export async function callApi(): Promise<Response> {
-  try {
-    return await fetch(url);
-  } catch (err) {
-    throw ApplicationFailure.nonRetryable('Connection failed');
-  }
-}
+// BAD: Retrying a permanent error
+throw ApplicationFailure.create({ message: 'User not found' });
+// This will retry indefinitely!
 
-// GOOD - Only permanent failures are non-retryable
-export async function callApi(): Promise<Response> {
-  try {
-    return await fetch(url);
-  } catch (err) {
-    if (err instanceof InvalidCredentialsError) {
-      throw ApplicationFailure.nonRetryable('Invalid API key');
-    }
-    throw err; // Let Temporal retry network errors
-  }
-}
+// GOOD: Mark permanent errors as non-retryable
+throw ApplicationFailure.nonRetryable('User not found');
 ```
 
-## Retry Policies
-
-### Too Aggressive
-
-```typescript
-// BAD - Gives up too easily
-const result = await activities.flakyApiCall({
-  scheduleToCloseTimeout: '30 seconds',
-  retry: { maximumAttempts: 1 },
-});
-
-// GOOD - Resilient to transient failures
-const result = await activities.flakyApiCall({
-  scheduleToCloseTimeout: '10 minutes',
-  retry: {
-    initialInterval: '1 second',
-    maximumInterval: '1 minute',
-    backoffCoefficient: 2,
-    maximumAttempts: 10,
-  },
-});
-```
+For detailed guidance on error classification and retry policies, see `error-handling.md`.
 
 ## Cancellation
 

@@ -1,6 +1,6 @@
 # TypeScript determinism.md Edits
 
-## Status: PENDING
+## Status: DONE
 
 ---
 

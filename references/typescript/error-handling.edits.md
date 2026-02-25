@@ -1,6 +1,6 @@
 # TypeScript error-handling.md Edits
 
-## Status: PENDING
+## Status: DONE
 
 ---
 

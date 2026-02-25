@@ -1,6 +1,6 @@
 # Python gotchas.md Edits
 
-## Status: PENDING
+## Status: DONE
 
 ---
 

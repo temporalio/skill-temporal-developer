@@ -80,71 +80,6 @@ const logger = new DefaultLogger('DEBUG', (entry) => {
 Runtime.install({ logger });
 ```
 
-## OpenTelemetry Integration
-
-The `@temporalio/interceptors-opentelemetry` package provides tracing for workflows and activities.
-
-### Setup
-
-```typescript
-// instrumentation.ts - require before other imports
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-node';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { Resource } from '@opentelemetry/resources';
-import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
-
-export const resource = new Resource({
-  [ATTR_SERVICE_NAME]: 'my-temporal-service',
-});
-
-// Use OTLP exporter for production
-export const traceExporter = new OTLPTraceExporter({
-  url: 'http://127.0.0.1:4317',
-  timeoutMillis: 1000,
-});
-
-export const otelSdk = new NodeSDK({
-  resource,
-  traceExporter,
-});
-
-otelSdk.start();
-```
-
-### Worker Configuration
-
-```typescript
-import { Worker } from '@temporalio/worker';
-import {
-  OpenTelemetryActivityInboundInterceptor,
-  OpenTelemetryActivityOutboundInterceptor,
-  makeWorkflowExporter,
-} from '@temporalio/interceptors-opentelemetry/lib/worker';
-import { resource, traceExporter } from './instrumentation';
-import * as activities from './activities';
-
-const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
-  activities,
-  taskQueue: 'my-queue',
-
-  // OpenTelemetry sinks and interceptors
-  sinks: {
-    exporter: makeWorkflowExporter(traceExporter, resource),
-  },
-  interceptors: {
-    workflowModules: [require.resolve('./workflows')],
-    activity: [
-      (ctx) => ({
-        inbound: new OpenTelemetryActivityInboundInterceptor(ctx),
-        outbound: new OpenTelemetryActivityOutboundInterceptor(ctx),
-      }),
-    ],
-  },
-});
-```
-
 ## Metrics
 
 ### Prometheus Metrics
@@ -176,49 +111,6 @@ Runtime.install({
     },
   },
 });
-```
-
-## Debugging with Event History
-
-### Viewing Event History
-
-Use the Temporal CLI or Web UI to inspect workflow execution history:
-
-```bash
-# CLI
-temporal workflow show --workflow-id my-workflow
-
-# Get history as JSON
-temporal workflow show --workflow-id my-workflow --output json
-```
-
-### Key Events to Look For
-
-| Event | Indicates |
-|-------|-----------|
-| `ActivityTaskScheduled` | Activity was requested |
-| `ActivityTaskStarted` | Worker started executing activity |
-| `ActivityTaskCompleted` | Activity completed successfully |
-| `ActivityTaskFailed` | Activity threw an error |
-| `ActivityTaskTimedOut` | Activity exceeded timeout |
-| `TimerStarted` | `sleep()` called |
-| `TimerFired` | Sleep completed |
-| `WorkflowTaskFailed` | Non-deterministic error or workflow bug |
-
-### Debugging Non-Determinism
-
-If you see `WorkflowTaskFailed` with a non-determinism error:
-
-1. Export the history: `temporal workflow show -w <id> -o json > history.json`
-2. Run replay test to reproduce:
-
-```typescript
-import { Worker } from '@temporalio/worker';
-
-await Worker.runReplayHistory(
-  { workflowsPath: require.resolve('./workflows') },
-  history
-);
 ```
 
 ## Best Practices

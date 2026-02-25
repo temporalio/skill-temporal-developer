@@ -1,243 +1,5 @@
 # TypeScript SDK Advanced Features
 
-## Continue-as-New
-
-Use continue-as-new to prevent unbounded history growth in long-running workflows.
-
-```typescript
-import { continueAsNew, workflowInfo } from '@temporalio/workflow';
-
-export async function batchProcessingWorkflow(state: ProcessingState): Promise<string> {
-  while (!state.isComplete) {
-    // Process next batch
-    state = await processNextBatch(state);
-
-    // Check history size and continue-as-new if needed
-    const info = workflowInfo();
-    if (info.historyLength > 10000) {
-      await continueAsNew<typeof batchProcessingWorkflow>(state);
-    }
-  }
-
-  return 'completed';
-}
-```
-
-### Continue-as-New with Options
-
-```typescript
-import { continueAsNew } from '@temporalio/workflow';
-
-// Continue with modified options
-await continueAsNew<typeof batchProcessingWorkflow>(newState, {
-  memo: { lastProcessed: itemId },
-  searchAttributes: { BatchNumber: [state.batch + 1] },
-});
-```
-
-## Workflow Updates
-
-Updates allow synchronous interaction with running workflows.
-
-### Defining Update Handlers
-
-```typescript
-import { defineUpdate, setHandler, condition } from '@temporalio/workflow';
-
-// Define the update
-export const addItemUpdate = defineUpdate<number, [string]>('addItem');
-export const addItemValidatedUpdate = defineUpdate<number, [string]>('addItemValidated');
-
-export async function orderWorkflow(): Promise<string> {
-  const items: string[] = [];
-  let completed = false;
-
-  // Simple update handler
-  setHandler(addItemUpdate, (item: string) => {
-    items.push(item);
-    return items.length;
-  });
-
-  // Update handler with validator
-  setHandler(
-    addItemValidatedUpdate,
-    (item: string) => {
-      items.push(item);
-      return items.length;
-    },
-    {
-      validator: (item: string) => {
-        if (!item) throw new Error('Item cannot be empty');
-        if (items.length >= 100) throw new Error('Order is full');
-      },
-    }
-  );
-
-  // Wait for completion signal
-  await condition(() => completed);
-  return `Order with ${items.length} items completed`;
-}
-```
-
-### Calling Updates from Client
-
-```typescript
-import { Client } from '@temporalio/client';
-import { addItemUpdate } from './workflows';
-
-const client = new Client();
-const handle = client.workflow.getHandle('order-123');
-
-// Execute update and wait for result
-const count = await handle.executeUpdate(addItemUpdate, { args: ['new-item'] });
-console.log(`Order now has ${count} items`);
-```
-
-## Nexus Operations
-
-### WHY: Cross-namespace and cross-cluster service communication
-### WHEN:
-- **Multi-namespace architectures** - Call operations across Temporal namespaces
-- **Service-oriented design** - Expose workflow capabilities as reusable services
-- **Cross-cluster communication** - Interact with workflows in different Temporal clusters
-
-### Defining a Nexus Service
-
-Define the service interface shared between caller and handler:
-
-```typescript
-// api.ts - shared service definition
-import * as nexus from 'nexus-rpc';
-
-export const helloService = nexus.service('hello', {
-  // Synchronous operation
-  echo: nexus.operation<EchoInput, EchoOutput>(),
-  // Workflow-backed operation
-  hello: nexus.operation<HelloInput, HelloOutput>(),
-});
-
-export interface EchoInput { message: string; }
-export interface EchoOutput { message: string; }
-export interface HelloInput { name: string; language: string; }
-export interface HelloOutput { message: string; }
-```
-
-### Implementing Nexus Service Handlers
-
-```typescript
-// service/handler.ts
-import * as nexus from 'nexus-rpc';
-import * as temporalNexus from '@temporalio/nexus';
-import { helloService, EchoInput, EchoOutput, HelloInput, HelloOutput } from '../api';
-import { helloWorkflow } from './workflows';
-
-export const helloServiceHandler = nexus.serviceHandler(helloService, {
-  // Synchronous operation - simple async function
-  echo: async (ctx, input: EchoInput): Promise<EchoOutput> => {
-    // Can access Temporal client via temporalNexus.getClient()
-    return input;
-  },
-
-  // Workflow-backed operation
-  hello: new temporalNexus.WorkflowRunOperationHandler<HelloInput, HelloOutput>(
-    async (ctx, input: HelloInput) => {
-      return await temporalNexus.startWorkflow(ctx, helloWorkflow, {
-        args: [input],
-        workflowId: ctx.requestId ?? crypto.randomUUID(),
-      });
-    },
-  ),
-});
-```
-
-### Calling Nexus Operations from Workflows
-
-```typescript
-// caller/workflows.ts
-import * as wf from '@temporalio/workflow';
-import { helloService } from '../api';
-
-const HELLO_SERVICE_ENDPOINT = 'my-nexus-endpoint-name';
-
-export async function callerWorkflow(name: string): Promise<string> {
-  const nexusClient = wf.createNexusClient({
-    service: helloService,
-    endpoint: HELLO_SERVICE_ENDPOINT,
-  });
-
-  const result = await nexusClient.executeOperation(
-    'hello',
-    { name, language: 'en' },
-    { scheduleToCloseTimeout: '10s' },
-  );
-
-  return result.message;
-}
-```
-
-## Activity Cancellation and Heartbeating
-
-### ActivityCancellationType
-
-Control how activities respond to workflow cancellation:
-
-```typescript
-import { proxyActivities, ActivityCancellationType, isCancellation, log } from '@temporalio/workflow';
-import type * as activities from './activities';
-
-const { longRunningActivity } = proxyActivities<typeof activities>({
-  startToCloseTimeout: '60s',
-  heartbeatTimeout: '3s',
-  // TRY_CANCEL (default): Request cancellation, resolve/reject immediately
-  // WAIT_CANCELLATION_COMPLETED: Wait for activity to acknowledge cancellation
-  // WAIT_CANCELLATION_REQUESTED: Wait for cancellation request to be delivered
-  // ABANDON: Don't request cancellation
-  cancellationType: ActivityCancellationType.WAIT_CANCELLATION_COMPLETED,
-});
-
-export async function workflowWithCancellation(): Promise<void> {
-  try {
-    await longRunningActivity();
-  } catch (err) {
-    if (isCancellation(err)) {
-      log.info('Workflow cancelled along with its activity');
-      // Use CancellationScope.nonCancellable for cleanup
-    }
-    throw err;
-  }
-}
-```
-
-### Activity Heartbeat Details for Resumption
-
-Use heartbeat details to resume long-running activities from where they left off:
-
-```typescript
-// activities.ts
-import { activityInfo, log, sleep, CancelledFailure, heartbeat } from '@temporalio/activity';
-
-export async function processWithProgress(sleepIntervalMs = 1000): Promise<void> {
-  try {
-    // Resume from last heartbeat on retry
-    const startingPoint = activityInfo().heartbeatDetails || 1;
-    log.info('Starting activity at progress', { startingPoint });
-
-    for (let progress = startingPoint; progress <= 100; ++progress) {
-      log.info('Progress', { progress });
-      await sleep(sleepIntervalMs);
-      // Heartbeat with progress - allows resuming on retry
-      heartbeat(progress);
-    }
-  } catch (err) {
-    if (err instanceof CancelledFailure) {
-      log.warn('Activity cancelled', { message: err.message });
-      // Cleanup code here
-    }
-    throw err;
-  }
-}
-```
-
 ## Schedules
 
 Create recurring workflow executions.
@@ -271,6 +33,76 @@ await handle.unpause();
 await handle.trigger();  // Run immediately
 await handle.delete();
 ```
+
+## Async Activity Completion
+
+Complete an activity asynchronously from outside the activity function. Useful when the activity needs to wait for an external event.
+
+**In the activity - return the task token:**
+```typescript
+import { CompleteAsyncError, activityInfo } from '@temporalio/activity';
+
+export async function asyncActivity(): Promise<string> {
+  const taskToken = activityInfo().taskToken;
+
+  // Store taskToken somewhere (database, queue, etc.)
+  await saveTaskToken(taskToken);
+
+  // Throw to indicate async completion
+  throw new CompleteAsyncError();
+}
+```
+
+**External completion (from another process):**
+```typescript
+import { AsyncCompletionClient } from '@temporalio/client';
+
+async function completeActivity(taskToken: Uint8Array, result: string) {
+  const client = new AsyncCompletionClient();
+
+  await client.complete(taskToken, result);
+  // Or for failure:
+  // await client.fail(taskToken, new Error('Failed'));
+}
+```
+
+**When to use:**
+- Waiting for human approval
+- Waiting for external webhook callback
+- Long-polling external systems
+
+## Worker Tuning
+
+Configure worker capacity for production workloads:
+
+```typescript
+import { Worker, NativeConnection } from '@temporalio/worker';
+
+const worker = await Worker.create({
+  connection: await NativeConnection.connect({ address: 'temporal:7233' }),
+  taskQueue: 'my-queue',
+  workflowsPath: require.resolve('./workflows'),
+  activities,
+
+  // Workflow execution concurrency (default: 40)
+  maxConcurrentWorkflowTaskExecutions: 100,
+
+  // Activity execution concurrency (default: 100)
+  maxConcurrentActivityTaskExecutions: 100,
+
+  // Graceful shutdown timeout (default: 0)
+  shutdownGraceTime: '30 seconds',
+
+  // Max cached workflows (memory vs latency tradeoff)
+  maxCachedWorkflows: 1000,
+});
+```
+
+**Key settings:**
+- `maxConcurrentWorkflowTaskExecutions`: Max workflows running simultaneously (default: 40)
+- `maxConcurrentActivityTaskExecutions`: Max activities running simultaneously (default: 100)
+- `shutdownGraceTime`: Time to wait for in-progress work before forced shutdown
+- `maxCachedWorkflows`: Number of workflows to keep in cache (reduces replay on cache hit)
 
 ## Sinks
 
@@ -322,52 +154,3 @@ const worker = await Worker.create({
   },
 });
 ```
-
-## CancellationScope Patterns
-
-Advanced cancellation control within workflows.
-
-```typescript
-import {
-  CancellationScope,
-  CancelledFailure,
-  sleep,
-} from '@temporalio/workflow';
-
-export async function workflowWithCancellation(): Promise<string> {
-  // Non-cancellable scope - runs to completion even if workflow cancelled
-  const criticalResult = await CancellationScope.nonCancellable(async () => {
-    return await criticalActivity();
-  });
-
-  // Cancellable scope with timeout
-  try {
-    await CancellationScope.cancellable(async () => {
-      await Promise.race([
-        longRunningActivity(),
-        sleep('5 minutes').then(() => {
-          CancellationScope.current().cancel();
-        }),
-      ]);
-    });
-  } catch (err) {
-    if (err instanceof CancelledFailure) {
-      // Handle cancellation
-      await cleanupActivity();
-    }
-    throw err;
-  }
-
-  return criticalResult;
-}
-```
-
-## Best Practices
-
-1. Use continue-as-new for long-running workflows to prevent history growth
-2. Prefer updates over signals when you need a response
-3. Use sinks with `callDuringReplay: false` for logging
-4. Use CancellationScope.nonCancellable for critical cleanup operations
-5. Use `ActivityCancellationType.WAIT_CANCELLATION_COMPLETED` when cleanup is important
-6. Store progress in heartbeat details for resumable long-running activities
-7. Use Nexus for cross-namespace service communication

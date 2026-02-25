@@ -1,6 +1,6 @@
 # TypeScript gotchas.md Edits
 
-## Status: PENDING
+## Status: DONE
 
 ---
 

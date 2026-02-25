@@ -12,6 +12,101 @@ The default converter handles:
 - Protobuf messages (if configured)
 - JSON-serializable types
 
+## Custom Data Converter
+
+Create custom converters for special serialization needs.
+
+```typescript
+import {
+  DataConverter,
+  PayloadConverter,
+  defaultPayloadConverter,
+} from '@temporalio/common';
+
+class CustomPayloadConverter implements PayloadConverter {
+  toPayload(value: unknown): Payload | undefined {
+    // Custom serialization logic
+    return defaultPayloadConverter.toPayload(value);
+  }
+
+  fromPayload<T>(payload: Payload): T {
+    // Custom deserialization logic
+    return defaultPayloadConverter.fromPayload(payload);
+  }
+}
+
+const dataConverter: DataConverter = {
+  payloadConverter: new CustomPayloadConverter(),
+};
+
+// Apply to client
+const client = new Client({
+  dataConverter,
+});
+
+// Apply to worker
+const worker = await Worker.create({
+  dataConverter,
+  // ...
+});
+```
+
+## Payload Codec (Encryption)
+
+Encrypt sensitive workflow data.
+
+```typescript
+import { PayloadCodec, Payload } from '@temporalio/common';
+
+class EncryptionCodec implements PayloadCodec {
+  private readonly encryptionKey: Uint8Array;
+
+  constructor(key: Uint8Array) {
+    this.encryptionKey = key;
+  }
+
+  async encode(payloads: Payload[]): Promise<Payload[]> {
+    return Promise.all(
+      payloads.map(async (payload) => ({
+        metadata: {
+          encoding: 'binary/encrypted',
+        },
+        data: await this.encrypt(payload.data ?? new Uint8Array()),
+      }))
+    );
+  }
+
+  async decode(payloads: Payload[]): Promise<Payload[]> {
+    return Promise.all(
+      payloads.map(async (payload) => {
+        if (payload.metadata?.encoding === 'binary/encrypted') {
+          return {
+            ...payload,
+            data: await this.decrypt(payload.data ?? new Uint8Array()),
+          };
+        }
+        return payload;
+      })
+    );
+  }
+
+  private async encrypt(data: Uint8Array): Promise<Uint8Array> {
+    // Implement encryption (e.g., using Web Crypto API)
+    return data;
+  }
+
+  private async decrypt(data: Uint8Array): Promise<Uint8Array> {
+    // Implement decryption
+    return data;
+  }
+}
+
+// Apply codec
+const dataConverter: DataConverter = {
+  payloadCodec: new EncryptionCodec(encryptionKey),
+};
+```
+
 ## Search Attributes
 
 Custom searchable fields for workflow visibility.
@@ -107,101 +202,6 @@ export async function orderWorkflow(): Promise<void> {
   const customerName = info.memo?.customerName;
   // ...
 }
-```
-
-## Custom Data Converter
-
-Create custom converters for special serialization needs.
-
-```typescript
-import {
-  DataConverter,
-  PayloadConverter,
-  defaultPayloadConverter,
-} from '@temporalio/common';
-
-class CustomPayloadConverter implements PayloadConverter {
-  toPayload(value: unknown): Payload | undefined {
-    // Custom serialization logic
-    return defaultPayloadConverter.toPayload(value);
-  }
-
-  fromPayload<T>(payload: Payload): T {
-    // Custom deserialization logic
-    return defaultPayloadConverter.fromPayload(payload);
-  }
-}
-
-const dataConverter: DataConverter = {
-  payloadConverter: new CustomPayloadConverter(),
-};
-
-// Apply to client
-const client = new Client({
-  dataConverter,
-});
-
-// Apply to worker
-const worker = await Worker.create({
-  dataConverter,
-  // ...
-});
-```
-
-## Payload Codec (Encryption)
-
-Encrypt sensitive workflow data.
-
-```typescript
-import { PayloadCodec, Payload } from '@temporalio/common';
-
-class EncryptionCodec implements PayloadCodec {
-  private readonly encryptionKey: Uint8Array;
-
-  constructor(key: Uint8Array) {
-    this.encryptionKey = key;
-  }
-
-  async encode(payloads: Payload[]): Promise<Payload[]> {
-    return Promise.all(
-      payloads.map(async (payload) => ({
-        metadata: {
-          encoding: 'binary/encrypted',
-        },
-        data: await this.encrypt(payload.data ?? new Uint8Array()),
-      }))
-    );
-  }
-
-  async decode(payloads: Payload[]): Promise<Payload[]> {
-    return Promise.all(
-      payloads.map(async (payload) => {
-        if (payload.metadata?.encoding === 'binary/encrypted') {
-          return {
-            ...payload,
-            data: await this.decrypt(payload.data ?? new Uint8Array()),
-          };
-        }
-        return payload;
-      })
-    );
-  }
-
-  private async encrypt(data: Uint8Array): Promise<Uint8Array> {
-    // Implement encryption (e.g., using Web Crypto API)
-    return data;
-  }
-
-  private async decrypt(data: Uint8Array): Promise<Uint8Array> {
-    // Implement decryption
-    return data;
-  }
-}
-
-// Apply codec
-const dataConverter: DataConverter = {
-  payloadCodec: new EncryptionCodec(encryptionKey),
-};
 ```
 
 ## Protobuf Support

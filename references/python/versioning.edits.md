@@ -1,6 +1,6 @@
 # Python versioning.md Edits
 
-## Status: PENDING
+## Status: DONE
 
 ---
 

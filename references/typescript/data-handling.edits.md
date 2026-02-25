@@ -1,6 +1,6 @@
 # TypeScript data-handling.md Edits
 
-## Status: PENDING
+## Status: DONE
 
 ---
 

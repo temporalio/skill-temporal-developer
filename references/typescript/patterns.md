@@ -49,6 +49,8 @@ export async function dynamicSignalWorkflow(): Promise<Record<string, unknown[]>
 
 ## Queries
 
+**Important:** Queries must NOT modify workflow state or have side effects.
+
 ```typescript
 import { defineQuery, setHandler } from '@temporalio/workflow';
 
@@ -219,11 +221,18 @@ export async function longRunningWorkflow(state: State): Promise<string> {
 
 ## Saga Pattern
 
+**Important:** Compensation activities should be idempotent.
+
 ```typescript
+import { log } from '@temporalio/workflow';
+
 export async function sagaWorkflow(order: Order): Promise<string> {
   const compensations: Array<() => Promise<void>> = [];
 
   try {
+    // IMPORTANT: Save compensation BEFORE calling the activity
+    // If activity fails after completing but before returning,
+    // compensation must still be registered
     await reserveInventory(order);
     compensations.push(() => releaseInventory(order));
 
@@ -237,7 +246,7 @@ export async function sagaWorkflow(order: Order): Promise<string> {
       try {
         await compensate();
       } catch (compErr) {
-        console.log('Compensation failed', compErr);
+        log.warn('Compensation failed', { error: compErr });
       }
     }
     throw err;

@@ -6,43 +6,26 @@ The Temporal TypeScript SDK provides a modern async/await approach to building d
 
 **CRITICAL**: All `@temporalio/*` packages must have the same version number.
 
-## How Temporal Works: History Replay
+## Understanding Replay
 
-Understanding how Temporal achieves durable execution is essential for writing correct workflows.
-
-### The Replay Mechanism
-
-When a Worker executes workflow code, it creates **Commands** (requests for operations like starting an Activity or Timer) and sends them to the Temporal Cluster. The Cluster maintains an **Event History** - a durable log of everything that happened during the workflow execution.
-
-**Key insight**: During replay, the Worker re-executes your workflow code but uses the Event History to restore state instead of re-executing Activities. When it encounters an Activity call that has a corresponding `ActivityTaskCompleted` event in history, it returns the stored result instead of scheduling a new execution.
-
-This is why **determinism matters**: The Worker validates that Commands generated during replay match the Events in history. A mismatch causes a non-deterministic error because the Worker cannot reliably restore state.
-
-### Commands and Events
-
-| Workflow Code | Command Generated | Resulting Event |
-|--------------|-------------------|-----------------|
-| Activity call | `ScheduleActivityTask` | `ActivityTaskScheduled` |
-| `sleep()` | `StartTimer` | `TimerStarted` |
-| Child workflow | `StartChildWorkflowExecution` | `ChildWorkflowExecutionStarted` |
-| Return/complete | `CompleteWorkflowExecution` | `WorkflowExecutionCompleted` |
-
-### When Replay Occurs
-
-- Worker crashes and recovers
-- Worker's cache fills and evicts workflow state
-- Workflow continues after long timer
-- Testing with replay histories
+Temporal workflows are durable through history replay. For details on how this works, see `core/determinism.md`.
 
 ## Quick Start
 
+**Add Dependencies:** Install the Temporal SDK packages:
+```bash
+npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity
+```
+
+**activities.ts** - Activity definitions (separate file for bundling performance):
 ```typescript
-// activities.ts
 export async function greet(name: string): Promise<string> {
   return `Hello, ${name}!`;
 }
+```
 
-// workflows.ts
+**workflows.ts** - Workflow definition (use type-only imports for activities):
+```typescript
 import { proxyActivities } from '@temporalio/workflow';
 import type * as activities from './activities';
 
@@ -53,8 +36,10 @@ const { greet } = proxyActivities<typeof activities>({
 export async function greetingWorkflow(name: string): Promise<string> {
   return await greet(name);
 }
+```
 
-// worker.ts
+**worker.ts** - Worker setup (imports activities and workflows, runs indefinitely):
+```typescript
 import { Worker } from '@temporalio/worker';
 import * as activities from './activities';
 
@@ -66,7 +51,36 @@ async function run() {
   });
   await worker.run();
 }
+
+run().catch(console.error);
 ```
+
+**Start the dev server:** Start `temporal server start-dev` in the background.
+
+**Start the worker:** Run `npx ts-node worker.ts` in the background.
+
+**client.ts** - Start a workflow execution:
+```typescript
+import { Client } from '@temporalio/client';
+import { greetingWorkflow } from './workflows';
+import { v4 as uuid } from 'uuid';
+
+async function run() {
+  const client = new Client();
+
+  const result = await client.workflow.execute(greetingWorkflow, {
+    workflowId: uuid(),
+    taskQueue: 'greeting-queue',
+    args: ['my name'],
+  });
+
+  console.log(`Result: ${result}`);
+}
+
+run().catch(console.error);
+```
+
+**Run the workflow:** Run `npx ts-node client.ts`. Should output: `Result: Hello, my name!`.
 
 ## Key Concepts
 
@@ -83,6 +97,31 @@ async function run() {
 ### Worker Setup
 - Use `Worker.create()` with workflowsPath
 - Import activities directly (not via proxy)
+
+## File Organization Best Practice
+
+**Keep Workflow definitions in separate files from Activity definitions.** The TypeScript SDK bundles workflow files separately. Minimizing workflow file contents improves Worker startup time.
+
+```
+my_temporal_app/
+├── workflows/
+│   └── greeting.ts      # Only Workflow functions
+├── activities/
+│   └── translate.ts     # Only Activity functions
+├── worker.ts            # Worker setup, imports both
+└── client.ts            # Client code to start workflows
+```
+
+**In the Workflow file, use type-only imports for activities:**
+```typescript
+// workflows/greeting.ts
+import { proxyActivities } from '@temporalio/workflow';
+import type * as activities from '../activities/translate';
+
+const { translate } = proxyActivities<typeof activities>({
+  startToCloseTimeout: '1 minute',
+});
+```
 
 ## Determinism Rules
 
@@ -107,6 +146,8 @@ See `determinism.md` for detailed rules.
 3. **Direct I/O in workflows** - Use activities for external calls
 4. **Missing `proxyActivities`** - Required to call activities from workflows
 5. **Forgetting to bundle workflows** - Worker needs workflowsPath
+6. **Forgetting to heartbeat** - Long-running activities need `heartbeat()` calls
+7. **Using console.log in workflows** - Use `log` from `@temporalio/workflow` for replay-safe logging
 
 ## Writing Tests
 
@@ -115,13 +156,13 @@ See `references/typescript/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
-- **`references/python/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
-- **`references/python/determinism.md`** - Essentials of determinism in TypeScript
-- **`references/python/gotchas.md`** - TypeScript-specific mistakes and anti-patterns
-- **`references/python/error-handling.md`** - ApplicationError, retry policies, non-retryable errors, idempotency
-- **`references/python/observability.md`** - Logging, metrics, tracing, Search Attributes
-- **`references/python/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
-- **`references/python/advanced-features.md`** - Schedules, worker tuning, and more
-- **`references/python/data-handling.md`** - Data converters, payload encryption, etc.
-- **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
-- **`references/python/determinism-protection.md`** - V8 sandbox and bundling
+- **`references/typescript/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
+- **`references/typescript/determinism.md`** - Essentials of determinism in TypeScript
+- **`references/typescript/gotchas.md`** - TypeScript-specific mistakes and anti-patterns
+- **`references/typescript/error-handling.md`** - ApplicationFailure, retry policies, non-retryable errors
+- **`references/typescript/observability.md`** - Logging, metrics, tracing
+- **`references/typescript/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
+- **`references/typescript/advanced-features.md`** - Schedules, worker tuning, and more
+- **`references/typescript/data-handling.md`** - Data converters, payload encryption, etc.
+- **`references/typescript/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
+- **`references/typescript/determinism-protection.md`** - V8 sandbox and bundling

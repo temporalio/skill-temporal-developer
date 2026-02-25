@@ -43,24 +43,7 @@ describe('Workflow', () => {
 });
 ```
 
-## Time Skipping
-
-```typescript
-// Create time-skipping environment
-const testEnv = await TestWorkflowEnvironment.createTimeSkipping();
-
-// Time automatically advances when workflows wait
-await worker.runUntil(async () => {
-  const result = await client.workflow.execute(longRunningWorkflow, {
-    taskQueue: 'test',
-    workflowId: 'test-workflow',
-  });
-  // Even if workflow has 1-hour timer, test completes instantly
-});
-
-// Manual time advancement
-await testEnv.sleep('1 day');
-```
+The test environment automatically skips time when the workflow is waiting on timers, making tests fast.
 
 ## Activity Mocking
 
@@ -73,25 +56,6 @@ const worker = await Worker.create({
     // Mock activity implementation
     greet: async (name: string) => `Mocked: ${name}`,
   },
-});
-```
-
-## Replay Testing
-
-```typescript
-import { Worker } from '@temporalio/worker';
-
-describe('Replay', () => {
-  it('replays workflow history', async () => {
-    const history = await fetchWorkflowHistory('workflow-id');
-
-    await Worker.runReplayHistory(
-      {
-        workflowsPath: require.resolve('./workflows'),
-      },
-      history
-    );
-  });
 });
 ```
 
@@ -118,6 +82,105 @@ it('handles signals and queries', async () => {
   });
 });
 ```
+
+## Testing Failure Cases
+
+Test that workflows handle errors correctly:
+
+```typescript
+import { TestWorkflowEnvironment } from '@temporalio/testing';
+import { Worker } from '@temporalio/worker';
+import assert from 'assert';
+
+describe('Failure handling', () => {
+  let testEnv: TestWorkflowEnvironment;
+
+  before(async () => {
+    testEnv = await TestWorkflowEnvironment.createLocal();
+  });
+
+  after(async () => {
+    await testEnv?.teardown();
+  });
+
+  it('handles activity failure', async () => {
+    const { client, nativeConnection } = testEnv;
+
+    const worker = await Worker.create({
+      connection: nativeConnection,
+      taskQueue: 'test',
+      workflowsPath: require.resolve('./workflows'),
+      activities: {
+        // Mock activity that always fails
+        myActivity: async () => {
+          throw new Error('Activity failed');
+        },
+      },
+    });
+
+    await worker.runUntil(async () => {
+      try {
+        await client.workflow.execute(myWorkflow, {
+          workflowId: 'test-failure',
+          taskQueue: 'test',
+        });
+        assert.fail('Expected workflow to fail');
+      } catch (err) {
+        assert(err instanceof WorkflowFailedError);
+      }
+    });
+  });
+});
+```
+
+## Replay Testing
+
+```typescript
+import { Worker } from '@temporalio/worker';
+
+describe('Replay', () => {
+  it('replays workflow history', async () => {
+    const history = await fetchWorkflowHistory('workflow-id');
+
+    await Worker.runReplayHistory(
+      {
+        workflowsPath: require.resolve('./workflows'),
+      },
+      history
+    );
+  });
+});
+```
+
+## Activity Testing
+
+Test activities in isolation without running a workflow:
+
+```typescript
+import { MockActivityEnvironment } from '@temporalio/testing';
+import { myActivity } from './activities';
+import assert from 'assert';
+
+describe('Activity tests', () => {
+  it('completes successfully', async () => {
+    const env = new MockActivityEnvironment();
+    const result = await env.run(myActivity, 'input');
+    assert.equal(result, 'expected output');
+  });
+
+  it('handles cancellation', async () => {
+    const env = new MockActivityEnvironment({ cancelled: true });
+    try {
+      await env.run(longRunningActivity, 'input');
+      assert.fail('Expected cancellation');
+    } catch (err) {
+      assert(err instanceof CancelledFailure);
+    }
+  });
+});
+```
+
+**Note:** `MockActivityEnvironment` provides `heartbeat()` and cancellation support for testing activity behavior.
 
 ## Best Practices
 

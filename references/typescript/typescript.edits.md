@@ -1,6 +1,6 @@
 # TypeScript typescript.md (top-level) Edits
 
-## Status: PENDING
+## Status: DONE
 
 ---
 
