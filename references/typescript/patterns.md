@@ -30,20 +30,17 @@ export async function orderWorkflow(): Promise<string> {
 For handling signals with names not known at compile time:
 
 ```typescript
-import { setHandler, condition } from '@temporalio/workflow';
+import { setDefaultSignalHandler, condition } from '@temporalio/workflow';
 
 export async function dynamicSignalWorkflow(): Promise<Record<string, unknown[]>> {
   const signals: Record<string, unknown[]> = {};
 
-  setHandler(
-    (signalName: string) => true, // Accept all signal names
-    (signalName: string, ...args: unknown[]) => {
-      if (!signals[signalName]) {
-        signals[signalName] = [];
-      }
-      signals[signalName].push(args);
+  setDefaultSignalHandler((signalName: string, ...args: unknown[]) => {
+    if (!signals[signalName]) {
+      signals[signalName] = [];
     }
-  );
+    signals[signalName].push(args);
+  });
 
   await condition(() => signals['done'] !== undefined);
   return signals;
@@ -78,7 +75,7 @@ export async function progressWorkflow(): Promise<void> {
 For handling queries with names not known at compile time:
 
 ```typescript
-import { setHandler } from '@temporalio/workflow';
+import { setDefaultQueryHandler } from '@temporalio/workflow';
 
 export async function dynamicQueryWorkflow(): Promise<void> {
   const state: Record<string, unknown> = {
@@ -86,12 +83,9 @@ export async function dynamicQueryWorkflow(): Promise<void> {
     progress: 0,
   };
 
-  setHandler(
-    (queryName: string) => true, // Accept all query names
-    (queryName: string) => {
-      return state[queryName];
-    }
-  );
+  setDefaultQueryHandler((queryName: string) => {
+    return state[queryName];
+  });
 
   // ... workflow logic
 }
@@ -330,13 +324,13 @@ export async function approvalWorkflow(): Promise<string> {
 - **Before continue-as-new** - Ensure handlers complete before resetting
 
 ```typescript
-import { condition, workflowInfo } from '@temporalio/workflow';
+import { condition, allHandlersFinished } from '@temporalio/workflow';
 
 export async function handlerAwareWorkflow(): Promise<string> {
   // ... main workflow logic ...
 
   // Before exiting, wait for all handlers to finish
-  await condition(() => workflowInfo().unsafe.isReplaying || allHandlersFinished());
+  await condition(allHandlersFinished);
   return 'done';
 }
 ```
@@ -397,7 +391,7 @@ export async function timerWorkflow(): Promise<string> {
 **Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.
 
 ```typescript
-import { executeLocalActivity } from '@temporalio/workflow';
+import { proxyLocalActivities } from '@temporalio/workflow';
 import type * as activities from './activities';
 
 const { quickLookup } = proxyLocalActivities<typeof activities>({
