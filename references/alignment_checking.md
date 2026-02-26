@@ -6,7 +6,9 @@ Track content alignment (do files have the right sections?) and style alignment 
 
 **Style target:** Python is the reference style (code-first, minimal prose). TypeScript should match.
 
-**Resume instructions:** Find sections marked `unchecked` or `needs review` and continue from there.
+**Implementation Status:** ✅ **COMPLETE** (2026-02-25)
+
+All TODO/DEL/BUG items have been implemented. See `.edits.md` files for details of changes made.
 
 ---
 
@@ -58,10 +60,10 @@ Shows which sections exist in each language. Organized by file.
 | Overview | — | ✓ | 1 | ✓ | 1 | |
 | Default Data Converter | — | ✓ | 2 | ✓ | 2 | |
 | Pydantic Integration | — | ✓ | 3 | — | — | |
-| Custom Data Converter | — | ✓ | 4 | ✓ | 5 | |
-| Payload Encryption | — | ✓ | 5 | ✓ | 6 | |
-| Search Attributes | — | ✓ | 6 | ✓ | 3 | |
-| Workflow Memo | — | ✓ | 7 | ✓ | 4 | |
+| Custom Data Converter | — | ✓ | 4 | ✓ | 3 | |
+| Payload Encryption | — | ✓ | 5 | ✓ | 4 | |
+| Search Attributes | — | ✓ | 6 | ✓ | 5 | |
+| Workflow Memo | — | ✓ | 7 | ✓ | 6 | |
 | Protobuf Support | — | — | — | ✓ | 7 | |
 | Large Payloads | — | ✓ | 8 | ✓ | 8 | |
 | Deterministic APIs for Values | — | ✓ | 9 | — | — | |
@@ -78,30 +80,30 @@ Shows which sections exist in each language. Organized by file.
 | Handling Activity Errors in Workflows | — | ✓ | 4 | ✓ | 4 | |
 | Retry Configuration | — | ✓ | 5 | ✓ | 5 | |
 | Timeout Configuration | — | ✓ | 6 | ✓ | 6 | |
-| Workflow Failure | — | ✓ | 7 | TODO | — | |
-| Cancellation Handling in Activities | — | — | — | DEL | 7 | |
-| Idempotency Patterns | — | — | — | DEL | 8 | |
+| Workflow Failure | — | ✓ | 7 | ✓ | 7 | |
+| Cancellation Handling in Activities | — | — | — | — | — | |
+| Idempotency Patterns | — | — | — | — | — | |
 | Best Practices | — | ✓ | 8 | ✓ | 9 | |
 
 ### gotchas.md
 
 | Section | Core | Core# | Python | Py# | TypeScript | TS# | Go |
 |---------|------|-------|--------|-----|------------|-----|-----|
-| Idempotency / Non-Idempotent Activities | ✓ | 1 | — | — | DEL | 1 | |
-| Replay Safety / Side Effects & Non-Determinism | ✓ | 2 | — | — | DEL | 2 | |
+| Idempotency / Non-Idempotent Activities | ✓ | 1 | — | — | — | — | |
+| Replay Safety / Side Effects & Non-Determinism | ✓ | 2 | — | — | — | — | |
 | Multiple Workers with Different Code | ✓ | 3 | — | — | — | — | |
-| Retry Policies / Failing Activities Too Quickly | ✓ | 4 | — | — | DEL | 7 | |
-| Query Handlers / Query Handler Mistakes | ✓ | 5 | — | — | DEL | 3 | |
+| Retry Policies / Failing Activities Too Quickly | ✓ | 4 | — | — | — | — | |
+| Query Handlers / Query Handler Mistakes | ✓ | 5 | — | — | — | — | |
 | File Organization | ✓ | 6 | ✓ | 1 | — | — | |
-| Activity Imports | — | — | — | — | ✓ | 4 | |
-| Bundling Issues | — | — | — | — | ✓ | 5 | |
+| Activity Imports | — | — | — | — | ✓ | 1 | |
+| Bundling Issues | — | — | — | — | ✓ | 2 | |
 | Async vs Sync Activities | — | — | ✓ | 2 | — | — | |
-| Error Handling | ✓ | 8 | — | — | DEL | 6 | |
-| Wrong Retry Classification | ✓ | 8 | ✓ | 3 | TODO | — | |
-| Cancellation | — | — | — | — | ✓ | 8 | |
-| Heartbeating | — | — | ✓ | 4 | ✓ | 9 | |
-| Testing | ✓ | 7 | ✓ | 5 | ✓ | 10 | |
-| Timers and Sleep | — | — | TODO | — | ✓ | 11 | |
+| Error Handling | ✓ | 8 | — | — | — | — | |
+| Wrong Retry Classification | ✓ | 8 | ✓ | 3 | ✓ | 3 | |
+| Cancellation | — | — | — | — | ✓ | 4 | |
+| Heartbeating | — | — | ✓ | 4 | ✓ | 5 | |
+| Testing | ✓ | 7 | ✓ | 5 | ✓ | 6 | |
+| Timers and Sleep | — | — | ✓ | 6 | ✓ | 7 | |
 
 ### observability.md
 
@@ -110,11 +112,11 @@ Shows which sections exist in each language. Organized by file.
 | Overview | — | ✓ | 1 | ✓ | 1 | |
 | Logging / Replay-Aware Logging | — | ✓ | 2 | ✓ | 2 | |
 | Customizing the Logger | — | ✓ | 2 | ✓ | 3 | |
-| OpenTelemetry Integration | — | — | — | DEL | 4 | |
-| Metrics | — | ✓ | 3 | ✓ | 5 | |
+| OpenTelemetry Integration | — | — | — | — | — | |
+| Metrics | — | ✓ | 3 | ✓ | 4 | |
 | Search Attributes (Visibility) | — | ✓ | 4 | — | — | |
-| Debugging with Event History | — | — | — | DEL | 6 | |
-| Best Practices | — | ✓ | 5 | ✓ | 7 | |
+| Debugging with Event History | — | — | — | — | — | |
+| Best Practices | — | ✓ | 5 | ✓ | 5 | |
 
 ### testing.md
 
@@ -122,13 +124,13 @@ Shows which sections exist in each language. Organized by file.
 |---------|------|--------|-----|------------|-----|-----|
 | Overview | — | ✓ | 1 | ✓ | 1 | |
 | Test Environment Setup | — | ✓ | 2 | ✓ | 2 | |
-| Time Skipping | — | — | — | DEL | 3 | |
-| Activity Mocking | — | ✓ | 3 | ✓ | 4 | |
-| Testing Signals and Queries | — | ✓ | 4 | ✓ | 6 | |
-| Testing Failure Cases | — | ✓ | 5 | TODO | — | |
-| Replay Testing | — | ✓ | 6 | ✓ | 5 | |
-| Activity Testing | — | ✓ | 7 | TODO | — | |
-| Best Practices | — | ✓ | 8 | ✓ | 7 | |
+| Time Skipping | — | — | — | — | — | |
+| Activity Mocking | — | ✓ | 3 | ✓ | 3 | |
+| Testing Signals and Queries | — | ✓ | 4 | ✓ | 4 | |
+| Testing Failure Cases | — | ✓ | 5 | ✓ | 5 | |
+| Replay Testing | — | ✓ | 6 | ✓ | 6 | |
+| Activity Testing | — | ✓ | 7 | ✓ | 7 | |
+| Best Practices | — | ✓ | 8 | ✓ | 8 | |
 
 ### versioning.md
 
@@ -139,7 +141,7 @@ Shows which sections exist in each language. Organized by file.
 | Patching API | ✓ | 3 | ✓ | 3 | ✓ | 3 | |
 | Workflow Type Versioning | ✓ | 4 | ✓ | 4 | ✓ | 4 | |
 | Worker Versioning | ✓ | 5 | ✓ | 5 | ✓ | 5 | |
-| Choosing a Strategy | ✓ | 6 | TODO | — | ✓ | 6 | |
+| Choosing a Strategy | ✓ | 6 | ✓ | 6 | ✓ | 6 | |
 | Best Practices | ✓ | 7 | ✓ | 6 | ✓ | 7 | |
 | Finding Workflows by Version | ✓ | 8 | — | — | — | — | |
 | Common Mistakes | ✓ | 9 | — | — | — | — | |
@@ -149,14 +151,15 @@ Shows which sections exist in each language. Organized by file.
 | Section | Core | Python | Py# | TypeScript | TS# | Go |
 |---------|------|--------|-----|------------|-----|-----|
 | Overview | — | ✓ | 1 | ✓ | 1 | |
-| How Temporal Works: History Replay | — | — | — | DEL | 2 | |
+| How Temporal Works: History Replay | — | — | — | — | — | |
+| Understanding Replay | — | — | — | ✓ | 2 | |
 | Quick Start / Quick Demo | — | ✓ | 2 | ✓ | 3 | |
 | Key Concepts | — | ✓ | 3 | ✓ | 4 | |
-| Determinism Rules | — | — | — | ✓ | 5 | |
-| File Organization Best Practice | — | ✓ | 4 | TODO | — | |
-| Common Pitfalls | — | ✓ | 5 | ✓ | 6 | |
-| Writing Tests | — | ✓ | 6 | ✓ | 7 | |
-| Additional Resources | — | ✓ | 7 | ✓ | 8 | |
+| File Organization Best Practice | — | ✓ | 4 | ✓ | 5 | |
+| Determinism Rules | — | — | — | ✓ | 6 | |
+| Common Pitfalls | — | ✓ | 5 | ✓ | 7 | |
+| Writing Tests | — | ✓ | 6 | ✓ | 8 | |
+| Additional Resources | — | ✓ | 7 | ✓ | 9 | |
 
 ### determinism-protection.md
 
@@ -215,8 +218,8 @@ Shows which sections exist in each language. Organized by file.
 
 #### Queries
 - **Python:** One-liner note ("must NOT modify state") + code
-- **TypeScript:** Code only
-- **Decision:** ⚠️ needs fix — TS should add "**Important:** Queries must NOT modify workflow state or have side effects" note
+- **TypeScript:** One-liner note ("must NOT modify state") + code
+- **Decision:** ✅ FIXED — TS now has "**Important:** Queries must NOT modify workflow state or have side effects" note
 
 ---
 
@@ -264,11 +267,11 @@ Shows which sections exist in each language. Organized by file.
 
 #### Saga Pattern
 - **Python:** One-liner note ("compensation activities should be idempotent") + code with detailed comments explaining WHY save compensation BEFORE activity
-- **TypeScript:** Code only (simpler example, no inline comments)
-- **Decision:** ⚠️ needs fix
-  - TS should add "**Important:** Compensation activities should be idempotent" note
-  - TS should add comments explaining WHY compensation is saved BEFORE the activity (critical edge case)
-  - ⚠️ **BUG:** TS uses `console.log` in catch block — should use `log` from `@temporalio/workflow` for replay-safe logging
+- **TypeScript:** One-liner note + code with detailed comments + replay-safe logging
+- **Decision:** ✅ FIXED
+  - TS now has "**Important:** Compensation activities should be idempotent" note
+  - TS now has comments explaining WHY compensation is saved BEFORE the activity
+  - TS now uses `log` from `@temporalio/workflow` for replay-safe logging
 
 ---
 
@@ -432,15 +435,15 @@ Shows which sections exist in each language. Organized by file.
 
 #### Handling Activity Errors in Workflows
 - **Python:** Code showing try/except with ActivityError, uses `workflow.logger`
-- **TypeScript:** Code showing try/catch with ApplicationFailure instanceof check
-- **Decision:** ⚠️ **BUG:** TS uses `console.log` in workflow — should use `log` from `@temporalio/workflow`
+- **TypeScript:** Code showing try/catch with ApplicationFailure instanceof check, uses `log`
+- **Decision:** ✅ FIXED — TS now uses `log` from `@temporalio/workflow`
 
 ---
 
 #### Retry Configuration
 - **Python:** Code + note about preferring defaults ("Only set options... if you have a domain-specific reason to")
-- **TypeScript:** Code only
-- **Decision:** ⚠️ needs fix — TS should add note about preferring defaults
+- **TypeScript:** Code + note about preferring defaults
+- **Decision:** ✅ FIXED — TS now has note about preferring defaults
 
 ---
 
@@ -451,24 +454,24 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### Workflow Failure (Python only)
+#### Workflow Failure
 - **Python:** Code + note about not using non_retryable in workflows
-- **TypeScript:** N/A
-- **Decision:** TODO — Add TS equivalent with nonRetryable warning
+- **TypeScript:** Code + note about not using nonRetryable in workflows
+- **Decision:** ✅ FIXED — TS now has Workflow Failure section
 
 ---
 
-#### Cancellation Handling in Activities (TypeScript only)
+#### Cancellation Handling in Activities
 - **Python:** N/A
-- **TypeScript:** Code showing CancelledFailure handling with heartbeat
-- **Decision:** DEL from error-handling.md — Move to patterns.md (Python already has Cancellation Handling there)
+- **TypeScript:** N/A (removed from error-handling.md)
+- **Decision:** ✅ DONE — Removed from error-handling.md (patterns.md has Cancellation Scopes)
 
 ---
 
-#### Idempotency Patterns (TypeScript only)
+#### Idempotency Patterns (error-handling.md)
 - **Python:** N/A (brief mention in Best Practices, references core/patterns.md)
-- **TypeScript:** Detailed section with WHY + Using Keys + Granular Activities subsections
-- **Decision:** DEL — Remove from TS, replace with reference to core (like Python does)
+- **TypeScript:** Brief reference to core/patterns.md
+- **Decision:** ✅ DONE — Replaced detailed section with brief reference to core
 
 ---
 
@@ -483,24 +486,24 @@ Shows which sections exist in each language. Organized by file.
 
 **Note:** These files have very different structures. TypeScript has 11 detailed sections with code examples. Python has 5 sections and references other docs more heavily.
 
-#### Idempotency (TypeScript only)
+#### Idempotency
 - **Python:** N/A (covered in core/patterns.md)
-- **TypeScript:** BAD/GOOD code example
-- **Decision:** DEL — Remove from TypeScript (Core coverage sufficient)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (Core coverage sufficient)
 
 ---
 
-#### Replay Safety (TypeScript only)
+#### Replay Safety
 - **Python:** N/A
-- **TypeScript:** Subsections for Side Effects and Non-Deterministic Operations with code
-- **Decision:** DEL — Remove from TypeScript (Core coverage sufficient)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (Core coverage sufficient)
 
 ---
 
-#### Query Handlers (TypeScript only)
+#### Query Handlers
 - **Python:** N/A
-- **TypeScript:** Subsections for Modifying State and Blocking in Queries
-- **Decision:** DEL — Remove from TypeScript (Core coverage sufficient)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (Core coverage sufficient)
 
 ---
 
@@ -532,24 +535,24 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### Error Handling (TypeScript only)
+#### Error Handling (gotchas.md)
 - **Python:** N/A (references error-handling.md)
-- **TypeScript:** Subsections for Swallowing Errors and Wrong Retry Classification
-- **Decision:** all good (Python references separate file)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript gotchas.md (covered in core and error-handling.md)
 
 ---
 
 #### Wrong Retry Classification
 - **Python:** Brief note referencing error-handling.md
-- **TypeScript:** N/A
-- **Decision:** TODO — Add brief note + reference to TypeScript (like Python has)
+- **TypeScript:** Brief note + code example + reference to error-handling.md
+- **Decision:** ✅ FIXED — Added to TypeScript
 
 ---
 
-#### Retry Policies (TypeScript only)
+#### Retry Policies
 - **Python:** N/A
-- **TypeScript:** "Too Aggressive" subsection with code
-- **Decision:** DEL — Remove from TypeScript (Core coverage sufficient)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (Core coverage sufficient)
 
 ---
 
@@ -574,10 +577,10 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### Timers and Sleep (TypeScript only)
-- **Python:** N/A
+#### Timers and Sleep
+- **Python:** "Using asyncio.sleep" BAD/GOOD example
 - **TypeScript:** "Using JavaScript setTimeout" BAD/GOOD example
-- **Decision:** TODO — Add Python equivalent section for `asyncio.sleep` vs `workflow.sleep`
+- **Decision:** ✅ FIXED — Added to Python
 
 ---
 
@@ -604,10 +607,10 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### OpenTelemetry Integration (TypeScript only)
+#### OpenTelemetry Integration
 - **Python:** N/A
-- **TypeScript:** Setup + Worker Configuration subsections with full code
-- **Decision:** DEL — Remove from TypeScript (too detailed for reference docs)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (too detailed for reference docs)
 
 ---
 
@@ -625,10 +628,10 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### Debugging with Event History (TypeScript only)
+#### Debugging with Event History
 - **Python:** N/A
-- **TypeScript:** Viewing Event History, Key Events table, Debugging Non-Determinism
-- **Decision:** DEL — Remove from TypeScript (too detailed)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (too detailed)
 
 ---
 
@@ -655,10 +658,10 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### Time Skipping (TypeScript only)
+#### Time Skipping
 - **Python:** N/A (mentioned inline in environment section)
-- **TypeScript:** Separate section with code examples
-- **Decision:** DEL — Remove dedicated section from TypeScript (mention inline like Python)
+- **TypeScript:** N/A (mentioned inline in environment section)
+- **Decision:** ✅ DONE — Removed dedicated section from TypeScript (now inline like Python)
 
 ---
 
@@ -676,10 +679,10 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### Testing Failure Cases (Python only)
+#### Testing Failure Cases
 - **Python:** Code example with pytest.raises
-- **TypeScript:** N/A
-- **Decision:** TODO — Add TS equivalent section
+- **TypeScript:** Code example with try/catch and WorkflowFailedError
+- **Decision:** ✅ FIXED — Added to TypeScript
 
 ---
 
@@ -690,10 +693,10 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### Activity Testing (Python only)
+#### Activity Testing
 - **Python:** Code with ActivityEnvironment
-- **TypeScript:** N/A
-- **Decision:** TODO — Add TS equivalent for isolated activity testing
+- **TypeScript:** Code with MockActivityEnvironment
+- **Decision:** ✅ FIXED — Added to TypeScript
 
 ---
 
@@ -748,9 +751,9 @@ Shows which sections exist in each language. Organized by file.
 
 #### Choosing a Strategy
 - **Core:** Decision table
-- **Python:** N/A
+- **Python:** Decision table
 - **TypeScript:** Decision table
-- **Decision:** TODO — Add decision table to Python
+- **Decision:** ✅ FIXED — Added decision table to Python
 
 ---
 
@@ -787,17 +790,17 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### How Temporal Works: History Replay (TypeScript only)
+#### How Temporal Works: History Replay
 - **Python:** N/A (covered in core/determinism.md)
-- **TypeScript:** Detailed explanation with Commands/Events table, When Replay Occurs
-- **Decision:** DEL — Remove from TypeScript; both languages should reference core/determinism.md
+- **TypeScript:** N/A (removed, replaced with brief "Understanding Replay" section)
+- **Decision:** ✅ DONE — Removed from TypeScript; now references core/determinism.md
 
 ---
 
 #### Quick Start / Quick Demo
 - **Python:** Full multi-file example with activities, workflows, worker, starter
-- **TypeScript:** Shorter example with activities, workflows, worker
-- **Decision:** TODO — Expand TypeScript to match Python (see detailed gaps below)
+- **TypeScript:** Full multi-file example with activities, workflows, worker, client
+- **Decision:** ✅ FIXED — Expanded TypeScript to match Python (see detailed gaps now resolved)
 
 ---
 
@@ -815,10 +818,10 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### File Organization Best Practice (Python only)
+#### File Organization Best Practice
 - **Python:** Directory structure + code example for sandbox imports
-- **TypeScript:** N/A
-- **Decision:** TODO — Add to TypeScript with bundling/import guidance
+- **TypeScript:** Directory structure + code example for type-only imports
+- **Decision:** ✅ FIXED — Added to TypeScript with bundling/import guidance
 
 ---
 
@@ -838,8 +841,8 @@ Shows which sections exist in each language. Organized by file.
 
 #### Additional Resources
 - **Python:** Correct references to python files
-- **TypeScript:** ⚠️ BUG — all references point to `references/python/` instead of `references/typescript/`
-- **Decision:** FIX REQUIRED — update TypeScript file paths
+- **TypeScript:** Correct references to typescript files
+- **Decision:** ✅ FIXED — Updated TypeScript file paths
 
 ---
 
@@ -1050,10 +1053,10 @@ Shows which sections exist in each language. Organized by file.
 
 **Order alignment:** ✓ Aligned — TS# monotonically increases
 
-**Style alignment issues:**
-- ⚠️ **Queries:** TS missing "Important: must NOT modify state" note
-- ⚠️ **Saga Pattern:** TS missing idempotency note, missing critical comments about saving compensation BEFORE activity
-- ⚠️ **Saga Pattern BUG:** TS uses `console.log` — should use `log` from `@temporalio/workflow`
+**Style alignment:** ✅ All issues fixed
+- ✅ **Queries:** TS now has "Important: must NOT modify state" note
+- ✅ **Saga Pattern:** TS now has idempotency note, comments about saving compensation BEFORE activity
+- ✅ **Saga Pattern:** TS now uses `log` from `@temporalio/workflow`
 
 ### data-handling.md
 
@@ -1066,12 +1069,7 @@ Shows which sections exist in each language. Organized by file.
 - Protobuf Support: TS-specific section (Python handles protobufs via default converter)
 - Deterministic APIs for Values: Python-specific (`workflow.uuid4()`, `workflow.random()`)
 
-**Order alignment:** ⚠️ NOT ALIGNED — TS# column is not monotonic (5, 6, 3, 4...)
-- Search Attributes: Py#6, TS#3
-- Workflow Memo: Py#7, TS#4
-- Custom Data Converter: Py#4, TS#5
-- Payload Encryption: Py#5, TS#6
-- **Action:** Reorder TypeScript to match Python order
+**Order alignment:** ✅ ALIGNED — Reordered TypeScript to match Python order
 
 **Style alignment:** All TypeScript sections aligned with Python. No changes needed.
 
@@ -1092,14 +1090,14 @@ Shows which sections exist in each language. Organized by file.
 
 **Order alignment:** ✓ Aligned — TS# monotonically increases
 
-**Action items:**
-- **TypeScript TODO:** Add Workflow Failure section with nonRetryable warning
-- **TypeScript DEL:** Move Cancellation Handling in Activities to patterns.md (Python already has it there)
-- Idempotency Patterns: Python references core/patterns.md which is appropriate; no change needed
+**Action items:** ✅ All completed
+- ✅ **TypeScript:** Added Workflow Failure section with nonRetryable warning
+- ✅ **TypeScript:** Removed Cancellation Handling in Activities section
+- ✅ **TypeScript:** Replaced Idempotency Patterns with brief reference to core
 
-**Style alignment issues:**
-- ⚠️ **Handling Activity Errors BUG:** TS uses `console.log` — should use `log` from `@temporalio/workflow`
-- ⚠️ **Retry Configuration:** TS missing note about preferring defaults
+**Style alignment:** ✅ All issues fixed
+- ✅ **Handling Activity Errors:** TS now uses `log` from `@temporalio/workflow`
+- ✅ **Retry Configuration:** TS now has note about preferring defaults
 
 ### gotchas.md
 
@@ -1122,12 +1120,12 @@ Shows which sections exist in each language. Organized by file.
 
 **Order alignment:** N/A after cleanup — Core has conceptual sections, language files have implementation-specific sections
 
-**Action items:**
-- **TypeScript DEL:** Remove Idempotency, Replay Safety, Retry Policies, Query Handlers, Error Handling (move to Core only)
-- **TypeScript TODO:** Add Wrong Retry Classification section (brief note + reference, like Python)
-- **Python TODO:** Add Timers and Sleep section for `asyncio.sleep` vs `workflow.sleep` gotcha
+**Action items:** ✅ All completed
+- ✅ **TypeScript DEL:** Removed Idempotency, Replay Safety, Retry Policies, Query Handlers, Error Handling
+- ✅ **TypeScript:** Added Wrong Retry Classification section
+- ✅ **Python:** Added Timers and Sleep section
 
-**Style alignment:** After changes:
+**Style alignment:** ✅ Complete:
 - Core: 8 conceptual sections with symptoms/fixes (authoritative for cross-cutting concerns)
 - TypeScript: 7 sections (Activity Imports, Bundling, Cancellation, Heartbeating, Testing, Timers, Wrong Retry Classification)
 - Python: 5 sections (File Organization, Async vs Sync, Wrong Retry Classification, Heartbeating, Testing)
@@ -1147,11 +1145,11 @@ Shows which sections exist in each language. Organized by file.
 
 **Order alignment:** ✓ Aligned — TS# monotonically increases (Py# 2 maps to both TS# 2 and 3, but order preserved)
 
-**Action items:**
-- DEL: Remove OpenTelemetry Integration from TypeScript (too detailed)
-- DEL: Remove Debugging with Event History from TypeScript (too detailed)
+**Action items:** ✅ All completed
+- ✅ DEL: Removed OpenTelemetry Integration from TypeScript
+- ✅ DEL: Removed Debugging with Event History from TypeScript
 
-**Style alignment:** Mostly aligned. After removing both sections, TS will be more concise like Python.
+**Style alignment:** ✅ Complete. TS is now concise like Python.
 
 ### testing.md
 
@@ -1166,17 +1164,14 @@ Shows which sections exist in each language. Organized by file.
 **Sections marked DEL:**
 - Time Skipping: Remove dedicated section from TypeScript (mention inline like Python)
 
-**Order alignment:** ⚠️ NOT ALIGNED — TS# not monotonic
-- Testing Signals and Queries: Py#4 → TS#6
-- Replay Testing: Py#6 → TS#5
-- TS has: 1, 2, 3, 4, 6, 5, 7 (jumps 4→6, then back to 5)
+**Order alignment:** ✅ ALIGNED — Reordered TS sections to match Python order
 
-**Action items:**
-- TODO: Add Testing Failure Cases section to TypeScript
-- TODO: Add Activity Testing section to TypeScript
-- Reorder TS sections to match Python order (Signals/Queries before Replay)
+**Action items:** ✅ All completed
+- ✅ Added Testing Failure Cases section to TypeScript
+- ✅ Added Activity Testing section to TypeScript
+- ✅ Reordered TS sections (Signals/Queries before Replay)
 
-**Style alignment:** Mostly aligned. Python has more sections (Failure Cases, Activity Testing) — adding to TS.
+**Style alignment:** ✅ Complete. Python and TypeScript now have matching sections.
 
 ### versioning.md
 
@@ -1190,8 +1185,8 @@ Shows which sections exist in each language. Organized by file.
 
 **Order alignment:** ✓ Aligned — all three files follow same order (Overview, Why, Patching, Type Versioning, Worker Versioning, Best Practices)
 
-**Action items:**
-- TODO: Add Choosing a Strategy decision table to Python versioning.md
+**Action items:** ✅ All completed
+- ✅ Added Choosing a Strategy decision table to Python versioning.md
 
 **Decided to keep as-is:**
 - Common Mistakes: Core-only (conceptual coverage sufficient)
@@ -1221,34 +1216,30 @@ Shows which sections exist in each language. Organized by file.
 - TS has separate "Determinism Rules" section; Python has it as Key Concepts subsection
 - Python has "File Organization" section that TS doesn't have
 
-**Action items:**
-- **FIX BUG:** TypeScript Additional Resources section has wrong paths (all say `references/python/` instead of `references/typescript/`)
-- **TypeScript DEL:** Remove "How Temporal Works: History Replay" section (reference core/determinism.md instead)
-- **TypeScript TODO:** Add "File Organization Best Practice" section
+**Action items:** ✅ All completed
+- ✅ **FIX BUG:** Fixed TypeScript Additional Resources paths
+- ✅ **TypeScript DEL:** Removed "How Temporal Works: History Replay" section (now brief "Understanding Replay")
+- ✅ **TypeScript:** Added "File Organization Best Practice" section
 
-**Detailed gaps in TypeScript Quick Start (vs Python Quick Demo):**
-- ⚠️ Missing: "Add Dependency" instruction (`npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity`)
-- ⚠️ Missing: File descriptions explaining purpose (e.g., "separate file for performance")
-- ⚠️ Missing: "Start the dev server" instruction (`temporal server start-dev`)
-- ⚠️ Missing: "Start the worker" instruction (`npx ts-node worker.ts`)
-- ⚠️ Missing: starter.ts file showing how to execute a workflow from client
-- ⚠️ Missing: "Run the workflow" instruction with expected output
+**TypeScript Quick Start gaps:** ✅ All fixed
+- ✅ Added "Add Dependency" instruction
+- ✅ Added File descriptions explaining purpose
+- ✅ Added "Start the dev server" instruction
+- ✅ Added "Start the worker" instruction
+- ✅ Added client.ts file showing how to execute a workflow
+- ✅ Added "Run the workflow" instruction with expected output
 
-**Detailed gaps in TypeScript Key Concepts (vs Python):**
-- Activity Definition: Python has 5 bullets, TS has 3 bullets
-  - ⚠️ Missing: `heartbeat()` mention for long operations
-  - N/A: sync vs async guidance (TS activities are always async)
+**TypeScript Key Concepts gaps:** ✅ Fixed
+- ✅ Added `heartbeat()` mention for long operations
 
-**Detailed gaps in TypeScript Common Pitfalls (vs Python):**
-- Python has 7 items, TypeScript has 5 items
-- ⚠️ Missing: "Forgetting to heartbeat" — important for long-running activities
-- ⚠️ Missing: "Using console.log in workflows" — should use `log` from `@temporalio/workflow` for replay-safe logging
+**TypeScript Common Pitfalls gaps:** ✅ All fixed
+- ✅ Added "Forgetting to heartbeat" pitfall
+- ✅ Added "Using console.log in workflows" pitfall
 
-**Style alignment:** ⚠️ TypeScript significantly less comprehensive
-- Python Quick Demo: Full tutorial with dependency install, 4 files, run instructions, expected output
-- TypeScript Quick Start: Just 3 code blocks with no context or instructions
-- Python Key Concepts: More detailed Activity Definition guidance
-- Python Common Pitfalls: More items including heartbeat and logging
+**Style alignment:** ✅ Complete
+- Python Quick Demo and TypeScript Quick Start now match (full tutorial with 4 files, run instructions, expected output)
+- Python and TypeScript Key Concepts now aligned
+- Python and TypeScript Common Pitfalls now aligned
 
 ### determinism-protection.md
 
@@ -1303,20 +1294,20 @@ Shows which sections exist in each language. Organized by file.
 
 | Section | Core | Python | Py# | TypeScript | TS# | Go |
 |---------|------|--------|-----|------------|-----|-----|
-| Schedules | — | ✓ | 1 | ✓ | 5 | |
-| Async Activity Completion | — | ✓ | 2 | TODO | | |
+| Schedules | — | ✓ | 1 | ✓ | 1 | |
+| Async Activity Completion | — | ✓ | 2 | ✓ | 2 | |
 | Sandbox Customization | — | ✓ | 3 | — | — | |
 | Gevent Compatibility Warning | — | ✓ | 4 | — | — | |
-| Worker Tuning | — | ✓ | 5 | TODO | | |
+| Worker Tuning | — | ✓ | 5 | ✓ | 3 | |
 | Workflow Init Decorator | — | ✓ | 6 | — | — | |
 | Workflow Failure Exception Types | — | ✓ | 7 | — | — | |
-| Continue-as-New | — | — | — | DEL | 1 | |
-| Workflow Updates | — | — | — | DEL | 2 | |
-| Nexus Operations | — | — | — | DEL | 3 | |
-| Activity Cancellation and Heartbeating | — | — | — | DEL | 4 | |
-| Sinks | — | — | — | ✓ | 6 | |
-| CancellationScope Patterns | — | — | — | DEL | 7 | |
-| Best Practices | — | — | — | DEL | 8 | |
+| Continue-as-New | — | — | — | — | — | |
+| Workflow Updates | — | — | — | — | — | |
+| Nexus Operations | — | — | — | — | — | |
+| Activity Cancellation and Heartbeating | — | — | — | — | — | |
+| Sinks | — | — | — | ✓ | 4 | |
+| CancellationScope Patterns | — | — | — | — | — | |
+| Best Practices | — | — | — | — | — | |
 
 ---
 
@@ -1331,8 +1322,8 @@ Shows which sections exist in each language. Organized by file.
 
 #### Async Activity Completion
 - **Python:** Detailed section with task_token pattern, external completion code
-- **TypeScript:** N/A (not in advanced-features.md)
-- **Decision:** TODO — Add to TypeScript
+- **TypeScript:** Detailed section with task_token pattern, external completion code
+- **Decision:** ✅ FIXED — Added to TypeScript
 
 ---
 
@@ -1352,8 +1343,8 @@ Shows which sections exist in each language. Organized by file.
 
 #### Worker Tuning
 - **Python:** Code example with max_concurrent_*, activity_executor, graceful_shutdown_timeout
-- **TypeScript:** N/A (not in advanced-features.md)
-- **Decision:** TODO — Add to TypeScript
+- **TypeScript:** Code example with max_concurrent_*, shutdown timeout, cache settings
+- **Decision:** ✅ FIXED — Added to TypeScript
 
 ---
 
@@ -1371,31 +1362,31 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### Continue-as-New (TypeScript - DUPLICATE)
+#### Continue-as-New
 - **Python:** N/A (in patterns.md)
-- **TypeScript:** Full code example in advanced-features.md
-- **Decision:** DEL — Already in patterns.md (TS#10). Remove from advanced-features.md
+- **TypeScript:** N/A (removed, covered in patterns.md)
+- **Decision:** ✅ DONE — Removed from advanced-features.md (already in patterns.md)
 
 ---
 
-#### Workflow Updates (TypeScript - DUPLICATE)
+#### Workflow Updates
 - **Python:** N/A (in patterns.md)
-- **TypeScript:** Full code example with validators, client calling
-- **Decision:** DEL — Already in patterns.md (TS#5). Remove from advanced-features.md
+- **TypeScript:** N/A (removed, covered in patterns.md)
+- **Decision:** ✅ DONE — Removed from advanced-features.md (already in patterns.md)
 
 ---
 
-#### Nexus Operations (TypeScript only)
+#### Nexus Operations
 - **Python:** N/A
-- **TypeScript:** WHY/WHEN + service definition + handlers + workflow calling
-- **Decision:** DEL — Remove from TypeScript (too advanced for reference docs)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (too advanced for reference docs)
 
 ---
 
-#### Activity Cancellation and Heartbeating (TypeScript only)
+#### Activity Cancellation and Heartbeating
 - **Python:** N/A (Heartbeat Details in patterns.md)
-- **TypeScript:** ActivityCancellationType + Heartbeat Details for resumption
-- **Decision:** DEL — Remove from TypeScript (Heartbeat Details already in patterns.md; ActivityCancellationType not needed)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (Heartbeat Details already in patterns.md)
 
 ---
 
@@ -1406,17 +1397,17 @@ Shows which sections exist in each language. Organized by file.
 
 ---
 
-#### CancellationScope Patterns (TypeScript - DUPLICATE)
+#### CancellationScope Patterns
 - **Python:** N/A (has Cancellation Handling in patterns.md)
-- **TypeScript:** nonCancellable + cancellable scope patterns
-- **Decision:** DEL — Already in patterns.md as "Cancellation Scopes" (TS#12). Remove from advanced-features.md
+- **TypeScript:** N/A (removed, covered in patterns.md)
+- **Decision:** ✅ DONE — Removed from advanced-features.md (already in patterns.md)
 
 ---
 
-#### Best Practices (TypeScript only)
+#### Best Practices (advanced-features.md)
 - **Python:** N/A
-- **TypeScript:** 7 items covering continue-as-new, updates, sinks, cancellation
-- **Decision:** DEL — Remove from TypeScript (best practices covered in individual sections)
+- **TypeScript:** N/A (removed)
+- **Decision:** ✅ DONE — Removed from TypeScript (best practices covered in individual sections)
 
 ---
 
@@ -1449,15 +1440,15 @@ Shows which sections exist in each language. Organized by file.
 
 **Order alignment:** N/A — files have very different structures; TS has many duplicates that should be removed
 
-**Action items:**
-1. **TypeScript DEL:** Remove Continue-as-New, Workflow Updates, CancellationScope Patterns (duplicates from patterns.md)
-2. **TypeScript DEL:** Remove Nexus Operations (too advanced)
-3. **TypeScript DEL:** Remove Activity Cancellation and Heartbeating (Heartbeat Details in patterns.md; ActivityCancellationType not needed)
-4. **TypeScript DEL:** Remove Best Practices (covered in individual sections)
-5. **TypeScript TODO:** Add Async Activity Completion
-6. **TypeScript TODO:** Add Worker Tuning
+**Action items:** ✅ All completed
+1. ✅ **TypeScript DEL:** Removed Continue-as-New, Workflow Updates, CancellationScope Patterns
+2. ✅ **TypeScript DEL:** Removed Nexus Operations
+3. ✅ **TypeScript DEL:** Removed Activity Cancellation and Heartbeating
+4. ✅ **TypeScript DEL:** Removed Best Practices
+5. ✅ **TypeScript:** Added Async Activity Completion
+6. ✅ **TypeScript:** Added Worker Tuning
 
-**Style alignment:** After changes:
+**Style alignment:** ✅ Complete:
 - Python: 7 sections (Schedules, Async Activity Completion, Sandbox Customization, Gevent Warning, Worker Tuning, Workflow Init, Failure Exception Types)
 - TypeScript: 4 sections (Schedules, Async Activity Completion, Worker Tuning, Sinks)
 - Both serve as "miscellaneous advanced topics" not covered elsewhere
