@@ -170,3 +170,34 @@ It is important to make sure workflows work as expected under failure paths in a
 ### Not Testing Replay
 
 Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code, and should be considered in addition to standard testing. Please see `references/python/testing.md` for more info.
+
+## Timers and Sleep
+
+### Using asyncio.sleep
+
+```python
+# BAD: asyncio.sleep is not deterministic during replay
+import asyncio
+
+@workflow.defn
+class BadWorkflow:
+    @workflow.run
+    async def run(self) -> None:
+        await asyncio.sleep(60)  # Non-deterministic!
+```
+
+```python
+# GOOD: Use workflow.sleep for deterministic timers
+from temporalio import workflow
+from datetime import timedelta
+
+@workflow.defn
+class GoodWorkflow:
+    @workflow.run
+    async def run(self) -> None:
+        await workflow.sleep(timedelta(seconds=60))  # Deterministic
+        # Or with string duration:
+        await workflow.sleep("1 minute")
+```
+
+**Why this matters:** `asyncio.sleep` uses the system clock, which differs between original execution and replay. `workflow.sleep` creates a durable timer in the event history, ensuring consistent behavior during replay.
