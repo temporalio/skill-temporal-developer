@@ -9,22 +9,24 @@ The TypeScript SDK uses data converters to serialize/deserialize workflow inputs
 The default converter handles:
 - `undefined` and `null`
 - `Uint8Array` (as binary)
-- Protobuf messages (if configured)
 - JSON-serializable types
+
+Note: Protobuf support requires using a data converter (`DefaultPayloadConverterWithProtobufs`). See the Protobuf Support section below.
 
 ## Custom Data Converter
 
 Create custom converters for special serialization needs.
 
 ```typescript
+// payload-converter.ts
 import {
-  DataConverter,
   PayloadConverter,
+  Payload,
   defaultPayloadConverter,
 } from '@temporalio/common';
 
 class CustomPayloadConverter implements PayloadConverter {
-  toPayload(value: unknown): Payload | undefined {
+  toPayload<T>(value: T): Payload | undefined {
     // Custom serialization logic
     return defaultPayloadConverter.toPayload(value);
   }
@@ -35,20 +37,42 @@ class CustomPayloadConverter implements PayloadConverter {
   }
 }
 
-const dataConverter: DataConverter = {
-  payloadConverter: new CustomPayloadConverter(),
-};
+export const payloadConverter = new CustomPayloadConverter();
+```
 
-// Apply to client
+```typescript
+// client.ts
+import { Client } from '@temporalio/client';
+
 const client = new Client({
-  dataConverter,
+  dataConverter: {
+    payloadConverterPath: require.resolve('./payload-converter'),
+  },
 });
+```
 
-// Apply to worker
+```typescript
+// worker.ts
+import { Worker } from '@temporalio/worker';
+
 const worker = await Worker.create({
-  dataConverter,
+  dataConverter: {
+    payloadConverterPath: require.resolve('./payload-converter'),
+  },
   // ...
 });
+```
+
+## Composition of Payload Converters
+
+```typescript
+import { CompositePayloadConverter } from '@temporalio/common';
+
+// The order matters — converters are tried in sequence until one returns a non-null Payload
+export const payloadConverter = new CompositePayloadConverter(
+  new PayloadConverterFoo(),
+  new PayloadConverterBar(),
+);
 ```
 
 ## Payload Codec (Encryption)
@@ -103,7 +127,7 @@ class EncryptionCodec implements PayloadCodec {
 
 // Apply codec
 const dataConverter: DataConverter = {
-  payloadCodec: new EncryptionCodec(encryptionKey),
+  payloadCodecs: [new EncryptionCodec(encryptionKey)],
 };
 ```
 

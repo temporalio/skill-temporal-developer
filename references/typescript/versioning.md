@@ -6,7 +6,7 @@ The TypeScript SDK provides multiple approaches to safely change Workflow code w
 
 ## Why Versioning Matters
 
-Temporal provides durable execution through **History Replay**. When a Worker needs to restore Workflow state, it re-executes the Workflow code from the beginning. If you change Workflow code while executions are still running, replay can fail because the new code produces different Commands than the original history.
+Temporal provides durable execution through **History Replay**. When a Worker needs to restore Workflow state, it re-executes the Workflow code from the beginning. If you change Workflow code while executions are still running, replay can fail because the new code follows a different execution path, producing a different sequence of Commands than what was originally recorded in the history.
 
 Versioning strategies allow you to safely deploy changes without breaking in-progress Workflow Executions.
 
@@ -86,33 +86,13 @@ export async function shippingConfirmation(): Promise<void> {
 }
 ```
 
-### Multiple Patches
-
-A Workflow can have multiple patches for different changes:
-
-```typescript
-export async function shippingConfirmation(): Promise<void> {
-  if (patched('sendEmail')) {
-    await sendEmail();
-  } else if (patched('sendTextMessage')) {
-    await sendTextMessage();
-  } else if (patched('sendTweet')) {
-    await sendTweet();
-  } else {
-    await sendFax();
-  }
-}
-```
-
-You can use a single `patchId` for multiple changes deployed together.
-
 ### Query Filters for Versioned Workflows
 
 Use List Filters to find Workflows by version:
 
 ```
 # Find running Workflows with a specific patch
-WorkflowType = "shippingConfirmation" AND ExecutionStatus = "Running" AND TemporalChangeVersion="changedNotificationType"
+WorkflowType = "shippingConfirmation" AND ExecutionStatus = "Running" AND TemporalChangeVersion = "changedNotificationType"
 
 # Find running Workflows without the patch (started before patching)
 WorkflowType = "shippingConfirmation" AND ExecutionStatus = "Running" AND TemporalChangeVersion IS NULL
@@ -164,127 +144,61 @@ After all V1 executions complete, remove the old Workflow function.
 
 ## Worker Versioning
 
-Worker Versioning allows multiple Worker versions to run simultaneously, routing Workflows to specific versions without code-level patching.
+Worker Versioning allows multiple Worker versions to run simultaneously, routing Workflows to specific versions without code-level patching. Workflows are pinned to the Worker Deployment Version they started on.
+
+> **Note:** Worker Versioning is currently in Public Preview. The legacy Worker Versioning API (before 2025) will be removed from Temporal Server in March 2026.
 
 ### Key Concepts
 
 - **Worker Deployment**: A logical name for your application (e.g., "order-service")
-- **Worker Deployment Version**: A specific build of your code (deployment name + Build ID)
+- **Worker Deployment Version**: A specific build identified by deployment name + Build ID
+- **Workflow Pinning**: Workflows complete on the Worker Deployment Version they started on
 
 ### Configuring Workers for Versioning
 
 ```typescript
+import { Worker, NativeConnection } from '@temporalio/worker';
+
 const worker = await Worker.create({
   workflowsPath: require.resolve('./workflows'),
   taskQueue: 'my-queue',
+  connection: await NativeConnection.connect({ address: 'temporal:7233' }),
   workerDeploymentOptions: {
     useWorkerVersioning: true,
     version: {
       deploymentName: 'order-service',
-      buildId: '1.0.0',  // Or git hash, build number, etc.
+      buildId: '1.0.0',  // Git hash, semver, build number, etc.
     },
-    defaultVersioningBehavior: 'PINNED',  // Or 'AUTO_UPGRADE'
   },
-  connection: nativeConnection,
 });
 ```
 
 **Configuration options:**
 - `useWorkerVersioning`: Enables Worker Versioning
 - `version.deploymentName`: Logical name for your service (consistent across versions)
-- `version.buildId`: Unique identifier for this build (git hash, semver, build number)
-- `defaultVersioningBehavior`: How Workflows behave when versions change
+- `version.buildId`: Unique identifier for this build
 
-### Versioning Behaviors
+### Deployment Workflow
 
-#### PINNED Behavior
+1. Deploy new Worker version with a new `buildId`
+2. Use the Temporal CLI to set the new version as current:
+   ```bash
+   temporal worker deployment set-current-version \
+     --deployment-name order-service \
+     --build-id 2.0.0
+   ```
+3. New Workflows start on the new version
+4. Existing Workflows continue on their original version until completion
+5. Decommission old Workers once all their Workflows complete
 
-Workflows are locked to the Worker version they started on:
+### When to Use Worker Versioning
 
-```typescript
-workerDeploymentOptions: {
-  useWorkerVersioning: true,
-  version: { buildId: '1.0', deploymentName: 'order-service' },
-  defaultVersioningBehavior: 'PINNED',
-}
-```
+Worker Versioning is best suited for:
+- **Short-running Workflows**: Old Workers only need to run briefly during deployment transitions
+- **Frequent deployments**: Eliminates the need for code-level patching on every change
+- **Blue-green deployments**: Run old and new versions simultaneously with traffic control
 
-**Characteristics:**
-- Workflows run only on their assigned version
-- No patching required in Workflow code
-- Cannot use other versioning APIs
-- Ideal for short-running Workflows where consistency matters
-
-**Use PINNED when:**
-- You want to eliminate version compatibility complexity
-- Workflows are short-running
-- Stability is more important than getting latest updates
-
-#### AUTO_UPGRADE Behavior
-
-Workflows can move to newer Worker versions:
-
-```typescript
-workerDeploymentOptions: {
-  useWorkerVersioning: true,
-  version: { buildId: '1.0', deploymentName: 'order-service' },
-  defaultVersioningBehavior: 'AUTO_UPGRADE',
-}
-```
-
-**Characteristics:**
-- Workflows can be rerouted to new versions
-- Once moved to a newer version, cannot return to older ones
-- May require patching to handle version transitions
-- Ideal for long-running Workflows that need bug fixes
-
-**Use AUTO_UPGRADE when:**
-- Workflows are long-running (weeks or months)
-- You want Workflows to benefit from bug fixes
-- Migrating from rolling deployments
-
-### Deployment Strategies
-
-#### Blue-Green Deployments
-
-Maintain two environments and switch traffic between them:
-
-1. Deploy new version to idle environment
-2. Run validation tests
-3. Switch traffic to new environment
-4. Keep old environment for instant rollback
-
-#### Rainbow Deployments
-
-Multiple Worker versions run simultaneously:
-
-```typescript
-// Version 1.0 Workers
-const worker1 = await Worker.create({
-  workerDeploymentOptions: {
-    useWorkerVersioning: true,
-    version: { buildId: '1.0', deploymentName: 'order-service' },
-    defaultVersioningBehavior: 'PINNED',
-  },
-  // ...
-});
-
-// Version 2.0 Workers (deployed alongside 1.0)
-const worker2 = await Worker.create({
-  workerDeploymentOptions: {
-    useWorkerVersioning: true,
-    version: { buildId: '2.0', deploymentName: 'order-service' },
-    defaultVersioningBehavior: 'PINNED',
-  },
-  // ...
-});
-```
-
-**Benefits:**
-- Existing PINNED Workflows complete on their original version
-- New Workflows use the latest version
-- Add new versions without replacing existing ones
-- Supports gradual traffic ramping
+For long-running Workflows, consider combining Worker Versioning with the Patching API, or use Continue-as-New to move Workflows to newer versions.
 
 ## Choosing a Versioning Strategy
 
@@ -292,8 +206,7 @@ const worker2 = await Worker.create({
 |----------|----------|------------|
 | Patching API | Incremental changes to long-running Workflows | Requires maintaining patch branches in code |
 | Workflow Type Versioning | Major incompatible changes | Requires code duplication and client updates |
-| Worker Versioning (PINNED) | Short-running Workflows, new applications | Requires infrastructure to run multiple versions |
-| Worker Versioning (AUTO_UPGRADE) | Long-running Workflows, migrations | May require patching for safe transitions |
+| Worker Versioning | Short-running Workflows, frequent deploys | Requires running multiple Worker versions simultaneously |
 
 ## Best Practices
 
@@ -302,6 +215,4 @@ const worker2 = await Worker.create({
 3. Use List Filters to verify no running Workflows before removing version support
 4. Keep Worker Deployment names consistent across all versions
 5. Use unique, traceable Build IDs (git hashes, semver, timestamps)
-6. Choose PINNED for new applications with short-running Workflows
-7. Choose AUTO_UPGRADE when migrating from rolling deployments or for long-running Workflows
-8. Test version transitions with replay tests before deploying
+6. Test version transitions with replay tests before deploying

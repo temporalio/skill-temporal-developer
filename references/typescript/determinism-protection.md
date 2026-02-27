@@ -2,7 +2,7 @@
 
 ## Overview
 
-The TypeScript SDK runs workflows in an V8 sandbox that provides automatic protection against non-deterministic operations, and replaces common non-deterministic function calls with deterministic variants. This is unique to the TypeScript SDK.
+The TypeScript SDK runs workflows in a V8 sandbox that provides automatic protection against non-deterministic operations, and replaces common non-deterministic function calls with deterministic variants.
 
 ## Import Blocking
 
@@ -23,6 +23,9 @@ const worker = await Worker.create({
 });
 ```
 
+**Important**: Excluded modules are completely unavailable at runtime. Any attempt to call functions from these modules will throw an error. Only exclude modules when you are certain the code paths using them will never execute during workflow execution.
+
+**Note**: Modules with the `node:` prefix (e.g., `node:fs`) require additional webpack configuration to ignore. You may need to configure the bundler's `externals` or use webpack `resolve.alias` to handle these imports.
 
 Use this with *extreme caution*.
 

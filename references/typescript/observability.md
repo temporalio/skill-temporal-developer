@@ -10,6 +10,8 @@ Temporal's logger automatically suppresses duplicate messages during replay, pre
 
 ### Workflow Logging
 
+Workflows run in a sandboxed environment and cannot use regular Node.js loggers directly. Since SDK 1.8.0, the `@temporalio/workflow` package exports a `log` object that provides replay-aware logging. Internally, it uses Sinks to funnel messages to the Runtime's logger.
+
 ```typescript
 import { log } from '@temporalio/workflow';
 
@@ -25,14 +27,15 @@ export async function orderWorkflow(orderId: string): Promise<string> {
 
 **Log levels**: `log.debug()`, `log.info()`, `log.warn()`, `log.error()`
 
+The workflow logger automatically suppresses duplicate messages during replay and includes workflow context metadata (workflowId, runId, etc.) on every log entry.
+
 ### Activity Logging
 
 ```typescript
-import * as activity from '@temporalio/activity';
+import { log } from '@temporalio/activity';
 
 export async function processPayment(orderId: string): Promise<string> {
-  const context = activity.Context.current();
-  context.log.info('Processing payment', { orderId });
+  log.info('Processing payment', { orderId });
 
   // Activity logs don't need replay suppression
   // since completed activities aren't re-executed
@@ -115,7 +118,7 @@ Runtime.install({
 
 ## Best Practices
 
-1. Use `log` from `@temporalio/workflow` - never `console.log` in workflows
+1. Use `log` from `@temporalio/workflow` in workflows - workflows run in a sandbox and need replay-aware logging
 2. Include correlation IDs (orderId, customerId) in log messages
 3. Configure Winston or similar for production log aggregation
 4. Enable OpenTelemetry for distributed tracing across services

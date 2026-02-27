@@ -51,7 +51,9 @@ export async function myWorkflow(): Promise<void> {
 const worker = await Worker.create({
   workflowsPath: require.resolve('./workflows'),
   bundlerOptions: {
-    // Include specific packages if needed
+    // Exclude Node.js-only packages that cause bundling errors
+    // WARNING: Modules listed here will be completely unavailable
+    // at workflow runtime - any imports will fail
     ignoreModules: ['some-node-only-package'],
   },
 });
@@ -207,15 +209,18 @@ test('handles activity failure', async () => {
 
 ```typescript
 import { Worker } from '@temporalio/worker';
+import * as fs from 'fs';
 
 test('replay compatibility', async () => {
-  const history = await import('./fixtures/workflow_history.json');
+  const history = JSON.parse(await fs.promises.readFile('./fixtures/workflow_history.json', 'utf8'));
 
   // Fails if current code is incompatible with history
-  await Worker.runReplayHistory({
-    workflowsPath: require.resolve('./workflows'),
+  await Worker.runReplayHistory(
+    {
+      workflowsPath: require.resolve('./workflows'),
+    },
     history,
-  });
+  );
 });
 ```
 

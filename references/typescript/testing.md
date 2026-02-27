@@ -2,7 +2,9 @@
 
 ## Overview
 
-The TypeScript SDK provides `TestWorkflowEnvironment` for testing workflows with time-skipping and activity mocking support.
+The TypeScript SDK provides `TestWorkflowEnvironment` for testing workflows with time-skipping and activity mocking support. Use `createTimeSkipping()` for automatic time advancement when testing workflows with timers, or `createLocal()` for a full local server without time-skipping.
+
+**Note:** Prefer to use `createLocal()` for full-featured support. Only use `createTimeSkipping()` if you genuinely need time skipping for testing your workflow.
 
 ## Test Environment Setup
 
@@ -43,8 +45,6 @@ describe('Workflow', () => {
 });
 ```
 
-The test environment automatically skips time when the workflow is waiting on timers, making tests fast.
-
 ## Activity Mocking
 
 ```typescript
@@ -62,6 +62,12 @@ const worker = await Worker.create({
 ## Testing Signals and Queries
 
 ```typescript
+import { defineQuery, defineSignal } from '@temporalio/workflow';
+
+// Define query and signal (typically in a shared file)
+const getStatusQuery = defineQuery<string>('getStatus');
+const approveSignal = defineSignal('approve');
+
 it('handles signals and queries', async () => {
   await worker.runUntil(async () => {
     const handle = await client.workflow.start(approvalWorkflow, {
@@ -70,11 +76,11 @@ it('handles signals and queries', async () => {
     });
 
     // Query current state
-    const status = await handle.query('getStatus');
+    const status = await handle.query(getStatusQuery);
     expect(status).toEqual('pending');
 
     // Send signal
-    await handle.signal('approve');
+    await handle.signal(approveSignal);
 
     // Wait for completion
     const result = await handle.result();
@@ -90,6 +96,7 @@ Test that workflows handle errors correctly:
 ```typescript
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import { Worker } from '@temporalio/worker';
+import { WorkflowFailedError } from '@temporalio/client';
 import assert from 'assert';
 
 describe('Failure handling', () => {
@@ -137,16 +144,37 @@ describe('Failure handling', () => {
 
 ```typescript
 import { Worker } from '@temporalio/worker';
+import { Client, Connection } from '@temporalio/client';
+import fs from 'fs';
 
 describe('Replay', () => {
-  it('replays workflow history', async () => {
-    const history = await fetchWorkflowHistory('workflow-id');
+  it('replays workflow history from JSON file', async () => {
+    // Load history from a JSON file (exported from Web UI or Temporal CLI)
+    const filePath = './history_file.json';
+    const history = JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
 
     await Worker.runReplayHistory(
       {
         workflowsPath: require.resolve('./workflows'),
       },
-      history
+      history,
+      'my-workflow-id' // Optional: provide workflowId if your workflow depends on it
+    );
+  });
+
+  it('replays workflow history from server', async () => {
+    // Fetch history programmatically using the client
+    const connection = await Connection.connect({ address: 'localhost:7233' });
+    const client = new Client({ connection, namespace: 'default' });
+    const handle = client.workflow.getHandle('my-workflow-id');
+    const history = await handle.fetchHistory();
+
+    await Worker.runReplayHistory(
+      {
+        workflowsPath: require.resolve('./workflows'),
+      },
+      history,
+      'my-workflow-id'
     );
   });
 });
@@ -158,6 +186,7 @@ Test activities in isolation without running a workflow:
 
 ```typescript
 import { MockActivityEnvironment } from '@temporalio/testing';
+import { CancelledFailure } from '@temporalio/activity';
 import { myActivity } from './activities';
 import assert from 'assert';
 
@@ -169,7 +198,9 @@ describe('Activity tests', () => {
   });
 
   it('handles cancellation', async () => {
-    const env = new MockActivityEnvironment({ cancelled: true });
+    const env = new MockActivityEnvironment();
+    // Cancel the activity after a short delay
+    setTimeout(() => env.cancel(), 100);
     try {
       await env.run(longRunningActivity, 'input');
       assert.fail('Expected cancellation');

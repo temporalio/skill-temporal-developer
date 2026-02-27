@@ -42,27 +42,21 @@ Complete an activity asynchronously from outside the activity function. Useful w
 ```typescript
 import { CompleteAsyncError, activityInfo } from '@temporalio/activity';
 
-export async function asyncActivity(): Promise<string> {
-  const taskToken = activityInfo().taskToken;
-
-  // Store taskToken somewhere (database, queue, etc.)
-  await saveTaskToken(taskToken);
-
-  // Throw to indicate async completion
+export async function doSomethingAsync(): Promise<string> {
+  const taskToken: Uint8Array = activityInfo().taskToken;
+  setTimeout(() => doSomeWork(taskToken), 1000);
   throw new CompleteAsyncError();
 }
 ```
 
-**External completion (from another process):**
+**External completion (from another process, machine, etc.):**
 ```typescript
 import { AsyncCompletionClient } from '@temporalio/client';
 
-async function completeActivity(taskToken: Uint8Array, result: string) {
+async function doSomeWork(taskToken: Uint8Array): Promise<void> {
   const client = new AsyncCompletionClient();
-
-  await client.complete(taskToken, result);
-  // Or for failure:
-  // await client.fail(taskToken, new Error('Failed'));
+  // does some work...
+  await client.complete(taskToken, "Job's done!");
 }
 ```
 
@@ -88,7 +82,7 @@ const worker = await Worker.create({
   maxConcurrentWorkflowTaskExecutions: 100,
 
   // Activity execution concurrency (default: 100)
-  maxConcurrentActivityTaskExecutions: 100,
+  maxConcurrentActivityTaskExecutions: 200,
 
   // Graceful shutdown timeout (default: 0)
   shutdownGraceTime: '30 seconds',

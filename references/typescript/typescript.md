@@ -2,13 +2,13 @@
 
 ## Overview
 
-The Temporal TypeScript SDK provides a modern async/await approach to building durable workflows. Workflows run in an isolated V8 sandbox for automatic determinism protection.
+The Temporal TypeScript SDK provides a modern async/await approach to building durable workflows. Workflows run in an isolated runtime with bundling and automatic replacements for determinism protection.
 
 **CRITICAL**: All `@temporalio/*` packages must have the same version number.
 
 ## Understanding Replay
 
-Temporal workflows are durable through history replay. For details on how this works, see `core/determinism.md`.
+Temporal workflows are durable through history replay. For details on how this works, see `references/core/determinism.md`.
 
 ## Quick Start
 
@@ -87,7 +87,7 @@ run().catch(console.error);
 ### Workflow Definition
 - Async functions exported from workflow file
 - Use `proxyActivities()` with type-only imports
-- Use `defineSignal()`, `defineQuery()`, `setHandler()` for handlers
+- Use `defineSignal()`, `defineQuery()`, `defineUpdate()`, `setHandler()` for handlers
 
 ### Activity Definition
 - Regular async functions
@@ -95,7 +95,7 @@ run().catch(console.error);
 - Use `heartbeat()` for long operations
 
 ### Worker Setup
-- Use `Worker.create()` with workflowsPath
+- Use `Worker.create()` with workflowsPath and activities
 - Import activities directly (not via proxy)
 
 ## File Organization Best Practice
@@ -147,7 +147,7 @@ See `determinism.md` for detailed rules.
 4. **Missing `proxyActivities`** - Required to call activities from workflows
 5. **Forgetting to bundle workflows** - Worker needs workflowsPath
 6. **Forgetting to heartbeat** - Long-running activities need `heartbeat()` calls
-7. **Using console.log in workflows** - Use `log` from `@temporalio/workflow` for replay-safe logging
+7. **Logging in workflows** - Use `import { log } from '@temporalio/workflow'` for replay-safe logging with automatic workflow context. See `references/typescript/observability.md` for more info.
 
 ## Writing Tests
 
