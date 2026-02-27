@@ -1,8 +1,14 @@
 # Python SDK Versioning
 
-For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
+## Overview
 
-## Patching API
+Workflow versioning allows you to safely deploy changes to Workflow code without causing non-deterministic errors in running Workflow Executions. The Python SDK provides multiple approaches: the Patching API for code-level version management, Workflow Type versioning for incompatible changes, and Worker Versioning for deployment-level control.
+
+## Why Versioning is Needed
+
+When Workers restart after a deployment, they resume open Workflow Executions through History Replay. If the updated Workflow Definition produces a different sequence of Commands than the original code, it causes a non-deterministic error. Versioning ensures backward compatibility by preserving the original execution path for existing workflows while allowing new workflows to use updated code.
+
+## Workflow Versioning with Patching API
 
 ### The patched() Function
 

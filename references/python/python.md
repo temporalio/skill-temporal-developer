@@ -160,14 +160,14 @@ See `references/python/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
-- **`references/python/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
+- **`references/python/patterns.md`** - Signals, queries, child workflows, saga pattern
 - **`references/python/determinism.md`** - Sandbox behavior, safe alternatives, pass-through pattern, history replay
 - **`references/python/gotchas.md`** - Python-specific mistakes and anti-patterns
 - **`references/python/error-handling.md`** - ApplicationError, retry policies, non-retryable errors, idempotency
 - **`references/python/observability.md`** - Logging, metrics, tracing, Search Attributes
 - **`references/python/testing.md`** - WorkflowEnvironment, time-skipping, activity mocking
 - **`references/python/sync-vs-async.md`** - Sync vs async activities, event loop blocking, executor configuration
-- **`references/python/advanced-features.md`** - Schedules, worker tuning, and more
+- **`references/python/advanced-features.md`** - Continue-as-new, updates, schedules, and more
 - **`references/python/data-handling.md`** - Data converters, Pydantic, payload encryption
 - **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
