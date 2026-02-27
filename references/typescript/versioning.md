@@ -1,16 +1,8 @@
 # TypeScript SDK Versioning
 
-## Overview
+For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
 
-The TypeScript SDK provides multiple approaches to safely change Workflow code while maintaining compatibility with running Workflows: the Patching API, Workflow Type Versioning, and Worker Versioning.
-
-## Why Versioning Matters
-
-Temporal provides durable execution through **History Replay**. When a Worker needs to restore Workflow state, it re-executes the Workflow code from the beginning. If you change Workflow code while executions are still running, replay can fail because the new code follows a different execution path, producing a different sequence of Commands than what was originally recorded in the history.
-
-Versioning strategies allow you to safely deploy changes without breaking in-progress Workflow Executions.
-
-## Workflow Versioning with the Patching API
+## Patching API
 
 The Patching API lets you change Workflow Definitions without causing non-deterministic behavior in running Workflows.
 
@@ -199,14 +191,6 @@ Worker Versioning is best suited for:
 - **Blue-green deployments**: Run old and new versions simultaneously with traffic control
 
 For long-running Workflows, consider combining Worker Versioning with the Patching API, or use Continue-as-New to move Workflows to newer versions.
-
-## Choosing a Versioning Strategy
-
-| Strategy | Best For | Trade-offs |
-|----------|----------|------------|
-| Patching API | Incremental changes to long-running Workflows | Requires maintaining patch branches in code |
-| Workflow Type Versioning | Major incompatible changes | Requires code duplication and client updates |
-| Worker Versioning | Short-running Workflows, frequent deploys | Requires running multiple Worker versions simultaneously |
 
 ## Best Practices
 

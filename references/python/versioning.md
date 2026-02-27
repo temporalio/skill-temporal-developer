@@ -297,21 +297,6 @@ temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
-## Choosing a Strategy
-
-| Scenario | Recommended Approach |
-|----------|---------------------|
-| Minor bug fix, compatible change | Patching API (`patched()`) |
-| Major logic change, incompatible | Workflow Type Versioning (new workflow name) |
-| Infrastructure change, gradual rollout | Worker Versioning (Build ID) |
-| Need to query/signal old workflows | Patching (keeps same workflow type) |
-| Clean break, no backward compatibility | Workflow Type Versioning |
-
-**Decision factors:**
-- **Patching API**: Best for incremental changes where you need to maintain the same workflow type and can gradually migrate
-- **Workflow Type Versioning**: Best for major changes where a clean break is acceptable
-- **Worker Versioning**: Best for infrastructure-level changes or when you need fine-grained deployment control
-
 ## Best Practices
 
 1. **Check for open executions** before removing old code paths
