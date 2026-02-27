@@ -6,7 +6,7 @@ The Python SDK runs workflows in a sandbox that provides automatic protection ag
 
 ## Why Determinism Matters: History Replay
 
-Temporal achieves durability through **history replay**. Understanding this mechanism is key to writing correct Workflow code.
+Temporal provides durable execution through **History Replay**. When a Worker needs to restore workflow state (after a crash, cache eviction, or to continue after a long timer), it re-executes the workflow code from the beginning, which requires the workflow code to be **deterministic**.
 
 ## Forbidden Operations
 
@@ -29,22 +29,7 @@ Temporal achieves durability through **history replay**. Understanding this mech
 
 ## Testing Replay Compatibility
 
-Use the `Replayer` class to verify your code changes are compatible with existing histories:
-
-```python
-from temporalio.worker import Replayer
-from temporalio.client import WorkflowHistory
-
-async def test_replay_compatibility():
-    replayer = Replayer(workflows=[MyWorkflow])
-
-    # Test against a saved history
-    with open("workflow_history.json") as f:
-        history = WorkflowHistory.from_json("my-workflow-id", f.read())
-
-    # This will raise NondeterminismError if incompatible
-    await replayer.replay_workflow(history)
-```
+Use the `Replayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/python/testing.md`.
 
 ## Sandbox Behavior
 
