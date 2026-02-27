@@ -109,7 +109,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
-    + Langauge-specific info at `references/{your_language}/determinism.md`, if available. Currently Python only.
+    + Language-specific info at `references/{your_language}/determinism.md`, if available. Currently Python only.
 
 ## Additional Topics
 - **`references/{your_langauge}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
