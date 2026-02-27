@@ -137,7 +137,7 @@ The TypeScript SDK runs workflows in an isolated V8 sandbox.
 - `condition()` for waiting
 - Standard JavaScript operations
 
-See `determinism.md` for detailed rules.
+See `references/typescript/determinism.md` for detailed rules.
 
 ## Common Pitfalls
 
