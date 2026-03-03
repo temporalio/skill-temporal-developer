@@ -160,7 +160,7 @@ Parse rate limit info from API responses:
 
 ## Observability
 
-See `references/{your_language}/observability.md` for the langauge you are working in for documentation on implementing observability in Temporal. It is generally recommended to add observability for:
+See `references/{your_language}/observability.md` for the language you are working in for documentation on implementing observability in Temporal. It is generally recommended to add observability for:
 - Token usage, via activity logging
 - any else to help track LLM usage and debug agentic flows, within moderation.
 
