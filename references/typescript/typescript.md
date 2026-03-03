@@ -17,7 +17,7 @@ Temporal workflows are durable through history replay. For details on how this w
 npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity
 ```
 
-**activities.ts** - Activity definitions (separate file for bundling performance):
+**activities.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
 ```typescript
 export async function greet(name: string): Promise<string> {
   return `Hello, ${name}!`;
