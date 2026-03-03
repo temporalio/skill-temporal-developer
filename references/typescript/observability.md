@@ -121,6 +121,5 @@ Runtime.install({
 1. Use `log` from `@temporalio/workflow` in workflows - workflows run in a sandbox and need replay-aware logging
 2. Include correlation IDs (orderId, customerId) in log messages
 3. Configure Winston or similar for production log aggregation
-4. Enable OpenTelemetry for distributed tracing across services
-5. Monitor Prometheus metrics for worker health
-6. Use Event History for debugging workflow issues
+4. Monitor Prometheus metrics for worker health
+5. Use Event History for debugging workflow issues
