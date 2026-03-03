@@ -13,7 +13,7 @@ Temporal provides durable execution through **History Replay**. When a Worker ne
 The Temporal TypeScript SDK executes all workflow code in sandbox, which (among other things), replaces common non-deterministic functions with deterministic variants. As an example, consider the code below:
 
 ```ts
-export async function badWorkflow(): Promise<string> {
+export async function myWorkflow(): Promise<string> {
   await importData();
 
   if (Math.random() > 0.5) {
