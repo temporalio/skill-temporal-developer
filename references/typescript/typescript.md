@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Temporal TypeScript SDK provides a modern async/await approach to building durable workflows. Workflows run in an isolated runtime with bundling and automatic replacements for determinism protection.
+The Temporal TypeScript SDK provides a modern Promise based approach to building durable workflows. Workflows are bundled and run in an isolated runtime with automatic replacements for determinism protection.
 
 **CRITICAL**: All `@temporalio/*` packages must have the same version number.
 
