@@ -51,6 +51,6 @@ for (let x = 0; x < 10; ++x) {
 }
 ```
 
-This means that if you want a workflow to truly be able to check current real-world physical time, you should retrieve the time in an activity. You should consider which is semantically appropriate for your situation.
+Generally, this is the behavior you want.
 
 Additionally, `FinalizationRegistry` and `WeakRef` are removed because v8's garbage collector is not deterministic.
