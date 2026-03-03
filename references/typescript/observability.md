@@ -2,7 +2,7 @@
 
 ## Overview
 
-The TypeScript SDK provides replay-aware logging, metrics, and OpenTelemetry integration for production observability.
+The TypeScript SDK provides replay-aware logging, metrics, and integrations for production observability.
 
 ## Replay-Aware Logging
 
@@ -95,21 +95,6 @@ Runtime.install({
     metrics: {
       prometheus: {
         bindAddress: '127.0.0.1:9091',
-      },
-    },
-  },
-});
-```
-
-### OTLP Metrics
-
-```typescript
-Runtime.install({
-  telemetryOptions: {
-    metrics: {
-      otel: {
-        url: 'http://127.0.0.1:4317',
-        metricsExportInterval: '1s',
       },
     },
   },
