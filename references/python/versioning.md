@@ -108,47 +108,6 @@ class OrderWorkflow:
         )
 ```
 
-### Branching with Multiple Patches
-
-A Workflow can have multiple patches, each representing a modification deployed at a specific time:
-
-```python
-@workflow.defn
-class NotificationWorkflow:
-    @workflow.run
-    async def run(self) -> None:
-        if workflow.patched("use-sms"):
-            # Latest: SMS notifications
-            await workflow.execute_activity(
-                send_sms,
-                start_to_close_timeout=timedelta(minutes=5),
-            )
-        elif workflow.patched("use-email"):
-            # Intermediate: Email notifications
-            await workflow.execute_activity(
-                send_email,
-                start_to_close_timeout=timedelta(minutes=5),
-            )
-        else:
-            # Original: Fax notifications
-            await workflow.execute_activity(
-                send_fax,
-                start_to_close_timeout=timedelta(minutes=5),
-            )
-```
-
-You can use a single patch ID for multiple changes deployed together:
-
-```python
-if workflow.patched("v2-updates"):
-    # All v2 changes together
-    await workflow.execute_activity(validate_v2, ...)
-    await workflow.execute_activity(process_v2, ...)
-else:
-    await workflow.execute_activity(validate_v1, ...)
-    await workflow.execute_activity(process_v1, ...)
-```
-
 ### Query Filters for Finding Workflows by Version
 
 Use List Filters to find workflows with specific patch versions:
