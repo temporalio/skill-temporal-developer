@@ -12,7 +12,7 @@ Temporal workflows are durable through history replay. For details on how this w
 
 ## Quick Start
 
-**Add Dependencies:** Install the Temporal SDK packages:
+**Add Dependencies:** Install the Temporal SDK packages (use the package manager appropriate for your project):
 ```bash
 npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity
 ```
