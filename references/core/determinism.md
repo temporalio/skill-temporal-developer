@@ -71,7 +71,7 @@ Result: Commands don't match history → NondeterminismError
 
 ## **Central Concept**: Place Non-Determinism within Activities
 
-In Temporal, activities are the primary mechanism for making non-deterministic code durable and peristed in workflow history. Generally speaking, you should place sources of non-determinism in activities, which provides durability and recording of results, as well as automated retries and more. See `references/{your_language}/{your_language}.md` for the language you are working in for how to do this in practice.
+In Temporal, activities are the primary mechanism for making non-deterministic code durable and persisted in workflow history. Generally speaking, you should place sources of non-determinism in activities, which provides durability and recording of results, as well as automated retries and more. See `references/{your_language}/{your_language}.md` for the language you are working in for how to do this in practice.
 
 For a few simple cases, like timestamps, random values, UUIDs, etc. the Temporal SDK in your language may provide durable variants that are simple to use. See `references/{your_language}/determinism.md` for the language you are working in for more info.
 
