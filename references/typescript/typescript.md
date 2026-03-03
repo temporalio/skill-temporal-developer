@@ -45,7 +45,7 @@ import * as activities from './activities';
 
 async function run() {
   const worker = await Worker.create({
-    workflowsPath: require.resolve('./workflows'),
+    workflowsPath: require.resolve('./workflows'), // For production, use workflowBundle instead
     activities,
     taskQueue: 'greeting-queue',
   });
@@ -95,7 +95,7 @@ run().catch(console.error);
 - Use `heartbeat()` for long operations
 
 ### Worker Setup
-- Use `Worker.create()` with workflowsPath and activities
+- Use `Worker.create()` with `workflowsPath` (dev) or `workflowBundle` (production) - see `references/typescript/gotchas.md`
 - Import activities directly (not via proxy)
 
 ## File Organization Best Practice
@@ -145,9 +145,10 @@ See `references/typescript/determinism.md` for detailed rules.
 2. **Version mismatch** - All @temporalio packages must match
 3. **Direct I/O in workflows** - Use activities for external calls
 4. **Missing `proxyActivities`** - Required to call activities from workflows
-5. **Forgetting to bundle workflows** - Worker needs workflowsPath
-6. **Forgetting to heartbeat** - Long-running activities need `heartbeat()` calls
-7. **Logging in workflows** - Prefer `import { log } from '@temporalio/workflow'` for replay-aware logging with workflow context. `console.log` also works (it's patched to include workflow ID). See `references/typescript/observability.md`.
+5. **Forgetting to bundle workflows** - Worker needs `workflowsPath` or `workflowBundle`
+6. **Using workflowsPath in production** - Use `workflowBundle` for production (see `references/typescript/gotchas.md`)
+7. **Forgetting to heartbeat** - Long-running activities need `heartbeat()` calls
+8. **Logging in workflows** - Prefer `import { log } from '@temporalio/workflow'` for replay-aware logging with workflow context. `console.log` also works (it's patched to include workflow ID). See `references/typescript/observability.md`.
 
 ## Writing Tests
 

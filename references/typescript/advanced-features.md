@@ -75,7 +75,7 @@ import { Worker, NativeConnection } from '@temporalio/worker';
 const worker = await Worker.create({
   connection: await NativeConnection.connect({ address: 'temporal:7233' }),
   taskQueue: 'my-queue',
-  workflowsPath: require.resolve('./workflows'),
+  workflowBundle: { codePath: require.resolve('./workflow-bundle.js') }, // Pre-bundled for production
   activities,
 
   // Workflow execution concurrency (default: 40)
@@ -127,7 +127,7 @@ export async function myWorkflow(input: string): Promise<string> {
 
 // Implement sink in worker
 const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
+  workflowsPath: require.resolve('./workflows'), // Use workflowBundle for production
   activities,
   taskQueue: 'my-queue',
   sinks: {

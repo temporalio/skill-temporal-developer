@@ -12,7 +12,7 @@ The sandbox blocks imports of `fs`, `https` modules, and any Node/DOM APIs. Othe
 
 ```ts
 const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
+  workflowsPath: require.resolve('./workflows'), // bundlerOptions only apply with workflowsPath
   activities: require('./activities'),
   taskQueue: 'my-task-queue',
   bundlerOptions: {

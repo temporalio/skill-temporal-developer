@@ -110,7 +110,7 @@ Register both Workflows with the Worker:
 
 ```typescript
 const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
+  workflowsPath: require.resolve('./workflows'), // Use workflowBundle for production
   taskQueue: 'pizza-queue',
 });
 ```
@@ -152,7 +152,7 @@ Worker Versioning allows multiple Worker versions to run simultaneously, routing
 import { Worker, NativeConnection } from '@temporalio/worker';
 
 const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),
+  workflowsPath: require.resolve('./workflows'),  // Use workflowBundle for production
   taskQueue: 'my-queue',
   connection: await NativeConnection.connect({ address: 'temporal:7233' }),
   workerDeploymentOptions: {

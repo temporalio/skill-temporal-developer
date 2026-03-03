@@ -42,6 +42,35 @@ export async function myWorkflow(): Promise<void> {
 
 ## Bundling Issues
 
+### Using workflowsPath in Production
+
+`workflowsPath` runs the bundler at Worker startup, which is slow and not suitable for production. Use `workflowBundle` with pre-bundled code instead.
+
+```typescript
+// OK for development/testing, BAD for production - bundles at startup
+const worker = await Worker.create({
+  workflowsPath: require.resolve('./workflows'),
+  // ...
+});
+
+// GOOD for production - use pre-bundled code
+import { bundleWorkflowCode } from '@temporalio/worker';
+
+// Build step (run once at build time)
+const bundle = await bundleWorkflowCode({
+  workflowsPath: require.resolve('./workflows'),
+});
+await fs.promises.writeFile('./workflow-bundle.js', bundle.code);
+
+// Worker startup (fast, no bundling)
+const worker = await Worker.create({
+  workflowBundle: {
+    codePath: require.resolve('./workflow-bundle.js'),
+  },
+  // ...
+});
+```
+
 ### Missing Dependencies in Workflow Bundle
 
 ```typescript
