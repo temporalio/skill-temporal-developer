@@ -55,7 +55,6 @@ export async function workflowWithIds(): Promise<void> {
 // DO NOT do these in workflows:
 import fs from 'fs';           // Node.js modules
 fetch('https://...');          // Network I/O
-console.log();                 // Side effects (use workflow.log)
 ```
 
 Most non-determinism and side effects, such as the above, should be wrapped in Activities.

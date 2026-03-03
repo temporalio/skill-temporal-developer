@@ -147,7 +147,7 @@ See `references/typescript/determinism.md` for detailed rules.
 4. **Missing `proxyActivities`** - Required to call activities from workflows
 5. **Forgetting to bundle workflows** - Worker needs workflowsPath
 6. **Forgetting to heartbeat** - Long-running activities need `heartbeat()` calls
-7. **Logging in workflows** - Use `import { log } from '@temporalio/workflow'` for replay-safe logging with automatic workflow context. See `references/typescript/observability.md` for more info.
+7. **Logging in workflows** - Prefer `import { log } from '@temporalio/workflow'` for replay-aware logging with workflow context. `console.log` also works (it's patched to include workflow ID). See `references/typescript/observability.md`.
 
 ## Writing Tests
 
