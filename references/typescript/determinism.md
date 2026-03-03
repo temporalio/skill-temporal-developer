@@ -46,6 +46,6 @@ Use `Worker.runReplayHistory()` to verify your code changes are compatible with 
 
 1. Use type-only imports for activities in workflow files
 2. Match all @temporalio package versions
-3. Use `sleep()` from workflow package, not `setTimeout` directly
+3. Prefer `sleep()` from workflow package — `setTimeout` works but `sleep()` handles cancellation scopes more clearly
 4. Keep workflows focused on orchestration
 5. Test with replay to verify determinism
