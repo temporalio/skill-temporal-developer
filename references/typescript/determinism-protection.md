@@ -34,7 +34,7 @@ Use this with *extreme caution*.
 
 Functions like `Math.random()`, `Date`, and `setTimeout()` are replaced by deterministic versions.
 
-Date-related functions will *deterministically* return the date at the *start of the workflow*, and will only progress in time when a semantic time operation occurs in Temporal, like a durable sleep. For example:
+Date-related functions return the timestamp at which the current workflow task was initially executed. That timestamp remains the same when the workflow task is replayed, and only advances when a durable operation occurs (like `sleep()`). For example:
 
 ```ts
 import { sleep } from '@temporalio/workflow';
