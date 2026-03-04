@@ -103,7 +103,7 @@ Runtime.install({
 
 ## Best Practices
 
-1. Prefer `log` from `@temporalio/workflow` in workflows for replay-aware logging with workflow context. `console.log` also works (it's patched to include workflow ID)
+1. Use `log` from `@temporalio/workflow` for production observability. For temporary print debugging, `console.log()` is fine—it's direct and immediate, whereas `log` goes through sinks which may lose messages on workflow errors
 2. Include correlation IDs (orderId, customerId) in log messages
 3. Configure Winston or similar for production log aggregation
 4. Monitor Prometheus metrics for worker health

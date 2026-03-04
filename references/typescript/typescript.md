@@ -148,7 +148,7 @@ See `references/typescript/determinism.md` for detailed rules.
 5. **Forgetting to bundle workflows** - Worker needs `workflowsPath` or `workflowBundle`
 6. **Using workflowsPath in production** - Use `workflowBundle` for production (see `references/typescript/gotchas.md`)
 7. **Forgetting to heartbeat** - Long-running activities need `heartbeat()` calls
-8. **Logging in workflows** - Prefer `import { log } from '@temporalio/workflow'` for replay-aware logging with workflow context. `console.log` also works (it's patched to include workflow ID). See `references/typescript/observability.md`.
+8. **Logging in workflows** - For observability, use `import { log } from '@temporalio/workflow'` (routes through sinks). For temporary print debugging, `console.log()` is fine—it's direct and immediate, whereas `log` may lose messages on workflow errors.
 
 ## Writing Tests
 
