@@ -257,20 +257,4 @@ test('replay compatibility', async () => {
 
 ## Timers and Sleep
 
-### Using JavaScript setTimeout
-
-```typescript
-// BAD - setTimeout is not durable
-export async function delayedWorkflow(): Promise<void> {
-  await new Promise(resolve => setTimeout(resolve, 60000)); // Not durable!
-  await activities.doWork();
-}
-
-// GOOD - Use workflow sleep
-import { sleep } from '@temporalio/workflow';
-
-export async function delayedWorkflow(): Promise<void> {
-  await sleep('1 minute'); // Durable, survives restarts
-  await activities.doWork();
-}
-```
+`setTimeout` works in workflows (the SDK mocks it), but `sleep()` from `@temporalio/workflow` is preferred because its interaction with cancellation scopes is more intuitive. See Timers in `references/typescript/patterns.md`.
