@@ -36,6 +36,10 @@ class ShippingWorkflow:
 
 ### Three-Step Patching Process
 
+Patching is a three-step process for safely deploying changes.
+
+**Warning:** Failing to follow this process correctly will result in non-determinism errors for in-flight workflows.
+
 **Step 1: Patch in New Code**
 
 Add the patch with both old and new code paths:
