@@ -36,12 +36,11 @@ import { log } from '@temporalio/activity';
 
 export async function processPayment(orderId: string): Promise<string> {
   log.info('Processing payment', { orderId });
-
-  // Activity logs don't need replay suppression
-  // since completed activities aren't re-executed
   return 'payment-id-123';
 }
 ```
+
+The activity logger adds contextual metadata (activity ID, type, namespace) and funnels messages to the runtime's logger for consistent collection.
 
 ## Customizing the Logger
 
