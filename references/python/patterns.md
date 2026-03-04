@@ -26,7 +26,7 @@ class OrderWorkflow:
 
 ### Dynamic Signal Handlers
 
-For handling signals with names not known at compile time:
+For handling signals with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined signal handlers.
 
 ```python
 @workflow.defn
