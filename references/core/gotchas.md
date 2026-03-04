@@ -150,3 +150,19 @@ See language-specific gotchas for details.
 **The Fix**:
 - **Retryable**: Network errors, timeouts, rate limits, temporary unavailability
 - **Non-retryable**: Invalid input, authentication failures, business rule violations, resource not found
+
+## Payload Size Limits
+
+**The Problem**: Temporal has built-in limits on payload sizes. Exceeding them causes workflows to fail.
+
+**Limits**:
+- Max 2MB per individual payload
+- Max 4MB per gRPC message
+- Max 50MB for complete workflow history (aim for <10MB in practice)
+
+**Symptoms**:
+- Payload too large errors
+- gRPC message size exceeded errors
+- Workflow history growing unboundedly
+
+**The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See Large Payloads section in language-specific data handling docs.
