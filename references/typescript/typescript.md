@@ -149,6 +149,7 @@ See `references/typescript/determinism.md` for detailed rules.
 6. **Using workflowsPath in production** - Use `workflowBundle` for production (see `references/typescript/gotchas.md`)
 7. **Forgetting to heartbeat** - Long-running activities need `heartbeat()` calls
 8. **Logging in workflows** - For observability, use `import { log } from '@temporalio/workflow'` (routes through sinks). For temporary print debugging, `console.log()` is fine—it's direct and immediate, whereas `log` may lose messages on workflow errors.
+9. **Forgetting to wait on activity calls** - Activity calls return Promises; you must eventually await them (directly or via `Promise.all()` for parallel execution)
 
 ## Writing Tests
 
