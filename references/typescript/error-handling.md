@@ -112,7 +112,8 @@ For idempotency patterns (using keys, making activities granular), see `core/pat
 1. Use specific error types for different failure modes
 2. Set `nonRetryable: true` for permanent failures in activities
 3. Configure `nonRetryableErrorTypes` in retry policy
-4. Always re-throw errors after handling in workflows
-5. Use the appropriate `log` import for your context:
+4. Log errors before re-raising
+5. Use `ApplicationFailure` to catch activity failures in workflows
+6. Use the appropriate `log` import for your context:
    - In workflows: `import { log } from '@temporalio/workflow'` (replay-safe)
    - In activities: `import { log } from '@temporalio/activity'`
