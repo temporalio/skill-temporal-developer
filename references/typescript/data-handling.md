@@ -75,6 +75,22 @@ export const payloadConverter = new CompositePayloadConverter(
 );
 ```
 
+## Protobuf Support
+
+Using Protocol Buffers for type-safe serialization.
+
+**Note:** JSON serialization (the default) is preferred for TypeScript applications—it's simpler and more performant. Use Protobuf only when interoperating with services that require it.
+
+```typescript
+import { DefaultPayloadConverterWithProtobufs } from '@temporalio/common/lib/protobufs';
+
+const dataConverter: DataConverter = {
+  payloadConverter: new DefaultPayloadConverterWithProtobufs({
+    protobufRoot: myProtobufRoot,
+  }),
+};
+```
+
 ## Payload Codec (Encryption)
 
 Encrypt sensitive workflow data.
@@ -226,20 +242,6 @@ export async function orderWorkflow(): Promise<void> {
   const customerName = info.memo?.customerName;
   // ...
 }
-```
-
-## Protobuf Support
-
-Using Protocol Buffers for type-safe serialization.
-
-```typescript
-import { DefaultPayloadConverterWithProtobufs } from '@temporalio/common/lib/protobufs';
-
-const dataConverter: DataConverter = {
-  payloadConverter: new DefaultPayloadConverterWithProtobufs({
-    protobufRoot: myProtobufRoot,
-  }),
-};
 ```
 
 ## Large Payloads
