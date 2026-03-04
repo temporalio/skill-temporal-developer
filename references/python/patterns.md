@@ -75,6 +75,8 @@ class StatusWorkflow:
 
 ### Dynamic Query Handlers
 
+For handling queries with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined query handlers.
+
 ```python
 @workflow.query(dynamic=True)
 def handle_query(self, name: str, args: Sequence[RawValue]) -> Any:
