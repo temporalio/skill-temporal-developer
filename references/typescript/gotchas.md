@@ -198,6 +198,8 @@ const { processChunk } = proxyActivities<typeof activities>({
 });
 ```
 
+Set heartbeat timeout as high as acceptable for your use case — each heartbeat counts as an action.
+
 ## Testing
 
 ### Not Testing Failures
