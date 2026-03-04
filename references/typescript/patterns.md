@@ -374,24 +374,11 @@ export async function processLargeFile(filePath: string): Promise<string> {
 ## Timers
 
 ```typescript
-import { sleep, CancellationScope } from '@temporalio/workflow';
+import { sleep } from '@temporalio/workflow';
 
 export async function timerWorkflow(): Promise<string> {
   await sleep('1 hour');
-
-  const timerScope = new CancellationScope();
-  const timerPromise = timerScope.run(() => sleep('1 hour'));
-
-  setHandler(cancelSignal, () => {
-    timerScope.cancel();
-  });
-
-  try {
-    await timerPromise;
-    return 'Timer completed';
-  } catch {
-    return 'Timer cancelled';
-  }
+  return 'Timer fired';
 }
 ```
 
