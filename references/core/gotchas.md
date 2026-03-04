@@ -165,4 +165,4 @@ See language-specific gotchas for details.
 - gRPC message size exceeded errors
 - Workflow history growing unboundedly
 
-**The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See Large Payloads section in language-specific data handling docs.
+**The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See the Large Data Handling pattern in `references/core/patterns.md`.

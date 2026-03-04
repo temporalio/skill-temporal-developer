@@ -331,6 +331,53 @@ Run:
 
 This ensures that on replay, already-completed steps are skipped.
 
+## Large Data Handling
+
+**Purpose**: Handle data that exceeds Temporal's payload limits without polluting workflow history.
+
+**Limits** (see `references/core/gotchas.md` for details):
+- Max 2MB per individual payload
+- Max 4MB per gRPC message
+- Max 50MB for workflow history (aim for <10MB)
+
+**Key Principle**: Large data should never flow through workflow history. Activities read and write large data directly, passing only small references through the workflow.
+
+**Wrong Approach**:
+```
+Workflow
+    │
+    ├── downloadFromStorage(ref) ──▶ returns large data (enters history)
+    │
+    ├── processData(largeData) ────▶ large data as argument (enters history AGAIN)
+    │
+    └── uploadToStorage(result) ───▶ large data as argument (enters history AGAIN)
+```
+
+This defeats the purpose—large data enters workflow history multiple times.
+
+**Correct Approach**:
+```
+Workflow
+    │
+    └── processLargeData(inputRef) ──▶ returns outputRef (small string)
+                │
+                └── Activity internally:
+                        download(inputRef) → process → upload → return outputRef
+```
+
+The workflow only handles references (small strings). The activity does all large data operations internally.
+
+**Implementation Pattern**:
+1. Accept a reference (URL, S3 key, database ID) as activity input
+2. Download/fetch the large data inside the activity
+3. Process the data inside the activity
+4. Upload/store the result inside the activity
+5. Return only a reference to the result
+
+**Other Strategies**:
+- **Compression**: Use a PayloadCodec to compress data automatically
+- **Chunking**: Split large collections across multiple activities, each handling a subset
+
 ## Local Activities
 
 **Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.

@@ -244,39 +244,10 @@ export async function orderWorkflow(): Promise<void> {
 }
 ```
 
-## Large Payloads
-
-For large data, consider:
-
-1. **Store externally**: Put large data in S3/GCS, pass references in workflows
-2. **Use compression codec**: Compress payloads automatically
-3. **Chunk data**: Split large arrays across multiple activities
-
-```typescript
-// Example: Reference pattern for large data
-import { proxyActivities } from '@temporalio/workflow';
-
-const { uploadToStorage, downloadFromStorage } = proxyActivities<Activities>({
-  startToCloseTimeout: '5 minutes',
-});
-
-export async function processLargeDataWorkflow(dataRef: string): Promise<void> {
-  // Download data from storage using reference
-  const data = await downloadFromStorage(dataRef);
-
-  // Process data...
-  const result = await processData(data);
-
-  // Upload result and return reference
-  const resultRef = await uploadToStorage(result);
-}
-```
-
 ## Best Practices
 
-1. Keep payloads small (< 2MB recommended)
+1. Keep payloads small—see `references/core/gotchas.md` for limits
 2. Use search attributes for business-level visibility and filtering
 3. Encrypt sensitive data with PayloadCodec
-4. Store large data externally with references
-5. Use memo for non-searchable metadata
-6. Configure the same data converter on both client and worker
+4. Use memo for non-searchable metadata
+5. Configure the same data converter on both client and worker

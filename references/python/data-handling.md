@@ -202,29 +202,6 @@ class OrderWorkflow:
         ...
 ```
 
-## Large Payloads
-
-For large data, consider:
-
-1. **Store externally**: Put large data in S3/GCS, pass references in workflows
-2. **Use Payload Codec**: Compress payloads automatically
-3. **Chunk data**: Split large lists across multiple activities
-
-```python
-# Example: Reference pattern for large data
-@activity.defn
-async def upload_to_storage(data: bytes) -> str:
-    """Upload data and return reference."""
-    key = f"data/{uuid.uuid4()}"
-    await storage_client.upload(key, data)
-    return key
-
-@activity.defn
-async def download_from_storage(key: str) -> bytes:
-    """Download data by reference."""
-    return await storage_client.download(key)
-```
-
 ## Deterministic APIs for Values
 
 Use these APIs within workflows for deterministic random values and UUIDs:
@@ -247,8 +224,7 @@ class MyWorkflow:
 ## Best Practices
 
 1. Use Pydantic for input/output validation
-2. Keep payloads small (< 2MB recommended)
+2. Keep payloads small—see `references/core/gotchas.md` for limits
 3. Encrypt sensitive data with PayloadCodec
-4. Store large data externally with references
-5. Use dataclasses for simple data structures
-6. Use `workflow.uuid4()` and `workflow.random()` for deterministic values
+4. Use dataclasses for simple data structures
+5. Use `workflow.uuid4()` and `workflow.random()` for deterministic values
