@@ -378,6 +378,33 @@ The workflow only handles references (small strings). The activity does all larg
 - **Compression**: Use a PayloadCodec to compress data automatically
 - **Chunking**: Split large collections across multiple activities, each handling a subset
 
+## Activity Heartbeating
+
+**Purpose**: Enable cancellation delivery and progress tracking for long-running activities.
+
+**Why Heartbeat**:
+1. **Support activity cancellation** - Cancellations are delivered to activities via heartbeat. Activities that don't heartbeat won't know they've been cancelled.
+2. **Resume progress after failure** - Heartbeat details persist across retries, allowing activities to resume where they left off.
+3. **Detect stuck activities** - If an activity stops heartbeating, Temporal can time it out and retry.
+
+**How Cancellation Works**:
+```
+Workflow requests activity cancellation
+    │
+    ▼
+Temporal Service marks activity for cancellation
+    │
+    ▼
+Activity calls heartbeat()
+    │
+    ├── Not cancelled: heartbeat succeeds, continues
+    │
+    └── Cancelled: heartbeat raises exception
+            Activity can catch this to perform cleanup
+```
+
+**Key Point**: If an activity never heartbeats, it will run to completion even if cancelled—it has no way to learn about the cancellation.
+
 ## Local Activities
 
 **Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.

@@ -345,13 +345,17 @@ export async function handlerAwareWorkflow(): Promise<string> {
 
 ## Activity Heartbeat Details
 
-### WHY: Resume activity progress after worker failure
+### WHY:
+- **Support activity cancellation** - Cancellations are delivered via heartbeat; activities that don't heartbeat won't know they've been cancelled
+- **Resume progress after worker failure** - Heartbeat details persist across retries
+
 ### WHEN:
+- **Cancellable activities** - Any activity that should respond to cancellation
 - **Long-running activities** - Track progress for resumability
 - **Checkpointing** - Save progress periodically
 
 ```typescript
-import { heartbeat, activityInfo } from '@temporalio/activity';
+import { heartbeat, activityInfo, CancelledFailure } from '@temporalio/activity';
 
 export async function processLargeFile(filePath: string): Promise<string> {
   const info = activityInfo();
@@ -360,13 +364,21 @@ export async function processLargeFile(filePath: string): Promise<string> {
 
   const lines = await readFileLines(filePath);
 
-  for (let i = startLine; i < lines.length; i++) {
-    await processLine(lines[i]);
-    // Heartbeat with progress
-    heartbeat(i + 1);
+  try {
+    for (let i = startLine; i < lines.length; i++) {
+      await processLine(lines[i]);
+      // Heartbeat with progress
+      // If activity is cancelled, heartbeat() throws CancelledFailure
+      heartbeat(i + 1);
+    }
+    return 'completed';
+  } catch (e) {
+    if (e instanceof CancelledFailure) {
+      // Perform cleanup on cancellation
+      await cleanup();
+    }
+    throw e;
   }
-
-  return 'completed';
 }
 ```
 
