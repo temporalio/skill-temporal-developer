@@ -90,27 +90,11 @@ const worker = await Worker.create({
 
 ### Package Version Mismatches
 
-All `@temporalio/*` packages must have the same version:
+All `@temporalio/*` packages must have the same version. This can be verified by running `npm ls` or the appropriate command for your package manager.
 
-```json
-// BAD - Version mismatch
-{
-  "dependencies": {
-    "@temporalio/client": "1.9.0",
-    "@temporalio/worker": "1.8.0",
-    "@temporalio/workflow": "1.9.1"
-  }
-}
+### Package Version Constraints - Prod vs. Non-Prod
 
-// GOOD - All versions match
-{
-  "dependencies": {
-    "@temporalio/client": "1.9.0",
-    "@temporalio/worker": "1.9.0",
-    "@temporalio/workflow": "1.9.0"
-  }
-}
-```
+For production apps, you should use ~ version constraints (bug fixes only) on Temporal packages. For non-production apps, you may use ^ constraints (the npm default) instead.
 
 ## Wrong Retry Classification
 

@@ -17,6 +17,8 @@ Temporal workflows are durable through history replay. For details on how this w
 npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity
 ```
 
+Note: if you are working in production, it is strongly advised to use ~ version constraints, i.e.  `npm install ... --save-prefix='~'`.
+
 **activities.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
 ```typescript
 export async function greet(name: string): Promise<string> {
