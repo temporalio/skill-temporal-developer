@@ -151,6 +151,34 @@ See language-specific gotchas for details.
 - **Retryable**: Network errors, timeouts, rate limits, temporary unavailability
 - **Non-retryable**: Invalid input, authentication failures, business rule violations, resource not found
 
+## Cancellation Handling
+
+### Not Handling Workflow Cancellation
+
+**The Problem**: When a workflow is cancelled, cleanup code after the cancellation point doesn't run unless explicitly protected.
+
+**Symptoms**:
+- Resources not released after cancellation
+- Incomplete compensation/rollback
+- Leaked state
+
+**The Fix**: Use language-specific cancellation scopes or try/finally blocks to ensure cleanup runs even on cancellation. See language-specific gotchas for implementation details.
+
+### Not Handling Activity Cancellation
+
+**The Problem**: Activities must opt in to receive cancellation. Without proper handling, a cancelled activity continues running to completion, wasting resources.
+
+**Requirements for activity cancellation**:
+1. **Heartbeating** - Cancellation is delivered via heartbeat. Activities that don't heartbeat won't know they've been cancelled.
+2. **Checking for cancellation** - Activity must explicitly check for cancellation or await a cancellation signal.
+
+**Symptoms**:
+- Cancelled activities running to completion
+- Wasted compute on work that will be discarded
+- Delayed workflow cancellation
+
+**The Fix**: Heartbeat regularly and check for cancellation. See language-specific gotchas for implementation patterns.
+
 ## Payload Size Limits
 
 **The Problem**: Temporal has built-in limits on payload sizes. Exceeding them causes workflows to fail.

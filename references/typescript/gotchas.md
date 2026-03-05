@@ -116,7 +116,7 @@ For detailed guidance on error classification and retry policies, see `error-han
 
 ## Cancellation
 
-### Not Handling Cancellation
+### Not Handling Workflow Cancellation
 
 ```typescript
 // BAD - Cleanup doesn't run on cancellation
@@ -141,6 +141,74 @@ export async function workflowWithCleanup(): Promise<void> {
   }
 }
 ```
+
+### Not Handling Activity Cancellation
+
+Activities must **opt in** to receive cancellation. This requires:
+1. **Heartbeating** - Cancellation is delivered via heartbeat
+2. **Checking for cancellation** - Either await `Context.current().cancelled` or use `cancellationSignal()`
+
+```typescript
+// BAD - Activity ignores cancellation
+export async function longActivity(): Promise<void> {
+  await doExpensiveWork(); // Runs to completion even if cancelled
+}
+```
+
+```typescript
+// GOOD - Heartbeat in background and race work against cancellation promise
+import { Context, CancelledFailure } from '@temporalio/activity';
+
+export async function longActivity(): Promise<void> {
+  // Heartbeat in background so cancellation can be delivered
+  let heartbeatEnabled = true;
+  (async () => {
+    while (heartbeatEnabled) {
+      await Context.current().sleep(5000);
+      Context.current().heartbeat();
+    }
+  })().catch(() => {});
+
+  try {
+    await Promise.race([
+      Context.current().cancelled,  // Rejects with CancelledFailure
+      doExpensiveWork(),
+    ]);
+  } catch (err) {
+    if (err instanceof CancelledFailure) {
+      await cleanup();
+    }
+    throw err;
+  } finally {
+    heartbeatEnabled = false;
+  }
+}
+```
+
+```typescript
+// GOOD - Use AbortSignal with libraries that support it
+import fetch from 'node-fetch';
+import { cancellationSignal, heartbeat } from '@temporalio/activity';
+import type { AbortSignal as FetchAbortSignal } from 'node-fetch/externals';
+
+export async function cancellableFetch(url: string): Promise<Uint8Array> {
+  const response = await fetch(url, { signal: cancellationSignal() as FetchAbortSignal });
+
+  const contentLength = parseInt(response.headers.get('Content-Length')!);
+  let bytesRead = 0;
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of response.body) {
+    if (!(chunk instanceof Buffer)) throw new TypeError('Expected Buffer');
+    bytesRead += chunk.length;
+    chunks.push(chunk);
+    heartbeat(bytesRead / contentLength);  // Heartbeat to keep cancellation delivery alive
+  }
+  return Buffer.concat(chunks);
+}
+```
+
+**Note:** `Promise.race` doesn't stop the losing promise—it continues running. Use `cancellationSignal()` or explicitly abort sub-operations when cleanup requires stopping in-flight work.
 
 ## Heartbeating
 
