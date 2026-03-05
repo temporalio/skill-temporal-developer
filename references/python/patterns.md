@@ -297,10 +297,9 @@ class MyWorkflow:
 
 ## Waiting for All Handlers to Finish
 
-### WHY: Ensure all signal/update handlers complete before workflow exits
-### WHEN:
-- **Workflows with async handlers** - Prevent data loss from in-flight handlers
-- **Before continue-as-new** - Ensure handlers complete before resetting
+Signal and update handlers should generally be non-async (avoid running activities from them). Otherwise, the workflow may complete before handlers finish their execution. However, making handlers non-async sometimes requires workarounds that add complexity.
+
+When async handlers are necessary, use `wait_condition(all_handlers_finished)` at the end of your workflow (or before continue-as-new) to prevent completion until all pending handlers complete.
 
 ```python
 @workflow.defn

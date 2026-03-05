@@ -327,10 +327,9 @@ export async function approvalWorkflow(): Promise<string> {
 
 ## Waiting for All Handlers to Finish
 
-### WHY: Ensure all signal/update handlers complete before workflow exits
-### WHEN:
-- **Workflows with async handlers** - Prevent data loss from in-flight handlers
-- **Before continue-as-new** - Ensure handlers complete before resetting
+Signal and update handlers should generally be non-async (avoid running activities from them). Otherwise, the workflow may complete before handlers finish their execution. However, making handlers non-async sometimes requires workarounds that add complexity.
+
+When async handlers are necessary, use `condition(allHandlersFinished)` at the end of your workflow (or before continue-as-new) to prevent completion until all pending handlers complete.
 
 ```typescript
 import { condition, allHandlersFinished } from '@temporalio/workflow';
