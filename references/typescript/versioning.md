@@ -29,6 +29,13 @@ export async function myWorkflow(): Promise<void> {
 - During replay, if the history contains a marker with the same `patchId`, `patched()` returns `true`
 - During replay, if no matching marker exists, `patched()` returns `false`
 
+**TypeScript-specific behavior:** Unlike Python/.NET/Ruby, `patched()` is not memoized when it returns `false`. This means you can use `patched()` in loops. However, if a single patch requires coordinated behavioral changes at different points in your workflow, you may need to manually memoize the result:
+
+```typescript
+const useNewBehavior = patched('my-change');
+// Use useNewBehavior at multiple points in workflow
+```
+
 ### Three-Step Patching Process
 
 Patching is a three-step process for safely deploying changes.
