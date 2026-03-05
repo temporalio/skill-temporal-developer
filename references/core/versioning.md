@@ -53,16 +53,20 @@ else:
 
 ### When to Use
 
-- Adding new activities or steps
-- Changing activity parameters
-- Reordering operations
-- Any change that would cause non-determinism
+- Adding, removing, or reordering activities/child workflows
+- Changing which activity/child workflow is called
+- Any change that alters the Command sequence
 
 ### When NOT to Use
 
-- Changes to activity implementations (activities aren't replayed)
-- Adding new signal/query handlers (additive changes are safe)
+- Changing activity implementations (activities aren't replayed)
+- Changing arguments passed to activities or child workflows
+- Changing retry policies
+- Changing timer durations
+- Adding new signal/query/update handlers (additive changes are safe)
 - Bug fixes that don't change Command sequence
+
+Unnecessary patching adds complexity and can make workflow code unmanageable.
 
 ## Approach 2: Workflow Type Versioning
 
