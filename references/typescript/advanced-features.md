@@ -51,12 +51,12 @@ export async function doSomethingAsync(): Promise<string> {
 
 **External completion (from another process, machine, etc.):**
 ```typescript
-import { AsyncCompletionClient } from '@temporalio/client';
+import { Client } from '@temporalio/client';
 
 async function doSomeWork(taskToken: Uint8Array): Promise<void> {
-  const client = new AsyncCompletionClient();
+  const client = new Client();
   // does some work...
-  await client.complete(taskToken, "Job's done!");
+  await client.activity.complete(taskToken, "Job's done!");
 }
 ```
 
