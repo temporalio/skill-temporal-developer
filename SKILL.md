@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
+description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
 version: 1.0.0
 ---
 
@@ -8,7 +8,7 @@ version: 1.0.0
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python.
+Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python and TypeScript.
 
 ## Core Architecture
 
@@ -91,6 +91,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 
 1. First, read the getting started guide for the language you are working in:
     - Python -> read `references/python/python.md`
+    - TypeScript -> read `references/typescript/typescript.md`
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
 
@@ -108,7 +109,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
-    + Langauge-specific info at `references/{your_language}/determinism.md`
+    + Language-specific info at `references/{your_language}/determinism.md`, if available. Currently Python only.
 
 ## Additional Topics
 - **`references/{your_langauge}/observability.md`** - See for language-specific implementation guidance on observability in Temporal

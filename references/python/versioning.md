@@ -34,7 +34,13 @@ class ShippingWorkflow:
 - For replay with the marker: `patched()` returns `True` (history includes this patch)
 - For replay without the marker: `patched()` returns `False` (history predates this patch)
 
+**Python-specific behavior:** The `patched()` return value is memoized on first call. This means you cannot reliably use `patched()` in loops—it will return the same value every iteration. Workaround: append a sequence number to the patch ID for each iteration (e.g., `f"my-change-{i}"`).
+
 ### Three-Step Patching Process
+
+Patching is a three-step process for safely deploying changes.
+
+**Warning:** Failing to follow this process correctly will result in non-determinism errors for in-flight workflows.
 
 **Step 1: Patch in New Code**
 

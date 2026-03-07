@@ -26,7 +26,7 @@ class OrderWorkflow:
 
 ### Dynamic Signal Handlers
 
-For handling signals with names not known at compile time:
+For handling signals with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined signal handlers.
 
 ```python
 @workflow.defn
@@ -74,6 +74,8 @@ class StatusWorkflow:
 ```
 
 ### Dynamic Query Handlers
+
+For handling queries with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined query handlers.
 
 ```python
 @workflow.query(dynamic=True)
@@ -295,10 +297,9 @@ class MyWorkflow:
 
 ## Waiting for All Handlers to Finish
 
-### WHY: Ensure all signal/update handlers complete before workflow exits
-### WHEN:
-- **Workflows with async handlers** - Prevent data loss from in-flight handlers
-- **Before continue-as-new** - Ensure handlers complete before resetting
+Signal and update handlers should generally be non-async (avoid running activities from them). Otherwise, the workflow may complete before handlers finish their execution. However, making handlers non-async sometimes requires workarounds that add complexity.
+
+When async handlers are necessary, use `wait_condition(all_handlers_finished)` at the end of your workflow (or before continue-as-new) to prevent completion until all pending handlers complete.
 
 ```python
 @workflow.defn
@@ -312,31 +313,47 @@ class MyWorkflow:
         return "done"
 ```
 
-## Activity Heartbeat Details - Updatable side-data usable in long-running activities
+## Activity Heartbeat Details
 
-### WHY: Resume activity progress after worker failure
+### WHY:
+- **Support activity cancellation** - Cancellations are delivered via heartbeat; activities that don't heartbeat won't know they've been cancelled
+- **Resume progress after worker failure** - Heartbeat details persist across retries
+
+**Cancellation exceptions:**
+- Async activities: `asyncio.CancelledError`
+- Sync threaded activities: `temporalio.exceptions.CancelledError`
+
 ### WHEN:
+- **Cancellable activities** - Any activity that should respond to cancellation
 - **Long-running activities** - Track progress for resumability
 - **Checkpointing** - Save progress periodically
 
 ```python
+from temporalio.exceptions import CancelledError
+
 @activity.defn
 def process_large_file(file_path: str) -> str:
     # Get heartbeat details from previous attempt (if any)
     heartbeat_details = activity.info().heartbeat_details
     start_line = heartbeat_details[0] if heartbeat_details else 0
 
-    with open(file_path) as f:
-        for i, line in enumerate(f):
-            if i < start_line:
-                continue  # Skip already processed lines
+    try:
+        with open(file_path) as f:
+            for i, line in enumerate(f):
+                if i < start_line:
+                    continue  # Skip already processed lines
 
-            process_line(line)
+                process_line(line)
 
-            # Heartbeat with progress
-            activity.heartbeat(i + 1)
+                # Heartbeat with progress
+                # If cancelled, heartbeat() raises CancelledError
+                activity.heartbeat(i + 1)
 
-    return "completed"
+        return "completed"
+    except CancelledError:
+        # Perform cleanup on cancellation
+        cleanup()
+        raise
 ```
 
 ## Timers

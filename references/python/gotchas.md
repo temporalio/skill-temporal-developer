@@ -161,6 +161,83 @@ await workflow.execute_activity(
 )
 ```
 
+Set heartbeat timeout as high as acceptable for your use case — each heartbeat counts as an action.
+
+## Cancellation
+
+### Not Handling Workflow Cancellation
+
+```python
+# BAD - Cleanup doesn't run on cancellation
+@workflow.defn
+class BadWorkflow:
+    @workflow.run
+    async def run(self) -> None:
+        await workflow.execute_activity(
+            acquire_resource,
+            start_to_close_timeout=timedelta(minutes=5),
+        )
+        await workflow.execute_activity(
+            do_work,
+            start_to_close_timeout=timedelta(minutes=5),
+        )
+        await workflow.execute_activity(
+            release_resource,  # Never runs if cancelled!
+            start_to_close_timeout=timedelta(minutes=5),
+        )
+
+# GOOD - Use try/finally for cleanup
+@workflow.defn
+class GoodWorkflow:
+    @workflow.run
+    async def run(self) -> None:
+        await workflow.execute_activity(
+            acquire_resource,
+            start_to_close_timeout=timedelta(minutes=5),
+        )
+        try:
+            await workflow.execute_activity(
+                do_work,
+                start_to_close_timeout=timedelta(minutes=5),
+            )
+        finally:
+            # Runs even on cancellation
+            await workflow.execute_activity(
+                release_resource,
+                start_to_close_timeout=timedelta(minutes=5),
+            )
+```
+
+### Not Handling Activity Cancellation
+
+Activities must **opt in** to receive cancellation. This requires:
+1. **Heartbeating** - Cancellation is delivered via heartbeat
+2. **Catching the cancellation exception** - Exception is raised when heartbeat detects cancellation
+
+**Cancellation exceptions:**
+- Async activities: `asyncio.CancelledError`
+- Sync threaded activities: `temporalio.exceptions.CancelledError`
+
+```python
+# BAD - Activity ignores cancellation
+@activity.defn
+async def long_activity() -> None:
+    await do_expensive_work()  # Runs to completion even if cancelled
+```
+
+```python
+# GOOD - Heartbeat and catch cancellation
+@activity.defn
+async def long_activity() -> None:
+    try:
+        for item in items:
+            activity.heartbeat()
+            await process(item)
+    except asyncio.CancelledError:
+        await cleanup()
+        raise
+```
+
 ## Testing
 
 ### Not Testing Failures
