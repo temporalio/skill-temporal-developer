@@ -151,7 +151,8 @@ with workflow.unsafe.imports_passed_through():
 4. **Forgetting to heartbeat** - Long activities need `activity.heartbeat()`
 5. **Using gevent** - Incompatible with SDK
 6. **Using `print()` in workflows** - Use `workflow.logger` instead for replay-safe logging
-7. **Mixing Workflows and Activities in same file** - Causes unnecessary reloads, hurts performance, bad structure.
+7. **Mixing Workflows and Activities in same file** - Causes unnecessary reloads, hurts performance, bad structure
+8. **Forgetting to wait on activity calls** - `workflow.execute_activity()` is async; you must eventually await it (directly or via `asyncio.gather()` for parallel execution)
 
 ## Writing Tests
 
