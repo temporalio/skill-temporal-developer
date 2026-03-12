@@ -6,7 +6,7 @@ A comprehensive skill for building Temporal applications.
 
 ### As a Claude Code Plugin
 
-1. Run `/plugin marketplace add temporalio/agent-skills` 
+1. Run `/plugin marketplace add temporalio/agent-skills#dev` 
 2. Run `/plugin` to open the plugin manager
 3. Select **Marketplaces**
 4. Choose `temporal-marketplace` from the list
@@ -16,7 +16,7 @@ A comprehensive skill for building Temporal applications.
 
 ### Via `npx skills` - supports all major coding agents
 
-1. `npx skills add temporalio/skill-temporal-developer`
+1. `npx skills add https://github.com/temporalio/skill-temporal-developer/tree/dev`
 2. Follow prompts
 
 ### Via manually cloning the skill repo:
