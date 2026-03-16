@@ -80,6 +80,7 @@ Each Temporal SDK language provides a protection mechanism to make it easier to 
 
 - Python: The Python SDK runs workflows in a sandbox that intercepts and aborts non-deterministic calls at runtime.
 - TypeScript: The TypeScript SDK runs workflows in an isolated V8 sandbox, intercepting many common sources of non-determinism and replacing them automatically with deterministic variants.
+- Go: The Go SDK has no runtime sandbox. Determinism is enforced by developer convention and the optional `workflowcheck` static analysis tool, which detects non-deterministic calls at compile time.
 
 
 ## Detecting Non-Determinism
