@@ -164,7 +164,13 @@ public class ParentWorkflow
         {
             var result = await Workflow.ExecuteChildWorkflowAsync(
                 (ProcessOrderWorkflow wf) => wf.RunAsync(order),
-                new() { Id = $"order-{order.Id}" });
+                new()
+                {
+                    Id = $"order-{order.Id}",
+                    // Control what happens to child when parent completes
+                    // Terminate (default), Abandon, RequestCancel
+                    ParentClosePolicy = ParentClosePolicy.Abandon,
+                });
             results.Add(result);
         }
         return results;

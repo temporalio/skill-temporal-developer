@@ -85,6 +85,20 @@ public async Task<string> RunAsync(Order order)
 
 After all workflows with the deprecated patch marker have completed, remove the `DeprecatePatch()` call entirely.
 
+### Query Filters for Finding Workflows by Version
+
+Use List Filters to find workflows with specific patch versions:
+
+```bash
+# Find running workflows with a specific patch
+temporal workflow list --query \
+  'WorkflowType = "OrderWorkflow" AND ExecutionStatus = "Running" AND TemporalChangeVersion = "add-fraud-check"'
+
+# Find running workflows without any patch (pre-patch versions)
+temporal workflow list --query \
+  'WorkflowType = "OrderWorkflow" AND ExecutionStatus = "Running" AND TemporalChangeVersion IS NULL'
+```
+
 ## Workflow Type Versioning
 
 For incompatible changes, create a new Workflow Type instead of using patches:
@@ -122,9 +136,31 @@ var worker = new TemporalWorker(
         .AddAllActivities(new PizzaActivities()));
 ```
 
+Update client code to start new workflows with the new type:
+
+```csharp
+// Old workflows continue on PizzaWorkflow
+// New workflows use PizzaWorkflowV2
+var handle = await client.StartWorkflowAsync(
+    (PizzaWorkflowV2 wf) => wf.RunAsync(order),
+    new(id: $"pizza-{order.Id}", taskQueue: "pizza-task-queue"));
+```
+
+Check for open executions before removing the old type:
+
+```bash
+temporal workflow list --query 'WorkflowType = "PizzaWorkflow" AND ExecutionStatus = "Running"'
+```
+
 ## Worker Versioning
 
 Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
+
+### Key Concepts
+
+**Worker Deployment**: A logical service grouping similar Workers together (e.g., "loan-processor"). All versions of your code live under this umbrella.
+
+**Worker Deployment Version**: A specific snapshot of your code identified by a deployment name and Build ID (e.g., "loan-processor:v1.0" or "loan-processor:abc123").
 
 ### Configuring Workers for Versioning
 
@@ -144,20 +180,69 @@ var worker = new TemporalWorker(
     .AddAllActivities(new MyActivities()));
 ```
 
+**Configuration parameters:**
+- `UseWorkerVersioning`: Enables Worker Versioning
+- `DeploymentOptions`: Identifies the Worker Deployment Version (deployment name + build ID)
+- Build ID: Typically a git commit hash, version number, or timestamp
+
 ### PINNED vs AUTO_UPGRADE Behaviors
 
-**PINNED**: Workflows stay locked to their original Worker version.
+**PINNED Behavior**
+
+Workflows stay locked to their original Worker version:
 
 ```csharp
 [Workflow(VersioningBehavior = VersioningBehavior.Pinned)]
 public class StableWorkflow { /* ... */ }
 ```
 
-**AUTO_UPGRADE**: Workflows can move to newer versions. Still needs patching for compatibility.
+**When to use PINNED:**
+- Short-running workflows (minutes to hours)
+- Consistency is critical (e.g., financial transactions)
+- You want to eliminate version compatibility complexity
+- Building new applications and want simplest development experience
+
+**AUTO_UPGRADE Behavior**
+
+Workflows can move to newer versions:
 
 ```csharp
 [Workflow(VersioningBehavior = VersioningBehavior.AutoUpgrade)]
 public class UpgradableWorkflow { /* ... */ }
+```
+
+**When to use AUTO_UPGRADE:**
+- Long-running workflows (weeks or months)
+- Workflows need to benefit from bug fixes during execution
+- Migrating from traditional rolling deployments
+- You are already using patching APIs for version transitions
+
+**Important:** AUTO_UPGRADE workflows still need patching to handle version transitions safely since they can move between Worker versions.
+
+### Deployment Strategies
+
+**Blue-Green Deployments**
+
+Maintain two environments and switch traffic between them:
+1. Deploy new code to idle environment
+2. Run tests and validation
+3. Switch traffic to new environment
+4. Keep old environment for instant rollback
+
+**Rainbow Deployments**
+
+Multiple versions run simultaneously:
+- New workflows use latest version
+- Existing workflows complete on their original version
+- Add new versions alongside existing ones
+- Gradually sunset old versions as workflows complete
+
+### Querying Workflows by Worker Version
+
+```bash
+# Find workflows on a specific Worker version
+temporal workflow list --query \
+  'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
 ## Best Practices

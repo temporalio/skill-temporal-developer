@@ -95,6 +95,8 @@ Control which exceptions cause workflow failures vs workflow task retries.
 
 **Tip for testing:** Set `WorkflowFailureExceptionTypes` to include `Exception` so any unhandled exception fails the workflow immediately rather than retrying the workflow task forever. This surfaces bugs faster.
 
+### Worker-Level Configuration
+
 ```csharp
 var worker = new TemporalWorker(
     client,

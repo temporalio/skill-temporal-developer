@@ -125,21 +125,9 @@ MyTemporalApp/
 
 ## Determinism Rules
 
-The .NET SDK has **no sandbox** like Python or TypeScript. Developers must avoid non-deterministic operations manually.
+The .NET SDK has **no sandbox** like Python or TypeScript. Developers must avoid non-deterministic operations manually. Many standard .NET `Task` APIs use `TaskScheduler.Default` implicitly, which breaks determinism.
 
-**Do NOT use in workflows:**
-- `Task.Run` — use `Workflow.RunTaskAsync`
-- `Task.Delay` / `Thread.Sleep` — use `Workflow.DelayAsync`
-- `Task.WhenAny` — use `Workflow.WhenAnyAsync`
-- `Task.WhenAll` — use `Workflow.WhenAllAsync`
-- `ConfigureAwait(false)` — use `ConfigureAwait(true)` or omit
-- `DateTime.Now` / `DateTime.UtcNow` — use `Workflow.UtcNow`
-- `Random` — use `Workflow.Random`
-- `Guid.NewGuid()` — use `Workflow.NewGuid()`
-- `System.Threading.Mutex` / `Semaphore` — use `Temporalio.Workflows.Mutex` / `Semaphore`
-- Iterating `Dictionary<TKey, TValue>` (unordered) — use `SortedDictionary` or sort first
-
-See `references/dotnet/determinism.md` and `references/dotnet/determinism-protection.md` for detailed rules.
+See `references/dotnet/determinism.md` for the full list of forbidden operations, safe alternatives, and best practices. See `references/dotnet/determinism-protection.md` for details on the runtime detection mechanism.
 
 ## Common Pitfalls
 

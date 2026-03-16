@@ -172,6 +172,30 @@ public async Task ProcessLargeFileAsync(string path)
 }
 ```
 
+### Heartbeat Timeout Too Short
+
+```csharp
+// BAD: Heartbeat timeout shorter than processing time
+await Workflow.ExecuteActivityAsync(
+    (MyActivities a) => a.ProcessChunkAsync(),
+    new()
+    {
+        StartToCloseTimeout = TimeSpan.FromMinutes(30),
+        HeartbeatTimeout = TimeSpan.FromSeconds(10), // Too short!
+    });
+
+// GOOD: Heartbeat timeout allows for processing variance
+await Workflow.ExecuteActivityAsync(
+    (MyActivities a) => a.ProcessChunkAsync(),
+    new()
+    {
+        StartToCloseTimeout = TimeSpan.FromMinutes(30),
+        HeartbeatTimeout = TimeSpan.FromMinutes(2),
+    });
+```
+
+Set heartbeat timeout as high as acceptable for your use case — each heartbeat counts as an action.
+
 ## Testing
 
 ### Not Testing Failures
