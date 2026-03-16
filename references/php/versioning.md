@@ -153,11 +153,17 @@ temporal workflow list --query 'WorkflowType = "PizzaWorkflow" AND ExecutionStat
 
 ## Worker Versioning
 
-Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously. PHP uses the same concepts as other SDKs: Worker Deployment name, Build ID, PINNED vs AUTO_UPGRADE behaviors.
+Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
+
+### Key Concepts
+
+**Worker Deployment**: A logical service grouping similar Workers together (e.g., "order-service"). All versions of your code live under this umbrella.
+
+**Worker Deployment Version**: A specific snapshot of your code identified by a deployment name and Build ID (e.g., "order-service:v1.0.0" or "order-service:abc123").
+
+### Configuring Workers for Versioning
 
 > **Note:** Worker Versioning is currently in Public Preview. The legacy Worker Versioning API (before 2025) will be removed from Temporal Server in March 2026.
-
-Configure a versioned Worker in the RoadRunner worker setup:
 
 ```php
 $factory = WorkerFactory::create();
@@ -176,12 +182,41 @@ $worker->registerActivity(OrderActivity::class);
 $factory->run();
 ```
 
+**Configuration parameters:**
+- `withUseWorkerVersioning`: Enables Worker Versioning
+- `withDeploymentName`: Logical name for your service (consistent across versions)
+- `withBuildId`: Unique identifier for this build (git hash, semver, etc.)
+
+### PINNED vs AUTO_UPGRADE Behaviors
+
+**When to use PINNED:**
+- Short-running workflows (minutes to hours)
+- Consistency is critical (e.g., financial transactions)
+- You want to eliminate version compatibility complexity
+- Building new applications and want simplest development experience
+
+**When to use AUTO_UPGRADE:**
+- Long-running workflows (weeks or months)
+- Workflows need to benefit from bug fixes during execution
+- Migrating from traditional rolling deployments
+- You are already using patching APIs for version transitions
+
+**Important:** AUTO_UPGRADE workflows still need patching to handle version transitions safely since they can move between Worker versions.
+
 Use the Temporal CLI to set the current version:
 
 ```bash
 temporal worker deployment set-current-version \
   --deployment-name order-service \
   --build-id v1.0.0
+```
+
+### Querying Workflows by Worker Version
+
+```bash
+# Find workflows on a specific Worker version
+temporal workflow list --query \
+  'TemporalWorkerDeploymentVersion = "order-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
 ## Best Practices

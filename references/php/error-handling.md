@@ -4,7 +4,7 @@
 
 The PHP SDK uses `ApplicationFailure` for application-specific errors and provides retry policy configuration via `RetryOptions`. Generally, the following information about errors and retryability applies across activities, child workflows, and Nexus operations.
 
-## Application Errors/Failures
+## Application Errors
 
 ```php
 use Temporal\Exception\Failure\ApplicationFailure;
@@ -43,7 +43,7 @@ public function chargeCard(ChargeCardInput $input): string
 }
 ```
 
-## Handling Activity Errors in Workflows
+## Handling Activity Errors
 
 ```php
 use Temporal\Exception\Failure\ApplicationFailure;
@@ -68,7 +68,7 @@ public function run(): string
 
 Activities throw exceptions; workflows catch `ActivityFailure` (which wraps the original exception).
 
-## Retry Configuration
+## Retry Policy Configuration
 
 ```php
 use Temporal\Activity\ActivityOptions;

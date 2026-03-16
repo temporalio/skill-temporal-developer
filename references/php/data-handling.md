@@ -28,7 +28,7 @@ interface OrderWorkflowInterface
 
 Without `#[ReturnType]`, the SDK cannot deserialize the result into the correct class.
 
-## Custom Data Converter
+## Custom Data Conversion
 
 Implement a custom `PayloadConverter` to handle types the default converter does not support:
 

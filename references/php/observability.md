@@ -4,7 +4,7 @@
 
 The PHP SDK provides observability through PSR-3 logging (with replay-aware Workflow logger), and visibility via Search Attributes.
 
-## Logging / Replay-Aware Logging
+## Logging
 
 ### Workflow Logging
 
@@ -90,26 +90,7 @@ Any PSR-3 compatible logger (Monolog, etc.) can be used.
 
 ## Search Attributes (Visibility)
 
-Use Search Attributes to make Workflow executions queryable by business fields. See `references/php/data-handling.md` for how to set and upsert Search Attributes.
-
-Query Workflow executions using Search Attributes:
-
-```php
-$executions = $client->listWorkflowExecutions(
-    'WorkflowType = "OrderWorkflow" AND ExecutionStatus = "Running" AND OrderStatus = "pending"'
-);
-
-foreach ($executions as $execution) {
-    echo "Pending order: {$execution->getExecution()->getWorkflowId()}\n";
-}
-```
-
-Or using the Temporal CLI:
-
-```bash
-temporal workflow list --query \
-  'WorkflowType = "OrderWorkflow" AND ExecutionStatus = "Running" AND OrderStatus = "pending"'
-```
+See the Search Attributes section of `references/php/data-handling.md`
 
 ## Best Practices
 

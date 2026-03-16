@@ -4,7 +4,7 @@
 
 You test Temporal PHP Workflows using PHPUnit with the Temporal testing package. The PHP SDK provides `WorkerFactory` from `Temporal\Testing` and a RoadRunner test server for running workflows in an isolated environment.
 
-## Test Environment Setup
+## Workflow Test Environment
 
 Set up a `bootstrap.php` to initialize the test environment:
 
@@ -57,7 +57,7 @@ class MyWorkflowTest extends TestCase
 }
 ```
 
-## Activity Mocking
+## Mocking Activities
 
 Use `ActivityMocker` to mock activities without executing their real implementation:
 
@@ -148,7 +148,7 @@ public function testActivityFailureHandling(): void
 }
 ```
 
-## Replay Testing
+## Workflow Replay Testing
 
 Use `WorkflowReplayer` to verify workflow determinism against recorded histories:
 

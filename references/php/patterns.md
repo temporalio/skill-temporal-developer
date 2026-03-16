@@ -383,7 +383,7 @@ class HandlerAwareWorkflow
 }
 ```
 
-## Activity Heartbeating
+## Activity Heartbeat Details
 
 ### WHY:
 - **Support activity cancellation** — Cancellations are delivered via heartbeat; activities that don't heartbeat won't know they've been cancelled

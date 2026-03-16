@@ -138,19 +138,3 @@ public function run(): \Generator
 ```
 
 **Why this matters:** `sleep()` uses the system clock, which differs between original execution and replay. `Workflow::timer()` creates a durable timer in the event history, ensuring consistent behavior during replay.
-
-### Other PHP-Specific Determinism Mistakes
-
-```php
-// BAD: no yield on activity call — fire-and-forget, result is lost
-$this->myActivity->doSomething();
-
-// GOOD: always yield activity calls
-$result = yield $this->myActivity->doSomething();
-
-// BAD: time() uses wall clock — non-deterministic
-$now = time();
-
-// GOOD: use Workflow::now() for deterministic time
-$now = Workflow::now();  // Returns \DateTimeImmutable
-```
