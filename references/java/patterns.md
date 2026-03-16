@@ -90,7 +90,7 @@ public class StatusWorkflowImpl implements StatusWorkflow {
 
     @Override
     public String run() {
-        ActivityStub activities = Workflow.newActivityStub(
+        MyActivities activities = Workflow.newActivityStub(
             MyActivities.class,
             ActivityOptions.newBuilder()
                 .setStartToCloseTimeout(Duration.ofMinutes(1))

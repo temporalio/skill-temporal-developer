@@ -11,7 +11,8 @@ The Java SDK uses data converters to serialize/deserialize workflow inputs, outp
 1. `NullPayloadConverter` — `null` values
 2. `ByteArrayPayloadConverter` — `byte[]` as raw binary
 3. `ProtobufJsonPayloadConverter` — Protobuf `Message` instances as JSON
-4. `JacksonJsonPayloadConverter` — Everything else via Jackson `ObjectMapper`
+4. `ProtobufPayloadConverter` — Protobuf `Message` instances as binary
+5. `JacksonJsonPayloadConverter` — Everything else via Jackson `ObjectMapper`
 
 ## Jackson Integration
 
