@@ -4,9 +4,7 @@
 
 You test Temporal Java Workflows using `TestWorkflowEnvironment` (manual setup) or `TestWorkflowExtension` (JUnit 5). Activity mocking uses Mockito. The SDK provides `WorkflowReplayer` for replay-based compatibility testing.
 
-## Test Environment Setup
-
-### JUnit 5 with TestWorkflowExtension
+## Workflow Test Environment
 
 ```java
 import io.temporal.testing.TestWorkflowExtension;
@@ -16,7 +14,6 @@ import io.temporal.client.WorkflowOptions;
 import io.temporal.worker.Worker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MyWorkflowTest {
@@ -29,10 +26,7 @@ public class MyWorkflowTest {
             .build();
 
     @Test
-    void testWorkflow(
-            TestWorkflowEnvironment env,
-            Worker worker,
-            WorkflowClient client) {
+    void testWorkflow(TestWorkflowEnvironment env, Worker worker, WorkflowClient client) {
         worker.registerActivitiesImplementations(new MyActivitiesImpl());
         env.start();
 
@@ -48,53 +42,9 @@ public class MyWorkflowTest {
 }
 ```
 
-### Manual TestWorkflowEnvironment Setup
+For manual lifecycle control (e.g., JUnit 4 or custom setups), use `TestWorkflowEnvironment` directly with `@BeforeEach`/`@AfterEach`.
 
-```java
-import io.temporal.testing.TestWorkflowEnvironment;
-import io.temporal.client.WorkflowClient;
-import io.temporal.client.WorkflowOptions;
-import io.temporal.worker.Worker;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-public class MyWorkflowManualTest {
-
-    private TestWorkflowEnvironment env;
-    private Worker worker;
-    private WorkflowClient client;
-
-    @BeforeEach
-    void setUp() {
-        env = TestWorkflowEnvironment.newInstance();
-        worker = env.newWorker("test-task-queue");
-        worker.registerWorkflowImplementationTypes(MyWorkflowImpl.class);
-        worker.registerActivitiesImplementations(new MyActivitiesImpl());
-        client = env.getWorkflowClient();
-        env.start();
-    }
-
-    @AfterEach
-    void tearDown() {
-        env.close();
-    }
-
-    @Test
-    void testWorkflow() {
-        MyWorkflow workflow = client.newWorkflowStub(
-            MyWorkflow.class,
-            WorkflowOptions.newBuilder()
-                .setTaskQueue("test-task-queue")
-                .build());
-
-        String result = workflow.run("input");
-        assertEquals("expected", result);
-    }
-}
-```
-
-## Activity Mocking
+## Mocking Activities
 
 ```java
 import static org.mockito.Mockito.*;
@@ -182,7 +132,7 @@ void testActivityFailure(
 }
 ```
 
-## Replay Testing
+## Workflow Replay Testing
 
 ```java
 import io.temporal.testing.WorkflowReplayer;
@@ -211,7 +161,7 @@ void testReplayFromJsonString() throws Exception {
 
 ## Activity Testing
 
-Activity implementations are plain Java classes. Test them directly without a Temporal environment:
+Activity implementations are plain Java classes. Test them directly:
 
 ```java
 @Test
@@ -222,21 +172,7 @@ void testActivity() {
 }
 ```
 
-For activities that use `Activity.getExecutionContext()`, use `TestActivityEnvironment`:
-
-```java
-import io.temporal.testing.TestActivityEnvironment;
-
-@Test
-void testActivityWithContext() {
-    TestActivityEnvironment activityEnv = TestActivityEnvironment.newInstance();
-    activityEnv.registerActivitiesImplementations(new MyActivitiesImpl());
-
-    MyActivities activities = activityEnv.newActivityStub(MyActivities.class);
-    String result = activities.composeGreeting("Hello", "World");
-    assertEquals("Hello World", result);
-}
-```
+For activities that use `Activity.getExecutionContext()` or heartbeating, use `TestActivityEnvironment` to provide the activity context.
 
 ## Best Practices
 

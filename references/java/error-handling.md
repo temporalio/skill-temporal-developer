@@ -72,7 +72,7 @@ Activity failures are always wrapped in `ActivityFailure`. The original exceptio
 - `ActivityFailure` → `TimeoutFailure` (timeout)
 - `ActivityFailure` → `CanceledFailure` (cancellation)
 
-## Handling Activity Errors in Workflows
+## Handling Activity Errors
 
 ```java
 import io.temporal.failure.ActivityFailure;
@@ -102,7 +102,7 @@ public class MyWorkflowImpl implements MyWorkflow {
 }
 ```
 
-## Retry Configuration
+## Retry Policy Configuration
 
 ```java
 import io.temporal.activity.ActivityOptions;
@@ -165,22 +165,7 @@ public class MyWorkflowImpl implements MyWorkflow {
 }
 ```
 
-To allow other exception types to fail the workflow (instead of causing infinite task retries), use `WorkflowImplementationOptions.setFailWorkflowExceptionTypes()`:
-
-```java
-import io.temporal.worker.Worker;
-import io.temporal.worker.WorkerFactory;
-import io.temporal.workflow.WorkflowImplementationOptions;
-
-WorkflowImplementationOptions options = WorkflowImplementationOptions.newBuilder()
-    .setFailWorkflowExceptionTypes(
-        IllegalArgumentException.class,
-        NullPointerException.class
-    )
-    .build();
-
-worker.registerWorkflowImplementationTypes(options, MyWorkflowImpl.class);
-```
+To allow other exception types to fail the workflow instead of causing infinite task retries, see `references/java/advanced-features.md` for configuring `setFailWorkflowExceptionTypes()`.
 
 Use checked exceptions with `Workflow.wrap()` to rethrow them as unchecked:
 

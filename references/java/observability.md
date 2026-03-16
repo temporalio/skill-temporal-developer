@@ -84,23 +84,7 @@ The Java SDK uses SLF4J. Configure your preferred backend:
 </configuration>
 ```
 
-### Log4j2 (log4j2.xml)
-
-```xml
-<Configuration>
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-        </Console>
-    </Appenders>
-    <Loggers>
-        <Logger name="io.temporal.internal" level="WARN"/>
-        <Root level="INFO">
-            <AppenderRef ref="Console"/>
-        </Root>
-    </Loggers>
-</Configuration>
-```
+Log4j2 is also supported as an SLF4J backend with equivalent configuration.
 
 ## Metrics
 

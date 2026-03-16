@@ -396,9 +396,9 @@ public class MyWorkflowImpl implements MyWorkflow {
 
 ## Waiting for All Handlers to Finish
 
-Signal and update handlers can block (run activities, child workflows, etc.), which means handler executions and your main workflow method run concurrently. The workflow may complete before handlers finish their execution.
+Signal and update handlers should generally be non-async (avoid running activities from them). Otherwise, the workflow may complete before handlers finish their execution. However, making handlers non-async sometimes requires workarounds that add complexity.
 
-When blocking handlers are used, call `Workflow.await(() -> Workflow.isEveryHandlerFinished())` at the end of your workflow (or before continue-as-new) to prevent completion until all pending handlers complete.
+When handlers do run async operations, call `Workflow.await(() -> Workflow.isEveryHandlerFinished())` at the end of your workflow (or before continue-as-new) to prevent completion until all pending handlers complete.
 
 ```java
 public class MyWorkflowImpl implements MyWorkflow {
@@ -413,7 +413,7 @@ public class MyWorkflowImpl implements MyWorkflow {
 }
 ```
 
-## Activity Heartbeating
+## Activity Heartbeat Details
 
 ### WHY:
 - **Support activity cancellation** — Cancellations are delivered via heartbeat; activities that don't heartbeat won't know they've been cancelled

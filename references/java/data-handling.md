@@ -125,58 +125,33 @@ public class EncryptionCodec implements PayloadCodec {
 
     @Override
     public List<Payload> encode(List<Payload> payloads) {
-        return payloads.stream()
-            .map(this::encrypt)
-            .collect(Collectors.toList());
+        return payloads.stream().map(payload -> {
+            // Encrypt payload.toByteArray() using your chosen algorithm (e.g., AES/GCM)
+            byte[] encrypted = encryptBytes(payload.toByteArray(), key);
+            return Payload.newBuilder()
+                .putMetadata("encoding", ByteString.copyFromUtf8("binary/encrypted"))
+                .setData(ByteString.copyFrom(encrypted))
+                .build();
+        }).collect(Collectors.toList());
     }
 
     @Override
     public List<Payload> decode(List<Payload> payloads) {
-        return payloads.stream()
-            .map(this::decrypt)
-            .collect(Collectors.toList());
-    }
-
-    private Payload encrypt(Payload payload) {
-        try {
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            byte[] iv = new byte[12];
-            SecureRandom.getInstanceStrong().nextBytes(iv);
-            cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(128, iv));
-            byte[] encrypted = cipher.doFinal(payload.toByteArray());
-
-            return Payload.newBuilder()
-                .putMetadata("encoding", ByteString.copyFromUtf8("binary/encrypted"))
-                .setData(ByteString.copyFrom(
-                    ByteBuffer.allocate(iv.length + encrypted.length)
-                        .put(iv).put(encrypted).array()))
-                .build();
-        } catch (Exception e) {
-            throw new DataConverterException(e);
-        }
-    }
-
-    private Payload decrypt(Payload payload) {
-        String encoding = payload.getMetadataOrDefault(
-            "encoding", ByteString.EMPTY).toStringUtf8();
-        if (!"binary/encrypted".equals(encoding)) {
-            return payload;
-        }
-        try {
-            byte[] data = payload.getData().toByteArray();
-            byte[] iv = Arrays.copyOfRange(data, 0, 12);
-            byte[] encrypted = Arrays.copyOfRange(data, 12, data.length);
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, iv));
-            byte[] decrypted = cipher.doFinal(encrypted);
+        return payloads.stream().map(payload -> {
+            String encoding = payload.getMetadataOrDefault(
+                "encoding", ByteString.EMPTY).toStringUtf8();
+            if (!"binary/encrypted".equals(encoding)) return payload;
+            // Decrypt and reconstruct the original Payload
+            byte[] decrypted = decryptBytes(payload.getData().toByteArray(), key);
             return Payload.parseFrom(decrypted);
-        } catch (Exception e) {
-            throw new DataConverterException(e);
-        }
+        }).collect(Collectors.toList());
     }
 }
+```
 
-// Apply encryption codec
+Apply the codec to the client:
+
+```java
 CodecDataConverter codecDataConverter = new CodecDataConverter(
     DefaultDataConverter.newDefaultInstance(),
     Collections.singletonList(new EncryptionCodec(secretKey))

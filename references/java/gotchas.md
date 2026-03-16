@@ -4,108 +4,21 @@ Java-specific mistakes and anti-patterns. See also [Common Gotchas](../core/gotc
 
 ## Non-Deterministic Operations
 
-**Critical: The Java SDK has NO sandbox.** Unlike Python (which uses a sandbox) or TypeScript (which uses V8 isolation), the Java SDK relies entirely on developer conventions. Non-deterministic calls will silently succeed during initial execution but cause `NonDeterministicException` on replay.
+**Critical: The Java SDK has NO sandbox.** Unlike Python (which uses a sandbox) or TypeScript (which uses V8 isolation), the Java SDK relies entirely on developer conventions. Non-deterministic calls silently succeed during initial execution but cause `NonDeterministicException` on replay.
 
-See `references/java/determinism.md` for the full list of forbidden operations and safe alternatives.
+Forbidden in workflow code — use the Temporal `Workflow.*` equivalents instead:
+- `Thread.sleep` → `Workflow.sleep`
+- `UUID.randomUUID` → `Workflow.randomUUID`
+- `Math.random` → `Workflow.newRandom`
+- `System.currentTimeMillis` → `Workflow.currentTimeMillis`
+- `new Thread` → `Async.function`
+- `synchronized` blocks → unnecessary (workflow code runs under a global lock)
 
-### Thread.sleep vs Workflow.sleep
-
-```java
-// BAD - Blocks the real thread, bypasses Temporal timers, non-deterministic on replay
-import io.temporal.workflow.Workflow;
-
-public class BadWorkflow implements MyWorkflow {
-    @Override
-    public void run() {
-        try {
-            Thread.sleep(60000); // Non-deterministic!
-        } catch (InterruptedException e) {
-            // ...
-        }
-    }
-}
-
-// GOOD - Durable timer in event history
-import io.temporal.workflow.Workflow;
-import java.time.Duration;
-
-public class GoodWorkflow implements MyWorkflow {
-    @Override
-    public void run() {
-        Workflow.sleep(Duration.ofSeconds(60)); // Deterministic
-    }
-}
-```
-
-### UUID.randomUUID vs Workflow.randomUUID
-
-```java
-// BAD - Different value on replay
-String id = UUID.randomUUID().toString();
-
-// GOOD - Deterministic across replays
-String id = Workflow.randomUUID().toString();
-```
-
-### Math.random vs Workflow.newRandom
-
-```java
-// BAD - Non-deterministic
-double value = Math.random();
-
-// GOOD - Seeded from workflow, deterministic on replay
-double value = Workflow.newRandom().nextDouble();
-```
-
-### new Thread vs Async.function
-
-```java
-// BAD - Breaks cooperative threading model
-new Thread(() -> doWork()).start();
-
-// GOOD - Uses Temporal's workflow-aware async
-import io.temporal.workflow.Async;
-import io.temporal.workflow.Promise;
-
-Promise<String> result = Async.function(() -> doWork());
-```
-
-### synchronized blocks
-
-```java
-// BAD - Can deadlock with the workflow executor's global lock
-synchronized (this) {
-    doWork();
-}
-
-// GOOD - Unnecessary; only one workflow thread runs at a time
-// Workflow code already executes under a global lock
-doWork();
-```
-
-### System.currentTimeMillis vs Workflow.currentTimeMillis
-
-```java
-// BAD - Different value on replay
-long now = System.currentTimeMillis();
-
-// GOOD - Returns the replayed time
-long now = Workflow.currentTimeMillis();
-```
+See `references/java/determinism.md` for the full table of forbidden operations, safe alternatives, and detailed examples.
 
 ## Wrong Retry Classification
 
-**Example:** Transient network errors should be retried. Authentication errors should not be.
-
-```java
-// BAD - Permanent error will be retried indefinitely
-throw ApplicationFailure.newFailure("User not found", "NotFoundError");
-
-// GOOD - Mark permanent errors as non-retryable
-throw ApplicationFailure.newNonRetryableFailure("User not found", "NotFoundError");
-```
-
-See `references/java/error-handling.md` for detailed guidance on error classification and retry policies.
+Mark permanent errors as non-retryable to avoid infinite retries. See `references/java/error-handling.md` for detailed guidance on error classification and retry policies.
 
 ## Cancellation
 

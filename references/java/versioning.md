@@ -195,6 +195,11 @@ temporal workflow list --query 'WorkflowType = "PizzaWorkflow" AND ExecutionStat
 
 Worker Versioning manages versions at the deployment level. Available since Java SDK v1.29.
 
+### Key Concepts
+
+- **Worker Deployment**: A logical group of Workers processing the same Task Queue, identified by a deployment name (e.g., `"order-service"`).
+- **Worker Deployment Version**: A specific version within a deployment, identified by the combination of deployment name and Build ID (e.g., `"order-service:v1.0.0"`). Each version corresponds to a particular code revision.
+
 ### Configuring Workers
 
 ```java
@@ -226,7 +231,7 @@ worker.registerActivitiesImplementations(new MyActivitiesImpl());
 factory.start();
 ```
 
-### PINNED vs AUTO_UPGRADE
+### PINNED vs AUTO_UPGRADE Behaviors
 
 Set the versioning behavior on the workflow definition:
 
@@ -234,30 +239,34 @@ Set the versioning behavior on the workflow definition:
 import io.temporal.workflow.VersioningBehavior;
 import io.temporal.workflow.Workflow;
 
-@WorkflowInterface
-public interface MyWorkflow {
-    @WorkflowMethod
-    String run(String input);
-}
-
 public class MyWorkflowImpl implements MyWorkflow {
     @Override
     public String run(String input) {
-        // Set behavior at the start of the workflow
         Workflow.setVersioningBehavior(VersioningBehavior.PINNED);
         // ... workflow logic
     }
 }
 ```
 
-**PINNED**: Workflow stays on the Worker version that started it. Use for short-running workflows or when consistency is critical.
+**PINNED**: Workflow stays on the Worker version that started it. Use for short-running workflows or when consistency within a single execution is critical. New workflows start on the current version; existing ones stay put.
 
-**AUTO_UPGRADE**: Workflow moves to the latest Worker version. Use for long-running workflows that need bug fixes. Requires patching to handle version transitions safely.
+**AUTO_UPGRADE**: Workflow moves to the latest Worker version on the next Workflow Task. Use for long-running workflows that need bug fixes or feature updates. Combine with `Workflow.getVersion()` patching to handle version transitions safely.
+
+### Deployment Strategies
+
+**Blue-Green**: Run two deployment versions simultaneously. Set the new version as the current deployment. PINNED workflows finish on the old version; new workflows start on the new version. Drain the old version once all its workflows complete.
+
+**Rainbow**: Run multiple versions concurrently for gradual rollouts. Each version handles its own workflows. Useful when you have many long-running PINNED workflows across several code revisions.
 
 ### Querying Workflows by Worker Version
 
 ```bash
+# List workflows running on a specific version
 temporal workflow list --query \
+  'TemporalWorkerDeploymentVersion = "order-service:v1.0.0" AND ExecutionStatus = "Running"'
+
+# Count workflows per version to monitor drain progress
+temporal workflow count --query \
   'TemporalWorkerDeploymentVersion = "order-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 

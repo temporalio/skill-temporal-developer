@@ -8,7 +8,7 @@ The Java SDK has **no sandbox** and **no static analyzer**. Unlike the Python SD
 
 Temporal provides durable execution through **History Replay**. When a Worker needs to restore workflow state (after a crash, cache eviction, or to continue after a long timer), it re-executes the workflow code from the beginning, which requires the workflow code to be **deterministic**.
 
-## Convention-Based Enforcement
+## SDK Protection
 
 Java workflow code runs in a cooperative threading model where only one workflow thread executes at a time under a global lock. There are no compile-time checks or runtime interceptions that prevent non-deterministic calls. If you call a forbidden operation, it will silently succeed during the initial execution but cause a `NonDeterministicException` when the workflow is replayed, because the replayed execution produces different results than the original history.
 
