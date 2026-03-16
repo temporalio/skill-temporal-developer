@@ -81,6 +81,7 @@ Each Temporal SDK language provides a protection mechanism to make it easier to 
 - Python: The Python SDK runs workflows in a sandbox that intercepts and aborts non-deterministic calls early at runtime. 
 - TypeScript: The TypeScript SDK runs workflows in an isolated V8 sandbox, intercepting many common sources of non-determinism and replacing them automatically with deterministic variants.
 - Go: The Go SDK has no runtime sandbox. Therefore, non-determinism bugs will never be immediately appararent, and are usually only observable during replay. The optional `workflowcheck` static analysis tool can be used to check for many sources of non-determinism at compile time.
+- .NET: The .NET SDK has no sandbox. It uses a custom TaskScheduler and a runtime EventListener to detect invalid task scheduling. Developers must use Workflow.* safe alternatives (e.g., Workflow.DelayAsync instead of Task.Delay) and avoid non-deterministic .NET Task APIs.
 
 Regardless of which SDK you are using, it is your responsibility to ensure that workflow code does not contain sources of non-determinism. Use SDK-specific tools as well as replay tests for doing so.
 
