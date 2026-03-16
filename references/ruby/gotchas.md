@@ -29,7 +29,7 @@ end
 ```ruby
 # GOOD - Separate files
 # workflows/my_workflow.rb
-require 'temporalio/workflow/definition'
+require 'temporalio/workflow'
 
 class MyWorkflow < Temporalio::Workflow::Definition
   def execute(name)
@@ -42,7 +42,7 @@ class MyWorkflow < Temporalio::Workflow::Definition
 end
 
 # activities/my_activity.rb
-require 'temporalio/activity/definition'
+require 'temporalio/activity'
 
 class MyActivity < Temporalio::Activity::Definition
   def execute(name)
@@ -75,16 +75,20 @@ end
 ```
 
 ```ruby
-# GOOD - Use ensure with detached cancellation scope for cleanup
+# GOOD - Use ensure with detached cancellation for cleanup
 class GoodWorkflow < Temporalio::Workflow::Definition
   def execute
     Temporalio::Workflow.execute_activity(AcquireResource, start_to_close_timeout: 300)
     Temporalio::Workflow.execute_activity(DoWork, start_to_close_timeout: 300)
   ensure
-    # Detach so cleanup runs even when cancelled
-    Temporalio::Workflow::CancellationScope.new(detached: true) do
-      Temporalio::Workflow.execute_activity(ReleaseResource, start_to_close_timeout: 300)
-    end
+    # Create a detached cancellation (not tied to workflow cancellation)
+    # so cleanup activity runs even after workflow is cancelled
+    detached_cancel, _cancel_proc = Temporalio::Cancellation.new
+    Temporalio::Workflow.execute_activity(
+      ReleaseResource,
+      start_to_close_timeout: 300,
+      cancellation: detached_cancel
+    )
   end
 end
 ```

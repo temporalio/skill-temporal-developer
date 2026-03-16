@@ -17,40 +17,39 @@ Note: symbol keys become strings on deserialization. `create_additions: true` by
 
 ## ActiveModel Integration
 
-Use the `ActiveModelJSONSupport` mixin for custom model classes:
+Use the `ActiveModelJSONSupport` mixin to make ActiveModel objects work with Temporal's JSON serialization:
 
 ```ruby
 module ActiveModelJSONSupport
-  def as_json(_options = {})
-    { JSON.create_id => self.class.name }.merge(instance_variables.each_with_object({}) do |var, hash|
-      hash[var.to_s.delete('@')] = instance_variable_get(var)
-    end)
-  end
+  extend ActiveSupport::Concern
+  include ActiveModel::Serializers::JSON
 
-  def to_json(*args)
-    as_json.to_json(*args)
-  end
+  included do
+    def as_json(*)
+      super.merge(::JSON.create_id => self.class.name)
+    end
 
-  def self.included(base)
-    base.define_method(:json_create) do |hash|
-      obj = base.new
-      hash.each do |key, value|
-        next if key == JSON.create_id
-        obj.instance_variable_set("@#{key}", value)
-      end
-      obj
+    def to_json(*args)
+      as_json.to_json(*args)
+    end
+
+    def self.json_create(object)
+      object = object.dup
+      object.delete(::JSON.create_id)
+      new(**object.symbolize_keys)
     end
   end
 end
+```
 
-class MyModel
+Include it in any ActiveModel class to make it serializable by Temporal:
+
+```ruby
+class OrderInput
+  include ActiveModel::Model
   include ActiveModelJSONSupport
-  attr_accessor :name, :value
 
-  def initialize(name: nil, value: nil)
-    @name = name
-    @value = value
-  end
+  attr_accessor :order_id, :items, :total
 end
 ```
 
@@ -151,7 +150,7 @@ Temporalio::Workflow.upsert_search_attributes({ key => 'new-value' })
 Query workflows:
 
 ```ruby
-client.list_workflows(filter: "CustomerId = 'customer-123'")
+client.list_workflows("CustomerId = 'customer-123'")
 ```
 
 ## Workflow Memo

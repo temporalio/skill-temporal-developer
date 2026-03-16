@@ -34,7 +34,7 @@ raise Temporalio::Error::ApplicationError.new(
 
 ```ruby
 begin
-  await workflow.execute_activity(MyActivity, 'arg', start_to_close_timeout: 10)
+  Temporalio::Workflow.execute_activity(MyActivity, 'arg', start_to_close_timeout: 10)
 rescue Temporalio::Error::ActivityError => e
   Temporalio::Workflow.logger.error("Activity failed: #{e.message}")
   # handle or re-raise
@@ -56,7 +56,7 @@ Only set retry policies when you have a domain-specific reason. Prefer the defau
 ## Timeout Configuration
 
 ```ruby
-workflow.execute_activity(
+Temporalio::Workflow.execute_activity(
   MyActivity,
   'arg',
   start_to_close_timeout: 30,

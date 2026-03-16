@@ -10,7 +10,7 @@ The Temporal Ruby SDK (`temporalio` gem) provides a class-based approach to buil
 
 **say_hello_activity.rb** - Activity definition:
 ```ruby
-require 'temporalio/activity/definition'
+require 'temporalio/activity'
 
 class SayHelloActivity < Temporalio::Activity::Definition
   def execute(name)
@@ -21,7 +21,7 @@ end
 
 **say_hello_workflow.rb** - Workflow definition:
 ```ruby
-require 'temporalio/workflow/definition'
+require 'temporalio/workflow'
 
 class SayHelloWorkflow < Temporalio::Workflow::Definition
   def execute(name)

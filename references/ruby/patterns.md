@@ -19,8 +19,7 @@ class OrderWorkflow < Temporalio::Workflow::Definition
     @items << item
   end
 
-  workflow_run
-  def run
+  def execute
     Temporalio::Workflow.wait_condition { @approved }
     "Processed #{@items.length} items"
   end
@@ -56,21 +55,10 @@ class StatusWorkflow < Temporalio::Workflow::Definition
     @progress = 0
   end
 
-  workflow_query
-  def get_status
-    @status
-  end
-
-  workflow_query
-  def get_progress
-    @progress
-  end
-
   # Shorthand for simple attribute readers
   workflow_query_attr_reader :status, :progress
 
-  workflow_run
-  def run
+  def execute
     @status = 'running'
     100.times do |i|
       @progress = i
@@ -125,8 +113,7 @@ end
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run(orders)
+  def execute(orders)
     results = []
     orders.each do |order|
       result = Temporalio::Workflow.execute_child_workflow(
@@ -158,8 +145,7 @@ Temporalio::Workflow.execute_child_workflow(
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run(target_workflow_id)
+  def execute(target_workflow_id)
     handle = Temporalio::Workflow.external_workflow_handle(target_workflow_id)
 
     # Signal the external workflow
@@ -175,8 +161,7 @@ end
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run(items)
+  def execute(items)
     futures = items.map do |item|
       Temporalio::Workflow::Future.new do
         Temporalio::Workflow.execute_activity(
@@ -196,8 +181,7 @@ end
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run(state)
+  def execute(state)
     loop do
       state = process_batch(state)
 
@@ -218,8 +202,7 @@ end
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run(order)
+  def execute(order)
     compensations = []
 
     begin
@@ -279,8 +262,7 @@ Ruby uses `Temporalio::Cancellation` tokens instead of asyncio cancellation.
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run
+  def execute
     # The workflow's cancellation token
     workflow_cancel = Temporalio::Workflow.cancellation
 
@@ -309,8 +291,7 @@ end
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run
+  def execute
     @approved = false
 
     # Wait for approval with 24-hour timeout
@@ -332,8 +313,7 @@ When async handlers are necessary, use `wait_condition { all_handlers_finished }
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run
+  def execute
     # ... main workflow logic ...
 
     # Before exiting, wait for all handlers to finish
@@ -387,8 +367,7 @@ end
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run
+  def execute
     Temporalio::Workflow.sleep(3600)
 
     'Timer fired'
@@ -402,8 +381,7 @@ end
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
-  workflow_run
-  def run
+  def execute
     result = Temporalio::Workflow.execute_local_activity(
       QuickLookup, 'key',
       start_to_close_timeout: 5
