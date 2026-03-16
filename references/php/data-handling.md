@@ -140,7 +140,7 @@ Custom searchable fields for Workflow visibility.
 Define Search Attribute keys and set them at Workflow start:
 
 ```php
-use Temporal\Common\SearchAttributeKey;
+use Temporal\Common\SearchAttributes\SearchAttributeKey;
 use Temporal\Common\TypedSearchAttributes;
 
 $orderIdKey = SearchAttributeKey::forKeyword('OrderId');
@@ -151,9 +151,9 @@ $workflow = $client->newWorkflowStub(
     WorkflowOptions::new()
         ->withTaskQueue('orders')
         ->withTypedSearchAttributes(
-            TypedSearchAttributes::empty()
-                ->withValue($orderIdKey, $order->id)
-                ->withValue($orderStatusKey, 'pending')
+            TypedSearchAttributes::new()
+                ->withSearchAttribute($orderIdKey, $order->id)
+                ->withSearchAttribute($orderStatusKey, 'pending')
         )
 );
 ```
@@ -162,7 +162,7 @@ Upsert Search Attributes during Workflow execution:
 
 ```php
 use Temporal\Workflow;
-use Temporal\Common\SearchAttributeKey;
+use Temporal\Common\SearchAttributes\SearchAttributeKey;
 
 class OrderWorkflow implements OrderWorkflowInterface
 {
@@ -171,7 +171,7 @@ class OrderWorkflow implements OrderWorkflowInterface
         // ... process order ...
 
         Workflow::upsertTypedSearchAttributes(
-            SearchAttributeKey::forKeyword('OrderStatus')->withValue('completed')
+            SearchAttributeKey::forKeyword('OrderStatus')->valueSet('completed')
         );
 
         return 'done';

@@ -41,6 +41,8 @@ class OrderWorkflow
 For handling signals with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined signal handlers.
 
 ```php
+use Temporal\DataConverter\ValuesInterface;
+
 #[WorkflowInterface]
 class DynamicSignalWorkflow
 {
@@ -48,8 +50,8 @@ class DynamicSignalWorkflow
 
     public function __construct()
     {
-        Workflow::registerDynamicSignal(function (string $name, array $args): void {
-            $this->signals[$name][] = $args[0] ?? null;
+        Workflow::registerDynamicSignal(function (string $name, ValuesInterface $arguments): void {
+            $this->signals[$name][] = $arguments->getValue(0);
         });
     }
 
@@ -116,7 +118,7 @@ class DynamicQueryWorkflow
 
     public function __construct()
     {
-        Workflow::registerDynamicQuery(function (string $name, array $args): mixed {
+        Workflow::registerDynamicQuery(function (string $name, ValuesInterface $arguments): mixed {
             return $this->state[$name] ?? null;
         });
     }
@@ -278,7 +280,10 @@ class LongRunningWorkflow
 
             // Continue with fresh history before hitting limits
             if (Workflow::getInfo()->shouldContinueAsNew) {
-                return Workflow::continueAsNew($state);
+                return yield Workflow::continueAsNew(
+                    'LongRunningWorkflow',
+                    [$state]
+                );
             }
         }
     }
@@ -407,8 +412,9 @@ class FileProcessingActivities
     public function processLargeFile(string $filePath): string
     {
         // Get heartbeat details from previous attempt (if any)
-        $heartbeatDetails = Activity::getHeartbeatDetails();
-        $startLine = $heartbeatDetails[0] ?? 0;
+        $startLine = Activity::hasHeartbeatDetails()
+            ? Activity::getHeartbeatDetails('int')
+            : 0;
 
         $lines = file($filePath);
 
