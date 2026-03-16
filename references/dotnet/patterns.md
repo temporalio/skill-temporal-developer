@@ -345,17 +345,19 @@ public class CancellableWorkflow
                 new() { StartToCloseTimeout = TimeSpan.FromHours(1) });
             return "completed";
         }
-        catch (OperationCanceledException) when (Workflow.CancellationToken.IsCancellationRequested)
+        catch (Exception e) when (TemporalException.IsCanceledException(e))
         {
             // Workflow was cancelled — perform cleanup
-            Workflow.Logger.LogInformation("Workflow cancelled, running cleanup");
+            Workflow.Logger.LogError(e, "Cancellation occurred, performing cleanup");
+            // Use a detached cancellation token for cleanup since Workflow.CancellationToken
+            // is now cancelled
+            using var detachedCancelSource = new CancellationTokenSource();
             await Workflow.ExecuteActivityAsync(
                 (MyActivities a) => a.CleanupAsync(),
                 new()
                 {
                     StartToCloseTimeout = TimeSpan.FromMinutes(5),
-                    // Use a non-cancelled token for cleanup
-                    CancellationToken = CancellationToken.None,
+                    CancellationToken = detachedCancelSource.Token,
                 });
             throw; // Re-throw to mark workflow as cancelled
         }

@@ -118,19 +118,17 @@ The .NET SDK supports dependency injection via the `Temporalio.Extensions.Hostin
 ```csharp
 using Temporalio.Extensions.Hosting;
 
-var builder = Host.CreateApplicationBuilder(args);
-
-builder.Services.AddTemporalClient(options =>
-{
-    options.TargetHost = "localhost:7233";
-    options.Namespace = "default";
-});
-
-builder.Services.AddHostedTemporalWorker("my-task-queue")
-    .AddWorkflow<MyWorkflow>()
-    .AddScopedActivities<MyActivities>();
-
-var host = builder.Build();
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices(ctx =>
+        ctx.
+            AddScoped<IOrderRepository, OrderRepository>().
+            AddHostedTemporalWorker(
+                clientTargetHost: "localhost:7233",
+                clientNamespace: "default",
+                taskQueue: "my-task-queue").
+            AddScopedActivities<MyActivities>().
+            AddWorkflow<MyWorkflow>())
+    .Build();
 await host.RunAsync();
 ```
 
