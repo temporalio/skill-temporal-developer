@@ -18,7 +18,7 @@ Structs must have exported fields to be serialized.
 
 ## Custom Data Converter
 
-Implement the `converter.DataConverter` interface (`ToPayload`, `FromPayload`, `ToPayloads`, `FromPayloads`, `ToString`) or compose a new converter from existing ones.
+Implement the `converter.DataConverter` interface (`ToPayload`, `FromPayload`, `ToPayloads`, `FromPayloads`, `ToString`, `ToStrings`) or compose a new converter from existing ones.
 
 Pass the custom converter via client options:
 

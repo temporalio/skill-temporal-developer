@@ -97,9 +97,11 @@ r := rand.Intn(100)       // Non-deterministic
 // GOOD
 t := workflow.Now(ctx)                     // Deterministic
 workflow.Sleep(ctx, time.Second)           // Durable timer
-val, _ := workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
+encoded := workflow.SideEffect(ctx, func(ctx workflow.Context) interface{} {
 	return rand.Intn(100)
 })
+var r int
+encoded.Get(&r)
 ```
 
 Use the `workflowcheck` static analysis tool to catch non-deterministic calls. For false positives, annotate with `//workflowcheck:ignore` on the line above.
