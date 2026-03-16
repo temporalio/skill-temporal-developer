@@ -43,7 +43,7 @@ require_relative 'say_hello_workflow'
 
 # Create client connected to server at the given address
 # This is the default port for `temporal server start-dev`
-client = Temporalio::Client.connect('localhost:7233')
+client = Temporalio::Client.connect('localhost:7233', 'default')
 
 # Create and run the worker
 worker = Temporalio::Worker.new(
@@ -66,7 +66,7 @@ require 'securerandom'
 require_relative 'say_hello_workflow'
 
 # Create client connected to server at the given address
-client = Temporalio::Client.connect('localhost:7233')
+client = Temporalio::Client.connect('localhost:7233', 'default')
 
 # Execute a workflow
 result = client.execute_workflow(

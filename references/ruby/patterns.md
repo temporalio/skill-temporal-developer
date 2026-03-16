@@ -149,7 +149,7 @@ class MyWorkflow < Temporalio::Workflow::Definition
     handle = Temporalio::Workflow.external_workflow_handle(target_workflow_id)
 
     # Signal the external workflow
-    handle.signal(TargetWorkflow, :data_ready, data_payload)
+    handle.signal(TargetWorkflow.data_ready, data_payload)
 
     # Or cancel it
     handle.cancel
@@ -317,7 +317,7 @@ class MyWorkflow < Temporalio::Workflow::Definition
     # ... main workflow logic ...
 
     # Before exiting, wait for all handlers to finish
-    Temporalio::Workflow.wait_condition { Temporalio::Workflow.all_handlers_finished }
+    Temporalio::Workflow.wait_condition { Temporalio::Workflow.all_handlers_finished? }
     'done'
   end
 end
