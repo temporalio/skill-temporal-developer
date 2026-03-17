@@ -243,11 +243,14 @@ class MyWorkflow:
 
         except Exception as e:
             workflow.logger.error(f"Order failed: {e}, running compensations")
-            for compensate in reversed(compensations):
-                try:
-                    await compensate()
-                except Exception as comp_err:
-                    workflow.logger.error(f"Compensation failed: {comp_err}")
+            # asyncio.shield ensures compensations run even if the workflow is cancelled.
+            async def run_compensations():
+                for compensate in reversed(compensations):
+                    try:
+                        await compensate()
+                    except Exception as comp_err:
+                        workflow.logger.error(f"Compensation failed: {comp_err}")
+            await asyncio.shield(asyncio.ensure_future(run_compensations()))
             raise
 ```
 
