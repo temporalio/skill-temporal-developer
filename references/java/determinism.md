@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Java SDK has **no sandbox** and **no static analyzer**. Unlike the Python SDK (which uses a sandbox to block non-deterministic calls) or the TypeScript SDK (which uses V8 isolation to replace functions), the Java SDK relies entirely on developer conventions to enforce determinism. The SDK provides `Workflow.*` APIs as safe replacements for common non-deterministic operations.
+The Java SDK has **no sandbox**. Unlike the Python SDK (which uses a sandbox to block non-deterministic calls) or the TypeScript SDK (which uses V8 isolation to replace functions), the Java SDK relies on developer conventions to enforce determinism. The SDK provides `Workflow.*` APIs as safe replacements for common non-deterministic operations. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time — see `references/java/determinism-protection.md`.
 
 ## Why Determinism Matters: History Replay
 
@@ -10,9 +10,9 @@ Temporal provides durable execution through **History Replay**. When a Worker ne
 
 ## SDK Protection
 
-Java workflow code runs in a cooperative threading model where only one workflow thread executes at a time under a global lock. There are no compile-time checks or runtime interceptions that prevent non-deterministic calls. If you call a forbidden operation, it will silently succeed during the initial execution but cause a `NonDeterministicException` when the workflow is replayed, because the replayed execution produces different results than the original history.
+Java workflow code runs in a cooperative threading model where only one workflow thread executes at a time under a global lock. The SDK does not intercept or block non-deterministic calls at runtime. If you call a forbidden operation, it will silently succeed during the initial execution but cause a `NonDeterministicException` when the workflow is replayed.
 
-This means non-determinism bugs are only caught at replay time, making replay testing critical.
+Use `temporal-workflowcheck` (static analysis, beta) to catch violations at build time, and `WorkflowReplayer` to verify replay compatibility in tests.
 
 ## Forbidden Operations
 

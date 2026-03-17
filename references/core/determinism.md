@@ -80,7 +80,7 @@ Each Temporal SDK language provides a different level of protection against non-
 
 - Python: The Python SDK runs workflows in a sandbox that intercepts and aborts non-deterministic calls at runtime.
 - TypeScript: The TypeScript SDK runs workflows in an isolated V8 sandbox, intercepting many common sources of non-determinism and replacing them automatically with deterministic variants.
-- Java: The Java SDK has no sandbox or static analyzer. Determinism is enforced by developer conventions — the SDK provides `Workflow.*` APIs as safe alternatives (e.g., `Workflow.sleep()` instead of `Thread.sleep()`), and non-determinism is only detected at replay time via `NonDeterministicException`. Cooperative threading under a global lock eliminates the need for synchronization.
+- Java: The Java SDK has no sandbox. Determinism is enforced by developer conventions — the SDK provides `Workflow.*` APIs as safe alternatives (e.g., `Workflow.sleep()` instead of `Thread.sleep()`), and non-determinism is only detected at replay time via `NonDeterministicException`. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time. Cooperative threading under a global lock eliminates the need for synchronization.
 
 
 ## Detecting Non-Determinism
