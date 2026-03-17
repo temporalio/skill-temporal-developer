@@ -224,7 +224,7 @@ export async function longRunningWorkflow(state: State): Promise<string> {
 **Important:** Compensation activities should be idempotent.
 
 ```typescript
-import { log } from '@temporalio/workflow';
+import { CancellationScope, log } from '@temporalio/workflow';
 
 export async function sagaWorkflow(order: Order): Promise<string> {
   const compensations: Array<() => Promise<void>> = [];
@@ -233,22 +233,25 @@ export async function sagaWorkflow(order: Order): Promise<string> {
     // IMPORTANT: Save compensation BEFORE calling the activity
     // If activity fails after completing but before returning,
     // compensation must still be registered
-    await reserveInventory(order);
     compensations.push(() => releaseInventory(order));
+    await reserveInventory(order);
 
-    await chargePayment(order);
     compensations.push(() => refundPayment(order));
+    await chargePayment(order);
 
     await shipOrder(order);
     return 'Order completed';
   } catch (err) {
-    for (const compensate of compensations.reverse()) {
-      try {
-        await compensate();
-      } catch (compErr) {
-        log.warn('Compensation failed', { error: compErr });
+    // nonCancellable ensures compensations run even if the workflow is cancelled
+    await CancellationScope.nonCancellable(async () => {
+      for (const compensate of compensations.reverse()) {
+        try {
+          await compensate();
+        } catch (compErr) {
+          log.warn('Compensation failed', { error: compErr });
+        }
       }
-    }
+    });
     throw err;
   }
 }
