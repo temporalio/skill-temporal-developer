@@ -239,3 +239,4 @@ See `references/go/testing.md` for info on writing tests.
 - **`references/go/advanced-features.md`** - Schedules, worker tuning, and more
 - **`references/go/data-handling.md`** - Data converters, payload codecs, encryption
 - **`references/go/versioning.md`** - Patching API (`workflow.GetVersion`), Worker Versioning
+- **`references/python/determinism-protection.md`** - Information on **`workflowcheck`** tool to help statically check for determinism issues.

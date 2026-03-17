@@ -27,6 +27,10 @@ func MyWorkflow(ctx workflow.Context, input string) (string, error) {
 }
 ```
 
+The workflow logger automatically:
+- Suppresses duplicate logs during replay
+- Includes workflow context (workflow ID, run ID, etc.)
+
 ### Activity Logging
 
 Use `activity.GetLogger(ctx)` for context-aware activity logging:
@@ -39,6 +43,11 @@ func MyActivity(ctx context.Context, input string) (string, error) {
     return "done", nil
 }
 ```
+
+Activity logger includes:
+- Activity ID, type, and task queue
+- Workflow ID and run ID
+- Attempt number (for retries)
 
 ### Adding Persistent Fields
 
@@ -133,7 +142,7 @@ Key SDK metrics:
 
 ## Search Attributes (Visibility)
 
-Use `workflow.UpsertSearchAttributes(ctx, attrs)` for runtime indexing. Custom search attributes enable filtering in the UI and `temporal workflow list`. See `references/go/data-handling.md` for full details.
+See the Search Attributes section of `references/go/data-handling.md`
 
 ## Best Practices
 

@@ -2,15 +2,11 @@
 
 ## Overview
 
-The Go SDK has NO runtime sandbox (unlike Python/TypeScript). Workflows must be deterministic for replay, and determinism is enforced entirely by developer convention and optional static analysis via the `workflowcheck` tool.
+The Go SDK has NO runtime sandbox (unlike Python/TypeScript). Workflows must be deterministic for replay, and determinism is enforced entirely by developer convention and optional static analysis via the `workflowcheck` tool (see `references/go/determinism-protection.md`).
 
 ## Why Determinism Matters: History Replay
 
 Temporal provides durable execution through **History Replay**. When a Worker restores workflow state, it re-executes workflow code from the beginning. This requires the code to be **deterministic**. See `references/core/determinism.md` for a deep explanation.
-
-## SDK Protection
-
-Go relies on **convention** and the `workflowcheck` static analysis tool (`go.temporal.io/sdk/contrib/tools/workflowcheck`). There is no runtime sandbox that intercepts or replaces non-deterministic calls. The Go SDK does perform a limited runtime check that detects reordering of commands (e.g., `workflow.ExecuteActivity`, `workflow.Sleep`, `workflow.NewTimer`), but it does not catch all non-deterministic code.
 
 ## Forbidden Operations
 
@@ -42,22 +38,7 @@ Do not use any of the following in workflow code:
 
 ## Testing Replay Compatibility
 
-Use `worker.WorkflowReplayer` to verify code changes are compatible with existing histories:
-
-```go
-replayer := worker.NewWorkflowReplayer()
-replayer.RegisterWorkflow(MyWorkflow)
-err := replayer.ReplayWorkflowHistoryFromJSONFile(nil, "history.json")
-if err != nil {
-    // Non-determinism detected
-}
-```
-
-Get history JSON from the CLI:
-
-```bash
-temporal workflow show --workflow-id my-workflow-id --output json > history.json
-```
+Use `worker.WorkflowReplayer` to verify code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/go/testing.md`
 
 ## Best Practices
 

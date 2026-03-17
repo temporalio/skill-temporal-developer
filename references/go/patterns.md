@@ -144,7 +144,7 @@ func ParentWorkflow(ctx workflow.Context, orders []Order) ([]string, error) {
 }
 ```
 
-## Child Workflow Options
+### Child Workflow Options
 
 ```go
 import enumspb "go.temporal.io/api/enums/v1"
@@ -322,7 +322,7 @@ return "", workflow.NewContinueAsNewError(ctx, LongRunningWorkflow, state)
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent -- they may be retried.
+**Important:** Compensation activities should be idempotent -- they may be retried (as with ALL activities).
 
 ```go
 func OrderWorkflow(ctx workflow.Context, order Order) (string, error) {

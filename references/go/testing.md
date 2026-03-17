@@ -189,6 +189,8 @@ func Test_ReplayFromFile(t *testing.T) {
 }
 ```
 
+Export history via CLI: `temporal workflow show --workflow-id <id> --output json > history.json`
+
 **Replay from a programmatically fetched history:**
 
 ```go
@@ -204,8 +206,6 @@ func Test_ReplayFromServer(t *testing.T) {
 	assert.NoError(t, err)
 }
 ```
-
-Export history via CLI: `temporal workflow show --workflow-id <id> --output json > history.json`
 
 ## Activity Testing
 

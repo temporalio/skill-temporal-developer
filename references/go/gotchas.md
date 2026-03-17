@@ -109,22 +109,48 @@ Use the `workflowcheck` static analysis tool to catch non-deterministic calls. F
 ## Wrong Retry Classification
 
 **Example:** Transient network errors should be retried. Authentication errors should not be.
+See `references/go/error-handling.md` for detailed guidance on error classification and retry policies.
+
+## Heartbeating
+
+### Forgetting to Heartbeat Long Activities
 
 ```go
-// BAD: Retrying a permanent error
-return temporal.NewApplicationError("User not found", "NotFoundError")
-// This will retry indefinitely!
+// BAD - No heartbeat, can't detect stuck activities or receive cancellation
+func ProcessLargeFile(ctx context.Context, path string) error {
+	for _, chunk := range readChunks(path) {
+		process(chunk) // Takes hours, no heartbeat
+	}
+	return nil
+}
 
-// GOOD: Mark permanent errors as non-retryable
-return temporal.NewNonRetryableApplicationError("User not found", "NotFoundError", nil)
-
-// GOOD: Or use NonRetryableErrorTypes in RetryPolicy
-RetryPolicy: &temporal.RetryPolicy{
-	NonRetryableErrorTypes: []string{"NotFoundError", "ValidationError"},
-},
+// GOOD - Regular heartbeats with progress
+func ProcessLargeFile(ctx context.Context, path string) error {
+	for i, chunk := range readChunks(path) {
+		activity.RecordHeartbeat(ctx, fmt.Sprintf("Processing chunk %d", i))
+		process(chunk)
+	}
+	return nil
+}
 ```
 
-See `references/go/error-handling.md` for detailed guidance on error classification and retry policies.
+### Heartbeat Timeout Too Short
+
+```go
+// BAD - Heartbeat timeout shorter than processing time
+ao := workflow.ActivityOptions{
+	StartToCloseTimeout: 30 * time.Minute,
+	HeartbeatTimeout:    10 * time.Second, // Too short!
+}
+
+// GOOD - Heartbeat timeout allows for processing variance
+ao := workflow.ActivityOptions{
+	StartToCloseTimeout: 30 * time.Minute,
+	HeartbeatTimeout:    2 * time.Minute,
+}
+```
+
+Set heartbeat timeout as high as acceptable for your use case -- each heartbeat counts as an action.
 
 ## Cancellation
 
@@ -185,47 +211,6 @@ func LongActivity(ctx context.Context) error {
 	return nil
 }
 ```
-
-## Heartbeating
-
-### Forgetting to Heartbeat Long Activities
-
-```go
-// BAD - No heartbeat, can't detect stuck activities or receive cancellation
-func ProcessLargeFile(ctx context.Context, path string) error {
-	for _, chunk := range readChunks(path) {
-		process(chunk) // Takes hours, no heartbeat
-	}
-	return nil
-}
-
-// GOOD - Regular heartbeats with progress
-func ProcessLargeFile(ctx context.Context, path string) error {
-	for i, chunk := range readChunks(path) {
-		activity.RecordHeartbeat(ctx, fmt.Sprintf("Processing chunk %d", i))
-		process(chunk)
-	}
-	return nil
-}
-```
-
-### Heartbeat Timeout Too Short
-
-```go
-// BAD - Heartbeat timeout shorter than processing time
-ao := workflow.ActivityOptions{
-	StartToCloseTimeout: 30 * time.Minute,
-	HeartbeatTimeout:    10 * time.Second, // Too short!
-}
-
-// GOOD - Heartbeat timeout allows for processing variance
-ao := workflow.ActivityOptions{
-	StartToCloseTimeout: 30 * time.Minute,
-	HeartbeatTimeout:    2 * time.Minute,
-}
-```
-
-Set heartbeat timeout as high as acceptable for your use case -- each heartbeat counts as an action.
 
 ## Testing
 
