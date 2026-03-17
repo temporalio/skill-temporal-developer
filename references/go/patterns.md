@@ -122,6 +122,8 @@ func OrderWorkflow(ctx workflow.Context) (int, error) {
 }
 ```
 
+**Important:** Validators must NOT mutate workflow state or do anything blocking (no activities, sleeps, or other commands). They are read-only, similar to query handlers. Return an error to reject the update; return `nil` to accept.
+
 ## Child Workflows
 
 ```go
@@ -320,9 +322,36 @@ for {
 return "", workflow.NewContinueAsNewError(ctx, LongRunningWorkflow, state)
 ```
 
+## Cancellation Handling
+
+Use `ctx.Done()` to detect cancellation and `workflow.NewDisconnectedContext` for cleanup that must run even after cancellation.
+
+```go
+func MyWorkflow(ctx workflow.Context) error {
+    actCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+        StartToCloseTimeout: time.Hour,
+    })
+
+    err := workflow.ExecuteActivity(actCtx, LongRunningActivity).Get(ctx, nil)
+    if err != nil && temporal.IsCanceledError(ctx.Err()) {
+        // Workflow was cancelled -- run cleanup with a disconnected context
+        workflow.GetLogger(ctx).Info("Workflow cancelled, running cleanup")
+        disconnectedCtx, _ := workflow.NewDisconnectedContext(ctx)
+        disconnectedCtx = workflow.WithActivityOptions(disconnectedCtx, workflow.ActivityOptions{
+            StartToCloseTimeout: 5 * time.Minute,
+        })
+        _ = workflow.ExecuteActivity(disconnectedCtx, CleanupActivity).Get(disconnectedCtx, nil)
+        return err // Return CanceledError
+    }
+    return err
+}
+```
+
 ## Saga Pattern (Compensations)
 
 **Important:** Compensation activities should be idempotent -- they may be retried (as with ALL activities).
+
+Use `workflow.NewDisconnectedContext` when running compensations so they execute even if the workflow is cancelled.
 
 ```go
 func OrderWorkflow(ctx workflow.Context, order Order) (string, error) {
@@ -332,10 +361,15 @@ func OrderWorkflow(ctx workflow.Context, order Order) (string, error) {
 
     var compensations []func(ctx workflow.Context) error
 
-    // Helper to run all compensations in reverse
+    // Helper to run all compensations in reverse, using a disconnected context
+    // so compensations run even if the workflow is cancelled.
     runCompensations := func() {
+        disconnectedCtx, _ := workflow.NewDisconnectedContext(ctx)
+        compCtx := workflow.WithActivityOptions(disconnectedCtx, workflow.ActivityOptions{
+            StartToCloseTimeout: 5 * time.Minute,
+        })
         for i := len(compensations) - 1; i >= 0; i-- {
-            if err := compensations[i](actCtx); err != nil {
+            if err := compensations[i](compCtx); err != nil {
                 workflow.GetLogger(ctx).Error("Compensation failed", "error", err)
             }
         }
@@ -366,31 +400,6 @@ func OrderWorkflow(ctx workflow.Context, order Order) (string, error) {
     }
 
     return "Order completed", nil
-}
-```
-
-## Cancellation Handling
-
-Use `ctx.Done()` to detect cancellation and `workflow.NewDisconnectedContext` for cleanup that must run even after cancellation.
-
-```go
-func MyWorkflow(ctx workflow.Context) error {
-    actCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-        StartToCloseTimeout: time.Hour,
-    })
-
-    err := workflow.ExecuteActivity(actCtx, LongRunningActivity).Get(ctx, nil)
-    if err != nil && temporal.IsCanceledError(ctx.Err()) {
-        // Workflow was cancelled -- run cleanup with a disconnected context
-        workflow.GetLogger(ctx).Info("Workflow cancelled, running cleanup")
-        disconnectedCtx, _ := workflow.NewDisconnectedContext(ctx)
-        disconnectedCtx = workflow.WithActivityOptions(disconnectedCtx, workflow.ActivityOptions{
-            StartToCloseTimeout: 5 * time.Minute,
-        })
-        _ = workflow.ExecuteActivity(disconnectedCtx, CleanupActivity).Get(disconnectedCtx, nil)
-        return err // Return CanceledError
-    }
-    return err
 }
 ```
 

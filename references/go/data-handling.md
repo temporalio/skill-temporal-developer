@@ -55,7 +55,7 @@ JSON protobuf:
 converter.NewProtoJSONPayloadConverter()
 ```
 
-Both are included in the default data converter. SDK v1.26.0+ migrated from gogo/protobuf to google/protobuf. If you need backward compatibility with older payloads encoded with gogo, use the `LegacyTemporalProtoCompat` option.
+Both are included in the default data converter. SDK v1.26.0 (March 2024) migrated from gogo/protobuf to google/protobuf. If you need backward compatibility with older payloads encoded with gogo, use the `LegacyTemporalProtoCompat` option.
 
 ## Payload Encryption
 

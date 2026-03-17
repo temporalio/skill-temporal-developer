@@ -148,6 +148,8 @@ Either `StartToCloseTimeout` or `ScheduleToCloseTimeout` must be set.
 
 Returning any error from a workflow function fails the execution. Return `nil` for success.
 
+**Important Go-specific behavior:** In the Go SDK, returning any error from a workflow fails the workflow execution by default — there is no automatic retry. This differs from other SDKs (Python, TypeScript) where non-`ApplicationError` exceptions cause the workflow task to retry indefinitely. In Go, if you want workflow-level retries, you must explicitly set a `RetryPolicy` on the `StartWorkflowOptions`.
+
 ```go
 func MyWorkflow(ctx workflow.Context) (string, error) {
 	if someCondition {

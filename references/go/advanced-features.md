@@ -178,3 +178,10 @@ Key points:
 - `CompleteSession` releases resources -- always call it (use `defer`)
 - Use case: file processing (download, process, upload on same host), GPU workloads, or any pipeline needing local state
 - `MaxConcurrentSessionExecutionSize` on `worker.Options` limits how many sessions a single worker can handle
+
+**Limitations:**
+- Sessions do not survive worker process restarts — if the worker dies, the session fails and activities must be retried from the workflow level
+- There is no server-side support for sessions — the Go SDK implements them entirely client-side using internal task queue routing
+- Session concurrency limiting is per-process, not per-host — only one worker process per host if you rely on this
+
+**Relationship to worker-specific task queues:** Sessions are essentially a convenience API over the "worker-specific task queue" pattern, where each worker creates a unique task queue and routes activities to it. For simple cases where you don't need separate activities (e.g., download + process + upload can be one unit), consider using a single long-running activity with heartbeating instead.
