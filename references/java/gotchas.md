@@ -18,7 +18,50 @@ See `references/java/determinism.md` for the full table of forbidden operations,
 
 ## Wrong Retry Classification
 
-Mark permanent errors as non-retryable to avoid infinite retries. See `references/java/error-handling.md` for detailed guidance on error classification and retry policies.
+**Example:** Transient networks errors should be retried. Authentication errors should not be.
+See `references/java/error-handling.md` to understand how to classify errors.
+
+## Heartbeating
+
+### Forgetting to Heartbeat Long Activities
+
+```java
+// BAD - No heartbeat, can't detect stuck activities
+@Override
+public void processLargeFile(String path) {
+    for (String chunk : readChunks(path)) {
+        process(chunk); // Takes hours, no heartbeat
+    }
+}
+
+// GOOD - Regular heartbeats with progress
+@Override
+public void processLargeFile(String path) {
+    int i = 0;
+    for (String chunk : readChunks(path)) {
+        Activity.getExecutionContext().heartbeat("Processing chunk " + i++);
+        process(chunk);
+    }
+}
+```
+
+### Heartbeat Timeout Too Short
+
+```java
+// BAD - Heartbeat timeout shorter than processing time
+ActivityOptions options = ActivityOptions.newBuilder()
+    .setStartToCloseTimeout(Duration.ofMinutes(30))
+    .setHeartbeatTimeout(Duration.ofSeconds(10)) // Too short!
+    .build();
+
+// GOOD - Heartbeat timeout allows for processing variance
+ActivityOptions options = ActivityOptions.newBuilder()
+    .setStartToCloseTimeout(Duration.ofMinutes(30))
+    .setHeartbeatTimeout(Duration.ofMinutes(2))
+    .build();
+```
+
+Set heartbeat timeout as high as acceptable for your use case — each heartbeat counts as an action.
 
 ## Cancellation
 
@@ -89,48 +132,6 @@ public void longActivity() {
     }
 }
 ```
-
-## Heartbeating
-
-### Forgetting to Heartbeat Long Activities
-
-```java
-// BAD - No heartbeat, can't detect stuck activities
-@Override
-public void processLargeFile(String path) {
-    for (String chunk : readChunks(path)) {
-        process(chunk); // Takes hours, no heartbeat
-    }
-}
-
-// GOOD - Regular heartbeats with progress
-@Override
-public void processLargeFile(String path) {
-    int i = 0;
-    for (String chunk : readChunks(path)) {
-        Activity.getExecutionContext().heartbeat("Processing chunk " + i++);
-        process(chunk);
-    }
-}
-```
-
-### Heartbeat Timeout Too Short
-
-```java
-// BAD - Heartbeat timeout shorter than processing time
-ActivityOptions options = ActivityOptions.newBuilder()
-    .setStartToCloseTimeout(Duration.ofMinutes(30))
-    .setHeartbeatTimeout(Duration.ofSeconds(10)) // Too short!
-    .build();
-
-// GOOD - Heartbeat timeout allows for processing variance
-ActivityOptions options = ActivityOptions.newBuilder()
-    .setStartToCloseTimeout(Duration.ofMinutes(30))
-    .setHeartbeatTimeout(Duration.ofMinutes(2))
-    .build();
-```
-
-Set heartbeat timeout as high as acceptable for your use case — each heartbeat counts as an action.
 
 ## Testing
 

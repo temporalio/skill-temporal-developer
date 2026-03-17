@@ -4,10 +4,6 @@
 
 The Temporal Java SDK (`io.temporal:temporal-sdk`) uses an interface + implementation pattern for both Workflows and Activities. Java 8+ required. Unlike the Python and TypeScript SDKs, the Java SDK does **not** have a sandbox for determinism protection -- developers must ensure workflow code is deterministic themselves.
 
-## Understanding Replay
-
-Temporal workflows are durable through history replay. For details on how this works, see `references/core/determinism.md`.
-
 ## Quick Start
 
 **Add Dependencies:**
@@ -187,7 +183,7 @@ public class Starter {
 
 ## File Organization Best Practice
 
-**Keep Workflow and Activity definitions in separate files.** The Java SDK does not have a sandbox, so there is no performance penalty for mixing them. However, separating them is good practice for clarity and maintainability.
+**Keep Workflow and Activity definitions in separate files.** Separating them is good practice for clarity and maintainability.
 
 ```
 greetingapp/

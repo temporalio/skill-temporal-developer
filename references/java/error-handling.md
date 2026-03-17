@@ -146,7 +146,7 @@ ActivityOptions options = ActivityOptions.newBuilder()
 
 ## Workflow Failure
 
-**IMPORTANT:** Only `ApplicationFailure` causes a workflow to fail. Any other exception thrown from workflow code causes the workflow task to retry indefinitely, not the workflow itself. This is a common source of confusion.
+**IMPORTANT:** Only `ApplicationFailure` causes a workflow to fail. Any other exception thrown from workflow code causes the workflow task to retry indefinitely, not the workflow itself.
 
 ```java
 import io.temporal.failure.ApplicationFailure;

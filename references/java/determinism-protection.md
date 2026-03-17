@@ -28,10 +28,6 @@ CompletablePromise<String> promise = Workflow.newPromise();
 
 Java workflow code runs in a cooperative threading model where only one workflow thread executes at a time under a global lock. The SDK does not intercept or block non-deterministic calls. Instead, non-determinism is detected at **replay time**: if replayed code produces results that differ from the recorded history, the SDK throws a `NonDeterministicException`.
 
-This contrasts with other SDKs:
-- **Python**: The sandbox intercepts and blocks forbidden operations before they execute.
-- **TypeScript**: The V8 sandbox replaces `Math.random()`, `Date.now()`, and `setTimeout` with deterministic versions automatically.
-
 Because Java has no proactive protection, use the `WorkflowReplayer` class to test replay compatibility before deploying workflow code changes.
 
 ## Best Practices
