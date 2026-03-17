@@ -160,6 +160,8 @@ public class OrderWorkflowImpl implements OrderWorkflow {
 }
 ```
 
+**Important:** Validators must NOT mutate workflow state or do anything blocking (no activities, sleeps, or other commands). They are read-only, similar to query handlers. Throw an exception to reject the update; return normally to accept.
+
 ## Child Workflows
 
 ```java
@@ -307,15 +309,20 @@ public class MyWorkflowImpl implements MyWorkflow {
         } catch (Exception e) {
             Workflow.getLogger(MyWorkflowImpl.class)
                 .error("Order failed, running compensations", e);
-            Collections.reverse(compensations);
-            for (Runnable compensate : compensations) {
-                try {
-                    compensate.run();
-                } catch (Exception compErr) {
-                    Workflow.getLogger(MyWorkflowImpl.class)
-                        .error("Compensation failed", compErr);
+            // Use a detached cancellation scope so compensations run even if
+            // the workflow itself was cancelled.
+            CancellationScope compensationScope = Workflow.newDetachedCancellationScope(() -> {
+                Collections.reverse(compensations);
+                for (Runnable compensate : compensations) {
+                    try {
+                        compensate.run();
+                    } catch (Exception compErr) {
+                        Workflow.getLogger(MyWorkflowImpl.class)
+                            .error("Compensation failed", compErr);
+                    }
                 }
-            }
+            });
+            compensationScope.run();
             throw Workflow.wrap(e);
         }
     }
