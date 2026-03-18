@@ -22,6 +22,7 @@ Do not use any of the following in workflow code:
 - **`os.Stdin` / `os.Stdout` / `os.Stderr`** -- use `workflow.GetLogger(ctx)` for logging
 - **Map range iteration** (`for k, v := range myMap`) -- sort keys first, then iterate
 - **Mutating global variables** -- use local state or `workflow.SideEffect`
+- **Anonymous functions as local activities** -- the name is derived from the function and will be non-deterministic across replays; always use named functions for local activities
 
 ## Safe Builtin Alternatives
 

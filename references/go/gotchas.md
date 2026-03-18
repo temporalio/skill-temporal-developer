@@ -106,6 +106,26 @@ encoded.Get(&r)
 
 Use the `workflowcheck` static analysis tool to catch non-deterministic calls. For false positives, annotate with `//workflowcheck:ignore` on the line above.
 
+### Anonymous Functions as Local Activities
+
+**The Problem**: The Go SDK derives the local activity name from the function. Anonymous functions get a non-deterministic name that can change across builds, causing replay failures.
+
+```go
+// BAD - anonymous function: name is non-deterministic
+workflow.ExecuteLocalActivity(ctx, func(ctx context.Context) (string, error) {
+    return "result", nil
+})
+
+// GOOD - named function: stable, deterministic name
+func QuickLookup(ctx context.Context) (string, error) {
+    return "result", nil
+}
+
+workflow.ExecuteLocalActivity(ctx, QuickLookup)
+```
+
+Always use named functions for local activities (and regular activities).
+
 ## Wrong Retry Classification
 
 **Example:** Transient network errors should be retried. Authentication errors should not be.
