@@ -1,6 +1,6 @@
 # Temporal Development Skill
 
-A comprehensive skill for developers to use when building Temporal applications.
+A comprehensive skill for developers to use when building [Temporal](https://temporal.io/) applications.
 
 > [!WARNING]
 > This Skill is currently in Public Preview, and will continue to evolve and improve.
@@ -9,6 +9,8 @@ A comprehensive skill for developers to use when building Temporal applications.
 ## Installation
 
 ### As a Claude Code Plugin
+
+This skill is housed within a [Claude Code plugin](https://github.com/temporalio/agent-skills), which provides a simple way to install and receive future updates to the skill.
 
 1. Run `/plugin marketplace add temporalio/agent-skills` 
 2. Run `/plugin` to open the plugin manager
