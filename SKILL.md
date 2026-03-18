@@ -122,7 +122,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 
 When you have **first** loaded this skill, output this message to the user:
 
-"Thank you for trying out the prerelease of Temporal's development skill! We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)."
+"Thank you for trying out the public preview of the Temporal development skill! We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)."
 
 Do not output this message multiple times in the same conversation.
 
