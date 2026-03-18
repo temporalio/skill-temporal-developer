@@ -80,6 +80,7 @@ Each Temporal SDK language provides a protection mechanism to make it easier to 
 
 - Python: The Python SDK runs workflows in a sandbox that intercepts and aborts non-deterministic calls at runtime.
 - TypeScript: The TypeScript SDK runs workflows in an isolated V8 sandbox, intercepting many common sources of non-determinism and replacing them automatically with deterministic variants.
+- Ruby: The Ruby SDK uses Illegal Call Tracing (via `TracePoint`) to detect forbidden method calls at runtime on the workflow fiber, combined with a Durable Fiber Scheduler that makes fiber operations deterministic.
 
 
 ## Detecting Non-Determinism
