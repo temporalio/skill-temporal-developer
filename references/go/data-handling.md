@@ -18,15 +18,94 @@ Structs must have exported fields to be serialized.
 
 ## Custom Data Converter
 
-Implement the `converter.DataConverter` interface (`ToPayload`, `FromPayload`, `ToPayloads`, `FromPayloads`, `ToString`, `ToStrings`) or compose a new converter from existing ones.
-
-Pass the custom converter via client options:
+In most cases you don't implement the full `DataConverter` interface directly. Instead, implement a **`PayloadConverter`** for your specific type and insert it into a `CompositeDataConverter`. The `PayloadConverter` interface has four methods:
 
 ```go
+type PayloadConverter interface {
+    ToPayload(value interface{}) (*commonpb.Payload, error) // return nil if this type isn't handled
+    FromPayload(payload *commonpb.Payload, valuePtr interface{}) error
+    ToString(payload *commonpb.Payload) string
+    Encoding() string // e.g. "json/msgpack"
+}
+```
+
+**Example — custom msgpack PayloadConverter:**
+
+```go
+import (
+    "encoding/json"
+    "fmt"
+
+    commonpb "go.temporal.io/api/common/v1"
+    "go.temporal.io/sdk/converter"
+    "github.com/vmihailenco/msgpack/v5"
+)
+
+const encodingMsgpack = "binary/msgpack"
+
+type MsgpackPayloadConverter struct{}
+
+func (c *MsgpackPayloadConverter) Encoding() string {
+    return encodingMsgpack
+}
+
+func (c *MsgpackPayloadConverter) ToPayload(value interface{}) (*commonpb.Payload, error) {
+    if value == nil {
+        return nil, nil
+    }
+    data, err := msgpack.Marshal(value)
+    if err != nil {
+        return nil, fmt.Errorf("msgpack marshal: %w", err)
+    }
+    return &commonpb.Payload{
+        Metadata: map[string][]byte{
+            converter.MetadataEncoding: []byte(encodingMsgpack),
+        },
+        Data: data,
+    }, nil
+}
+
+func (c *MsgpackPayloadConverter) FromPayload(payload *commonpb.Payload, valuePtr interface{}) error {
+    if string(payload.GetMetadata()[converter.MetadataEncoding]) != encodingMsgpack {
+        return fmt.Errorf("unsupported encoding")
+    }
+    return msgpack.Unmarshal(payload.Data, valuePtr)
+}
+
+func (c *MsgpackPayloadConverter) ToString(payload *commonpb.Payload) string {
+    // Decode to a map for human-readable display
+    var v interface{}
+    if err := msgpack.Unmarshal(payload.Data, &v); err != nil {
+        return fmt.Sprintf("<msgpack: %v>", err)
+    }
+    b, _ := json.Marshal(v)
+    return string(b)
+}
+```
+
+**Register in a CompositeDataConverter and pass to the client:**
+
+```go
+dataConverter := converter.NewCompositeDataConverter(
+    converter.NewNilPayloadConverter(),
+    converter.NewByteSlicePayloadConverter(),
+    &MsgpackPayloadConverter{}, // handles your type; falls through to JSON for everything else
+    converter.NewJSONPayloadConverter(),
+)
+
 c, err := client.Dial(client.Options{
-    DataConverter: myCustomDataConverter,
+    DataConverter: dataConverter,
 })
 ```
+
+**Per-activity/child-workflow override** — use a different converter for specific calls:
+
+```go
+actCtx := workflow.WithDataConverter(ctx, mySpecialConverter)
+workflow.ExecuteActivity(actCtx, SensitiveActivity, input)
+```
+
+**Note:** If your converter makes remote calls (e.g., to a KMS for encryption), wrap it with `workflow.DataConverterWithoutDeadlockDetection` to avoid deadlock detection timeouts in workflow code.
 
 ## Composition of Payload Converters
 
