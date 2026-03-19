@@ -22,7 +22,7 @@ This skill is housed within a [Claude Code plugin](https://github.com/temporalio
 
 ### Via `npx skills` - supports all major coding agents
 
-1. `npx skills add https://github.com/temporalio/skill-temporal-developer`
+1. `npx skills add temporalio/skill-temporal-developer`
 2. Follow prompts
 
 ### Via manually cloning the skill repo:
