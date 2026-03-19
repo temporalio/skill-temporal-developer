@@ -76,6 +76,7 @@ Client                    Workflow
 - Synchronous - caller waits for completion
 - Can mutate state AND return values
 - Supports validators to reject invalid updates before they even get persisted into history
+- **Validators must NOT mutate workflow state or block** (no activities, sleeps, or commands) — they are read-only, similar to query handlers
 - Recorded in history
 
 **Example Flow**:
@@ -424,6 +425,7 @@ Activity calls heartbeat()
 - Less visibility in Temporal UI (no separate task)
 - Must complete on the same worker
 - Not suitable for long-running operations
+- **Risk with consecutive local activities:** Local activity completions are only persisted when the current Workflow Task completes. Calling multiple local activities in a row (with nothing in between to yield the Workflow Task) increases the risk of losing work if the worker crashes mid-sequence. If you need a chain of operations with durable checkpoints between each step, use regular activities instead.
 
 ## Choosing Between Patterns
 

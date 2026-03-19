@@ -132,6 +132,8 @@ export async function orderWorkflow(): Promise<string> {
 }
 ```
 
+**Important:** Validators must NOT mutate workflow state or do anything blocking (no activities, sleeps, or other commands). They are read-only, similar to query handlers. Throw an error to reject the update; return normally to accept.
+
 ## Child Workflows
 
 ```typescript
