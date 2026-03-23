@@ -196,7 +196,7 @@ raise nexusrpc.OperationError(
 raise nexusrpc.HandlerError(
     "Service temporarily unavailable",
     type=nexusrpc.HandlerErrorType.INTERNAL,
-    retryable=True,
+    retryable_override=True,
 )
 ```
 
