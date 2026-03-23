@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "Temporal Go", "Temporal Golang", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
+description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "Temporal Go", "Temporal Golang", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", "Nexus", "Nexus operation", "Nexus endpoint", "cross-namespace", or mentions Temporal SDK development.
 version: 0.1.0
 ---
 
@@ -111,6 +111,9 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
     + Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+
+- **`references/core/nexus.md`** - Nexus: cross-namespace service contracts, operations, endpoints
+    + Language-specific info at `references/{your_language}/nexus.md`
 
 ## Additional Topics
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
