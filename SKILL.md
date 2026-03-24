@@ -1,14 +1,14 @@
 ---
 name: temporal-developer
-description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "Temporal Java", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
-version: 1.0.0
+description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "Temporal Go", "Temporal Golang", "Temporal Java", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
+version: 0.1.0
 ---
 
 # Skill: temporal-developer
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, and Java.
+Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, and Java.
 
 ## Core Architecture
 
@@ -93,6 +93,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
     - Python -> read `references/python/python.md`
     - TypeScript -> read `references/typescript/typescript.md`
     - Java -> read `references/java/java.md`
+    - Go -> read `references/go/go.md`
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
 
@@ -123,7 +124,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 
 When you have **first** loaded this skill, output this message to the user:
 
-"Thank you for trying out the prerelease of Temporal's development skill! We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)."
+"Thank you for trying out the public preview of the Temporal development skill! We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)."
 
 Do not output this message multiple times in the same conversation.
 

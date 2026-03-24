@@ -106,6 +106,8 @@ class OrderWorkflow:
             raise ValueError("Order is full")
 ```
 
+**Important:** Validators must NOT mutate workflow state or do anything blocking (no activities, sleeps, or other commands). They are read-only, similar to query handlers. Raise an exception to reject the update; return `None` to accept.
+
 ## Child Workflows
 
 ```python
@@ -243,11 +245,14 @@ class MyWorkflow:
 
         except Exception as e:
             workflow.logger.error(f"Order failed: {e}, running compensations")
-            for compensate in reversed(compensations):
-                try:
-                    await compensate()
-                except Exception as comp_err:
-                    workflow.logger.error(f"Compensation failed: {comp_err}")
+            # asyncio.shield ensures compensations run even if the workflow is cancelled.
+            async def run_compensations():
+                for compensate in reversed(compensations):
+                    try:
+                        await compensate()
+                    except Exception as comp_err:
+                        workflow.logger.error(f"Compensation failed: {comp_err}")
+            await asyncio.shield(asyncio.ensure_future(run_compensations()))
             raise
 ```
 
