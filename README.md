@@ -36,7 +36,7 @@ Appropriately adjust the installation directory based on your coding agent.
 - [x] Python ✅
 - [x] TypeScript ✅
 - [x] Go ✅
-- [ ] Java 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/42))
+- [x] Java ✅
 - [ ] .NET 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/39))
 - [ ] Ruby 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/41))
 - [ ] PHP 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/40))
