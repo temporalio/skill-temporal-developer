@@ -162,6 +162,7 @@ public class Starter {
 
 ### Workflow Definition
 - Annotate interface with `@WorkflowInterface`
+- Use `@WorkflowInit` on the constructor to receive workflow input and initialize state before `@WorkflowMethod` or any signal/update handler is invoked
 - Annotate entry point method with `@WorkflowMethod` (exactly one per interface)
 - Use `@SignalMethod` for signal handlers
 - Use `@QueryMethod` for query handlers
