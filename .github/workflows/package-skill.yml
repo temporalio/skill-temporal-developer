@@ -1,0 +1,59 @@
+# ABOUTME: GitHub Actions workflow that packages the skill for upload to Claude.ai.
+# ABOUTME: Creates a ZIP artifact on every push to main and a GitHub Release when the version in SKILL.md increases.
+
+name: Package Skill
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from SKILL.md
+        id: version
+        run: |
+          version=$(grep '^version:' SKILL.md | sed 's/version:[[:space:]]*//')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check if tag exists
+        id: tag_check
+        run: |
+          if git rev-parse "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package skill
+        run: |
+          zip -r temporal-developer-skill.zip \
+            SKILL.md \
+            references/ \
+            -x '*.DS_Store'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporal-developer-skill
+          path: temporal-developer-skill.zip
+
+      - name: Create release
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          files: temporal-developer-skill.zip
+          generate_release_notes: true
