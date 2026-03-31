@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
 ### Workflow Definition
 - Use `@workflow.defn` decorator on class
-- Use `@workflow.init` on `__init__` to receive workflow input and initialize state before `@workflow.run` or any signal/update handler is invoked
+- Put any state initialization logic in the `__init__` of your workflow class to guarantee that it happens before signals/updates arrive. If your state initialization logic requires the workflow parameters, then add the `@workflow.init` decorator and parameters to your `__init__`.
 - Use `@workflow.run` on the entry point method
 - Must be async (`async def`)
 - Use `@workflow.signal`, `@workflow.query`, `@workflow.update` for handlers
