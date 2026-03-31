@@ -1,0 +1,19 @@
+# Requires a repository secret OUTER_REPO_PAT with a PAT that has `repo` scope on temporalio/agent-skills
+
+name: Notify outer repo
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger submodule update in outer repo
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.OUTER_REPO_PAT }}" \
+            https://api.github.com/repos/temporalio/agent-skills/dispatches \
+            -d '{"event_type":"submodule-updated","client_payload":{"ref":"${{ github.sha }}"}}'
