@@ -23,7 +23,7 @@ Temporal provides durable execution through **History Replay**. When a Worker ne
 |-----------|------------------|
 | `datetime.now()` | `workflow.now()` |
 | `datetime.utcnow()` | `workflow.now()` |
-| `random.random()` | `rng = workflow.new_random() ; rng.randint(1, 100)` |
+| `random.random()` | `rng = workflow.random() ; rng.randint(1, 100)` |
 | `uuid.uuid4()` | `workflow.uuid4()` |
 | `time.time()` | `workflow.now().timestamp()` |
 
