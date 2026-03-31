@@ -1,6 +1,6 @@
 # Common Error Types Reference
 
-| Error Type | Error identifier (if any) | Where to Find | What Happened | Recovery | Link to additional info (if any)
+| Error Type | Error identifier (if any) | Where to Find | What Happened | Recovery | Link to additional info (if any) |
 |------------|---------------|---------------|---------------|----------|----------|
 | **Non-determinism** | TMPRL1100 | `WorkflowTaskFailed` in history | Replay doesn't match history | Analyze error first. **If accidental**: fix code to match history → restart worker. **If intentional v2 change**: terminate → start fresh workflow. | https://github.com/temporalio/rules/blob/main/rules/TMPRL1100.md |
 | **Deadlock** | TMPRL1101 | `WorkflowTaskFailed` in history, worker logs | Workflow blocked too long (deadlock detected) | Remove blocking operations from workflow code (no I/O, no sleep, no threading locks). Use Temporal primitives instead. | https://github.com/temporalio/rules/blob/main/rules/TMPRL1101.md |
