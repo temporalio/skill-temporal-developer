@@ -150,6 +150,9 @@ dotnet_diagnostic.CA5394.severity = none
 # Allow async methods to not have await in them
 dotnet_diagnostic.CS1998.severity = none
 
+# Don't force workflows to call async methods
+dotnet_diagnostic.VSTHRD103.severity = none
+
 # Don't avoid, but rather encourage things using TaskScheduler.Current in workflows
 dotnet_diagnostic.VSTHRD105.severity = none
 ```
