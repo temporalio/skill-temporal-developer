@@ -74,19 +74,28 @@ public class MyWorkflow
 
 ```csharp
 using Temporalio.Common;
+using Temporalio.Workflows;
 
-return await Workflow.ExecuteActivityAsync(
-    (MyActivities a) => a.MyActivityAsync(),
-    new()
+[Workflow]
+public class MyWorkflow
+{
+    [WorkflowRun]
+    public async Task<string> RunAsync()
     {
-        StartToCloseTimeout = TimeSpan.FromMinutes(10),
-        RetryPolicy = new()
-        {
-            MaximumInterval = TimeSpan.FromMinutes(1),
-            MaximumAttempts = 5,
-            NonRetryableErrorTypes = new[] { "ValidationError", "PaymentError" },
-        },
-    });
+        return await Workflow.ExecuteActivityAsync(
+            (MyActivities a) => a.MyActivityAsync(),
+            new()
+            {
+                StartToCloseTimeout = TimeSpan.FromMinutes(10),
+                RetryPolicy = new()
+                {
+                    MaximumInterval = TimeSpan.FromMinutes(1),
+                    MaximumAttempts = 5,
+                    NonRetryableErrorTypes = new[] { "ValidationError", "PaymentError" },
+                },
+            });
+    }
+}
 ```
 
 Only set options such as MaximumInterval, MaximumAttempts etc. if you have a domain-specific reason to.
@@ -95,14 +104,22 @@ If not, prefer to leave them at their defaults.
 ## Timeout Configuration
 
 ```csharp
-return await Workflow.ExecuteActivityAsync(
-    (MyActivities a) => a.MyActivityAsync(),
-    new()
+[Workflow]
+public class MyWorkflow
+{
+    [WorkflowRun]
+    public async Task<string> RunAsync()
     {
-        StartToCloseTimeout = TimeSpan.FromMinutes(5),      // Single attempt
-        ScheduleToCloseTimeout = TimeSpan.FromMinutes(30),  // Including retries
-        HeartbeatTimeout = TimeSpan.FromMinutes(2),         // Between heartbeats
-    });
+        return await Workflow.ExecuteActivityAsync(
+            (MyActivities a) => a.MyActivityAsync(),
+            new()
+            {
+                StartToCloseTimeout = TimeSpan.FromMinutes(5),      // Single attempt
+                ScheduleToCloseTimeout = TimeSpan.FromMinutes(30),  // Including retries
+                HeartbeatTimeout = TimeSpan.FromMinutes(2),         // Between heartbeats
+            });
+    }
+}
 ```
 
 ## Workflow Failure
