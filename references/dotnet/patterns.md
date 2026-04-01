@@ -150,6 +150,8 @@ public class OrderWorkflow
 }
 ```
 
+**Important:** Validators must NOT mutate workflow state or do anything blocking (no activities, sleeps, or other commands). They are read-only, similar to query handlers. Throw an exception to reject the update; return void to accept.
+
 ## Child Workflows
 
 ```csharp
