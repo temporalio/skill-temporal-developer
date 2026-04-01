@@ -2,10 +2,7 @@
 
 ## Overview
 
-Unlike Python (module restriction sandbox) and TypeScript (V8 isolate sandbox), the .NET SDK has **no sandbox**. Instead, it relies on:
-1. A custom `TaskScheduler` to order workflow tasks deterministically
-2. A runtime `EventListener` that detects invalid task scheduling
-3. Developer discipline to avoid non-deterministic operations
+The .NET SDK has no runtime sandbox. Determinism is enforced by **developer convention** and **runtime task detection**. Unlike the Python and TypeScript SDKs, the .NET SDK will not intercept or replace non-deterministic calls at compile time or import time. The SDK does provide a runtime `EventListener` that detects some invalid task scheduling, but catching all non-deterministic code requires following the rules below and testing, in particular replay tests (see `references/dotnet/testing.md`).
 
 ## Runtime Task Detection
 
@@ -25,17 +22,6 @@ public class BadWorkflow
 }
 ```
 
-To disable this detection (not recommended):
-```csharp
-var worker = new TemporalWorker(
-    client,
-    new TemporalWorkerOptions("my-task-queue")
-    {
-        DisableWorkflowTracingEventListener = true,
-    }
-    .AddWorkflow<MyWorkflow>());
-```
-
 ## .NET Task Determinism Rules
 
 Many .NET `Task` APIs implicitly use `TaskScheduler.Default`, which breaks determinism. Here are the key rules:
@@ -52,19 +38,6 @@ Many .NET `Task` APIs implicitly use `TaskScheduler.Default`, which breaks deter
 **Be wary of:**
 - Third-party libraries that implicitly use `TaskScheduler.Default`
 - `Dataflow` blocks and similar concurrency libraries with hidden default scheduler usage
-
-## Workflow .editorconfig
-
-Since workflows violate some standard .NET analyzer rules, consider an `.editorconfig` for workflow project files:
-
-```ini
-# Workflow-specific analyzer settings
-[*.cs]
-# Allow async methods without await (some workflow methods are simple)
-dotnet_diagnostic.CS1998.severity = none
-# Allow getter/setter patterns needed for signal/query attributes
-dotnet_diagnostic.CA1024.severity = none
-```
 
 ## Best Practices
 

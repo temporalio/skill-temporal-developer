@@ -31,7 +31,7 @@ public class MyActivities
 }
 ```
 
-**GreetingWorkflow.cs** - Workflow definition:
+**GreetingWorkflow.workflow.cs** - Workflow definition:
 ```csharp
 using Temporalio.Workflows;
 
@@ -108,20 +108,50 @@ Console.WriteLine($"Result: {result}");
 
 ## File Organization Best Practice
 
-**Keep Workflow definitions in separate files from Activity definitions.** While not as critical as Python (no sandbox reloading), separation improves clarity and testability.
+**Keep Workflow definitions in separate files from Activity definitions.** While not as critical as Python (no sandbox reloading), separation improves clarity and testability. Use the `.workflow.cs` extension for workflow files so the `.editorconfig` overrides (see below) apply only to workflow code.
 
 ```
 MyTemporalApp/
 ├── Workflows/
-│   └── GreetingWorkflow.cs    # Only Workflow classes
+│   └── GreetingWorkflow.workflow.cs  # Only Workflow classes
 ├── Activities/
-│   └── TranslateActivities.cs # Only Activity classes
+│   └── TranslateActivities.cs       # Only Activity classes
 ├── Models/
-│   └── OrderInput.cs          # Shared data models
+│   └── OrderInput.cs                # Shared data models
 ├── Worker/
-│   └── Program.cs             # Worker setup
+│   └── Program.cs                   # Worker setup
 └── Starter/
-    └── Program.cs             # Client code to start workflows
+    └── Program.cs                   # Client code to start workflows
+```
+
+## Workflow .editorconfig
+
+Workflow code violates some standard .NET analyzer rules. The recommended approach is to use the `.workflow.cs` file extension for workflow files and scope the overrides to that extension:
+
+```ini
+# Configuration specific for Temporal workflows
+[*.workflow.cs]
+
+# We use getters for queries, they cannot be properties
+dotnet_diagnostic.CA1024.severity = none
+
+# Don't force workflows to have static methods
+dotnet_diagnostic.CA1822.severity = none
+
+# Do not need ConfigureAwait for workflows
+dotnet_diagnostic.CA2007.severity = none
+
+# Do not need task scheduler for workflows
+dotnet_diagnostic.CA2008.severity = none
+
+# Workflow randomness is intentionally deterministic
+dotnet_diagnostic.CA5394.severity = none
+
+# Allow async methods to not have await in them
+dotnet_diagnostic.CS1998.severity = none
+
+# Don't avoid, but rather encourage things using TaskScheduler.Current in workflows
+dotnet_diagnostic.VSTHRD105.severity = none
 ```
 
 ## Determinism Rules
