@@ -33,8 +33,10 @@ await handle.DeleteAsync();
 ## Async Activity Completion
 
 For activities that complete asynchronously (e.g., human tasks, external callbacks).
+If you configure a `HeartbeatTimeout` on this activity, the external completer is responsible for sending heartbeats via the async handle.
+If you do NOT set a `HeartbeatTimeout`, no heartbeats are required.
 
-**Note:** If the external system can reliably Signal back with the result, consider using **signals** instead.
+**Note:** If the external system that completes the asynchronous action can reliably be trusted to do the task and Signal back with the result, and it doesn't need to Heartbeat or receive Cancellation, then consider using **signals** instead.
 
 ```csharp
 using Temporalio.Activities;
@@ -60,9 +62,13 @@ public async Task CompleteApprovalAsync(string requestId, bool approved)
 
     var handle = client.GetAsyncActivityHandle(taskToken);
 
+    // Optional: if a HeartbeatTimeout was set, you can periodically:
+    // await handle.HeartbeatAsync(progressDetails);
+
     if (approved)
         await handle.CompleteAsync("approved");
     else
+        // You can also fail or report cancellation via the handle
         await handle.FailAsync(new ApplicationFailureException("Rejected"));
 }
 ```
@@ -86,6 +92,36 @@ var worker = new TemporalWorker(
     .AddWorkflow<MyWorkflow>()
     .AddAllActivities(new MyActivities()));
 ```
+
+## Workflow Init Attribute
+
+Use `[WorkflowInit]` on a constructor to run initialization code when a workflow is first created.
+
+**Purpose:** Execute some setup code before signal/update happens or run is invoked.
+
+```csharp
+[Workflow]
+public class MyWorkflow
+{
+    private readonly string _initialValue;
+    private readonly List<string> _items = new();
+
+    [WorkflowInit]
+    public MyWorkflow(string initialValue)
+    {
+        _initialValue = initialValue;
+    }
+
+    [WorkflowRun]
+    public async Task<string> RunAsync(string initialValue)
+    {
+        // _initialValue and _items are already initialized
+        return _initialValue;
+    }
+}
+```
+
+Constructor and `[WorkflowRun]` method must have the same parameters with the same types. You cannot make blocking calls (activities, sleeps, etc.) from the constructor.
 
 ## Workflow Failure Exception Types
 
@@ -118,18 +154,24 @@ The .NET SDK supports dependency injection via the `Temporalio.Extensions.Hostin
 ```csharp
 using Temporalio.Extensions.Hosting;
 
-var host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(ctx =>
-        ctx.
-            AddScoped<IOrderRepository, OrderRepository>().
-            AddHostedTemporalWorker(
-                clientTargetHost: "localhost:7233",
-                clientNamespace: "default",
-                taskQueue: "my-task-queue").
-            AddScopedActivities<MyActivities>().
-            AddWorkflow<MyWorkflow>())
-    .Build();
-await host.RunAsync();
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var host = Host.CreateDefaultBuilder(args)
+            .ConfigureServices(ctx =>
+                ctx.
+                    AddScoped<IOrderRepository, OrderRepository>().
+                    AddHostedTemporalWorker(
+                        clientTargetHost: "localhost:7233",
+                        clientNamespace: "default",
+                        taskQueue: "my-task-queue").
+                    AddScopedActivities<MyActivities>().
+                    AddWorkflow<MyWorkflow>())
+            .Build();
+        await host.RunAsync();
+    }
+}
 ```
 
 ### Activity Dependency Injection

@@ -87,6 +87,7 @@ Console.WriteLine($"Result: {result}");
 
 ### Workflow Definition
 - Use `[Workflow]` attribute on class
+- Put any state initialization logic in the constructor of your workflow class to guarantee that it happens before signals/updates arrive. If your state initialization logic requires the workflow parameters, then add the `[WorkflowInit]` attribute and parameters to your constructor.
 - Use `[WorkflowRun]` on the async entry point method
 - Must return `Task` or `Task<T>`
 - Use `[WorkflowSignal]`, `[WorkflowQuery]`, `[WorkflowUpdate]` for handlers
