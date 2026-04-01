@@ -88,9 +88,13 @@ var meterProvider = Sdk.CreateMeterProviderBuilder()
 - `temporal_activity_execution_latency` — Activity execution time
 - `temporal_workflow_task_replay_latency` — Replay duration
 
+## Search Attributes (Visibility)
+
+See the Search Attributes section of `references/dotnet/data-handling.md`
+
 ## Best Practices
 
 1. Use `Workflow.Logger` in workflows, `ActivityExecutionContext.Current.Logger` in activities
 2. Don't use `Console.WriteLine` in workflows — it will produce duplicate output on replay
 3. Configure metrics for production monitoring
-4. Use Search Attributes for business-level visibility (see `references/dotnet/data-handling.md`)
+4. Use Search Attributes for business-level visibility
