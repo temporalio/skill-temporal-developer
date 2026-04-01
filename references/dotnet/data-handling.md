@@ -135,8 +135,7 @@ public class OrderWorkflow
 
         // Update search attribute
         Workflow.UpsertTypedSearchAttributes(
-            SearchAttributeUpdate.ValueSet(
-                SearchAttributeKey.CreateKeyword("OrderStatus"), "completed"));
+            SearchAttributeKey.CreateKeyword("OrderStatus").ValueSet("completed"));
         return "done";
     }
 }

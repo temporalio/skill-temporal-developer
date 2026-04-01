@@ -11,10 +11,10 @@ var scheduleId = "daily-report";
 await client.CreateScheduleAsync(
     scheduleId,
     new Schedule(
-        action: ScheduleActionStartWorkflow.Create(
+        Action: ScheduleActionStartWorkflow.Create(
             (DailyReportWorkflow wf) => wf.RunAsync(),
             new(id: "daily-report", taskQueue: "reports")),
-        spec: new ScheduleSpec
+        Spec: new ScheduleSpec
         {
             Intervals = new List<ScheduleIntervalSpec>
             {
