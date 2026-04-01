@@ -2,17 +2,11 @@
 
 ## Overview
 
-The .NET SDK has **no sandbox** for workflow code. Determinism is enforced through developer discipline, runtime task detection via an `EventListener`, and safe API alternatives provided by the SDK.
+The .NET SDK has NO runtime sandbox (unlike Python/TypeScript). Workflows must be deterministic for replay, and determinism is enforced by developer convention and runtime task detection via an `EventListener` (see `references/dotnet/determinism-protection.md`).
 
 ## Why Determinism Matters: History Replay
 
-Temporal provides durable execution through **History Replay**. When a Worker needs to restore workflow state (after a crash, cache eviction, or to continue after a long timer), it re-executes the workflow code from the beginning, which requires the workflow code to be **deterministic**.
-
-## SDK Protection
-
-The .NET SDK uses a custom `TaskScheduler` to order workflow tasks deterministically. It also enables a runtime `EventListener` that detects when workflow code accidentally uses the default scheduler. When detected, an `InvalidWorkflowOperationException` is thrown, which "pauses" the workflow (fails the workflow task) until the code is fixed.
-
-This is a **runtime-only** check — there is no compile-time sandbox. See `references/dotnet/determinism-protection.md` for details.
+Temporal provides durable execution through **History Replay**. When a Worker restores workflow state, it re-executes workflow code from the beginning. This requires the code to be **deterministic**. See `references/core/determinism.md` for a deep explanation.
 
 ## Forbidden Operations
 
@@ -51,13 +45,10 @@ Use `WorkflowReplayer` to verify your code changes are compatible with existing 
 
 ## Best Practices
 
-1. Use `Workflow.UtcNow` for all time operations
-2. Use `Workflow.Random` for random values
-3. Use `Workflow.NewGuid()` for unique identifiers
-4. Use `Workflow.DelayAsync` instead of `Task.Delay`
-5. Use `Workflow.WhenAllAsync` / `Workflow.WhenAnyAsync` for task combinators
-6. Never use `ConfigureAwait(false)` in workflows
-7. Use `SortedDictionary` or sort before iterating collections
-8. Test with replay to catch non-determinism
-9. Keep workflows focused on orchestration, delegate I/O to activities
-10. Use `Workflow.Logger` for replay-safe logging
+1. Always use `Workflow.*` APIs instead of standard .NET equivalents (see table above)
+2. Never use `ConfigureAwait(false)` in workflows
+3. Use `SortedDictionary` or sort before iterating collections
+4. Move all I/O operations (network, filesystem, database) into activities
+5. Use `Workflow.Logger` instead of `Console.WriteLine` for replay-safe logging
+6. Keep workflow code focused on orchestration; delegate non-deterministic work to activities
+7. Test with replay after making changes to workflow definitions
