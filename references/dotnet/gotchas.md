@@ -68,6 +68,55 @@ See `references/dotnet/determinism-protection.md` for the complete list.
 **Example:** Transient network errors should be retried. Authentication errors should not be.
 See `references/dotnet/error-handling.md` to understand how to classify errors.
 
+## Heartbeating
+
+### Forgetting to Heartbeat Long Activities
+
+```csharp
+// BAD: No heartbeat, can't detect stuck activities
+[Activity]
+public async Task ProcessLargeFileAsync(string path)
+{
+    foreach (var chunk in ReadChunks(path))
+        await ProcessAsync(chunk); // Takes hours, no heartbeat
+
+// GOOD: Regular heartbeats with progress
+[Activity]
+public async Task ProcessLargeFileAsync(string path)
+{
+    var chunks = ReadChunks(path);
+    for (var i = 0; i < chunks.Count; i++)
+    {
+        ActivityExecutionContext.Current.Heartbeat($"Processing chunk {i}");
+        await ProcessAsync(chunks[i]);
+    }
+}
+```
+
+### Heartbeat Timeout Too Short
+
+```csharp
+// BAD: Heartbeat timeout shorter than processing time
+await Workflow.ExecuteActivityAsync(
+    (MyActivities a) => a.ProcessChunkAsync(),
+    new()
+    {
+        StartToCloseTimeout = TimeSpan.FromMinutes(30),
+        HeartbeatTimeout = TimeSpan.FromSeconds(10), // Too short!
+    });
+
+// GOOD: Heartbeat timeout allows for processing variance
+await Workflow.ExecuteActivityAsync(
+    (MyActivities a) => a.ProcessChunkAsync(),
+    new()
+    {
+        StartToCloseTimeout = TimeSpan.FromMinutes(30),
+        HeartbeatTimeout = TimeSpan.FromMinutes(2),
+    });
+```
+
+Set heartbeat timeout as high as acceptable for your use case — each heartbeat counts as an action.
+
 ## Cancellation
 
 ### Not Handling Workflow Cancellation
@@ -124,7 +173,9 @@ public class GoodWorkflow
 
 ### Not Handling Activity Cancellation
 
-Activities must **opt in** to receive cancellation via heartbeating.
+Activities must **opt in** to receive cancellation. This requires:
+1. **Heartbeating** — Cancellation is delivered via heartbeat
+2. **Checking the cancellation token** — Token is triggered when heartbeat detects cancellation
 
 ```csharp
 // BAD: Activity ignores cancellation
@@ -134,67 +185,26 @@ public async Task LongActivityAsync()
     await DoExpensiveWorkAsync(); // Runs to completion even if cancelled
 }
 
-// GOOD: Heartbeat and check cancellation token
+// GOOD: Heartbeat, check cancellation, and handle cleanup
 [Activity]
 public async Task LongActivityAsync()
 {
-    foreach (var item in items)
+    try
     {
-        ActivityExecutionContext.Current.Heartbeat();
-        ActivityExecutionContext.Current.CancellationToken.ThrowIfCancellationRequested();
-        await ProcessAsync(item);
+        foreach (var item in items)
+        {
+            ActivityExecutionContext.Current.Heartbeat();
+            ActivityExecutionContext.Current.CancellationToken.ThrowIfCancellationRequested();
+            await ProcessAsync(item);
+        }
+    }
+    catch (OperationCanceledException)
+    {
+        await CleanupAsync();
+        throw;
     }
 }
 ```
-
-## Heartbeating
-
-### Forgetting to Heartbeat Long Activities
-
-```csharp
-// BAD: No heartbeat, can't detect stuck activities
-[Activity]
-public async Task ProcessLargeFileAsync(string path)
-{
-    foreach (var chunk in ReadChunks(path))
-        await ProcessAsync(chunk); // Takes hours, no heartbeat
-
-// GOOD: Regular heartbeats with progress
-[Activity]
-public async Task ProcessLargeFileAsync(string path)
-{
-    var chunks = ReadChunks(path);
-    for (var i = 0; i < chunks.Count; i++)
-    {
-        ActivityExecutionContext.Current.Heartbeat($"Processing chunk {i}");
-        await ProcessAsync(chunks[i]);
-    }
-}
-```
-
-### Heartbeat Timeout Too Short
-
-```csharp
-// BAD: Heartbeat timeout shorter than processing time
-await Workflow.ExecuteActivityAsync(
-    (MyActivities a) => a.ProcessChunkAsync(),
-    new()
-    {
-        StartToCloseTimeout = TimeSpan.FromMinutes(30),
-        HeartbeatTimeout = TimeSpan.FromSeconds(10), // Too short!
-    });
-
-// GOOD: Heartbeat timeout allows for processing variance
-await Workflow.ExecuteActivityAsync(
-    (MyActivities a) => a.ProcessChunkAsync(),
-    new()
-    {
-        StartToCloseTimeout = TimeSpan.FromMinutes(30),
-        HeartbeatTimeout = TimeSpan.FromMinutes(2),
-    });
-```
-
-Set heartbeat timeout as high as acceptable for your use case — each heartbeat counts as an action.
 
 ## Testing
 
