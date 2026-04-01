@@ -69,17 +69,24 @@ var client = await TemporalClient.ConnectAsync(new("localhost:7233")
 
 ### Enabling SDK Metrics
 
-```csharp
-using Temporalio.Extensions.OpenTelemetry;
-using OpenTelemetry;
-using OpenTelemetry.Metrics;
+Metrics are configured on `TemporalRuntime`. Create the runtime globally before any client/worker and set a Prometheus endpoint or custom metric meter.
 
-// Configure OpenTelemetry metrics
-var meterProvider = Sdk.CreateMeterProviderBuilder()
-    .AddTemporalClientInstrumentation()
-    .AddPrometheusExporter()
-    .Build();
+```csharp
+using Temporalio.Client;
+using Temporalio.Runtime;
+
+// Create runtime with Prometheus endpoint
+var runtime = new TemporalRuntime(new()
+{
+    Telemetry = new() { Metrics = new() { Prometheus = new("0.0.0.0:9000") } },
+});
+
+// Use this runtime for all clients
+var client = await TemporalClient.ConnectAsync(
+    new("localhost:7233") { Runtime = runtime });
 ```
+
+Alternatively, use `Temporalio.Extensions.DiagnosticSource` to bridge metrics to a .NET `System.Diagnostics.Metrics.Meter` for integration with OpenTelemetry or other .NET metrics pipelines.
 
 ### Key SDK Metrics
 
