@@ -1,4 +1,5 @@
-# Requires a repository secret OUTER_REPO_PAT with a PAT that has `repo` scope on temporalio/agent-skills
+# Requires repository secrets APP_ID and APP_PRIVATE_KEY for a GitHub App
+# installed on the org with contents:write on temporalio/agent-skills
 
 name: Notify outer repo
 
@@ -10,10 +11,19 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: temporalio
+          repositories: agent-skills
+
       - name: Trigger submodule update in outer repo
         run: |
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.OUTER_REPO_PAT }}" \
+            -H "Authorization: Bearer ${{ steps.app-token.outputs.token }}" \
             https://api.github.com/repos/temporalio/agent-skills/dispatches \
             -d '{"event_type":"submodule-updated","client_payload":{"ref":"${{ github.sha }}"}}'
