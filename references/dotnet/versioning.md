@@ -45,19 +45,23 @@ public class ShippingWorkflow
 **Step 1: Patch in New Code**
 
 ```csharp
-[WorkflowRun]
-public async Task<string> RunAsync(Order order)
+[Workflow]
+public class OrderWorkflow
 {
-    if (Workflow.Patched("add-fraud-check"))
+    [WorkflowRun]
+    public async Task<string> RunAsync(Order order)
     {
-        await Workflow.ExecuteActivityAsync(
-            (OrderActivities a) => a.CheckFraudAsync(order),
-            new() { StartToCloseTimeout = TimeSpan.FromMinutes(2) });
-    }
+        if (Workflow.Patched("add-fraud-check"))
+        {
+            await Workflow.ExecuteActivityAsync(
+                (OrderActivities a) => a.CheckFraudAsync(order),
+                new() { StartToCloseTimeout = TimeSpan.FromMinutes(2) });
+        }
 
-    return await Workflow.ExecuteActivityAsync(
-        (OrderActivities a) => a.ProcessPaymentAsync(order),
-        new() { StartToCloseTimeout = TimeSpan.FromMinutes(5) });
+        return await Workflow.ExecuteActivityAsync(
+            (OrderActivities a) => a.ProcessPaymentAsync(order),
+            new() { StartToCloseTimeout = TimeSpan.FromMinutes(5) });
+    }
 }
 ```
 
@@ -66,24 +70,46 @@ public async Task<string> RunAsync(Order order)
 Once all pre-patch Workflow Executions have completed:
 
 ```csharp
-[WorkflowRun]
-public async Task<string> RunAsync(Order order)
+[Workflow]
+public class OrderWorkflow
 {
-    Workflow.DeprecatePatch("add-fraud-check");
+    [WorkflowRun]
+    public async Task<string> RunAsync(Order order)
+    {
+        Workflow.DeprecatePatch("add-fraud-check");
 
-    await Workflow.ExecuteActivityAsync(
-        (OrderActivities a) => a.CheckFraudAsync(order),
-        new() { StartToCloseTimeout = TimeSpan.FromMinutes(2) });
+        await Workflow.ExecuteActivityAsync(
+            (OrderActivities a) => a.CheckFraudAsync(order),
+            new() { StartToCloseTimeout = TimeSpan.FromMinutes(2) });
 
-    return await Workflow.ExecuteActivityAsync(
-        (OrderActivities a) => a.ProcessPaymentAsync(order),
-        new() { StartToCloseTimeout = TimeSpan.FromMinutes(5) });
+        return await Workflow.ExecuteActivityAsync(
+            (OrderActivities a) => a.ProcessPaymentAsync(order),
+            new() { StartToCloseTimeout = TimeSpan.FromMinutes(5) });
+    }
 }
 ```
 
 **Step 3: Remove the Patch**
 
-After all workflows with the deprecated patch marker have completed, remove the `DeprecatePatch()` call entirely.
+After all workflows with the deprecated patch marker have completed, remove the `DeprecatePatch()` call entirely:
+
+```csharp
+[Workflow]
+public class OrderWorkflow
+{
+    [WorkflowRun]
+    public async Task<string> RunAsync(Order order)
+    {
+        await Workflow.ExecuteActivityAsync(
+            (OrderActivities a) => a.CheckFraudAsync(order),
+            new() { StartToCloseTimeout = TimeSpan.FromMinutes(2) });
+
+        return await Workflow.ExecuteActivityAsync(
+            (OrderActivities a) => a.ProcessPaymentAsync(order),
+            new() { StartToCloseTimeout = TimeSpan.FromMinutes(5) });
+    }
+}
+```
 
 ### Query Filters for Finding Workflows by Version
 
@@ -218,6 +244,25 @@ public class UpgradableWorkflow { /* ... */ }
 - You are already using patching APIs for version transitions
 
 **Important:** AUTO_UPGRADE workflows still need patching to handle version transitions safely since they can move between Worker versions.
+
+### Worker Configuration with Default Behavior
+
+```csharp
+var worker = new TemporalWorker(
+    client,
+    new TemporalWorkerOptions("my-task-queue")
+    {
+        DeploymentOptions = new WorkerDeploymentOptions(
+            DeploymentName: "order-service",
+            BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev")
+        {
+            DefaultVersioningBehavior = VersioningBehavior.Pinned,
+        },
+        UseWorkerVersioning = true,
+    }
+    .AddWorkflow<OrderWorkflow>()
+    .AddAllActivities(new OrderActivities()));
+```
 
 ### Deployment Strategies
 
