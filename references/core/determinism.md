@@ -76,10 +76,11 @@ In Temporal, activities are the primary mechanism for making non-deterministic c
 For a few simple cases, like timestamps, random values, UUIDs, etc. the Temporal SDK in your language may provide durable variants that are simple to use. See `references/{your_language}/determinism.md` for the language you are working in for more info.
 
 ## SDK Protection Mechanisms
-Each Temporal SDK language provides a protection mechanism to make it easier to catch non-determinism errors earlier in development:
+Each Temporal SDK language provides a different level of protection against non-determinism:
 
 - Python: The Python SDK runs workflows in a sandbox that intercepts and aborts non-deterministic calls early at runtime. 
 - TypeScript: The TypeScript SDK runs workflows in an isolated V8 sandbox, intercepting many common sources of non-determinism and replacing them automatically with deterministic variants.
+- Java: The Java SDK has no sandbox. Determinism is enforced by developer conventions — the SDK provides `Workflow.*` APIs as safe alternatives (e.g., `Workflow.sleep()` instead of `Thread.sleep()`), and non-determinism is only detected at replay time via `NonDeterministicException`. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time. Cooperative threading under a global lock eliminates the need for synchronization.
 - Go: The Go SDK has no runtime sandbox. Therefore, non-determinism bugs will never be immediately appararent, and are usually only observable during replay. The optional `workflowcheck` static analysis tool can be used to check for many sources of non-determinism at compile time.
 
 Regardless of which SDK you are using, it is your responsibility to ensure that workflow code does not contain sources of non-determinism. Use SDK-specific tools as well as replay tests for doing so.
