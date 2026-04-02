@@ -72,7 +72,7 @@ public async Task TestWithMockActivity()
 }
 ```
 
-**Note:** If the original activity method name ends with `Async`, the default activity name has `Async` trimmed off. For example, `MyActivityAsync` has default name `MyActivity`.
+**Note:** If the original activity method name ends with `Async` and returns a `Task`, the default activity name has `Async` trimmed off. For example, `MyActivityAsync` has default name `MyActivity`.
 
 ## Testing Signals and Queries
 
