@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Temporal Go SDK (`go.temporal.io/sdk`) provides a strongly-typed, idiomatic Go approach to building durable workflows. Workflows are regular exported Go functions. The Go SDK does not have an automatic sandbox -- determinism is the developer's responsibility, aided by the `workflowcheck` static analysis tool.
+The Temporal Go SDK (`go.temporal.io/sdk`) provides a strongly-typed, idiomatic Go approach to building durable workflows. Workflows are regular exported Go functions.
 
 ## Quick Start
 
