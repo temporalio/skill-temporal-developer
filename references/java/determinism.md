@@ -12,7 +12,7 @@ Temporal provides durable execution through **History Replay**. When a Worker ne
 
 Java workflow code runs in a cooperative threading model where only one workflow thread executes at a time under a global lock. The SDK does not intercept or block non-deterministic calls at runtime. If you call a forbidden operation, it will silently succeed during the initial execution but cause a `NonDeterministicException` when the workflow is replayed.
 
-Use `temporal-workflowcheck` (static analysis, beta) to catch violations at build time, and `WorkflowReplayer` to verify replay compatibility in tests.
+`temporal-workflowcheck` (static analysis, beta) and `WorkflowReplayer` (replay testing) can help uncover some violations, but they are not exhaustive — careful code review and adherence to the rules below remain essential.
 
 ## Forbidden Operations
 
