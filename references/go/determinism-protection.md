@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Go SDK has no runtime sandbox. Determinism is enforced by **developer convention** and **optional static analysis**. Unlike the Python and TypeScript SDKs, the Go SDK will not intercept or replace non-deterministic calls at runtime. The Go SDK does perform a limited runtime command-ordering check, but catching non-deterministic code before deployment requires the `workflowcheck` tool and testing, in particular replay tests (see `references/go/testing.md`).
+The Go SDK has no runtime sandbox (only Python and TypeScript have sandboxing). Determinism is enforced by **developer convention** and **optional static analysis**. The Go SDK will not intercept or replace non-deterministic calls at runtime. The Go SDK does perform a limited runtime command-ordering check, but catching non-deterministic code before deployment requires the `workflowcheck` tool and testing, in particular replay tests (see `references/go/testing.md`).
 
 ## workflowcheck Static Analysis
 
