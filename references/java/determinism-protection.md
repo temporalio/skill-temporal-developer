@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Java SDK has **no sandbox**. Unlike the Python SDK (which blocks non-deterministic operations at runtime) or the TypeScript SDK (which replaces non-deterministic functions with deterministic variants), Java relies on developer conventions and runtime replay detection to enforce determinism. A static analysis tool (`temporal-workflowcheck`) is available in beta.
+The Java SDK has **no sandbox** (only Python and TypeScript have sandboxing). Java relies on developer conventions and runtime replay detection to enforce determinism. A static analysis tool (`temporal-workflowcheck`) is available in beta.
 
 ## Forbidden Operations
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Java SDK has **no sandbox**. Unlike the Python SDK (which uses a sandbox to block non-deterministic calls) or the TypeScript SDK (which uses V8 isolation to replace functions), the Java SDK relies on developer conventions to enforce determinism. The SDK provides `Workflow.*` APIs as safe replacements for common non-deterministic operations. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time — see `references/java/determinism-protection.md`.
+The Java SDK has **no sandbox** (only Python and TypeScript have sandboxing). The Java SDK relies on developer conventions to enforce determinism. The SDK provides `Workflow.*` APIs as safe replacements for common non-deterministic operations. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time — see `references/java/determinism-protection.md`.
 
 ## Why Determinism Matters: History Replay
 

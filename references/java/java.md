@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Temporal Java SDK (`io.temporal:temporal-sdk`) uses an interface + implementation pattern for both Workflows and Activities. Java 8+ required; Java 21+ strongly recommended for virtual thread support. Unlike the Python and TypeScript SDKs, the Java SDK does **not** have a sandbox for determinism protection -- developers must ensure workflow code is deterministic themselves.
+The Temporal Java SDK (`io.temporal:temporal-sdk`) uses an interface + implementation pattern for both Workflows and Activities. Java 8+ required; Java 21+ strongly recommended for virtual thread support.
 
 ## Quick Start
 
