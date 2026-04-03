@@ -192,7 +192,7 @@ Timeout error?
 ├─▶ Which timeout?
 │   │
 │   ├─▶ Workflow timeout
-│   │   └─▶ Increase timeout or optimize workflow. Better yet, consider removing the workflow timeout, as it is generally discourged unless *necessary* for your use case.
+│   │   └─▶ Increase timeout or optimize workflow. Better yet, consider removing the workflow timeout, as it is generally discouraged unless *necessary* for your use case.
 │   │
 │   ├─▶ ScheduleToCloseTimeout
 │   │   └─▶ Activity taking too long overall (including retries)

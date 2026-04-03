@@ -1,42 +1,29 @@
 ---
 name: temporal-developer
-description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "Temporal Go", "Temporal Golang", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
-version: 0.1.0
+description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "Temporal Go", "Temporal Golang", "Temporal Java", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
+version: 0.2.0
 ---
 
 # Skill: temporal-developer
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, and Go.
+Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, and Java.
 
 ## Core Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Temporal Cluster                            │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌────────────────┐  │
-│  │  Event History  │  │   Task Queues   │  │   Visibility   │  │
-│  │  (Durable Log)  │  │  (Work Router)  │  │   (Search)     │  │
-│  └─────────────────┘  └─────────────────┘  └────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              ▲
-                              │ Poll / Complete
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                         Worker                                   │
-│  ┌─────────────────────────┐  ┌──────────────────────────────┐  │
-│  │   Workflow Definitions  │  │   Activity Implementations   │  │
-│  │   (Deterministic)       │  │   (Non-deterministic OK)     │  │
-│  └─────────────────────────┘  └──────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-```
+The **Temporal Cluster** is the central orchestration backend. It maintains three key subsystems: the **Event History** (a durable log of all workflow state), **Task Queues** (which route work to the right workers), and a **Visibility** store (for searching and listing workflows). There are three ways to run a Cluster:
 
-**Components:**
-- **Workflows** - Durable, deterministic functions that orchestrate activities
-- **Activities** - Non-deterministic operations (API calls, I/O) that can fail and retry
-- **Workers** - Long-running processes that poll task queues and execute code
-- **Task Queues** - Named queues connecting clients to workers
+- **Temporal CLI dev server** — a local, single-process server started with `temporal server start-dev`. Suitable for development and testing only, not production.
+- **Self-hosted** — you deploy and manage the Temporal server and its dependencies (e.g., database) in your own infrastructure for production use.
+- **Temporal Cloud** — a fully managed production service operated by Temporal. No cluster infrastructure to manage.
+
+**Workers** are long-running processes that you run and manage. They poll Task Queues for work and execute your code. You might run a single Worker process on one machine during development, or run many Worker processes across a large fleet of machines in production. Each Worker hosts two types of code:
+
+- **Workflow Definitions** — durable, deterministic functions that orchestrate work. These must not have side effects.
+- **Activity Implementations** — non-deterministic operations (API calls, file I/O, etc.) that can fail and be retried.
+
+Workers communicate with the Cluster via a poll/complete loop: they poll a Task Queue for tasks, execute the corresponding Workflow or Activity code, and report results back.
 
 ## History Replay: Why Determinism Matters
 
@@ -92,6 +79,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 1. First, read the getting started guide for the language you are working in:
     - Python -> read `references/python/python.md`
     - TypeScript -> read `references/typescript/typescript.md`
+    - Java -> read `references/java/java.md`
     - Go -> read `references/go/go.md`
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 

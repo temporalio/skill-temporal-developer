@@ -253,9 +253,9 @@ To ensure that polling_activity is restarted in a timely manner, we make sure th
 
 **Implementation**:
 
-Define an Activty which fails (raises an exception) exactly when polling is not completed.
+Define an Activity which fails (raises an exception) exactly when polling is not completed.
 
-The polling loop is accomplised via activity retries, by setting the following Retry options:
+The polling loop is accomplished via activity retries, by setting the following Retry options:
 - backoff_coefficient: to 1
 - initial_interval: to the polling interval (e.g. 60 seconds)
 
