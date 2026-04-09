@@ -182,6 +182,8 @@ public class Starter {
 - `Worker` -- polls a single Task Queue, register workflows and activities on it
 - Call `factory.start()` to begin polling
 
+For Spring Boot apps, `temporal-spring-boot-starter` handles all of the above automatically via auto-configuration. See `references/java/spring-boot.md`.
+
 ## File Organization Best Practice
 
 **Keep Workflow and Activity definitions in separate files.** Separating them is good practice for clarity and maintainability.
@@ -238,6 +240,7 @@ See `references/java/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+- **`references/java/spring-boot.md`** - Spring Boot integration: auto-discovery, dependency injection, worker lifecycle, testing
 - **`references/java/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/java/determinism.md`** - Determinism rules and safe alternatives for Java
 - **`references/java/gotchas.md`** - Java-specific mistakes and anti-patterns
