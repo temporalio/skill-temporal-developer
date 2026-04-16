@@ -5,7 +5,7 @@
 # ABOUTME:   SKILL_T_DEV_APP_ID — the GitHub App's ID
 # ABOUTME:   SKILL_T_DEV_KEY    — the GitHub App's private key
 # ABOUTME: The app must be installed on all three repos with Contents (write) and
-# ABOUTME: Pull Requests (write) permissions.
+# ABOUTME: Pull Requests (write) permissions. 
 
 name: Sync to Plugin Repos
 
