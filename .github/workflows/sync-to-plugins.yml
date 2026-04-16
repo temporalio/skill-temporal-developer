@@ -93,12 +93,11 @@ jobs:
             echo "PR #${existing_pr} already exists — updated by the force-push"
             gh pr comment "$existing_pr" --body "Updated to ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }})."
           else
+            body="Automated sync of the temporal-developer skill ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }}).
+
+          This PR was created automatically by the [sync workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+
             gh pr create \
               --title "Sync temporal-developer skill ${version}" \
-              --body "$(cat <<EOF
-Automated sync of the temporal-developer skill ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }}).
-
-This PR was created automatically by the [sync workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).
-EOF
-)"
+              --body "$body"
           fi
