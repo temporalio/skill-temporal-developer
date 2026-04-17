@@ -129,12 +129,9 @@ Deep Research Example:
 Parse rate limit info from API responses:
 
 - Response Headers:
-
   - Retry-After: 30
   - X-RateLimit-Remaining: 0
-
 - Activity:
-
   - If rate limited:
     - Raise retryable error with a next retry delay
     - Temporal handles the delay

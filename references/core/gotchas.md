@@ -203,7 +203,7 @@ See language-specific gotchas for details.
 
 - Max 2MB per individual payload
 - Max 4MB per gRPC message
-- Max 50MB for complete workflow history (aim for \<10MB in practice)
+- Max 50MB for complete workflow history (aim for < 10MB in practice)
 
 **Symptoms**:
 

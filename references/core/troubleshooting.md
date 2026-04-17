@@ -58,26 +58,17 @@ Workflow stuck in RUNNING?
 ### Common Causes
 
 1. **No worker running**
-
    - See references/core/dev-management.md
-
 2. **Worker on wrong task queue**
-
    - Check: Worker logs for task queue name
    - Fix: Start worker with matching task queue
-
 3. **Worker has stale code**
-
    - Check: Worker startup time vs code changes
    - Fix: Restart worker with updated code
-
 4. **Workflow waiting for signal**
-
    - Check: Workflow history for pending signals
    - Fix: Send expected signal or check signal sender
-
 5. **Activity stuck/timing out**
-
    - Check: Activity retry attempts in history
    - Fix: Investigate activity failure, increase timeout
 
@@ -172,17 +163,12 @@ Workflow status = FAILED?
 ### Common Causes
 
 1. **Unhandled exception in workflow**
-
    - Check error message and stack trace
    - Fix bug in workflow code
-
 2. **Activity exhausted retries**
-
    - All retry attempts failed
    - Check activity logs for root cause
-
 3. **Non-retryable error thrown**
-
    - Error marked as non-retryable
    - Intentional failure, check business logic
 
@@ -248,17 +234,12 @@ Activity retrying repeatedly?
 ### Common Causes
 
 1. **Bug in activity code**
-
    - Fix the bug
    - Consider marking certain errors as non-retryable
-
 2. **External service down**
-
    - Retries are working as intended
    - Monitor service recovery
-
 3. **Invalid input**
-
    - Validate inputs before activity
    - Return non-retryable error for bad input
 
