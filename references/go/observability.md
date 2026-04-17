@@ -28,6 +28,7 @@ func MyWorkflow(ctx workflow.Context, input string) (string, error) {
 ```
 
 The workflow logger automatically:
+
 - Suppresses duplicate logs during replay
 - Includes workflow context (workflow ID, run ID, etc.)
 
@@ -45,6 +46,7 @@ func MyActivity(ctx context.Context, input string) (string, error) {
 ```
 
 Activity logger includes:
+
 - Activity ID, type, and task queue
 - Workflow ID and run ID
 - Attempt number (for retries)
@@ -134,6 +136,7 @@ c, err := client.Dial(client.Options{
 ```
 
 Key SDK metrics:
+
 - `temporal_workflow_task_execution_latency` -- Workflow task processing time
 - `temporal_activity_execution_latency` -- Activity execution time
 - `temporal_workflow_task_replay_latency` -- Replay duration

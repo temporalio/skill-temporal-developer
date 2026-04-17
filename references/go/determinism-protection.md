@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Go SDK has no runtime sandbox. Determinism is enforced by **developer convention** and **optional static analysis**. Unlike the Python and TypeScript SDKs, the Go SDK will not intercept or replace non-deterministic calls at runtime. The Go SDK does perform a limited runtime command-ordering check, but catching non-deterministic code before deployment requires the `workflowcheck` tool and testing, in particular replay tests (see `references/go/testing.md`).
+The Go SDK has no runtime sandbox (only Python and TypeScript have sandboxing). Determinism is enforced by **developer convention** and **optional static analysis**. The Go SDK will not intercept or replace non-deterministic calls at runtime. The Go SDK does perform a limited runtime command-ordering check, but catching non-deterministic code before deployment requires the `workflowcheck` tool and testing, in particular replay tests (see `references/go/testing.md`).
 
 ## workflowcheck Static Analysis
 
@@ -29,6 +29,7 @@ workflowcheck -show-pos ./...
 ### What It Detects
 
 **Non-deterministic functions/variables:**
+
 - `time.Now` -- obtaining current time
 - `time.Sleep` -- sleeping
 - `crypto/rand.Reader` -- crypto random reader
@@ -36,6 +37,7 @@ workflowcheck -show-pos ./...
 - `os.Stdin`, `os.Stdout`, `os.Stderr` -- standard I/O streams
 
 **Non-deterministic Go constructs:**
+
 - Starting a goroutine (`go func()`)
 - Sending to a channel
 - Receiving from a channel
@@ -45,6 +47,7 @@ workflowcheck -show-pos ./...
 ### Limitations
 
 `workflowcheck` cannot catch everything. It does **not** detect:
+
 - Global variable mutation
 - Non-determinism via reflection
 - Runtime-conditional non-determinism
@@ -72,6 +75,7 @@ workflowcheck -config workflowcheck.config.yaml ./...
 ## Determinism Rules
 
 **You must:**
+
 - Use `workflow.Go(ctx, func(ctx workflow.Context) { ... })` instead of `go`
 - Use `workflow.NewChannel(ctx)` instead of `chan`
 - Use `workflow.NewSelector(ctx)` instead of `select`
@@ -81,6 +85,7 @@ workflowcheck -config workflowcheck.config.yaml ./...
 - Sort map keys before iterating, or use `workflow.SideEffect` / an activity
 
 **You must not:**
+
 - Start native goroutines
 - Use native channels or `select`
 - Call `time.Now()` or `time.Sleep()`

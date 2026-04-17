@@ -27,6 +27,7 @@ class MyWorkflow:
 ```
 
 The workflow logger automatically:
+
 - Suppresses duplicate logs during replay
 - Includes workflow context (workflow ID, run ID, etc.)
 
@@ -46,6 +47,7 @@ async def process_order(order_id: str) -> str:
 ```
 
 Activity logger includes:
+
 - Activity ID, type, and task queue
 - Workflow ID and run ID
 - Attempt number (for retries)
@@ -91,7 +93,6 @@ Runtime.set_default(runtime, error_if_already_set=True)
 - `temporal_workflow_task_execution_latency` - Workflow task processing time
 - `temporal_activity_execution_latency` - Activity execution time
 - `temporal_workflow_task_replay_latency` - Replay duration
-
 
 ## Search Attributes (Visibility)
 
