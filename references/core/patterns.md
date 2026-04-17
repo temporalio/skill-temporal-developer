@@ -366,7 +366,7 @@ This ensures that on replay, already-completed steps are skipped.
 
 - Max 2MB per individual payload
 - Max 4MB per gRPC message
-- Max 50MB for workflow history (aim for \<10MB)
+- Max 50MB for workflow history (aim for < 10MB)
 
 **Key Principle**: Large data should never flow through workflow history. Activities read and write large data directly, passing only small references through the workflow.
 
