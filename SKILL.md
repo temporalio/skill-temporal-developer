@@ -77,33 +77,33 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 ### Read All Relevant References
 
 1. First, read the getting started guide for the language you are working in:
-    - Python -> read `references/python/python.md`
-    - TypeScript -> read `references/typescript/typescript.md`
-    - Java -> read `references/java/java.md`
-    - Go -> read `references/go/go.md`
+   - Python -> read `references/python/python.md`
+   - TypeScript -> read `references/typescript/typescript.md`
+   - Java -> read `references/java/java.md`
+   - Go -> read `references/go/go.md`
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
-
 ## Primary References
+
 - **`references/core/determinism.md`** - Why determinism matters, replay mechanics, basic concepts of activities
-    + Language-specific info at `references/{your_language}/determinism.md`
+  - Language-specific info at `references/{your_language}/determinism.md`
 - **`references/core/patterns.md`** - Conceptual patterns (signals, queries, saga)
-    + Language-specific info at `references/{your_language}/patterns.md`
+  - Language-specific info at `references/{your_language}/patterns.md`
 - **`references/core/gotchas.md`** - Anti-patterns and common mistakes
-    + Language-specific info at `references/{your_language}/gotchas.md`
+  - Language-specific info at `references/{your_language}/gotchas.md`
 - **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
-    + Language-specific info at `references/{your_language}/versioning.md`
+  - Language-specific info at `references/{your_language}/versioning.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
-    + Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+  - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
 ## Additional Topics
+
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
-
 
 ## Feedback
 

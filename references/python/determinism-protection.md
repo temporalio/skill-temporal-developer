@@ -7,6 +7,7 @@ The Python SDK runs workflows in a sandbox that provides automatic protection ag
 ## How the Sandbox Works
 
 The sandbox:
+
 - Isolates global state via `exec` compilation
 - Restricts non-deterministic library calls via proxy objects
 - Passes through standard library with restrictions
@@ -35,6 +36,7 @@ with workflow.unsafe.imports_passed_through():
 ```
 
 **When to use pass-through:**
+
 - Data classes and models (Pydantic, dataclasses)
 - Serialization libraries
 - Type definitions

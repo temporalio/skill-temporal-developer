@@ -45,6 +45,7 @@ err = workflow.ExecuteActivity(ctx, ActivityC, data).Get(ctx, &result1)
 ```
 
 Keep the `GetVersion` call even with a single branch. This ensures:
+
 1. If an older execution replays on this code, it fails fast instead of proceeding incorrectly
 2. If you need further changes, you just bump `maxSupported`
 
@@ -139,6 +140,7 @@ w := worker.New(c, "my-task-queue", worker.Options{
 ```
 
 **Configuration fields:**
+
 - `UseVersioning`: enables Worker Versioning
 - `Version`: identifies the Worker Deployment Version (deployment name + build ID)
 - `DefaultVersioningBehavior`: `VersioningBehaviorPinned` or `VersioningBehaviorAutoUpgrade`
@@ -151,6 +153,7 @@ w := worker.New(c, "my-task-queue", worker.Options{
 Workflows stay locked to their original Worker version.
 
 **When to use PINNED:**
+
 - Short-running workflows (minutes to hours)
 - Consistency is critical (e.g., financial transactions)
 - You want to eliminate version compatibility complexity
@@ -161,6 +164,7 @@ Workflows stay locked to their original Worker version.
 Workflows can move to newer versions.
 
 **When to use AUTO_UPGRADE:**
+
 - Long-running workflows (weeks or months)
 - Workflows need to benefit from bug fixes during execution
 - Migrating from traditional rolling deployments
@@ -189,6 +193,7 @@ w := worker.New(c, "orders-task-queue", worker.Options{
 **Blue-Green Deployments**
 
 Maintain two environments and switch traffic between them:
+
 1. Deploy new code to idle environment
 2. Run tests and validation
 3. Switch traffic to new environment
@@ -197,6 +202,7 @@ Maintain two environments and switch traffic between them:
 **Rainbow Deployments**
 
 Multiple versions run simultaneously:
+
 - New workflows use latest version
 - Existing workflows complete on their original version
 - Add new versions alongside existing ones

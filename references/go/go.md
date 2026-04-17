@@ -7,11 +7,13 @@ The Temporal Go SDK (`go.temporal.io/sdk`) provides a strongly-typed, idiomatic 
 ## Quick Start
 
 **Add Dependency:** In your Go module, add the Temporal SDK:
+
 ```bash
 go get go.temporal.io/sdk
 ```
 
 **workflows/greeting.go** - Workflow definition:
+
 ```go
 package workflows
 
@@ -37,6 +39,7 @@ func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
 ```
 
 **activities/greet.go** - Activity definition:
+
 ```go
 package activities
 
@@ -53,6 +56,7 @@ func (a *Activities) Greet(ctx context.Context, name string) (string, error) {
 ```
 
 **worker/main.go** - Worker setup:
+
 ```go
 package main
 
@@ -90,6 +94,7 @@ func main() {
 **Start the worker:** Run `go run worker/main.go` in the background.
 
 **starter/main.go** - Start a workflow execution:
+
 ```go
 package main
 
@@ -136,6 +141,7 @@ func main() {
 ## Key Concepts
 
 ### Workflow Definition
+
 - Exported function with `workflow.Context` as the first parameter
 - Returns `(ResultType, error)` or just `error`
 - Signature: `func MyWorkflow(ctx workflow.Context, input MyInput) (MyOutput, error)`
@@ -143,12 +149,14 @@ func main() {
 - Register with `w.RegisterWorkflow(MyWorkflow)`
 
 ### Activity Definition
+
 - Regular function or struct methods with `context.Context` as the first parameter
 - Struct methods are preferred for dependency injection
 - Signature: `func (a *Activities) MyActivity(ctx context.Context, input string) (string, error)`
 - Register struct with `w.RegisterActivity(&Activities{})` (registers all exported methods)
 
 ### Worker Setup
+
 - Create client with `client.Dial(client.Options{})`
 - Create worker with `worker.New(c, "task-queue", worker.Options{})`
 - Register workflows and activities
@@ -159,6 +167,7 @@ func main() {
 **Workflow code must be deterministic!** The Go SDK has no sandbox -- determinism is enforced by convention and tooling.
 
 Use Temporal replacements instead of native Go constructs:
+
 - `workflow.Go()` instead of `go` (goroutines)
 - `workflow.Channel` instead of `chan`
 - `workflow.Selector` instead of `select`
@@ -167,6 +176,7 @@ Use Temporal replacements instead of native Go constructs:
 - `workflow.GetLogger()` instead of `log` / `fmt.Println` for replay-safe logging
 
 Use the **`workflowcheck`** static analysis tool to catch non-deterministic code:
+
 ```bash
 go install go.temporal.io/sdk/contrib/tools/workflowcheck@latest
 workflowcheck ./...
@@ -191,6 +201,7 @@ myapp/
 ```
 
 **Activities as struct methods for dependency injection:**
+
 ```go
 // activities/greet.go
 type Activities struct {
@@ -230,6 +241,7 @@ See `references/go/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+
 - **`references/go/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/go/determinism.md`** - Determinism rules, workflowcheck tool, safe alternatives
 - **`references/go/gotchas.md`** - Go-specific mistakes and anti-patterns
