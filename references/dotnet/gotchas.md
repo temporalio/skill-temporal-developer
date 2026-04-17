@@ -174,6 +174,7 @@ public class GoodWorkflow
 ### Not Handling Activity Cancellation
 
 Activities must **opt in** to receive cancellation. This requires:
+
 1. **Heartbeating** — Cancellation is delivered via heartbeat
 2. **Checking the cancellation token** — Token is triggered when heartbeat detects cancellation
 

@@ -7,6 +7,7 @@ The .NET SDK uses data converters to serialize/deserialize workflow inputs, outp
 ## Default Data Converter
 
 The default converter handles:
+
 - `null`
 - `byte[]` (as binary)
 - `Google.Protobuf.IMessage` instances

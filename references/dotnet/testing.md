@@ -161,6 +161,7 @@ public async Task TestActivity()
 ```
 
 The `ActivityEnvironment` provides:
+
 - `Info` — Activity info, defaulted to basic values
 - `CancellationTokenSource` — Token source for issuing cancellation
 - `Heartbeater` — Callback invoked each heartbeat

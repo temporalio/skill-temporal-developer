@@ -13,11 +13,13 @@ Temporal workflows are durable through history replay. For details on how this w
 ## Quick Start
 
 **Add Dependency:** Install the Temporal SDK NuGet package:
+
 ```bash
 dotnet add package Temporalio
 ```
 
 **Activities.cs** - Activity definitions (separate file for clarity):
+
 ```csharp
 using Temporalio.Activities;
 
@@ -32,6 +34,7 @@ public class MyActivities
 ```
 
 **GreetingWorkflow.workflow.cs** - Workflow definition:
+
 ```csharp
 using Temporalio.Workflows;
 
@@ -49,6 +52,7 @@ public class GreetingWorkflow
 ```
 
 **Worker (Program.cs)** - Worker setup:
+
 ```csharp
 using Temporalio.Client;
 using Temporalio.Worker;
@@ -69,6 +73,7 @@ await worker.ExecuteAsync();
 **Start the worker:** Run `dotnet run` in the worker project.
 
 **Starter (Program.cs)** - Start a workflow execution:
+
 ```csharp
 using Temporalio.Client;
 
@@ -86,6 +91,7 @@ Console.WriteLine($"Result: {result}");
 ## Key Concepts
 
 ### Workflow Definition
+
 - Use `[Workflow]` attribute on class
 - Put any state initialization logic in the constructor of your workflow class to guarantee that it happens before signals/updates arrive. If your state initialization logic requires the workflow parameters, then add the `[WorkflowInit]` attribute and parameters to your constructor.
 - Use `[WorkflowRun]` on the async entry point method
@@ -93,12 +99,14 @@ Console.WriteLine($"Result: {result}");
 - Use `[WorkflowSignal]`, `[WorkflowQuery]`, `[WorkflowUpdate]` for handlers
 
 ### Activity Definition
+
 - Use `[Activity]` attribute on methods
 - Can be sync or async
 - Instance methods support dependency injection
 - Static methods are also supported
 
 ### Worker Setup
+
 - Connect client, create `TemporalWorker` with workflows and activities
 - Use `AddWorkflow<T>()` and `AddAllActivities(instance)` or `AddActivity(method)`
 
@@ -181,6 +189,7 @@ See `references/dotnet/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+
 - **`references/dotnet/patterns.md`** — Signals, queries, child workflows, saga pattern, etc.
 - **`references/dotnet/determinism.md`** — Essentials of determinism in .NET
 - **`references/dotnet/gotchas.md`** — .NET-specific mistakes and anti-patterns

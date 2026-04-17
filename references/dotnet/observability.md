@@ -30,6 +30,7 @@ public class MyWorkflow
 ```
 
 The workflow logger automatically:
+
 - Suppresses duplicate logs during replay
 - Includes workflow context (workflow ID, run ID, etc.)
 

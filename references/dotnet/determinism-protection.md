@@ -27,6 +27,7 @@ public class BadWorkflow
 Many .NET `Task` APIs implicitly use `TaskScheduler.Default`, which breaks determinism. Here are the key rules:
 
 **Do NOT use:**
+
 - `Task.Run` — uses default scheduler. Use `Workflow.RunTaskAsync`.
 - `Task.ConfigureAwait(false)` — leaves current context. Use `ConfigureAwait(true)` or omit.
 - `Task.Delay` / `Task.Wait` / timeout-based `CancellationTokenSource` — uses system timers. Use `Workflow.DelayAsync` / `Workflow.WaitConditionAsync`.
@@ -36,6 +37,7 @@ Many .NET `Task` APIs implicitly use `TaskScheduler.Default`, which breaks deter
 - `System.Threading.Semaphore` / `SemaphoreSlim` / `Mutex` — use `Temporalio.Workflows.Semaphore` / `Mutex`.
 
 **Be wary of:**
+
 - Third-party libraries that implicitly use `TaskScheduler.Default`
 - `Dataflow` blocks and similar concurrency libraries with hidden default scheduler usage
 
