@@ -8,7 +8,9 @@ The Python SDK runs workflows in a sandbox that provides automatic protection ag
 
 Temporal provides durable execution through **History Replay**. When a Worker needs to restore workflow state (after a crash, cache eviction, or to continue after a long timer), it re-executes the workflow code from the beginning, which requires the workflow code to be **deterministic**.
 
-## Forbidden Operations
+## Forbidden Operations in Workflows
+
+The following are forbidden inside workflow code but are appropriate to use in activities.
 
 - Direct I/O (network, filesystem)
 - Threading operations

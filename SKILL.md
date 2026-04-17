@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, and Java. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
 version: 0.2.0
 ---
 
@@ -8,7 +8,7 @@ version: 0.2.0
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, and Java.
+Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, Java and .NET.
 
 ## Core Architecture
 
@@ -79,8 +79,9 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 1. First, read the getting started guide for the language you are working in:
    - Python -> read `references/python/python.md`
    - TypeScript -> read `references/typescript/typescript.md`
-   - Java -> read `references/java/java.md`
    - Go -> read `references/go/go.md`
+   - Java -> read `references/java/java.md`
+   - .NET (C#) -> read `references/dotnet/dotnet.md`
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
 ## Primary References

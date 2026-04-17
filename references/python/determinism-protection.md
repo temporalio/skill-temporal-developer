@@ -13,9 +13,9 @@ The sandbox:
 - Passes through standard library with restrictions
 - Reloads workflow files on each execution
 
-## Forbidden Operations
+## Forbidden Operations in Workflows
 
-These operations will fail in the sandbox:
+These operations are forbidden inside workflow code (appropriate in activities) and will fail in the sandbox:
 
 - **Direct I/O**: Network calls, file reads/writes
 - **Threading**: `threading` module operations
