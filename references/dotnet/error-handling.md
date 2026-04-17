@@ -60,7 +60,7 @@ public class MyWorkflow
                 (MyActivities a) => a.RiskyActivityAsync(),
                 new() { StartToCloseTimeout = TimeSpan.FromMinutes(5) });
         }
-        catch (ActivityFailureException ex)
+        catch (ActivityFailureException ex) when (!TemporalException.IsCanceledException(ex))
         {
             Workflow.Logger.LogError(ex, "Activity failed");
             throw new ApplicationFailureException(
