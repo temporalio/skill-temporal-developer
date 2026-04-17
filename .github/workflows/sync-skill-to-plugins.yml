@@ -122,13 +122,18 @@ jobs:
 
           ## Changelog
           ${changelog}"
+            pr_url=$(gh pr view "$existing_pr" --json url --jq '.url')
+            echo "### ${{ matrix.repo }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "Updated [PR #${existing_pr}](${pr_url})" >> "$GITHUB_STEP_SUMMARY"
           else
-            gh pr create \
+            pr_url=$(gh pr create \
               --title "Sync temporal-developer skill ${version}" \
               --body "Automated sync of the temporal-developer skill ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }}).
 
           This PR was created automatically by the [sync workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
           ## Changelog
-          ${changelog}"
+          ${changelog}")
+            echo "### ${{ matrix.repo }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "Created ${pr_url}" >> "$GITHUB_STEP_SUMMARY"
           fi
