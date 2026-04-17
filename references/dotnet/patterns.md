@@ -431,7 +431,7 @@ public async Task<string> ProcessLargeFileAsync(string filePath)
     var info = ActivityExecutionContext.Current.Info;
     // Get heartbeat details from previous attempt (if any)
     var startLine = info.HeartbeatDetails.Count > 0
-        ? await info.HeartbeatDetails.ElementAtAsync<int>(0)
+        ? await info.HeartbeatDetailAtAsync<int>(0)
         : 0;
 
     var lines = await File.ReadAllLinesAsync(filePath);
