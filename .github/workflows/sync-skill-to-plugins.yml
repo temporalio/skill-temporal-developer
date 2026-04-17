@@ -34,17 +34,17 @@ jobs:
     steps:
       - name: Generate token from GitHub App
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.SKILL_T_DEV_APP_ID }}
           private-key: ${{ secrets.SKILL_T_DEV_KEY }}
           owner: ${{ github.repository_owner }}
 
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout target repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ matrix.repo }}
           token: ${{ steps.app-token.outputs.token }}
