@@ -226,6 +226,7 @@ worker = Worker(
 Workflows stay locked to their original Worker version:
 
 ```python
+from temporalio import workflow
 from temporalio.common import VersioningBehavior
 
 @workflow.defn(versioning_behavior=VersioningBehavior.PINNED)
@@ -250,6 +251,7 @@ class StableWorkflow:
 Workflows can move to newer versions:
 
 ```python
+from temporalio import workflow
 from temporalio.common import VersioningBehavior
 
 @workflow.defn(versioning_behavior=VersioningBehavior.AUTO_UPGRADE)
