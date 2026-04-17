@@ -176,7 +176,7 @@ public class Program
 
 ### Activity Dependency Injection
 
-Activities registered with `AddScopedActivities<T>()` or `AddSingletonActivities<T>()` are created via DI, allowing constructor injection:
+As shown in the host setup above, activities can be registered with `AddScopedActivities<T>()`, `AddSingletonActivities<T>()`, or `AddTransientActivities<T>()`. Activities registered this way are created via DI, allowing constructor injection:
 
 ```csharp
 public class MyActivities

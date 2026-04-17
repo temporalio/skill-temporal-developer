@@ -6,7 +6,7 @@ The .NET SDK has no runtime sandbox. Determinism is enforced by **developer conv
 
 ## Runtime Task Detection
 
-By default, the .NET SDK enables an `EventListener` that monitors task events. When workflow code accidentally starts a task on the wrong scheduler (e.g., via `Task.Run`), an `InvalidWorkflowOperationException` is thrown. This "pauses" the workflow by failing the workflow task, which continually retries until the code is fixed.
+By default, the .NET SDK enables an `EventListener` that monitors task events. When workflow code accidentally starts a task on the wrong scheduler (e.g., via `Task.Run`), an `InvalidWorkflowOperationException` is thrown. This causes the workflow task to fail, which will continuously retry until the code is fixed.
 
 ```csharp
 // This will be detected at runtime and fail the workflow task
@@ -42,7 +42,7 @@ Many .NET `Task` APIs implicitly use `TaskScheduler.Default`, which breaks deter
 ## Best Practices
 
 1. **Always use `Workflow.*` alternatives** for Task operations in workflows
-2. **Enable the `EventListener`** (default) — it catches mistakes at runtime
+2. **Don't disable the `EventListener`** — it's on by default and catches mistakes at runtime
 3. **Separate workflow and activity code** into different files/projects for clarity
 4. **Use `SortedDictionary`** or sort collections before iterating — `Dictionary<TKey, TValue>` iteration order is not guaranteed
 5. **Test with replay** to catch non-determinism early
