@@ -118,10 +118,15 @@ jobs:
 
           if [ -n "$existing_pr" ]; then
             echo "PR #${existing_pr} already exists — updated by the force-push"
-            gh pr comment "$existing_pr" --body "Updated to ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }}).
+            gh pr edit "$existing_pr" \
+              --title "Sync temporal-developer skill ${version}" \
+              --body "Automated sync of the temporal-developer skill ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }}).
+
+          This PR was updated automatically by the [sync workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
           ## Changelog
           ${changelog}"
+            gh pr comment "$existing_pr" --body "Updated to ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }})."
             pr_url=$(gh pr view "$existing_pr" --json url --jq '.url')
             echo "### ${{ matrix.repo }}" >> "$GITHUB_STEP_SUMMARY"
             echo "Updated [PR #${existing_pr}](${pr_url})" >> "$GITHUB_STEP_SUMMARY"
