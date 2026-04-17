@@ -1,5 +1,7 @@
 # ABOUTME: GitHub Actions workflow that packages the skill for upload to Claude.ai.
 # ABOUTME: Creates a ZIP artifact on every push to main and a GitHub Release when the version in SKILL.md increases.
+# ABOUTME: Releases are created using a GitHub App token so the release event can trigger downstream workflows
+# ABOUTME: (events fired by the default GITHUB_TOKEN do not trigger other workflows).
 
 name: Package Skill
 
@@ -12,9 +14,17 @@ jobs:
   package:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
 
     steps:
+      - name: Generate token from GitHub App
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.SKILL_T_DEV_APP_ID }}
+          private-key: ${{ secrets.SKILL_T_DEV_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -53,6 +63,7 @@ jobs:
         if: steps.tag_check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v3
         with:
+          token: ${{ steps.app-token.outputs.token }}
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
           files: temporal-developer-skill.zip
