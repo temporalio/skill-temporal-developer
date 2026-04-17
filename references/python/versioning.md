@@ -226,13 +226,13 @@ worker = Worker(
 Workflows stay locked to their original Worker version:
 
 ```python
-from temporalio.workflow import VersioningBehavior
+from temporalio import workflow
+from temporalio.common import VersioningBehavior
 
-@workflow.defn
+@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)
 class StableWorkflow:
     @workflow.run
     async def run(self) -> str:
-        # This workflow will always run on its assigned version
         return await workflow.execute_activity(
             process_order,
             start_to_close_timeout=timedelta(minutes=5),
@@ -250,6 +250,20 @@ class StableWorkflow:
 
 Workflows can move to newer versions:
 
+```python
+from temporalio import workflow
+from temporalio.common import VersioningBehavior
+
+@workflow.defn(versioning_behavior=VersioningBehavior.AUTO_UPGRADE)
+class UpgradableWorkflow:
+    @workflow.run
+    async def run(self) -> str:
+        return await workflow.execute_activity(
+            process_order,
+            start_to_close_timeout=timedelta(minutes=5),
+        )
+```
+
 **When to use AUTO_UPGRADE:**
 
 - Long-running workflows (weeks or months)
@@ -262,7 +276,6 @@ Workflows can move to newer versions:
 ### Worker Configuration with Default Behavior
 
 ```python
-# For short-running workflows, prefer PINNED
 worker = Worker(
     client,
     task_queue="orders-task-queue",
@@ -274,7 +287,7 @@ worker = Worker(
             build_id=os.environ["BUILD_ID"],
         ),
         use_worker_versioning=True,
-        # default_versioning_behavior=VersioningBehavior.PINNED,
+        default_versioning_behavior=VersioningBehavior.PINNED,
     ),
 )
 ```
