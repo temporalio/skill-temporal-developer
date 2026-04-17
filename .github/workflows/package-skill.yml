@@ -1,9 +1,12 @@
-# ABOUTME: GitHub Actions workflow that packages the skill for upload to Claude.ai.
-# ABOUTME: Creates a ZIP artifact on every push to main and a GitHub Release when the version in SKILL.md increases.
-# ABOUTME: Releases are created using a GitHub App token so the release event can trigger downstream workflows
-# ABOUTME: (events fired by the default GITHUB_TOKEN do not trigger other workflows).
+# ABOUTME: Packages the skill on every push to main (as a ZIP artifact) and, if the version in SKILL.md
+# ABOUTME: has been bumped, creates a GitHub Release and syncs the skill contents to three plugin repos
+# ABOUTME: (cursor-temporal-plugin, codex-temporal-plugin, claude-temporal-plugin) via PRs.
+# ABOUTME: Required secrets (used only by the sync job for cross-repo PRs):
+# ABOUTME:   SKILL_T_DEV_APP_ID — the GitHub App's ID
+# ABOUTME:   SKILL_T_DEV_KEY    — the GitHub App's private key
+# ABOUTME: The app must be installed on the three plugin repos with Contents (write) and Pull Requests (write).
 
-name: Package Skill
+name: Package and Sync Skill
 
 on:
   push:
@@ -14,17 +17,13 @@ jobs:
   package:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      released: ${{ steps.tag_check.outputs.exists == 'false' }}
 
     steps:
-      - name: Generate token from GitHub App
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ secrets.SKILL_T_DEV_APP_ID }}
-          private-key: ${{ secrets.SKILL_T_DEV_KEY }}
-          owner: ${{ github.repository_owner }}
-
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -63,8 +62,135 @@ jobs:
         if: steps.tag_check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v3
         with:
-          token: ${{ steps.app-token.outputs.token }}
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
           files: temporal-developer-skill.zip
           generate_release_notes: true
+
+  sync:
+    needs: package
+    if: needs.package.outputs.released == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repo: temporalio/cursor-temporal-plugin
+            target_path: skills/temporal-developer
+          - repo: temporalio/codex-temporal-plugin
+            target_path: plugins/temporal-developer/skills/temporal-developer
+          - repo: temporalio/claude-temporal-plugin
+            target_path: skills/temporal-developer
+
+    steps:
+      - name: Generate token from GitHub App
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.SKILL_T_DEV_APP_ID }}
+          private-key: ${{ secrets.SKILL_T_DEV_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Checkout target repo
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repo }}
+          token: ${{ steps.app-token.outputs.token }}
+          path: target-repo
+
+      - name: Sync skill contents
+        working-directory: target-repo
+        run: |
+          BRANCH="sync/temporal-developer-skill"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create or reset the sync branch based on current main.
+          # -B ensures the branch always starts from main's tip, even if a
+          # stale remote branch exists from a previously merged PR.
+          git checkout -B "$BRANCH" origin/main
+
+          # Remove old contents and copy current
+          rm -rf "${{ matrix.target_path }}/SKILL.md" \
+                 "${{ matrix.target_path }}/references"
+          cp ../SKILL.md "${{ matrix.target_path }}/"
+          cp -r ../references "${{ matrix.target_path }}/"
+
+          # Check for changes against main
+          git add "${{ matrix.target_path }}"
+          if git diff --cached --quiet; then
+            echo "no_changes=true" >> "$GITHUB_ENV"
+            echo "No changes to sync"
+          else
+            echo "no_changes=false" >> "$GITHUB_ENV"
+            version="${{ needs.package.outputs.tag }}"
+            git commit -m "sync temporal-developer skill ${version} from source repo"
+            git push --force origin "$BRANCH"
+          fi
+
+      - name: Build changelog
+        if: env.no_changes == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ needs.package.outputs.tag }}"
+
+          # Prefer the release body (auto-generated notes). Fall back to git log
+          # if no release exists for this tag (e.g. manual re-sync of an older version).
+          if body=$(gh release view "$tag" --repo "${{ github.repository }}" --json body --jq '.body' 2>/dev/null) && [ -n "$body" ]; then
+            echo "$body" > /tmp/changelog.md
+          else
+            prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            if [ -n "$prev_tag" ]; then
+              git log --oneline "${prev_tag}..HEAD" > /tmp/changelog.md
+            else
+              git log --oneline -20 > /tmp/changelog.md
+            fi
+          fi
+
+      - name: Create or update PR
+        if: env.no_changes == 'false'
+        working-directory: target-repo
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          BRANCH="sync/temporal-developer-skill"
+          version="${{ needs.package.outputs.tag }}"
+          changelog=$(cat /tmp/changelog.md)
+
+          # Check if a PR already exists from this branch
+          existing_pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+
+          if [ -n "$existing_pr" ]; then
+            echo "PR #${existing_pr} already exists — updated by the force-push"
+            gh pr edit "$existing_pr" \
+              --title "Sync temporal-developer skill ${version}" \
+              --body "Automated sync of the temporal-developer skill ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }}).
+
+          This PR was updated automatically by the [sync workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+          ## Changelog
+          ${changelog}"
+            gh pr comment "$existing_pr" --body "Updated to ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }})."
+            pr_url=$(gh pr view "$existing_pr" --json url --jq '.url')
+            echo "### ${{ matrix.repo }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "Updated [PR #${existing_pr}](${pr_url})" >> "$GITHUB_STEP_SUMMARY"
+          else
+            pr_url=$(gh pr create \
+              --title "Sync temporal-developer skill ${version}" \
+              --body "Automated sync of the temporal-developer skill ${version} from [skill-temporal-developer](https://github.com/${{ github.repository }}).
+
+          This PR was created automatically by the [sync workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+          ## Changelog
+          ${changelog}")
+            echo "### ${{ matrix.repo }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "Created ${pr_url}" >> "$GITHUB_STEP_SUMMARY"
+          fi
