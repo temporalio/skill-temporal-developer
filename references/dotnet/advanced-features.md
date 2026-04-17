@@ -58,6 +58,7 @@ public async Task RequestApprovalAsync(string requestId)
 public async Task CompleteApprovalAsync(string requestId, bool approved)
 {
     var client = await TemporalClient.ConnectAsync(new("localhost:7233"));
+    // Retrieve the task token from external storage (e.g., database)
     var taskToken = await GetTaskTokenAsync(requestId);
 
     var handle = client.GetAsyncActivityHandle(taskToken);
