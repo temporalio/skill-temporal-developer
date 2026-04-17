@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Temporal .NET SDK provides a high-performance, type-safe approach to building durable workflows using C# and .NET. Workflows use attributes (`[Workflow]`, `[WorkflowRun]`) and lambda expressions for type-safe invocations. .NET 6.0+ required.
+The Temporal .NET SDK provides a high-performance, type-safe approach to building durable workflows using C# and .NET. Workflows use attributes (`[Workflow]`, `[WorkflowRun]`) and lambda expressions for type-safe invocations. Supports .NET Framework 4.6.2+ and .NET Core 3.1+ (including .NET 5+).
 
 **CRITICAL**: The .NET SDK has **no sandbox**. Developers must be careful to avoid non-deterministic code in workflows. See the Determinism Rules section below and `references/dotnet/determinism.md`.
 
