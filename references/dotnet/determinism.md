@@ -8,7 +8,9 @@ The .NET SDK has NO runtime sandbox (unlike Python/TypeScript). Workflows must b
 
 Temporal provides durable execution through **History Replay**. When a Worker restores workflow state, it re-executes workflow code from the beginning. This requires the code to be **deterministic**. See `references/core/determinism.md` for a deep explanation.
 
-## Forbidden Operations
+## Forbidden Operations in Workflows
+
+The following are forbidden inside workflow code but are appropriate to use in activities.
 
 ```csharp
 // DO NOT do these in workflows:
