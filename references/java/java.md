@@ -9,11 +9,13 @@ The Temporal Java SDK (`io.temporal:temporal-sdk`) uses an interface + implement
 **Add Dependencies:**
 
 Gradle:
+
 ```groovy
 implementation 'io.temporal:temporal-sdk:1.+'
 ```
 
 Maven:
+
 ```xml
 <dependency>
     <groupId>io.temporal</groupId>
@@ -23,6 +25,7 @@ Maven:
 ```
 
 **GreetActivities.java** - Activity interface:
+
 ```java
 package greetingapp;
 
@@ -38,6 +41,7 @@ public interface GreetActivities {
 ```
 
 **GreetActivitiesImpl.java** - Activity implementation:
+
 ```java
 package greetingapp;
 
@@ -51,6 +55,7 @@ public class GreetActivitiesImpl implements GreetActivities {
 ```
 
 **GreetingWorkflow.java** - Workflow interface:
+
 ```java
 package greetingapp;
 
@@ -66,6 +71,7 @@ public interface GreetingWorkflow {
 ```
 
 **GreetingWorkflowImpl.java** - Workflow implementation:
+
 ```java
 package greetingapp;
 
@@ -91,6 +97,7 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
 ```
 
 **GreetingWorker.java** - Worker setup:
+
 ```java
 package greetingapp;
 
@@ -127,6 +134,7 @@ public class GreetingWorker {
 **Start the worker:** Run `GreetingWorker.main()` (e.g., `./gradlew run` or `mvn compile exec:java -Dexec.mainClass="greetingapp.GreetingWorker"`).
 
 **Starter.java** - Start a workflow execution:
+
 ```java
 package greetingapp;
 
@@ -161,6 +169,7 @@ public class Starter {
 ## Key Concepts
 
 ### Workflow Definition
+
 - Annotate interface with `@WorkflowInterface`
 - Put any state initialization logic in the workflow constructor to guarantee that it happens before signals/updates arrive. If your state initialization logic requires the workflow parameters, then add the `@WorkflowInit` decorator and parameters to your constructor.
 - Annotate entry point method with `@WorkflowMethod` (exactly one per interface)
@@ -170,12 +179,14 @@ public class Starter {
 - Implementation class implements the interface
 
 ### Activity Definition
+
 - Annotate interface with `@ActivityInterface`
 - Optionally annotate methods with `@ActivityMethod` (for custom names)
 - Implementation class can throw any exception
 - Call from workflow via `Workflow.newActivityStub()`
 
 ### Worker Setup
+
 - `WorkflowServiceStubs` -- gRPC connection to Temporal Server
 - `WorkflowClient` -- client used by worker to communicate with server
 - `WorkerFactory` -- creates Worker instances
@@ -201,6 +212,7 @@ greetingapp/
 The Java SDK has **no sandbox**. The developer is fully responsible for writing deterministic workflow code. All non-deterministic operations must happen in Activities.
 
 **Do not use in workflow code:**
+
 - `Thread` / `new Thread()` -- use `Workflow.newTimer()` or `Async.function()`
 - `synchronized` / `Lock` -- workflow code is single-threaded
 - `UUID.randomUUID()` -- use `Workflow.randomUUID()`
@@ -210,7 +222,8 @@ The Java SDK has **no sandbox**. The developer is fully responsible for writing 
 - `Thread.sleep()` -- use `Workflow.sleep()`
 - Mutable static fields -- workflow instances must not share state
 
-**Use Workflow.* APIs instead:**
+**Use `Workflow.*` APIs instead:**
+
 - `Workflow.sleep()` for timers
 - `Workflow.currentTimeMillis()` for current time
 - `Workflow.randomUUID()` for UUIDs
@@ -238,6 +251,7 @@ See `references/java/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+
 - **`references/java/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/java/determinism.md`** - Determinism rules and safe alternatives for Java
 - **`references/java/gotchas.md`** - Java-specific mistakes and anti-patterns

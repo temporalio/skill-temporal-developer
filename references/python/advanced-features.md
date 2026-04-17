@@ -85,6 +85,7 @@ The Python SDK runs workflows in a sandbox to help you ensure determinism. You c
 **The Python SDK is NOT compatible with gevent.** Gevent's monkey patching modifies Python's asyncio event loop in ways that break the SDK's deterministic execution model.
 
 If your application uses gevent:
+
 - You cannot run Temporal workers in the same process
 - Consider running workers in a separate process without gevent
 - Use a message queue or HTTP API to communicate between gevent and Temporal processes
@@ -163,4 +164,3 @@ worker = Worker(
     workflow_failure_exception_types=[ValueError, CustomBusinessError],
 )
 ```
-

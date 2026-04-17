@@ -34,6 +34,7 @@ Use the `Replayer` class to verify your code changes are compatible with existin
 ## Sandbox Behavior
 
 The sandbox:
+
 - Isolates global state via `exec` compilation
 - Restricts non-deterministic library calls via proxy objects
 - Passes through standard library with restrictions

@@ -12,12 +12,12 @@ A comprehensive skill for developers to use when building [Temporal](https://tem
 
 This skill is housed within a [Claude Code plugin](https://github.com/temporalio/agent-skills), which provides a simple way to install and receive future updates to the skill.
 
-1. Run `/plugin marketplace add temporalio/agent-skills` 
+1. Run `/plugin marketplace add temporalio/agent-skills`
 2. Run `/plugin` to open the plugin manager
 3. Select **Marketplaces**
 4. Choose `temporal-marketplace` from the list
 5. Select **Enable auto-update** or **Disable auto-update**
-6. run `/plugin install temporal-developer@temporalio-agent-skills` 
+6. run `/plugin install temporal-developer@temporalio-agent-skills`
 7. Restart Claude Code
 
 ### Via `npx skills` - supports all major coding agents
