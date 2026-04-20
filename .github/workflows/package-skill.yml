@@ -72,7 +72,9 @@ jobs:
     if: needs.package.outputs.released == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # contents: write is required by the POST /releases/generate-notes endpoint,
+      # even though it only returns text and doesn't actually write anything.
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -160,16 +162,22 @@ jobs:
 
           # Prefer GitHub's auto-generated notes for the range (nicely formatted
           # with PR links and contributors). Fall back to git log if unavailable.
-          if [ -n "$base_tag" ] && notes=$(gh api \
-              --method POST \
-              "/repos/${{ github.repository }}/releases/generate-notes" \
-              -f tag_name="${current_tag}" \
-              -f previous_tag_name="${base_tag}" \
-              --jq '.body' 2>/dev/null) && [ -n "$notes" ]; then
-            echo "$notes" > /tmp/changelog.md
-          elif [ -n "$base_tag" ]; then
-            git log --oneline "${base_tag}..HEAD" > /tmp/changelog.md
+          echo "Base tag: ${base_tag:-<none>} / Current tag: ${current_tag}"
+          if [ -n "$base_tag" ]; then
+            if notes=$(gh api \
+                --method POST \
+                "/repos/${{ github.repository }}/releases/generate-notes" \
+                -f tag_name="${current_tag}" \
+                -f previous_tag_name="${base_tag}" \
+                --jq '.body') && [ -n "$notes" ]; then
+              echo "Using auto-generated release notes"
+              echo "$notes" > /tmp/changelog.md
+            else
+              echo "generate-notes API call failed or empty; falling back to git log"
+              git log --oneline "${base_tag}..HEAD" > /tmp/changelog.md
+            fi
           else
+            echo "No base tag found; using last 20 commits"
             git log --oneline -20 > /tmp/changelog.md
           fi
 
