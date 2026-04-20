@@ -182,3 +182,7 @@ See `references/python/testing.md` for info on writing tests.
 - **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
 - **`references/python/ai-patterns.md`** - LLM integration, Pydantic data converter, AI workflow patterns
+- **`references/python/large-payloads.md`** - Payload size limits, External Storage (S3 driver), claim-check patterns
+- **`references/python/streaming.md`** - Patterns for streaming data to/from activities (no first-class workflow streaming)
+- **`references/python/serverless-workers.md`** - Running Temporal workers on AWS Lambda via `temporalio.contrib.aws.lambda_worker`
+- **`references/python/standalone-activities.md`** - Executing activities directly from a Client without a Workflow (Temporal's job queue)

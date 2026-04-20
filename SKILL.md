@@ -105,6 +105,10 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/python/large-payloads.md`** - (Python only) Payload size limits, External Storage with the S3 driver, and claim-check patterns for oversized data
+- **`references/python/streaming.md`** - (Python only) Patterns for streaming data to/from activities; Temporal has no first-class workflow streaming primitive
+- **`references/python/serverless-workers.md`** - (Python only) Running Temporal workers on AWS Lambda via `temporalio.contrib.aws.lambda_worker`
+- **`references/python/standalone-activities.md`** - (Python only) Executing activities directly from a Client without a Workflow — Temporal's job queue
 
 ## Feedback
 
