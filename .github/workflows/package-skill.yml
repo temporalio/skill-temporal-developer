@@ -140,19 +140,37 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="${{ needs.package.outputs.tag }}"
+          current_tag="${{ needs.package.outputs.tag }}"
 
-          # Prefer the release body (auto-generated notes). Fall back to git log
-          # if no release exists for this tag (e.g. manual re-sync of an older version).
-          if body=$(gh release view "$tag" --repo "${{ github.repository }}" --json body --jq '.body' 2>/dev/null) && [ -n "$body" ]; then
-            echo "$body" > /tmp/changelog.md
+          # Determine the base for the changelog: the version currently on the
+          # target repo's main branch. This represents what was last merged, so
+          # the changelog spans every release since then — correctly accumulating
+          # unmerged versions if a prior sync PR is still open.
+          #
+          # Read the old SKILL.md from git (it's been overwritten on disk by the
+          # sync step) via `git show origin/main:...`.
+          target_version=$(git -C target-repo show "origin/main:${{ matrix.target_path }}/SKILL.md" 2>/dev/null \
+            | grep '^version:' | sed 's/version:[[:space:]]*//' || echo "")
+
+          if [ -n "$target_version" ]; then
+            base_tag="v${target_version}"
           else
-            prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-            if [ -n "$prev_tag" ]; then
-              git log --oneline "${prev_tag}..HEAD" > /tmp/changelog.md
-            else
-              git log --oneline -20 > /tmp/changelog.md
-            fi
+            base_tag=""
+          fi
+
+          # Prefer GitHub's auto-generated notes for the range (nicely formatted
+          # with PR links and contributors). Fall back to git log if unavailable.
+          if [ -n "$base_tag" ] && notes=$(gh api \
+              --method POST \
+              "/repos/${{ github.repository }}/releases/generate-notes" \
+              -f tag_name="${current_tag}" \
+              -f previous_tag_name="${base_tag}" \
+              --jq '.body' 2>/dev/null) && [ -n "$notes" ]; then
+            echo "$notes" > /tmp/changelog.md
+          elif [ -n "$base_tag" ]; then
+            git log --oneline "${base_tag}..HEAD" > /tmp/changelog.md
+          else
+            git log --oneline -20 > /tmp/changelog.md
           fi
 
       - name: Create or update PR
