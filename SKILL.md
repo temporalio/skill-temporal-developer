@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, running Temporal with Docker Compose or Podman, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
 version: 0.3.1
 ---
 
@@ -98,6 +98,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
+- **`references/core/docker-compose.md`** - Running Temporal with Docker Compose (dev environment, workers, observability)
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 

@@ -10,6 +10,8 @@ temporal server start-dev # Start this in the background.
 
 It is perfectly OK for this process to be shared across multiple projects / left running as you develop your Temporal code.
 
+Alternatively, you can run Temporal as a Docker Compose service. See `references/core/docker-compose.md` for details.
+
 ## Worker Management Details
 
 ### Starting Workers
