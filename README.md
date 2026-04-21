@@ -8,24 +8,26 @@ A comprehensive skill for developers to use when building [Temporal](https://tem
 
 ## Installation
 
-### As a Claude Code Plugin
+### As a Plugin
 
-This skill is housed within a [Claude Code plugin](https://github.com/temporalio/agent-skills), which provides a simple way to install and receive future updates to the skill.
+This skill is packaged as a plugin for major coding agents, which provides a simple way to install and receive future updates:
 
-1. Run `/plugin marketplace add temporalio/agent-skills`
-2. Run `/plugin` to open the plugin manager
-3. Select **Marketplaces**
-4. Choose `temporal-marketplace` from the list
-5. Select **Enable auto-update** or **Disable auto-update**
-6. run `/plugin install temporal-developer@temporalio-agent-skills`
-7. Restart Claude Code
+- **Claude Code**: [temporalio/claude-temporal-plugin](https://github.com/temporalio/claude-temporal-plugin)
+- **Cursor**: [temporalio/cursor-temporal-plugin](https://github.com/temporalio/cursor-temporal-plugin)
+- **OpenAI Codex**: [temporalio/codex-temporal-plugin](https://github.com/temporalio/codex-temporal-plugin)
 
-### Via `npx skills` - supports all major coding agents
+See each repo's README for installation instructions.
+
+### Standalone Installation
+
+If you prefer to install the skill directly without the plugin wrapper:
+
+#### Via `npx skills` — supports all major coding agents
 
 1. `npx skills add temporalio/skill-temporal-developer`
 2. Follow prompts
 
-### Via manually cloning the skill repo:
+#### Via manually cloning the skill repo
 
 1. `mkdir -p ~/.claude/skills && git clone https://github.com/temporalio/skill-temporal-developer ~/.claude/skills/temporal-developer`
 
