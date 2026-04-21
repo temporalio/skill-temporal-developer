@@ -1,49 +1,51 @@
-# Interactive Workflows
+# Interactive Workflows In Cadence
 
-Interactive workflows are workflows that use Temporal features such as signals or updates to pause and wait for external input. When testing and debugging these types of workflows you can send them input via the Temporal CLI.
+Interactive workflows wait for external input while preserving durable state.
+
+In official Cadence scope, the primary interactive mechanisms are:
+
+- Signals for durable external input
+- Queries for read-only inspection
 
 ## Signals
 
-Fire-and-forget messages to a workflow.
+Send a signal to a running workflow:
 
 ```bash
-# Send signal to workflow
-temporal workflow signal \
-  --workflow-id <id> \
-  --name "signal_name" \
-  --input '{"key": "value"}'
+cadence workflow signal \
+  --workflow_id <id> \
+  --name <signal-name> \
+  --input '"value"'
 ```
 
-## Updates
-
-Request-response style interaction (returns a value).
-
-```bash
-# Send update to workflow
-temporal workflow update execute \
-  --workflow-id <id> \
-  --name "update_name" \
-  --input '{"approved": true}'
-```
+Signals are durable and can be sent even if no worker is currently running.
 
 ## Queries
 
-Read-only inspection of workflow state.
+Query workflow state:
 
 ```bash
-# Query workflow state (read-only)
-temporal workflow query \
-  --workflow-id <id> \
-  --name "get_status"
+cadence workflow query \
+  --workflow_id <id> \
+  --query_type <query-name>
 ```
 
-## Typical Steps for Testing Interactive Workflows
+Built-in stack trace query:
 
 ```bash
-# 1. Start worker (command is project dependent)
-# 2. Start workflow (command is project dependent) This code should output the workflow ID, if not, modify it to.
-temporal workflow signal --workflow-id <WORKFLOW_ID> --name "signal_name" --input '{"key": "value"}' # 3. Send it interactive events, e.g. a signal. 
-# 4. Wait for workflow to complete (use Temporal CLI to check status)
-# 5. Read workflow result, using the Temporal CLI
-# 6. Cleanup the worker process if needed.
+cadence workflow stack --workflow_id <id>
 ```
+
+Queries are read-only and require workflow code to expose a query handler or query method.
+
+## Typical Debugging Flow
+
+1. Start the worker for the task list used by the workflow.
+2. Start the workflow and record its workflow ID.
+3. Send one or more signals with `cadence workflow signal`.
+4. Inspect state using `cadence workflow query` or `cadence workflow stack`.
+5. Use `cadence workflow describe` or `cadence workflow show` for history inspection.
+
+## No Update Examples
+
+Temporal-style Updates are intentionally not documented here because they are not part of the official Cadence scope for this skill.

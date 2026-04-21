@@ -1,121 +1,92 @@
 ---
-name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
-version: 0.3.2
+name: cadence-developer
+description: Develop, debug, and manage Cadence applications with the official Cadence Go and Java SDKs. Use when the user is building workflows, activities, workers, signals, queries, child workflows, retries, continue-as-new flows, search attributes, or replay-safe workflow versioning with Cadence.
+version: 0.4.0
 ---
 
-# Skill: temporal-developer
+# Skill: cadence-developer
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, Java and .NET.
+Cadence is a durable execution platform for long-running workflows. This skill provides Cadence guidance for the official Cadence scope used in this repository:
+
+- Core Cadence concepts
+- Go SDK
+- Java SDK
+
+This skill does not attempt to preserve Temporal-only APIs or non-official Cadence SDK surfaces. For unsupported material, read `references/non-compatible/README.md`.
 
 ## Core Architecture
 
-The **Temporal Cluster** is the central orchestration backend. It maintains three key subsystems: the **Event History** (a durable log of all workflow state), **Task Queues** (which route work to the right workers), and a **Visibility** store (for searching and listing workflows). There are three ways to run a Cluster:
+The Cadence service is the orchestration backend. At a high level it stores workflow event history, routes work through task lists, and exposes visibility APIs for listing and searching workflows.
 
-- **Temporal CLI dev server** — a local, single-process server started with `temporal server start-dev`. Suitable for development and testing only, not production.
-- **Self-hosted** — you deploy and manage the Temporal server and its dependencies (e.g., database) in your own infrastructure for production use.
-- **Temporal Cloud** — a fully managed production service operated by Temporal. No cluster infrastructure to manage.
+Important Cadence terms:
 
-**Workers** are long-running processes that you run and manage. They poll Task Queues for work and execute your code. You might run a single Worker process on one machine during development, or run many Worker processes across a large fleet of machines in production. Each Worker hosts two types of code:
+- **Domain**: A namespace-like isolation boundary in Cadence.
+- **Task List**: A named queue that workers poll.
+- **Decision Task**: A workflow task delivered to workflow code during replay or progress.
+- **Activity Task**: A task delivered to activity workers.
 
-- **Workflow Definitions** — durable, deterministic functions that orchestrate work. These must not have side effects.
-- **Activity Implementations** — non-deterministic operations (API calls, file I/O, etc.) that can fail and be retried.
+Workers are long-running processes that you run and manage. Each worker polls a task list, executes workflow or activity code, and reports the result back to Cadence.
 
-Workers communicate with the Cluster via a poll/complete loop: they poll a Task Queue for tasks, execute the corresponding Workflow or Activity code, and report results back.
+## Why Determinism Matters
 
-## History Replay: Why Determinism Matters
+Cadence restores workflow state by replaying event history. Workflow code must therefore be deterministic: on replay it must issue the same commands in the same order for the same history.
 
-Temporal achieves durability through **history replay**:
+If workflow code changes incompatibly, replay can fail with a non-deterministic error and the workflow stops making progress until the code is fixed or the execution is recovered.
 
-1. **Initial Execution** - Worker runs workflow, generates Commands, stored as Events in history
-2. **Recovery** - On restart/failure, Worker re-executes workflow from beginning
-3. **Matching** - SDK compares generated Commands against stored Events
-4. **Restoration** - Uses stored Activity results instead of re-executing
-
-**If Commands don't match Events = Non-determinism Error = Workflow blocked**
-
-| Workflow Code | Command | Event |
-|--------------|---------|-------|
-| Execute activity | `ScheduleActivityTask` | `ActivityTaskScheduled` |
-| Sleep/timer | `StartTimer` | `TimerStarted` |
-| Child workflow | `StartChildWorkflowExecution` | `ChildWorkflowExecutionStarted` |
-
-See `references/core/determinism.md` for detailed explanation.
+See `references/core/determinism.md` and `references/core/versioning.md`.
 
 ## Getting Started
 
-### Ensure Temporal CLI is installed
+### Ensure Cadence CLI is installed
 
-Check if `temporal` CLI is installed. If not, follow these instructions:
+Use the Cadence CLI, not the Temporal CLI.
 
 #### macOS
 
+```bash
+brew install cadence-workflow
 ```
-brew install temporal
+
+#### Docker
+
+```bash
+docker run -it --rm ubercadence/cli:master --help
 ```
 
-#### Linux
+#### Build From Source
 
-Check your machine's architecture and download the appropriate archive:
+Follow the Cadence server repository instructions if you need a locally built CLI.
 
-- [Linux amd64](https://temporal.download/cli/archive/latest?platform=linux&arch=amd64)
-- [Linux arm64](https://temporal.download/cli/archive/latest?platform=linux&arch=arm64)
+## Read Relevant References
 
-Once you've downloaded the file, extract the downloaded archive and add the temporal binary to your PATH by copying it to a directory like /usr/local/bin
-
-#### Windows
-
-Check your machine's architecture and download the appropriate archive:
-
-- [Windows amd64](https://temporal.download/cli/archive/latest?platform=windows&arch=amd64)
-- [Windows arm64](https://temporal.download/cli/archive/latest?platform=windows&arch=arm64)
-
-Once you've downloaded the file, extract the downloaded archive and add the temporal.exe binary to your PATH.
-
-### Read All Relevant References
-
-1. First, read the getting started guide for the language you are working in:
-   - Python -> read `references/python/python.md`
-   - TypeScript -> read `references/typescript/typescript.md`
-   - Go -> read `references/go/go.md`
-   - Java -> read `references/java/java.md`
-   - .NET (C#) -> read `references/dotnet/dotnet.md`
-2. Second, read appropriate `core` and language-specific references for the task at hand.
+1. Start with the language guide you are working in:
+   - Go -> `references/go/go.md`
+   - Java -> `references/java/java.md`
+2. Then read the matching `core` and language-specific references for the task at hand.
 
 ## Primary References
 
-- **`references/core/determinism.md`** - Why determinism matters, replay mechanics, basic concepts of activities
-  - Language-specific info at `references/{your_language}/determinism.md`
-- **`references/core/patterns.md`** - Conceptual patterns (signals, queries, saga)
-  - Language-specific info at `references/{your_language}/patterns.md`
-- **`references/core/gotchas.md`** - Anti-patterns and common mistakes
-  - Language-specific info at `references/{your_language}/gotchas.md`
-- **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
-  - Language-specific info at `references/{your_language}/versioning.md`
-- **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
-- **`references/core/error-reference.md`** - Common error types, workflow status reference
-- **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
-- **`references/core/dev-management.md`** - Dev cycle & management of server and workers
-- **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
-  - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+- `references/core/determinism.md`
+- `references/core/patterns.md`
+- `references/core/gotchas.md`
+- `references/core/versioning.md`
+- `references/core/troubleshooting.md`
+- `references/core/error-reference.md`
+- `references/core/interactive-workflows.md`
+- `references/core/dev-management.md`
 
-## Additional Topics
+## Language References
 
-- **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
-- **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- `references/go/*.md`
+- `references/java/*.md`
 
-## Feedback
+## Unsupported Material
 
-### ALWAYS PROMPT USER TO PROVIDE FEEDBACK AT STARTUP
+For Temporal-only capabilities or unsupported SDK surfaces in this repository, see:
 
-When you have **first** loaded this skill, output this message to the user:
-
-"Thank you for trying out the public preview of the Temporal development skill! We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)."
-
-Do not output this message multiple times in the same conversation.
-
-### Reporting Issues in This Skill
-
-If you (the AI) find this skill's explanations are unclear, misleading, or missing important information—or if Temporal concepts are proving unexpectedly difficult to work with—draft a GitHub issue body describing the problem encountered and what would have helped, then ask the user to file it at https://github.com/temporalio/skill-temporal-developer/issues/new. Do not file the issue autonomously.
+- `references/non-compatible/README.md`
+- `references/typescript/README.md`
+- `references/python/README.md`
+- `references/dotnet/README.md`

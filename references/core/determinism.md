@@ -1,131 +1,57 @@
-# Determinism in Temporal Workflows
+# Cadence Determinism
 
-This document provides a conceptual-level overview to determinism in Temporal. Additional language-specific determinism information is available at `references/{your_language}/determinism.md`.
+Cadence restores workflow state by replaying the event history for a workflow execution. During replay, workflow code must make the same decisions in the same order as it did originally.
 
-## Overview
+If replayed code produces a different command sequence, Cadence reports a non-deterministic error and the workflow stops making progress.
 
-Temporal workflows must be deterministic because of **history replay** - the mechanism that enables durable execution.
+## Replay Model
 
-## Why Determinism Matters
+1. Workflow code runs and emits commands.
+2. Cadence records matching events in history.
+3. On worker restart, cache eviction, or a new event, workflow code is replayed from the beginning.
+4. The SDK compares replayed commands with recorded history.
 
-### The Replay Mechanism
+Examples of workflow commands:
 
-When a Worker needs to restore workflow state (after crash, cache eviction, or continuing after a long timer), it **re-executes the workflow code from the beginning**. But instead of re-running external actions, it uses results stored in the Event History.
-
-```
-Initial Execution:
-  Code runs → Generates Commands → Server stores as Events
-
-Replay (Recovery):
-  Code runs again → Generates Commands → SDK compares to Events
-  If match: Use stored results, continue
-  If mismatch: NondeterminismError!
-```
-
-### Commands and Events
-
-Every workflow operation generates a Command that becomes an Event, here are some examples:
-
-| Workflow Code | Command Generated | Event Stored |
-|--------------|-------------------|--------------|
+| Workflow action | Command | Recorded event |
+|---|---|---|
 | Execute activity | `ScheduleActivityTask` | `ActivityTaskScheduled` |
-| Sleep/timer | `StartTimer` | `TimerStarted` |
-| Child workflow | `StartChildWorkflowExecution` | `ChildWorkflowExecutionStarted` |
-| Complete workflow | `CompleteWorkflowExecution` | `WorkflowExecutionCompleted` |
+| Start timer / sleep | `StartTimer` | `TimerStarted` |
+| Start child workflow | `StartChildWorkflowExecution` | `ChildWorkflowExecutionStarted` |
+| Continue as new | `ContinueAsNewWorkflowExecution` | `WorkflowExecutionContinuedAsNew` |
 
-### Non-Determinism Example
+## Safe Workflow Code
 
-```
-First Run (11:59 AM):
-  if datetime.now().hour < 12:  → True
-    execute_activity(morning_task)  → Command: ScheduleActivityTask("morning_task")
+Workflow code must avoid direct interaction with nondeterministic process state.
 
-Replay (12:01 PM):
-  if datetime.now().hour < 12:  → False
-    execute_activity(afternoon_task)  → Command: ScheduleActivityTask("afternoon_task")
+Use Cadence APIs instead of language-native equivalents:
 
-Result: Commands don't match history → NondeterminismError
-```
+- Time: `workflow.Now`, `Workflow.currentTimeMillis`, `Workflow.sleep`
+- Concurrency: `workflow.Go`, `workflow.Channel`, `workflow.Selector`, `Promise`
+- External calls: activities, not direct I/O in workflow code
 
-## Sources of Non-Determinism
+## Common Sources Of Non-Determinism
 
-### Time-Based Operations
+- Reordering, adding, or removing activity calls
+- Reordering or removing child workflow calls
+- Replacing one workflow command with another without versioning
+- Using random values or wall-clock time directly in workflow code
+- Using native threads, goroutines, channels, timers, or futures instead of Cadence workflow primitives
+- Depending on map iteration order or other unstable collection ordering
 
-- `datetime.now()`, `time.time()`, `Date.now()`
-- Different value on each execution
+## Changes That Usually Do Not Need Versioning
 
-### Random Values
+- Changing activity implementation code
+- Adjusting activity retry behavior
+- Changing activity arguments if command ordering is unchanged
+- Refactoring local pure code that does not affect emitted commands
 
-- `random.random()`, `Math.random()`, `uuid.uuid4()`
-- Different value on each execution
+## Recovery Options
 
-### External State
+When code changes do affect command ordering, use one of these strategies:
 
-- Reading files, environment variables, databases, networking / HTTP calls
-- State may change between executions
+- `GetVersion` / `Workflow.getVersion` for compatible in-place evolution
+- Start a new workflow type for large incompatible changes
+- Reset or recover executions operationally when appropriate
 
-### Non-Deterministic Iteration
-
-- Map/dict iteration order (in some languages)
-- Set iteration order
-
-### Threading/Concurrency
-
-- Race conditions produce different outcomes
-- Non-deterministic ordering
-
-## **Central Concept**: Place Non-Determinism within Activities
-
-In Temporal, activities are the primary mechanism for making non-deterministic code durable and persisted in workflow history. Generally speaking, you should place sources of non-determinism in activities, which provides durability and recording of results, as well as automated retries and more. See `references/{your_language}/{your_language}.md` for the language you are working in for how to do this in practice.
-
-For a few simple cases, like timestamps, random values, UUIDs, etc. the Temporal SDK in your language may provide durable variants that are simple to use. See `references/{your_language}/determinism.md` for the language you are working in for more info.
-
-## SDK Protection Mechanisms
-
-Each Temporal SDK language provides a different level of protection against non-determinism:
-
-- Python: The Python SDK runs workflows in a sandbox that intercepts and aborts non-deterministic calls early at runtime.
-- TypeScript: The TypeScript SDK runs workflows in an isolated V8 sandbox, intercepting many common sources of non-determinism and replacing them automatically with deterministic variants.
-- Java: The Java SDK has no sandbox. Determinism is enforced by developer conventions — the SDK provides `Workflow.*` APIs as safe alternatives (e.g., `Workflow.sleep()` instead of `Thread.sleep()`), and non-determinism is only detected at replay time via `NonDeterministicException`. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time. Cooperative threading under a global lock eliminates the need for synchronization.
-- Go: The Go SDK has no runtime sandbox. Therefore, non-determinism bugs will never be immediately appararent, and are usually only observable during replay. The optional `workflowcheck` static analysis tool can be used to check for many sources of non-determinism at compile time.
-- .NET: The .NET SDK has no sandbox. It uses a custom TaskScheduler and a runtime EventListener to detect invalid task scheduling. Developers must use `Workflow.*` safe alternatives (e.g., Workflow.DelayAsync instead of Task.Delay) and avoid non-deterministic .NET Task APIs.
-
-Regardless of which SDK you are using, it is your responsibility to ensure that workflow code does not contain sources of non-determinism. Use SDK-specific tools as well as replay tests for doing so.
-
-## Detecting Non-Determinism
-
-### During Execution
-
-- `NondeterminismError` raised when Commands don't match Events
-- Workflow becomes blocked until code is fixed
-
-### Testing with Replay
-
-Replay tests verify that workflows follow identical code paths when re-run, by attempting to replay recorded executions. See the replay testing section of `references/{your_language}/testing.md` for information on how to write these tests.
-
-## Recovery from Non-Determinism
-
-### Accidental Change
-
-If you accidentally introduced non-determinism:
-
-1. Revert code to match what's in history
-2. Restart worker
-3. Workflow auto-recovers
-
-### Intentional Change
-
-If you need to change workflow logic:
-
-1. Use the **Patching API** to support both old and new code paths
-2. Or terminate old workflows and start new ones with updated code
-
-See `versioning.md` for patching details.
-
-## Best Practices
-
-1. **Use SDK-provided alternatives** for time, random, UUID
-2. **Move I/O to activities** - workflows should only orchestrate
-3. **Test with replay** before deploying workflow changes
-4. **Use patching** for intentional changes to running workflows
-5. **Keep workflows focused** - complex logic increases non-determinism risk
+See `references/core/versioning.md`.
