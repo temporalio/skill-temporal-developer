@@ -41,4 +41,4 @@ Appropriately adjust the installation directory based on your coding agent.
 - [x] Java ✅
 - [x] .NET ✅
 - [ ] Ruby 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/41))
-- [ ] PHP 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/40))
+- [x] PHP ✅
