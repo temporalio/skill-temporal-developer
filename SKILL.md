@@ -1,42 +1,29 @@
 ---
 name: temporal-developer
-description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "Temporal PHP", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
-version: 1.0.0
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET and PHP. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
+version: 0.3.2
 ---
 
 # Skill: temporal-developer
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, and PHP.
+Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, Java, .NET and PHP.
 
 ## Core Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Temporal Cluster                            │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌────────────────┐  │
-│  │  Event History  │  │   Task Queues   │  │   Visibility   │  │
-│  │  (Durable Log)  │  │  (Work Router)  │  │   (Search)     │  │
-│  └─────────────────┘  └─────────────────┘  └────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              ▲
-                              │ Poll / Complete
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                         Worker                                   │
-│  ┌─────────────────────────┐  ┌──────────────────────────────┐  │
-│  │   Workflow Definitions  │  │   Activity Implementations   │  │
-│  │   (Deterministic)       │  │   (Non-deterministic OK)     │  │
-│  └─────────────────────────┘  └──────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-```
+The **Temporal Cluster** is the central orchestration backend. It maintains three key subsystems: the **Event History** (a durable log of all workflow state), **Task Queues** (which route work to the right workers), and a **Visibility** store (for searching and listing workflows). There are three ways to run a Cluster:
 
-**Components:**
-- **Workflows** - Durable, deterministic functions that orchestrate activities
-- **Activities** - Non-deterministic operations (API calls, I/O) that can fail and retry
-- **Workers** - Long-running processes that poll task queues and execute code
-- **Task Queues** - Named queues connecting clients to workers
+- **Temporal CLI dev server** — a local, single-process server started with `temporal server start-dev`. Suitable for development and testing only, not production.
+- **Self-hosted** — you deploy and manage the Temporal server and its dependencies (e.g., database) in your own infrastructure for production use.
+- **Temporal Cloud** — a fully managed production service operated by Temporal. No cluster infrastructure to manage.
+
+**Workers** are long-running processes that you run and manage. They poll Task Queues for work and execute your code. You might run a single Worker process on one machine during development, or run many Worker processes across a large fleet of machines in production. Each Worker hosts two types of code:
+
+- **Workflow Definitions** — durable, deterministic functions that orchestrate work. These must not have side effects.
+- **Activity Implementations** — non-deterministic operations (API calls, file I/O, etc.) that can fail and be retried.
+
+Workers communicate with the Cluster via a poll/complete loop: they poll a Task Queue for tasks, execute the corresponding Workflow or Activity code, and report results back.
 
 ## History Replay: Why Determinism Matters
 
@@ -90,32 +77,35 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 ### Read All Relevant References
 
 1. First, read the getting started guide for the language you are working in:
-    - Python -> read `references/python/python.md`
-    - TypeScript -> read `references/typescript/typescript.md`
-    - PHP -> read `references/php/php.md`
+   - Python -> read `references/python/python.md`
+   - TypeScript -> read `references/typescript/typescript.md`
+   - Go -> read `references/go/go.md`
+   - Java -> read `references/java/java.md`
+   - .NET (C#) -> read `references/dotnet/dotnet.md`
+   - PHP -> read `references/php/php.md`
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
-
 ## Primary References
+
 - **`references/core/determinism.md`** - Why determinism matters, replay mechanics, basic concepts of activities
-    + Language-specific info at `references/{your_language}/determinism.md`
+  - Language-specific info at `references/{your_language}/determinism.md`
 - **`references/core/patterns.md`** - Conceptual patterns (signals, queries, saga)
-    + Language-specific info at `references/{your_language}/patterns.md`
+  - Language-specific info at `references/{your_language}/patterns.md`
 - **`references/core/gotchas.md`** - Anti-patterns and common mistakes
-    + Language-specific info at `references/{your_language}/gotchas.md`
+  - Language-specific info at `references/{your_language}/gotchas.md`
 - **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
-    + Language-specific info at `references/{your_language}/versioning.md`
+  - Language-specific info at `references/{your_language}/versioning.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
-    + Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+  - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
 ## Additional Topics
+
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
-
 
 ## Feedback
 
@@ -123,7 +113,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 
 When you have **first** loaded this skill, output this message to the user:
 
-"Thank you for trying out the prerelease of Temporal's development skill! We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)."
+"Thank you for trying out the public preview of the Temporal development skill! We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)."
 
 Do not output this message multiple times in the same conversation.
 

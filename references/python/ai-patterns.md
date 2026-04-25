@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides Python-specific implementation details for integrating LLMs with Temporal. For conceptual patterns, see `references/core/ai-integration.md`.
+This document provides Python-specific implementation details for integrating LLMs with Temporal. For conceptual patterns, see `references/core/ai-patterns.md`.
 
 ## Pydantic Data Converter Setup
 

@@ -132,6 +132,8 @@ export async function orderWorkflow(): Promise<string> {
 }
 ```
 
+**Important:** Validators must NOT mutate workflow state or do anything blocking (no activities, sleeps, or other commands). They are read-only, similar to query handlers. Throw an error to reject the update; return normally to accept.
+
 ## Child Workflows
 
 ```typescript
@@ -224,7 +226,7 @@ export async function longRunningWorkflow(state: State): Promise<string> {
 **Important:** Compensation activities should be idempotent.
 
 ```typescript
-import { log } from '@temporalio/workflow';
+import { CancellationScope, log } from '@temporalio/workflow';
 
 export async function sagaWorkflow(order: Order): Promise<string> {
   const compensations: Array<() => Promise<void>> = [];
@@ -233,22 +235,25 @@ export async function sagaWorkflow(order: Order): Promise<string> {
     // IMPORTANT: Save compensation BEFORE calling the activity
     // If activity fails after completing but before returning,
     // compensation must still be registered
-    await reserveInventory(order);
     compensations.push(() => releaseInventory(order));
+    await reserveInventory(order);
 
-    await chargePayment(order);
     compensations.push(() => refundPayment(order));
+    await chargePayment(order);
 
     await shipOrder(order);
     return 'Order completed';
   } catch (err) {
-    for (const compensate of compensations.reverse()) {
-      try {
-        await compensate();
-      } catch (compErr) {
-        log.warn('Compensation failed', { error: compErr });
+    // nonCancellable ensures compensations run even if the workflow is cancelled
+    await CancellationScope.nonCancellable(async () => {
+      for (const compensate of compensations.reverse()) {
+        try {
+          await compensate();
+        } catch (compErr) {
+          log.warn('Compensation failed', { error: compErr });
+        }
       }
-    }
+    });
     throw err;
   }
 }
@@ -284,6 +289,7 @@ export async function scopedWorkflow(): Promise<void> {
 **WHY**: Triggers provide a one-shot promise that resolves when a signal is received. Cleaner than condition() for single-value signals.
 
 **WHEN to use**:
+
 - Waiting for a single response (approval, completion notification)
 - Converting signal-based events into awaitable promises
 
@@ -346,10 +352,12 @@ export async function handlerAwareWorkflow(): Promise<string> {
 ## Activity Heartbeat Details
 
 ### WHY:
+
 - **Support activity cancellation** - Cancellations are delivered via heartbeat; activities that don't heartbeat won't know they've been cancelled
 - **Resume progress after worker failure** - Heartbeat details persist across retries
 
 ### WHEN:
+
 - **Cancellable activities** - Any activity that should respond to cancellation
 - **Long-running activities** - Track progress for resumability
 - **Checkpointing** - Save progress periodically
