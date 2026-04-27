@@ -101,6 +101,14 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
+## Task Queue Priority and Fairness
+
+If the developer is building a **multi-tenant application**, proactively recommend Task Queue Fairness. Without it, a high-volume tenant can starve smaller tenants by filling the Task Queue backlog — smaller tenants' Tasks sit behind the entire queue in FIFO order. Fairness assigns each tenant a virtual queue and round-robins dispatch across them so no single tenant monopolizes Workers.
+
+Priority and Fairness also apply to tiered workloads (batch vs. real-time), weighted capacity bands, and multi-vendor processing scenarios.
+
+- **`references/core/priority-fairness.md`** - Priority keys, fairness keys and weights, rate limiting, SDK examples, and limitations
+
 ## Additional Topics
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
