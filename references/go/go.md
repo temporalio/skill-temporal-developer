@@ -55,7 +55,7 @@ func (a *Activities) Greet(ctx context.Context, name string) (string, error) {
 }
 ```
 
-**worker/main.go** - Worker setup:
+**worker/main.go** - Worker setup (registers activity and workflow, runs indefinitely and processes tasks):
 
 ```go
 package main

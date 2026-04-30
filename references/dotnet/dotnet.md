@@ -51,7 +51,7 @@ public class GreetingWorkflow
 }
 ```
 
-**Worker (Program.cs)** - Worker setup:
+**Worker (Program.cs)** - Worker setup (registers activity and workflow, runs indefinitely and processes tasks):
 
 ```csharp
 using Temporalio.Client;

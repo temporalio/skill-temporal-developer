@@ -36,7 +36,7 @@ class GreetingWorkflow:
         )
 ```
 
-**worker.py** - Worker setup (imports activity and workflow, runs indefinitely and processes tasks):
+**worker.py** - Worker setup (registers activity and workflow, runs indefinitely and processes tasks):
 
 ```python
 import asyncio

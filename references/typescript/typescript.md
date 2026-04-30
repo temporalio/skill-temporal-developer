@@ -43,7 +43,7 @@ export async function greetingWorkflow(name: string): Promise<string> {
 }
 ```
 
-**worker.ts** - Worker setup (imports activities and workflows, runs indefinitely):
+**worker.ts** - Worker setup (registers activity and workflow, runs indefinitely and processes tasks):
 
 ```typescript
 import { Worker } from '@temporalio/worker';

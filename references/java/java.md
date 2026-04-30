@@ -96,7 +96,7 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
 }
 ```
 
-**GreetingWorker.java** - Worker setup:
+**GreetingWorker.java** - Worker setup (registers activity and workflow, runs indefinitely and processes tasks):
 
 ```java
 package greetingapp;
