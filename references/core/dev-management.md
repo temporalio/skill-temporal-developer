@@ -20,7 +20,6 @@ When you need a new worker, you should start it in the background (and preferrab
 
 **Best practice**: As far as local development goes, run only ONE worker instance with the latest code. Don't keep stale workers (running old code) around.
 
-
 ### Cleanup
 
 **Always kill workers when done.** Don't leave workers running.

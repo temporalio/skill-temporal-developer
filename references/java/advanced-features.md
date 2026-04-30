@@ -77,6 +77,7 @@ public void completeApproval(String requestId, boolean approved) {
 
     ActivityCompletionClient completionClient = client.newActivityCompletionClient();
 
+    // Retrieve the task token from external storage (e.g., database)
     byte[] taskToken = getTaskToken(requestId);
 
     if (approved) {

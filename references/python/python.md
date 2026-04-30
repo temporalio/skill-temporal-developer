@@ -9,6 +9,7 @@ The Temporal Python SDK (`temporalio`) provides a fully async, type-safe approac
 **Add Dependency on Temporal:** In the package management system of the Python project you are working on, add a dependency on `temporalio`.
 
 **activities/greet.py** - Activity definitions (separate file for performance):
+
 ```python
 from temporalio import activity
 
@@ -18,6 +19,7 @@ def greet(name: str) -> str:
 ```
 
 **workflows/greeting.py** - Workflow definition (import activities through sandbox):
+
 ```python
 from datetime import timedelta
 from temporalio import workflow
@@ -35,6 +37,7 @@ class GreetingWorkflow:
 ```
 
 **worker.py** - Worker setup (imports activity and workflow, runs indefinitely and processes tasks):
+
 ```python
 import asyncio
 import concurrent.futures
@@ -70,6 +73,7 @@ if __name__ == "__main__":
 **Start the worker:** Start `python worker.py` in the background (appropriately adjust command for your project, like `uv run python worker.py`)
 
 **starter.py** - Start a workflow execution:
+
 ```python
 import asyncio
 from temporalio.client import Client
@@ -93,10 +97,10 @@ if __name__ == "__main__":
 
 **Run the workflow:** Run `python starter.py` (or uv run, etc.). Should output: `Result: Hello, my-name!`.
 
-
 ## Key Concepts
 
 ### Workflow Definition
+
 - Use `@workflow.defn` decorator on class
 - Put any state initialization logic in the `__init__` of your workflow class to guarantee that it happens before signals/updates arrive. If your state initialization logic requires the workflow parameters, then add the `@workflow.init` decorator and parameters to your `__init__`.
 - Use `@workflow.run` on the entry point method
@@ -104,6 +108,7 @@ if __name__ == "__main__":
 - Use `@workflow.signal`, `@workflow.query`, `@workflow.update` for handlers
 
 ### Activity Definition
+
 - Use `@activity.defn` decorator
 - Can be sync or async functions
 - **Default to sync activities** - safer and easier to debug
@@ -113,6 +118,7 @@ if __name__ == "__main__":
 See `sync-vs-async.md` for detailed guidance on choosing between sync and async.
 
 ### Worker Setup
+
 - Connect client, create Worker with workflows and activities
 - Run the worker
 - Activities can specify custom executor
@@ -136,6 +142,7 @@ my_temporal_app/
 ```
 
 **In the Workflow file, import Activities through the sandbox:**
+
 ```python
 # workflows/greeting.py
 from temporalio import workflow
@@ -162,6 +169,7 @@ See `references/python/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+
 - **`references/python/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/python/determinism.md`** - Sandbox behavior, safe alternatives, pass-through pattern, history replay
 - **`references/python/gotchas.md`** - Python-specific mistakes and anti-patterns

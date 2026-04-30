@@ -30,6 +30,7 @@ class ShippingWorkflow:
 ```
 
 **How it works:**
+
 - For new executions: `patched()` returns `True` and records a marker in the Workflow history
 - For replay with the marker: `patched()` returns `True` (history includes this patch)
 - For replay without the marker: `patched()` returns `False` (history predates this patch)
@@ -213,6 +214,7 @@ worker = Worker(
 ```
 
 **Configuration parameters:**
+
 - `use_worker_versioning`: Enables Worker Versioning
 - `version`: Identifies the Worker Deployment Version (deployment name + build ID)
 - Build ID: Typically a git commit hash, version number, or timestamp
@@ -224,13 +226,13 @@ worker = Worker(
 Workflows stay locked to their original Worker version:
 
 ```python
-from temporalio.workflow import VersioningBehavior
+from temporalio import workflow
+from temporalio.common import VersioningBehavior
 
-@workflow.defn
+@workflow.defn(versioning_behavior=VersioningBehavior.PINNED)
 class StableWorkflow:
     @workflow.run
     async def run(self) -> str:
-        # This workflow will always run on its assigned version
         return await workflow.execute_activity(
             process_order,
             start_to_close_timeout=timedelta(minutes=5),
@@ -238,6 +240,7 @@ class StableWorkflow:
 ```
 
 **When to use PINNED:**
+
 - Short-running workflows (minutes to hours)
 - Consistency is critical (e.g., financial transactions)
 - You want to eliminate version compatibility complexity
@@ -247,7 +250,22 @@ class StableWorkflow:
 
 Workflows can move to newer versions:
 
+```python
+from temporalio import workflow
+from temporalio.common import VersioningBehavior
+
+@workflow.defn(versioning_behavior=VersioningBehavior.AUTO_UPGRADE)
+class UpgradableWorkflow:
+    @workflow.run
+    async def run(self) -> str:
+        return await workflow.execute_activity(
+            process_order,
+            start_to_close_timeout=timedelta(minutes=5),
+        )
+```
+
 **When to use AUTO_UPGRADE:**
+
 - Long-running workflows (weeks or months)
 - Workflows need to benefit from bug fixes during execution
 - Migrating from traditional rolling deployments
@@ -258,7 +276,6 @@ Workflows can move to newer versions:
 ### Worker Configuration with Default Behavior
 
 ```python
-# For short-running workflows, prefer PINNED
 worker = Worker(
     client,
     task_queue="orders-task-queue",
@@ -270,7 +287,7 @@ worker = Worker(
             build_id=os.environ["BUILD_ID"],
         ),
         use_worker_versioning=True,
-        # default_versioning_behavior=VersioningBehavior.PINNED,
+        default_versioning_behavior=VersioningBehavior.PINNED,
     ),
 )
 ```
@@ -280,6 +297,7 @@ worker = Worker(
 **Blue-Green Deployments**
 
 Maintain two environments and switch traffic between them:
+
 1. Deploy new code to idle environment
 2. Run tests and validation
 3. Switch traffic to new environment
@@ -288,6 +306,7 @@ Maintain two environments and switch traffic between them:
 **Rainbow Deployments**
 
 Multiple versions run simultaneously:
+
 - New workflows use latest version
 - Existing workflows complete on their original version
 - Add new versions alongside existing ones

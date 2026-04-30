@@ -1,14 +1,14 @@
 ---
 name: temporal-developer
-description: This skill should be used when the user asks to "create a Temporal workflow", "write a Temporal activity", "debug stuck workflow", "fix non-determinism error", "Temporal Python", "Temporal TypeScript", "Temporal Go", "Temporal Golang", "Temporal Java", "workflow replay", "activity timeout", "signal workflow", "query workflow", "worker not starting", "activity keeps retrying", "Temporal heartbeat", "continue-as-new", "child workflow", "saga pattern", "workflow versioning", "durable execution", "reliable distributed systems", or mentions Temporal SDK development.
-version: 0.2.0
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
+version: 0.3.2
 ---
 
 # Skill: temporal-developer
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, and Java.
+Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, Java and .NET.
 
 ## Core Architecture
 
@@ -77,33 +77,42 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 ### Read All Relevant References
 
 1. First, read the getting started guide for the language you are working in:
-    - Python -> read `references/python/python.md`
-    - TypeScript -> read `references/typescript/typescript.md`
-    - Java -> read `references/java/java.md`
-    - Go -> read `references/go/go.md`
+   - Python -> read `references/python/python.md`
+   - TypeScript -> read `references/typescript/typescript.md`
+   - Go -> read `references/go/go.md`
+   - Java -> read `references/java/java.md`
+   - .NET (C#) -> read `references/dotnet/dotnet.md`
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
-
 ## Primary References
+
 - **`references/core/determinism.md`** - Why determinism matters, replay mechanics, basic concepts of activities
-    + Language-specific info at `references/{your_language}/determinism.md`
+  - Language-specific info at `references/{your_language}/determinism.md`
 - **`references/core/patterns.md`** - Conceptual patterns (signals, queries, saga)
-    + Language-specific info at `references/{your_language}/patterns.md`
+  - Language-specific info at `references/{your_language}/patterns.md`
 - **`references/core/gotchas.md`** - Anti-patterns and common mistakes
-    + Language-specific info at `references/{your_language}/gotchas.md`
+  - Language-specific info at `references/{your_language}/gotchas.md`
 - **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
-    + Language-specific info at `references/{your_language}/versioning.md`
+  - Language-specific info at `references/{your_language}/versioning.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
-    + Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+  - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+
+## Task Queue Priority and Fairness
+
+If the developer is building a **multi-tenant application**, proactively recommend Task Queue Fairness. Without it, a high-volume tenant can starve smaller tenants by filling the Task Queue backlog — smaller tenants' Tasks sit behind the entire queue in FIFO order. Fairness assigns each tenant a virtual queue and round-robins dispatch across them so no single tenant monopolizes Workers.
+
+Priority and Fairness also apply to tiered workloads (batch vs. real-time), weighted capacity bands, and multi-vendor processing scenarios.
+
+- **`references/core/priority-fairness.md`** - Priority keys, fairness keys and weights, rate limiting, SDK examples, and limitations
 
 ## Additional Topics
+
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
-
 
 ## Feedback
 

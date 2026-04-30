@@ -38,6 +38,7 @@ public class ShippingWorkflowImpl implements ShippingWorkflow {
 ```
 
 **How it works:**
+
 - For new executions: returns `maxSupported` and records a marker in history
 - For replay with the marker: returns the recorded version
 - For replay without the marker: returns `DEFAULT_VERSION` (-1)

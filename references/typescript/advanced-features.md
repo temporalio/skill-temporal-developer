@@ -39,6 +39,7 @@ await handle.delete();
 Complete an activity asynchronously from outside the activity function. Useful when the activity needs to wait for an external event.
 
 **In the activity - return the task token:**
+
 ```typescript
 import { CompleteAsyncError, activityInfo } from '@temporalio/activity';
 
@@ -50,6 +51,7 @@ export async function doSomethingAsync(): Promise<string> {
 ```
 
 **External completion (from another process, machine, etc.):**
+
 ```typescript
 import { Client } from '@temporalio/client';
 
@@ -61,6 +63,7 @@ async function doSomeWork(taskToken: Uint8Array): Promise<void> {
 ```
 
 **When to use:**
+
 - Waiting for human approval
 - Waiting for external webhook callback
 - Long-polling external systems
@@ -93,6 +96,7 @@ const worker = await Worker.create({
 ```
 
 **Key settings:**
+
 - `maxConcurrentWorkflowTaskExecutions`: Max workflows running simultaneously (default: 40)
 - `maxConcurrentActivityTaskExecutions`: Max activities running simultaneously (default: 100)
 - `shutdownGraceTime`: Time to wait for in-progress work before forced shutdown

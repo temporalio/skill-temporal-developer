@@ -25,6 +25,7 @@ export async function myWorkflow(): Promise<void> {
 ```
 
 **How it works:**
+
 - If the Workflow is running for the first time, `patched()` returns `true` and inserts a marker into the Event History
 - During replay, if the history contains a marker with the same `patchId`, `patched()` returns `true`
 - During replay, if no matching marker exists, `patched()` returns `false`
@@ -175,6 +176,7 @@ const worker = await Worker.create({
 ```
 
 **Configuration options:**
+
 - `useWorkerVersioning`: Enables Worker Versioning
 - `version.deploymentName`: Logical name for your service (consistent across versions)
 - `version.buildId`: Unique identifier for this build
@@ -195,6 +197,7 @@ const worker = await Worker.create({
 ### When to Use Worker Versioning
 
 Worker Versioning is best suited for:
+
 - **Short-running Workflows**: Old Workers only need to run briefly during deployment transitions
 - **Frequent deployments**: Eliminates the need for code-level patching on every change
 - **Blue-green deployments**: Run old and new versions simultaneously with traffic control
