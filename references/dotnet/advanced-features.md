@@ -96,9 +96,9 @@ var worker = new TemporalWorker(
 
 ## Workflow Init Attribute
 
-Use `[WorkflowInit]` on a constructor to run initialization code when a workflow is first created.
+You should always put state initialization logic in the constructor of your workflow class, so that it happens before signals/updates arrive.
 
-**Purpose:** Execute some setup code before signal/update happens or run is invoked.
+Normally, your constructor must have no arguments. However, if you add the `[WorkflowInit]` attribute, then your constructor instead receives the same workflow arguments that `[WorkflowRun]` receives:
 
 ```csharp
 [Workflow]
@@ -122,7 +122,7 @@ public class MyWorkflow
 }
 ```
 
-Constructor and `[WorkflowRun]` method must have the same parameters with the same types. You cannot make blocking calls (activities, sleeps, etc.) from the constructor.
+Constructor (with `[WorkflowInit]`) and `[WorkflowRun]` method must have the same parameters with the same types. You cannot make blocking calls (activities, sleeps, etc.) from the constructor.
 
 ## Workflow Failure Exception Types
 

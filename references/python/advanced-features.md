@@ -116,9 +116,9 @@ worker = Worker(
 
 ## Workflow Init Decorator
 
-Use `@workflow.init` to run initialization code when a workflow is first created.
+You should always put state initialization logic in the `__init__` of your workflow class, so that it happens before signals/updates arrive.
 
-**Purpose:** Execute some setup code before signal/update happens or run is invoked.
+Normally, your `__init__` must have no arguments. However, if you add the `@workflow.init` decorator, then your `__init__` instead receives the same workflow arguments that `@workflow.run` receives:
 
 ```python
 @workflow.defn
@@ -130,10 +130,12 @@ class MyWorkflow:
         self._items: list[str] = []
 
     @workflow.run
-    async def run(self) -> str:
+    async def run(self, initial_value: str) -> str:
         # self._value and self._items are already initialized
         return self._value
 ```
+
+`__init__` (with `@workflow.init`) and `@workflow.run` must have the same parameters with the same types. You cannot make blocking calls (activities, sleeps, etc.) from the `__init__`.
 
 ## Workflow Failure Exception Types
 

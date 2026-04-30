@@ -116,6 +116,30 @@ worker.registerActivitiesImplementations(new MyActivitiesImpl());
 factory.start();
 ```
 
+## Workflow Init Annotation
+
+You should always put state initialization logic in the constructor of your workflow class, so that it happens before signals/updates arrive.
+
+Normally, your constructor must have no arguments. However, if you add the `@WorkflowInit` annotation, then your constructor instead receives the same workflow arguments that `run` receives:
+
+```java
+public class MyWorkflowImpl implements MyWorkflow {
+  private final int foo;
+
+  @WorkflowInit
+  public MyWorkflowImpl(MyInput input) {
+    foo = 1234;
+  }
+
+  @Override
+  public ClusterManagerResult run(ClusterManagerInput input) {
+    // this.foo is already initialized
+  }
+}
+```
+
+Constructor (with `@WorkflowInit`) and `run` method must have the same parameters with the same types. You cannot make blocking calls (activities, sleeps, etc.) from the constructor.
+
 ## Workflow Failure Exception Types
 
 Control which exceptions cause workflow failures vs workflow task failures.
