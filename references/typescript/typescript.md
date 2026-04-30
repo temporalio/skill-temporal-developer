@@ -13,13 +13,15 @@ Temporal workflows are durable through history replay. For details on how this w
 ## Quick Start
 
 **Add Dependencies:** Install the Temporal SDK packages (use the package manager appropriate for your project):
+
 ```bash
 npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity
 ```
 
-Note: if you are working in production, it is strongly advised to use ~ version constraints, i.e.  `npm install ... --save-prefix='~'` if using NPM.
+Note: if you are working in production, it is strongly advised to use ~ version constraints, i.e. `npm install ... --save-prefix='~'` if using NPM.
 
 **activities.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
+
 ```typescript
 export async function greet(name: string): Promise<string> {
   return `Hello, ${name}!`;
@@ -27,6 +29,7 @@ export async function greet(name: string): Promise<string> {
 ```
 
 **workflows.ts** - Workflow definition (use type-only imports for activities):
+
 ```typescript
 import { proxyActivities } from '@temporalio/workflow';
 import type * as activities from './activities';
@@ -41,6 +44,7 @@ export async function greetingWorkflow(name: string): Promise<string> {
 ```
 
 **worker.ts** - Worker setup (imports activities and workflows, runs indefinitely):
+
 ```typescript
 import { Worker } from '@temporalio/worker';
 import * as activities from './activities';
@@ -62,6 +66,7 @@ run().catch(console.error);
 **Start the worker:** Run `npx ts-node worker.ts` in the background.
 
 **client.ts** - Start a workflow execution:
+
 ```typescript
 import { Client } from '@temporalio/client';
 import { greetingWorkflow } from './workflows';
@@ -87,16 +92,19 @@ run().catch(console.error);
 ## Key Concepts
 
 ### Workflow Definition
+
 - Async functions exported from workflow file
 - Use `proxyActivities()` with type-only imports
 - Use `defineSignal()`, `defineQuery()`, `defineUpdate()`, `setHandler()` for handlers
 
 ### Activity Definition
+
 - Regular async functions
 - Can perform I/O, network calls, etc.
 - Use `heartbeat()` for long operations
 
 ### Worker Setup
+
 - Use `Worker.create()` with `workflowsPath` (dev) or `workflowBundle` (production) - see `references/typescript/gotchas.md`
 - Import activities directly (not via proxy)
 
@@ -115,6 +123,7 @@ my_temporal_app/
 ```
 
 **In the Workflow file, use type-only imports for activities:**
+
 ```typescript
 // workflows/greeting.ts
 import { proxyActivities } from '@temporalio/workflow';
@@ -130,11 +139,13 @@ const { translate } = proxyActivities<typeof activities>({
 The TypeScript SDK runs workflows in an isolated V8 sandbox.
 
 **Automatic replacements:**
+
 - `Math.random()` → deterministic seeded PRNG
 - `Date.now()` → workflow start time
 - `setTimeout` → deterministic timer
 
 **Safe to use:**
+
 - `sleep()` from `@temporalio/workflow`
 - `condition()` for waiting
 - Standard JavaScript operations
@@ -160,6 +171,7 @@ See `references/typescript/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+
 - **`references/typescript/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/typescript/determinism.md`** - Essentials of determinism in TypeScript
 - **`references/typescript/gotchas.md`** - TypeScript-specific mistakes and anti-patterns
