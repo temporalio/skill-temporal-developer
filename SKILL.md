@@ -90,6 +90,14 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
 
+## Cross-Namespace Deprecation (Go, Java)
+
+Temporal disables cross-Namespace child Workflow / SignalExternal / CancelExternal commands by default; the documented replacement is Temporal Nexus. If you are working in Go or Java and the code uses child Workflows, external Workflow stubs, or external Signal/Cancel APIs targeting a different Namespace, read:
+
+- **`references/core/cross-namespace-deprecation.md`** - The cross-cutting concept: `system.enableCrossNamespaceCommands`, Cloud vs OSS posture, and the Nexus migration path
+- **`references/go/cross-namespace-deprecation.md`** - Go-specific patterns to audit and the Nexus Go SDK migration
+- **`references/java/cross-namespace-deprecation.md`** - Java-specific patterns to audit and the Nexus Java SDK migration
+
 ## Feedback
 
 ### ALWAYS PROMPT USER TO PROVIDE FEEDBACK AT STARTUP
