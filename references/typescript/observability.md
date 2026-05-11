@@ -84,6 +84,8 @@ Runtime.install({ logger });
 
 ## Metrics
 
+Workers can emit metrics through telemetry options passed to `Runtime.install`. <!-- docs/develop/typescript/platform/observability.mdx:37 --> The documented keys under `telemetryOptions.metrics` are `otel` (for a gRPC OpenTelemetry collector URL) and `prometheus` (for a scrape endpoint bind address). <!-- docs/develop/typescript/platform/observability.mdx:39-40 --> For the catalog of metric names the SDK can emit, see the [SDK metrics reference](/references/sdk-metrics). <!-- docs/develop/typescript/platform/observability.mdx:31,34 -->
+
 ### Prometheus Metrics
 
 ```typescript
@@ -99,6 +101,22 @@ Runtime.install({
   },
 });
 ```
+
+The `metrics: { prometheus: { bindAddress } }` shape is the documented Prometheus option; <!-- docs/develop/typescript/platform/observability.mdx:40 --> the address shown above is an illustrative value, not a default. The docs example uses `0.0.0.0:9464`, also illustrative. <!-- docs/develop/typescript/platform/observability.mdx:48 -->
+
+For an end-to-end TypeScript metrics setup, see the [`interceptors-opentelemetry`](https://github.com/temporalio/samples-typescript/tree/main/interceptors-opentelemetry) sample. <!-- docs/develop/typescript/platform/observability.mdx:35 -->
+
+### Buffered metrics and custom metric meters
+
+> API surface is not yet covered by the Temporal documentation guide; the symbols below are pointers to the TypeDoc API surface.
+
+In addition to the documented `otel` and `prometheus` exporters, <!-- docs/develop/typescript/platform/observability.mdx:39-40 --> the TypeScript SDK exposes a way for the runtime to deliver metric measurements to user-supplied code — for example, to bridge Temporal SDK metrics into a host application's own metrics pipeline. This is the same concept that the .NET SDK exposes as a custom metric meter, <!-- docs/develop/dotnet/platform/observability.mdx:64-88 --> applied to the TypeScript runtime. It complements (rather than replaces) the existing exporter options.
+
+The TypeScript-SDK entry point for this surface is `RuntimeMetricMeter`. <!-- VERIFY: typescript.temporal.io/api/... — confirm the exact exported symbol name and module path for the TypeScript metric meter surface --> The exact constructor shape, instrument-creation method names, and the option key (if any) under which a custom meter is wired into `Runtime.install` are not described in the Temporal documentation guide; only `otel` and `prometheus` appear as documented keys under `telemetryOptions.metrics`. <!-- docs/develop/typescript/platform/observability.mdx:39-40 --> <!-- VERIFY: typescript.temporal.io/api/... — confirm how a `RuntimeMetricMeter` is registered on the Runtime (option key under `telemetryOptions.metrics`, or a separate `Runtime.install` option) -->
+
+The TypeScript-SDK metric meter now supports the `UpDownCounter` instrument type. <!-- VERIFY: typescript.temporal.io/api/... — confirm the exact exported symbol name for the up-down counter instrument type --> An up-down counter is a non-monotonic counter — that is, a counter whose recorded values may go both up and down — distinguishing it from a monotonic counter that only increases. The set of other instrument types supported by the TypeScript metric meter is not enumerated in the Temporal documentation guide. <!-- VERIFY: typescript.temporal.io/api/... — confirm the full list of instrument types exposed by the TypeScript metric meter -->
+
+Note that "buffered metrics" here refers to this runtime mechanism for delivering measurements to user code; it is distinct from the [SDK metrics reference](/references/sdk-metrics) catalog, which lists *which* metrics the SDK emits rather than *how* a custom sink receives them.
 
 ## Search Attributes (Visibility)
 
