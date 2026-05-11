@@ -70,6 +70,8 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
   - Language-specific info at `references/{your_language}/gotchas.md`
 - **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
   - Language-specific info at `references/{your_language}/versioning.md`
+- **`references/core/versioned-continue-as-new.md`** - Public Preview SDK feature for upgrading long-running Pinned Workflows at Continue-as-New boundaries when a new Target Worker Deployment Version becomes available
+  - Language-specific info at `references/{your_language}/versioned-continue-as-new.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
