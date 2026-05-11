@@ -182,3 +182,4 @@ See `references/typescript/testing.md` for info on writing tests.
 - **`references/typescript/data-handling.md`** - Data converters, payload encryption, etc.
 - **`references/typescript/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/typescript/determinism-protection.md`** - V8 sandbox and bundling
+- **`references/typescript/preload-modules.md`** - Preloading modules into the reusable V8 workflow context via the `preloadModules` bundler option
