@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/core/external-storage.md`** - Pre-Release: offload large payloads to an external store (e.g. Amazon S3) via the claim check pattern, including Codec Server `/download` handling and driver migration. SDK-specific setup at `references/go/external-storage.md` and `references/python/external-storage.md` (Go and Python only).
 
 ## Feedback
 
