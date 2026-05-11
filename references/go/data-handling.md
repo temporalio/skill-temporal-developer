@@ -255,6 +255,32 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 })
 ```
 
+### DataConverter for Memo serialization (Go SDK)
+
+By default, Memo values are encoded with the SDK's built-in JSON path -- not the `DataConverter` you set on `client.Options`. That keeps Memo values readable in `temporal workflow describe`/`list` and the Web UI without a codec server, but it means custom `PayloadConverter`s and any `PayloadCodec` you registered (encryption, compression, MessagePack, etc.) do **not** apply to Memo values.
+
+The Go SDK now exposes an opt-in `client.Options` field that routes Memo map values through the user-supplied `DataConverter` instead of the default JSON path. <!-- VERIFY: exact field name on client.Options that enables DataConverter-based Memo serialization; not present in the local documentation clone — confirm against the Go SDK changelog / pkg.go.dev/go.temporal.io/sdk/client. -->
+
+When this option is enabled:
+
+- Memo values are run through the same `CompositeDataConverter` / `CodecDataConverter` pipeline used for Workflow inputs and outputs. Custom `PayloadConverter`s register types in Memo the same way they do elsewhere.
+- A `PayloadCodec` (for example, encryption or compression) **also** applies to Memo Payloads. The Memo bytes stored on the cluster are encoded; the cluster itself doesn't decode them. <!-- docs/develop/go/best-practices/data-handling/data-encryption.mdx:120 -->
+- Because encoded Memo Payloads round-trip through the server (Memo is returned on describe and list responses <!-- docs/encyclopedia/workflow/workflow-execution/workflow-execution.mdx:169 -->), the Web UI and `temporal workflow describe`/`list` need a [Codec Server](/develop/go/data-handling/data-encryption) configured to render Memo values human-readably -- the same asymmetry that already applies to Workflow output. <!-- docs/encyclopedia/data-conversion/dataconversion.mdx:38 -->
+- This setting does **not** affect [Search Attributes](#search-attributes): Custom Data Converters are not applied to Search Attributes, which are persisted unencoded so they can be indexed for searching. <!-- docs/encyclopedia/data-conversion/default-custom-data-converter.mdx:60 -->
+
+This option is **Go SDK only** -- other SDKs are unchanged. The default (whether the option is on or off out of the box) is not documented here; check the Go SDK release notes before relying on a particular default. <!-- VERIFY: default value of the option -->
+
+Wire it alongside your `DataConverter` on `client.Options`:
+
+```go
+c, err := client.Dial(client.Options{
+    DataConverter: mycodecpackage.DataConverter,
+    // <VERIFY field name>: true,
+})
+```
+
+If you turn this on for an existing application, decide deliberately whether Memo values that were previously written with default JSON encoding need a migration path; the SDK reads Memo Payloads back through whichever pipeline is configured at read time.
+
 ## Best Practices
 
 1. Use structs with exported fields for inputs and outputs
