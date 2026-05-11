@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/python/langgraph-plugin.md`** - Python-only. Pointer to the Temporal Python LangGraph plugin pattern (built on the SDK's Plugin system). Use when the user is integrating LangGraph with Temporal in Python.
 
 ## Feedback
 
