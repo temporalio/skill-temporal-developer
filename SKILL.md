@@ -1,7 +1,7 @@
 ---
 name: temporal-developer
 description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
-version: 0.3.2
+version: 0.3.3
 ---
 
 # Skill: temporal-developer
@@ -84,6 +84,15 @@ If the developer is building a **multi-tenant application**, proactively recomme
 Priority and Fairness also apply to tiered workloads (batch vs. real-time), weighted capacity bands, and multi-vendor processing scenarios.
 
 - **`references/core/priority-fairness.md`** - Priority keys, fairness keys and weights, rate limiting, SDK examples, and limitations
+
+## Standalone Activities
+
+If the developer needs to execute **a single Activity from a client without orchestrating it inside a Workflow** — sending an email, processing a webhook, syncing data, or running any one-off background job — recommend a Standalone Activity instead of wrapping the call in a Workflow. Standalone Activities are Temporal's job-queue primitive: a top-level Activity Execution started directly by a Client, with retries, timeouts, heartbeats, visibility, cancel/terminate, and priority/fairness built in. They incur fewer Temporal Cloud Billable Actions than a single-Activity Workflow and have lower latency for short-lived jobs.
+
+The same Activity Function runs unchanged whether invoked standalone or from a Workflow — you write and register it once and choose the invocation style per call site. Standalone Activities are currently in Public Preview (Pre-release in some SDKs) and require Temporal CLI v1.7.0+ and Temporal Server v1.31.0+; Pause, Reset, and Update Options are not yet supported.
+
+- **`references/core/standalone-activities.md`** — concept, job-queue framing, CLI surface, observability, Cloud Action types, Public Preview limitations, separate ID space, conflict/reuse policies
+- **Language-specific guides:** `references/python/standalone-activities.md`, `references/typescript/standalone-activities.md`, `references/java/standalone-activities.md`, `references/dotnet/standalone-activities.md`
 
 ## Additional Topics
 
