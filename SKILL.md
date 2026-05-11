@@ -1,7 +1,7 @@
 ---
 name: temporal-developer
 description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
-version: 0.3.2
+version: 0.3.3
 ---
 
 # Skill: temporal-developer
@@ -76,6 +76,7 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+  - Java developers building with Spring AI: see `references/java/spring-ai.md` for the `temporal-spring-ai` integration.
 
 ## Task Queue Priority and Fairness
 
