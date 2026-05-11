@@ -101,7 +101,7 @@ err = temporalClient.CompleteActivityByID(ctx, namespace, workflowID, runID, act
 
 ## Worker Tuning
 
-Configure `worker.Options` for production workloads:
+Configure `worker.Options` for production workloads. The simplest form sets fixed slot counts and poller counts directly:
 
 ```go
 w := worker.New(c, "my-task-queue", worker.Options{
@@ -123,6 +123,8 @@ w := worker.New(c, "my-task-queue", worker.Options{
 ```
 
 Scale pollers based on task queue throughput. If you observe high schedule-to-start latency, increase the number of pollers or add more workers.
+
+For **resource-based / composite tuners** (auto-tune slot counts from live CPU and memory usage, mix supplier strategies per Task type, wire in `sysinfo` for host-resource reporting), see **`references/go/resource-tuning.md`**. The `Tuner` field on `worker.Options` is mutually exclusive with the `MaxConcurrent*` options above.
 
 ## Sessions
 
