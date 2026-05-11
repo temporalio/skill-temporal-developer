@@ -76,6 +76,7 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+  - Python-only: **`references/python/openai-agents-sandbox.md`** — using `SandboxAgent` from the OpenAI Agents SDK with `OpenAIAgentsPlugin` so sandbox session lifecycle and I/O run as durable Temporal activities (pre-release).
 
 ## Task Queue Priority and Fairness
 
