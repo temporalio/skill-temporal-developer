@@ -181,6 +181,8 @@ const worker = await Worker.create({
 - `version.deploymentName`: Logical name for your service (consistent across versions)
 - `version.buildId`: Unique identifier for this build
 
+> To configure a Worker that reports its Build ID to the Server **without** enabling Worker Versioning (e.g., for visibility while you stage the migration), see `references/typescript/worker-version-reporting.md`.
+
 ### Deployment Workflow
 
 1. Deploy new Worker version with a new `buildId`
