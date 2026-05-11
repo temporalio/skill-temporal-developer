@@ -299,6 +299,12 @@ class DeepResearchWorkflow:
         return report
 ```
 
+## Google ADK Integration
+
+If you are using the Google Agent Development Kit (ADK), Temporal's Python SDK has a first-class integration that lets you run ADK agents inside Workflows for durable execution. The setup details (package name, import paths, plugin class) live on the external authoritative guide at <https://adk.dev/integrations/temporal/> — see `references/python/google-adk.md` for the high-level orientation and links.
+
+Like Temporal's other Python AI integrations (Braintrust, OpenAI Agents SDK, Pydantic AI), the Google ADK integration is built on the Temporal Python SDK Plugin system, so it plugs into your Client and Worker the same way other plugin-based integrations do.
+
 ## OpenAI Agents SDK Integration
 
 If using the OpenAI Agent SDK to create an agent, use Temporal's OpenAI contrib module to create a Temporal-aware durable agent:
