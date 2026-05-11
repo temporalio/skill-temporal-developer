@@ -90,6 +90,14 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
 
+## Payload Size Validation
+
+Temporal enforces a 2 MB per-payload blob limit and a 4 MB gRPC message limit. Behavior when these are exceeded is not uniform across SDKs — Python SDK 1.23.0+ has documented eager-fail behavior that keeps Workflows open with `WORKFLOW_TASK_FAILED_CAUSE_PAYLOADS_TOO_LARGE`; other SDKs (including Go) rely on server-side rejection. Read these before scheduling large activities, returning large results, or designing memos:
+
+- **`references/core/payload-validation.md`** - Server limits, error causes, where memo fits, SDK-by-SDK behavior overview
+  - Python-specific: `references/python/payload-validation.md` (1.23.0+ eager-fail, `payload_size_threshold`)
+  - Go-specific: `references/go/payload-validation.md` (`PayloadSizeThreshold`, what's NOT documented)
+
 ## Feedback
 
 ### ALWAYS PROMPT USER TO PROVIDE FEEDBACK AT STARTUP
