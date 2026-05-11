@@ -102,6 +102,80 @@ const worker = await Worker.create({
 - `shutdownGraceTime`: Time to wait for in-progress work before forced shutdown
 - `maxCachedWorkflows`: Number of workflows to keep in cache (reduces replay on cache hit)
 
+## Worker Service Connection Lifecycle
+
+A Worker's service connection is a `NativeConnection` from `@temporalio/worker` <!-- docs/develop/typescript/client/temporal-client.mdx:487 -->. Unlike the `Connection` class in `@temporalio/client`, which Clients use, `NativeConnection` is what `Worker.create({ connection })` accepts <!-- docs/develop/typescript/client/temporal-client.mdx:487-490 -->. Both classes accept the same set of connection options <!-- docs/develop/typescript/client/temporal-client.mdx:612-615 -->.
+
+The TypeScript SDK exposes APIs to manage that connection over a Worker's lifetime: replace it wholesale, update auth credentials in place, or scope metadata/deadlines/cancellation to a single request — all without restarting the Worker.
+
+### Replacing a Worker's connection at runtime
+
+The `Worker.connection` accessor is a getter/setter. The setter "allows the worker to switch to a different Temporal server or update connection configuration without restarting the worker" <!-- ts-sdk: worker.Worker#connection -->. Subsequent gRPC calls (poll responses, heartbeats) use the new connection; a fresh internal client is built automatically from it <!-- ts-sdk: worker.Worker#connection -->.
+
+```typescript
+import { NativeConnection, Worker } from '@temporalio/worker';
+
+const oldConnection = await NativeConnection.connect({ address: 'old-host:7233' });
+const worker = await Worker.create({
+  connection: oldConnection,
+  taskQueue: 'my-queue',
+  workflowsPath: require.resolve('./workflows'),
+});
+
+// ...later, fail over to a different server / cluster:
+const newConnection = await NativeConnection.connect({ address: 'new-host:7233' });
+worker.connection = newConnection;
+
+// Stop or detach all Workers before closing the old connection.
+await oldConnection.close();
+```
+
+**Caveats:**
+
+- The setter throws if the Worker was created without a connection (e.g., replay Workers) <!-- ts-sdk: worker.Worker#connection -->. `worker.connection` returns `undefined` in that case <!-- ts-sdk: worker.Worker#connection -->.
+- The setter throws if the connection replacement fails <!-- ts-sdk: worker.Worker#connection -->.
+- **Swap first, close second.** `NativeConnection.close()` throws `IllegalStateError` if any Worker is still using the connection <!-- ts-sdk: worker.NativeConnection#close -->. Assign `worker.connection = newConnection` (or shut down the Worker) before calling `oldConnection.close()`.
+
+### Updating auth or metadata in place
+
+To rotate an API key without building a new connection, call `setApiKey` on the existing `NativeConnection`:
+
+```typescript
+await connection.setApiKey(newApiKey);
+```
+
+Signature: `setApiKey(apiKey: string): Promise<void>` <!-- ts-sdk: worker.NativeConnection#setApiKey -->. The new key "is only set if `metadata` doesn't already have an 'authorization' key" <!-- ts-sdk: worker.NativeConnection#setApiKey --> — if you set an explicit `authorization` header via `metadata` or `setMetadata`, that wins and `setApiKey` becomes a no-op for auth.
+
+To replace all static gRPC metadata sent with every request, use `setMetadata`:
+
+```typescript
+await connection.setMetadata({ 'x-tenant-id': 'tenant-42' });
+```
+
+Signature: `setMetadata(metadata: Metadata): Promise<void>` <!-- ts-sdk: worker.NativeConnection#setMetadata -->. For the initial value, prefer the `metadata` option on `NativeConnection.connect(...)` <!-- ts-sdk: worker.NativeConnection#setMetadata -->.
+
+The Client-side equivalent (`connection.setApiKey(<APIKey>)`) is documented for `Connection` in the TypeScript client guide and behaves the same way for Client connections <!-- docs/develop/typescript/client/temporal-client.mdx:473-477 -->.
+
+### Per-request scoping: metadata, deadline, abort
+
+When you make ad-hoc raw service calls through the connection (e.g., `connection.workflowService.*`, `connection.operatorService.*`), `NativeConnection` provides three callback-scoped helpers. Each takes a value plus a callback `fn` and applies the value only to requests made inside `fn`:
+
+- `withMetadata<R>(metadata, fn): Promise<R>` — merges metadata with the current scope for calls in `fn` <!-- ts-sdk: worker.NativeConnection#withMetadata -->.
+- `withDeadline<R>(deadline: number | Date, fn): Promise<R>` — applies a deadline; requests that don't complete by then throw a gRPC `DEADLINE_EXCEEDED` <!-- ts-sdk: worker.NativeConnection#withDeadline -->.
+- `withAbortSignal<R>(abortSignal, fn): Promise<R>` — wires an `AbortSignal` to in-flight requests; cancellation surfaces as gRPC `CANCELLED` <!-- ts-sdk: worker.NativeConnection#withAbortSignal -->.
+
+```typescript
+await connection.withDeadline(Date.now() + 5_000, async () => {
+  await connection.workflowService.describeNamespace({ namespace: 'default' });
+});
+```
+
+These are request-scoping helpers on the connection — not Worker-wide settings. The Worker's own polling loop is governed by its own internal timeouts, not by these `with*` scopes.
+
+### Where connection mutation belongs
+
+Connection state changes (replacement, `setApiKey`, `setMetadata`) belong in the Worker bootstrap / supervisor layer — for example, a credential-rotation handler, a config-watcher, or a failover controller. Do **not** call them inside Workflow code: Workflow Definitions must be deterministic, and mutating outside state from a Workflow violates that contract. Activities can access an external connection if you injected one, but the rotation itself should still be driven by the supervisor that owns the Worker, not by Activity logic.
+
 ## Sinks
 
 Sinks allow workflows to emit events for side effects (logging, metrics).
