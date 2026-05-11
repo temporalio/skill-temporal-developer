@@ -37,6 +37,39 @@ WorkflowClient client = WorkflowClient.newInstance(
 );
 ```
 
+### Jackson 3 (opt-in)
+
+Java SDK 1.34.0 added optional Jackson 3.x support via a multi-release JAR. The default JSON converter is still Jackson 2; you opt in once at process startup, before constructing any Temporal clients: <!-- sdk-java release notes: v1.34.0 -->
+
+```java
+// Call once, at startup, before WorkflowClient.newInstance(...)
+JacksonJsonPayloadConverter.setDefaultAsJackson3(true, jacksonCompatMode);
+```
+
+<!-- sdk-java release notes: v1.34.0 -->
+
+What the opt-in does and does not do:
+
+- **Scope is global.** The call swaps the JSON converter used by the default data-converter chain process-wide. It is not per-`WorkflowClient`. <!-- sdk-java release notes: v1.34.0 -->
+- **Wire compatibility.** Payloads written by the Jackson 3 converter are readable by Jackson 2 converters and vice versa, so a worker fleet can run mixed Jackson 2 / Jackson 3 versions without history-replay breakage. <!-- sdk-java release notes: v1.34.0 -->
+- **Optional dependency.** Jackson 3.x is not pulled in transitively — you must add it to your classpath yourself. <!-- sdk-java release notes: v1.34.0 --> <!-- VERIFY: exact Jackson 3 Maven/Gradle coordinates expected by the SDK; Jackson 3.x is published under a new tools.jackson.* group but the release notes do not name the dependency GAV -->
+- **Custom `ObjectMapper` users are unaffected by the opt-in itself.** If you already pass your own mapper via `new JacksonJsonPayloadConverter(objectMapper)` <!-- docs/develop/java/best-practices/converters-and-encryption.mdx:234 --> and wire it with `withPayloadConverterOverrides(...)` <!-- docs/develop/java/best-practices/converters-and-encryption.mdx:239 -->, your converter is the one that runs; the opt-in switches the *default-constructor* path. <!-- VERIFY: precise scope of setDefaultAsJackson3 vs custom-ObjectMapper constructor — release notes describe an "opt in" but do not enumerate which call sites are affected -->
+
+The second argument controls Jackson-2 behavioral compatibility for the Jackson 3 converter. The release notes spell the argument as the placeholder identifier `jacksonCompatMode`; pass the value that matches your compatibility need. <!-- sdk-java release notes: v1.34.0 --> <!-- VERIFY: parameter type of jacksonCompatMode — release notes show it as a placeholder identifier and do not state whether it is a boolean, an enum value, or another type -->
+
+When to opt in:
+
+- You want to move your service onto Jackson 3.x for non-Temporal reasons (Spring Boot upgrade, security advisories, etc.) and need the SDK's JSON conversion to use the same Jackson version your application code uses.
+- You are *not* required to opt in to keep using Temporal; Jackson 2 remains supported and is the default. <!-- sdk-java release notes: v1.34.0 -->
+
+What the release notes do **not** assert (and therefore this section does not assert):
+
+- A minimum Java version for the opt-in. <!-- VERIFY: minimum Java version requirement for Jackson 3 opt-in -->
+- A separate public converter class name. The public entry point is `JacksonJsonPayloadConverter.setDefaultAsJackson3(...)`. <!-- VERIFY: whether a Jackson3-named converter class is public API or an internal multi-release-JAR implementation detail -->
+- Any change to `ObjectMapper` defaults under Jackson 3 (date formats, visibility, module auto-registration). Wire compatibility is the only behavioral guarantee documented.
+
+PR reference: temporalio/sdk-java#2783. <!-- sdk-java release notes: v1.34.0 -->
+
 ## Custom Data Converter
 
 Implement `PayloadConverter` for custom serialization:
@@ -282,7 +315,8 @@ public String run() {
 ## Best Practices
 
 1. Use Jackson `ObjectMapper` customization for complex serialization needs
-2. Keep payloads small — see `references/core/gotchas.md` for limits
-3. Encrypt sensitive data with `PayloadCodec` and `CodecDataConverter`
-4. Use POJOs or Protobuf messages for workflow/activity parameters
-5. Use `Workflow.randomUUID()`, `Workflow.newRandom()`, and `Workflow.currentTimeMillis()` for deterministic values
+2. To run on Jackson 3.x, opt in once at startup via `JacksonJsonPayloadConverter.setDefaultAsJackson3(...)` — Jackson 2 remains the default and is wire-compatible with Jackson 3 (see "Jackson 3 (opt-in)" above)
+3. Keep payloads small — see `references/core/gotchas.md` for limits
+4. Encrypt sensitive data with `PayloadCodec` and `CodecDataConverter`
+5. Use POJOs or Protobuf messages for workflow/activity parameters
+6. Use `Workflow.randomUUID()`, `Workflow.newRandom()`, and `Workflow.currentTimeMillis()` for deterministic values

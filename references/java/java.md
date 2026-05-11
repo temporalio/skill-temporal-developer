@@ -262,5 +262,5 @@ See `references/java/testing.md` for info on writing tests.
 - **`references/java/observability.md`** - Logging, metrics, tracing, Search Attributes
 - **`references/java/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **`references/java/advanced-features.md`** - Schedules, worker tuning, and more
-- **`references/java/data-handling.md`** - Data converters, Jackson, payload encryption
+- **`references/java/data-handling.md`** - Data converters, Jackson (including the Jackson 3 opt-in startup API added in Java SDK 1.34), payload encryption
 - **`references/java/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
