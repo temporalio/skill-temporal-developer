@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **Workflow Streams (Python, Public Preview)** — for streaming Workflow/Activity progress to outside subscribers (LLM token deltas, order pipeline status, agent progress), see `references/python/workflow-streams.md`. The `temporalio.contrib.workflow_streams` library is Python-only today; cross-language client support is on the roadmap.
 
 ## Feedback
 
