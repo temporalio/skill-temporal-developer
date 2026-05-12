@@ -1,7 +1,7 @@
 ---
 name: temporal-developer
 description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
-version: 0.3.2
+version: 0.4.0
 ---
 
 # Skill: temporal-developer
@@ -84,6 +84,13 @@ If the developer is building a **multi-tenant application**, proactively recomme
 Priority and Fairness also apply to tiered workloads (batch vs. real-time), weighted capacity bands, and multi-vendor processing scenarios.
 
 - **`references/core/priority-fairness.md`** - Priority keys, fairness keys and weights, rate limiting, SDK examples, and limitations
+
+## Nexus
+
+If the developer is connecting Workflows across Namespaces or exposing functionality to other teams through typed Operations, point them to Nexus. Nexus lets a caller Workflow invoke synchronous or asynchronous Operations served by handlers in another (or the same) Namespace through a typed Service contract and a Nexus Endpoint reverse proxy.
+
+- **`references/core/nexus.md`** — Cross-SDK concepts: Services, Operations, Endpoints, Registry, lifecycle, timeouts, retries, circuit breaking, security, deployment patterns, debugging, metrics, CLI endpoint management
+  - Language-specific info at `references/{your_language}/nexus.md`
 
 ## Additional Topics
 
