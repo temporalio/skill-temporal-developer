@@ -85,6 +85,19 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/core/priority-fairness.md`** - Priority keys, fairness keys and weights, rate limiting, SDK examples, and limitations
 
+## AWS Lambda Workers (Pre-release)
+
+Temporal Serverless Workers run inside AWS Lambda — Temporal invokes your Worker when Tasks arrive on a Task Queue with a compute provider configured, and the Worker shuts down before the invocation deadline. The Go, Python, and TypeScript SDKs ship pre-release packages for this; APIs are experimental and may change.
+
+If the developer asks about running a Worker on AWS Lambda, hosting a Temporal Worker serverlessly, deploying a Worker as a Lambda function, or sees the `lambdaworker` / `lambda_worker` / `@temporalio/lambda-worker` package, route to these references:
+
+- **`references/core/lambda-workers.md`** - SDK-agnostic: invocation flow, Worker Controller Instance (WCI), lifecycle, constraints, deploy flow, CloudFormation IAM, troubleshooting
+- **`references/go/lambda-workers.md`** - Go SDK `go.temporal.io/sdk/contrib/aws/lambdaworker`
+- **`references/python/lambda-workers.md`** - Python SDK `temporalio.contrib.aws.lambda_worker`
+- **`references/typescript/lambda-workers.md`** - TypeScript SDK `@temporalio/lambda-worker`
+
+Worker Versioning is required for Serverless Workers — each Workflow must declare an `AutoUpgrade`/`Pinned` (Go) or `PINNED`/`AUTO_UPGRADE` (Python/TypeScript) versioning behavior, or the Worker must set a default. Java and .NET do not yet have a Lambda worker package.
+
 ## Additional Topics
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
