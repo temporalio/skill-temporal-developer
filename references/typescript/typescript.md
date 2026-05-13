@@ -179,6 +179,7 @@ See `references/typescript/testing.md` for info on writing tests.
 - **`references/typescript/observability.md`** - Logging, metrics, tracing
 - **`references/typescript/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **`references/typescript/advanced-features.md`** - Schedules, worker tuning, and more
+- **`references/typescript/worker-connections.md`** - `NativeConnection` lifecycle for Workers (create, pass to `Worker.create`, close)
 - **`references/typescript/data-handling.md`** - Data converters, payload encryption, etc.
 - **`references/typescript/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/typescript/determinism-protection.md`** - V8 sandbox and bundling
