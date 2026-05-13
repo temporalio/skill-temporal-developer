@@ -14,3 +14,6 @@ Temporal ships and supports a growing set of integrations with third-party frame
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
+| AWS Lambda (`lambdaworker`) | Go | Prerelease contrib package for running a Temporal Worker inside an AWS Lambda function: per-invocation lifecycle, Lambda-tuned defaults, OpenTelemetry sub-package | `references/go/integrations/aws-lambda.md` | `references/go/go.md` |
+| AWS Lambda (`lambda_worker`) | Python | Prerelease contrib package for running a Temporal Worker inside an AWS Lambda function: per-invocation lifecycle, Lambda-tuned defaults, OpenTelemetry sub-module | `references/python/integrations/aws-lambda.md` | `references/python/python.md` |
+| AWS Lambda (`@temporalio/lambda-worker`) | TypeScript | Prerelease package for running a Temporal Worker inside an AWS Lambda function: pre-bundled Workflow code, Lambda-tuned defaults, OpenTelemetry sub-package | `references/typescript/integrations/aws-lambda.md` | `references/typescript/typescript.md` |
