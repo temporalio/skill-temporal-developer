@@ -249,6 +249,7 @@ See `references/go/testing.md` for info on writing tests.
 - **`references/go/observability.md`** - Logging, metrics, tracing, Search Attributes
 - **`references/go/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **`references/go/advanced-features.md`** - Schedules, worker tuning, and more
+- **`references/go/resource-tuning.md`** - Resource-based slot suppliers and composite Worker tuners (`worker.NewResourceBasedTuner`, `worker.NewCompositeTuner`) plus the `contrib/sysinfo` host-info package
 - **`references/go/data-handling.md`** - Data converters, payload codecs, encryption
 - **`references/go/versioning.md`** - Patching API (`workflow.GetVersion`), Worker Versioning
 - **`references/go/determinism-protection.md`** - Information on **`workflowcheck`** tool to help statically check for determinism issues.

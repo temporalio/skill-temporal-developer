@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/go/resource-tuning.md`** (Go only) - Resource-based slot suppliers, composite Worker tuners, and the `contrib/sysinfo` host-info package. Read this when tuning Go Workers by CPU/memory instead of fixed slot counts.
 
 ## Feedback
 
