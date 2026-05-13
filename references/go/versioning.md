@@ -226,6 +226,91 @@ temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
+## Versioned Continue-as-New (Upgrade-on-CaN)
+
+> **Public Preview.** Experimental SDK-level option. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 -->
+
+A Pinned Workflow using Continue-as-New can opt to upgrade onto a newer Worker Deployment Version at the CaN boundary, with no patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:530-533 --> See `references/core/versioning.md` §"Versioned Continue-as-New" for the cross-language concept and use cases.
+
+The default behavior is the opposite: a Pinned Workflow's version is inherited across the entire Continue-as-New chain. <!-- docs/encyclopedia/workers/worker-versioning.mdx:129-132 --> Upgrade-on-CaN is the documented escape hatch.
+
+### API surface
+
+- `workflow.GetInfo(ctx).GetTargetWorkerDeploymentVersionChanged()` <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:582-583 --> — `true` when the Workflow's Target Worker Deployment Version differs from the version it is currently pinned to. Refreshed only when a Workflow Task completes. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:571 -->
+- `workflow.NewContinueAsNewErrorWithOptions(ctx, workflow.ContinueAsNewErrorOptions{...}, workflowName, args...)` <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:584-594 --> — Continue-as-New variant that accepts options.
+- `workflow.ContinueAsNewErrorOptions{InitialVersioningBehavior: ...}` <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:586-591 --> — controls the *new* run's initial versioning behavior.
+- `workflow.ContinueAsNewVersioningBehaviorAutoUpgrade` <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:590 --> — when passed as `InitialVersioningBehavior`, makes the new run Auto-Upgrade so it lands on the Target Worker Deployment Version of its Worker Deployment. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:587-589 -->
+
+### Example
+
+Transcribed from the docs example. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:561-605 -->
+
+```go
+func (w *Workflows) ContinueAsNewWithVersionUpgradeV1(
+  ctx workflow.Context,
+  attempt int,
+) (string, error) {
+  if attempt > 0 {
+    return "v1.0", nil
+  }
+
+  // Check GetTargetWorkerDeploymentVersionChanged periodically.
+  // GetTargetWorkerDeploymentVersionChanged is refreshed after each WFT completes.
+  for {
+    // Trigger a WFT when timer expires, thereby refreshing the flag. In a real
+    // workflow that regularly does non-sleep workflow tasks, you would not need
+    // to artificially trigger a WFT. You could check the field periodically, or
+    // before accepting updates, starting activities, or starting child workflows.
+    err := workflow.Sleep(ctx, 10*time.Millisecond)
+    if err != nil {
+      return "", err
+    }
+    info := workflow.GetInfo(ctx)
+    if info.GetTargetWorkerDeploymentVersionChanged() {
+      return "", workflow.NewContinueAsNewErrorWithOptions(
+        ctx,
+        workflow.ContinueAsNewErrorOptions{
+          // Pass InitialVersioningBehavior=workflow.ContinueAsNewVersioningBehaviorAutoUpgrade
+          // to make the new run start with AutoUpgrade behavior and use the
+          // Target Version of its Worker Deployment.
+          InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade,
+        },
+        "ContinueAsNewWithVersionUpgrade",
+        attempt+1,
+      )
+    }
+  }
+}
+```
+
+The companion `V2` run is just the new code path — once `attempt > 0` (or once the new build is the one executing), it returns the new value:
+
+```go
+func (w *Workflows) ContinueAsNewWithVersionUpgradeV2(
+  ctx workflow.Context,
+  attempt int,
+) (string, error) {
+  return "v2.0", nil
+}
+```
+
+### Where to check the flag
+
+The docs explicitly call out these as good check points <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:576-577 -->:
+
+- Before accepting Updates.
+- Before starting Activities.
+- Before starting Child Workflows.
+
+A periodic check inside a long-sleep loop also works, as the example shows. The flag is **not** a real-time signal — it only refreshes when the SDK completes a Workflow Task.
+
+### Limitations
+
+From the Public Preview caution <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:607-618 -->:
+
+- **Lazy moving only.** Sleeping Workflows will not be proactively notified of a Target-Version change. To wake idle Workflows so they can check `GetTargetWorkerDeploymentVersionChanged`, send them a Signal.
+- **Interface compatibility.** The new version's Workflow definition must accept the previous run's input. If incompatible, the new run may fail on its first Workflow Task.
+
 ## Best Practices
 
 1. **Keep GetVersion calls** even when only a single branch remains -- it guards against stale replays and simplifies future changes

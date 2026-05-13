@@ -68,7 +68,7 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
   - Language-specific info at `references/{your_language}/patterns.md`
 - **`references/core/gotchas.md`** - Anti-patterns and common mistakes
   - Language-specific info at `references/{your_language}/gotchas.md`
-- **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
+- **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running. Covers Patching API, Workflow Type Versioning, Worker Versioning, and **Versioned Continue-as-New** (Public Preview) — the upgrade-on-CaN pattern for long-running Pinned Workflows that already use Continue-as-New.
   - Language-specific info at `references/{your_language}/versioning.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference

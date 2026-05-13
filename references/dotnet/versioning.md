@@ -296,6 +296,77 @@ temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
+## Versioned Continue-as-New (Upgrade-on-CaN)
+
+> **Public Preview.** Experimental SDK-level option. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 -->
+
+A Pinned Workflow that uses Continue-as-New can opt to upgrade onto a newer Worker Deployment Version at the Continue-as-New boundary, without patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:530-533 --> See `references/core/versioning.md` §"Versioned Continue-as-New" for the cross-language concept.
+
+This is a **Pinned-Workflow** pattern. Without the upgrade option, a Pinned Workflow's version is inherited across the entire Continue-as-New chain. <!-- docs/encyclopedia/workers/worker-versioning.mdx:129-132 --> Auto-Upgrade Workflows already follow the Target Worker Deployment Version on every Workflow Task; they do not use this mechanism.
+
+### How the SDK exposes the feature
+
+The local Temporal documentation only shows a Go example for this Public-Preview feature. The .NET SDK exposes equivalent capabilities, but the specific token names are not described in the docs clone — confirm them in the upstream SDK before writing production code.
+
+The conceptual surface (verified in the docs) is <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:556-605 -->:
+
+1. A per-Workflow-Info flag named in docs prose as `target_worker_deployment_version_changed`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:558-559 --> It becomes `true` when a new Target Worker Deployment Version is available, and it is refreshed only when a Workflow Task completes. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:571 -->
+2. A Continue-as-New variant that accepts options, with an option to set the *new* run's initial versioning behavior. The Go example sets the new run to Auto-Upgrade so it lands on the Target Worker Deployment Version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:584-591 -->
+
+.NET-side concrete names (not in the local docs):
+
+- The Workflow-Info property for the target-version-changed flag: <!-- VERIFY: exact property on Temporalio.Workflows.WorkflowInfo (or Workflow.Info) that reports target Worker Deployment Version changes; check upstream temporalio/sdk-dotnet release notes (Public Preview) -->
+- The Continue-as-New API that accepts initial versioning behavior: <!-- VERIFY: which `Workflow.ContinueAsNew*` overload or `ContinueAsNewOptions` property accepts an initial versioning behavior, and the spelling of the AutoUpgrade enum value, in upstream temporalio/sdk-dotnet -->
+
+Until those are verified against the upstream SDK, treat the *check* as conceptual rather than tied to a specific .NET token:
+
+```csharp
+// Pseudocode — token names are SDK-version-specific and not in the docs clone.
+// Verify against upstream temporalio/sdk-dotnet before using in production.
+[Workflow(VersioningBehavior = VersioningBehavior.Pinned)]
+public class LongRunningEntity
+{
+    [WorkflowRun]
+    public async Task RunAsync(State state)
+    {
+        while (!state.Done)
+        {
+            await DoUnitOfWorkAsync(state);
+
+            // Check after each meaningful Workflow Task — the flag refreshes
+            // only across Workflow Task boundaries.
+            if (/* <!-- VERIFY: WorkflowInfo property for target-version-changed --> */)
+            {
+                // Continue-as-New with an initial versioning behavior so the
+                // new run starts with AutoUpgrade behavior and lands on its
+                // Worker Deployment's Target Version.
+                // <!-- VERIFY: ContinueAsNew variant + AutoUpgrade enum value in upstream temporalio/sdk-dotnet -->
+                throw Workflow.CreateContinueAsNewException<LongRunningEntity>(wf => wf.RunAsync(state));
+            }
+        }
+    }
+}
+```
+
+When in doubt, link the user to the docs Go example (`references/go/versioning.md` §Versioned Continue-as-New) as the canonical documented form.
+
+### Where to check the flag
+
+The docs name these as good check points <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:576-577 -->:
+
+- Before accepting Updates.
+- Before starting Activities.
+- Before starting Child Workflows.
+
+The flag is **not** a real-time signal — it refreshes only when the SDK completes a Workflow Task.
+
+### Limitations
+
+From the Public Preview caution <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:607-618 -->:
+
+- **Lazy moving only.** Idle / sleeping Workflows are not proactively notified of a Target-Version change. Send a Signal to wake them so they can re-check the flag.
+- **Interface compatibility.** The new version's Workflow definition must accept the previous run's Continue-as-New input. If it doesn't, the new run may fail on its first Workflow Task.
+
 ## Best Practices
 
 1. **Check for open executions** before removing old code paths
