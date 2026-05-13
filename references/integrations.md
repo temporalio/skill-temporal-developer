@@ -14,3 +14,4 @@ Temporal ships and supports a growing set of integrations with third-party frame
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
+| LangGraph (`temporalio.contrib.langgraph`, experimental) | Python | Runs LangGraph Graph-API nodes and Functional-API tasks as Temporal Activities, with per-node/per-task `execute_in` selection and pass-through activity options | `references/python/integrations/langgraph.md` | `references/python/ai-patterns.md` |
