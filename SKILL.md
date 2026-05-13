@@ -76,6 +76,8 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+- **`references/core/nexus.md`** - Temporal Nexus: invoking Operations exposed by another team's Temporal Application across (or within) Namespaces — Services, Operations, Endpoints, Registry, sync vs async lifecycle, timeouts, retries, circuit breaking, cancellation, deployment patterns
+  - Language-specific info at `references/{your_language}/nexus.md`. GA in Go, Java, Python; Public Preview in TypeScript and .NET.
 
 ## Task Queue Priority and Fairness
 
