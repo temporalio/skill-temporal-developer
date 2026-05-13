@@ -176,3 +176,50 @@ temporal workflow list --query \
 2. **Not testing with replay** - Catches issues before production
 3. **Patching non-Command changes** - Unnecessary complexity
 4. **Forgetting to deprecate** - Accumulates dead code
+
+## Upgrading on Continue-as-New
+
+Pinned Workflows normally complete on the Worker Deployment Version where they started, so a Workflow that runs for months or years would never see newer code without a manual move. The "upgrade on Continue-as-New" pattern lets a long-running Pinned Workflow that already uses [Continue-as-New](https://docs.temporal.io/workflow-execution/continue-as-new) to manage history size hand off to its Worker Deployment's Target Version at the CaN boundary, without introducing patching inside the Workflow body. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:530 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:532 --> This feature is in **Public Preview as an experimental SDK-level option**. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:543 -->
+
+### When to use it
+
+The pattern is intended for workloads that combine long wall-clock lifetimes with a natural CaN checkpoint:
+
+- **Entity Workflows** that run for months or years <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:537 -->
+- **Batch processing** Workflows that checkpoint with Continue-as-New <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:538 -->
+- **AI agent Workflows** with long sleeps waiting for user input <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:539 -->
+
+### Decision: which long-running path?
+
+The Decision Guide distinguishes two long-running cases by whether the Workflow already uses CaN:
+
+- **Long-running and uses CaN** → `PINNED` + upgrade-on-CaN; **patching never required**. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:265 -->
+- **Long-running and does NOT use CaN** → `AUTO_UPGRADE` + patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:266 -->
+
+Upgrade-on-CaN is not a drop-in replacement for Auto-Upgrade. Without a CaN boundary there is no point at which the Workflow can safely cut over, so a long Workflow that cannot use CaN must accept Auto-Upgrade and use the patching API for any Command-shape changes between deploys.
+
+### How it works
+
+The mechanics rest on three pieces working together: <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:548 -->
+
+1. **Each run stays pinned.** A single CaN run executes entirely on the Version it started on, so no patching is needed inside a run. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:552 -->
+2. **The server signals when a new Target Version is available.** When a different Worker Deployment Version becomes Current or Ramping for the Workflow's Task Queue, the server marks the Workflow's Target Version as changed. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:553 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:558 -->
+3. **CaN with the upgrade option moves to the Target Version.** When the Workflow issues Continue-as-New with the upgrade option set, the new run starts on the Target Version instead of inheriting the previous run's pinned version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:554 -->
+
+### Detection is lazy — sleeping Workflows must be woken
+
+The Target-Version-Changed flag is exposed through an SDK accessor (Go names it `GetTargetWorkerDeploymentVersionChanged`) that the Workflow code polls during its normal execution. The flag's value is refreshed when a Workflow Task completes, which means a Workflow that is currently sleeping or otherwise idle will not observe a change until something causes it to wake up and run a Workflow Task. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:612 --> If you need an idle Workflow to react promptly, send it a Signal to force a Workflow Task; do not assume the server will deliver a proactive notification. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:613 -->
+
+Practical checkpoints — before accepting an Update, before starting an Activity, before starting a Child Workflow, or as part of a periodic loop — are reasonable places to inspect the flag. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:576 -->
+
+### Cross-CaN inheritance and where it stops
+
+Without the upgrade option, a Pinned Workflow's Version is inherited across the CaN chain. <!-- docs/encyclopedia/workers/worker-versioning.mdx:131 --> Inheritance stops if the new run's Task Queue is not in the same Worker Deployment as the original Workflow — in that case the new run starts on the Current Version of its Task Queue instead. <!-- docs/encyclopedia/workers/worker-versioning.mdx:132 --> Auto-Upgrade Workflows do not inherit versions across CaN at all. <!-- docs/encyclopedia/workers/worker-versioning.mdx:134 --> <!-- docs/encyclopedia/workers/worker-versioning.mdx:136 --> Cron jobs are a separate category and **never inherit** versioning behavior or version, so this pattern does not apply to them. <!-- docs/encyclopedia/workers/worker-versioning.mdx:152 -->
+
+### Input compatibility across the boundary
+
+CaN passes arguments from the old run to the new run, and the two runs may now be executing different code. The docs are explicit: when continuing as new to a different version, ensure the Workflow input produced by the previous version is compatible with the new version's Workflow definition. If it is not, the new run can fail on its first Workflow Task. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:614 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:615 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:616 --> Treat the CaN input schema as a public contract between adjacent versions: only make additive changes, or stage a compatible intermediate version before the breaking one.
+
+### Per-language code
+
+For the worked example (currently Go-only in the docs) and per-SDK code, see `references/{your_language}/versioning.md`. The canonical docs example lives in `docs/production-deployment/worker-deployments/worker-versioning.mdx`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:556 -->
