@@ -102,6 +102,8 @@ const worker = await Worker.create({
 - `shutdownGraceTime`: Time to wait for in-progress work before forced shutdown
 - `maxCachedWorkflows`: Number of workflows to keep in cache (reduces replay on cache hit)
 
+When `reuseV8Context` is enabled, see `bundlerOptions.preloadModules` in `references/typescript/determinism-protection.md` for paying module-load cost once per Worker instead of per workflow execution.
+
 ## Sinks
 
 Sinks allow workflows to emit events for side effects (logging, metrics).

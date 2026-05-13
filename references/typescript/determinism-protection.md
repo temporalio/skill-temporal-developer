@@ -29,6 +29,31 @@ const worker = await Worker.create({
 
 Use this with *extreme caution*.
 
+### Preloading Modules
+
+`bundlerOptions.preloadModules` is a sibling of `ignoreModules` on the same `BundleOptions` interface.   Where `ignoreModules` *excludes* a module from the workflow bundle, `preloadModules` *eagerly evaluates* one into the V8 workflow context so the load cost is paid once per Worker rather than once per workflow execution.
+
+This is only meaningful when the Worker reuses its V8 context across workflows — i.e., when `reuseV8Context` is enabled.
+
+Like `ignoreModules`, `preloadModules` is a **bundler-time** option: it applies when the Worker is built from `workflowsPath`, not when it consumes a pre-built `workflowBundle`. If you ship a production Worker by pre-building with `bundleWorkflowCode` and loading the bundle via `workflowBundle: { codePath }` (`docs/develop/typescript/workers/run-process.mdx:228–249`), set `preloadModules` on the `bundleWorkflowCode` call at build time — not on the Worker that loads the bundle.
+
+```ts
+// Same Worker shape as the `ignoreModules` example above. `preloadModules`
+// is an additional, separately-documented field on `bundlerOptions`.
+const worker = await Worker.create({
+  workflowsPath: require.resolve('./workflows'),
+  activities: require('./activities'),
+  taskQueue: 'my-task-queue',
+  reuseV8Context: true,
+  bundlerOptions: {
+    ignoreModules: ['fs'],
+    // preloadModules: <see VERIFY note above — local docs/ clone does not document the value shape>
+  },
+});
+```
+
+`preloadModules` does **not** bypass the V8 sandbox or the determinism replacements described below — a preloaded module still cannot escape the sandbox.
+
 ## Function Replacement
 
 Functions like `Math.random()`, `Date`, and `setTimeout()` are replaced by deterministic versions.
