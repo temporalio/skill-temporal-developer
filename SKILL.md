@@ -89,6 +89,8 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/core/payload-validation.md`** - Payload and gRPC message size limits (2 MB / 4 MB), failure modes when limits are exceeded, and mitigation via the claim check pattern
+  - Language-specific info at `references/python/payload-validation.md` (Python SDK 1.23.0+ eager validation behavior, `payload_size_threshold`) and `references/go/payload-validation.md` (Go SDK External Storage setup, `PayloadSizeThreshold`). Other SDKs are out of scope for this topic.
 
 ## Feedback
 
