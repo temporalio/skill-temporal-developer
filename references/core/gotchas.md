@@ -212,3 +212,5 @@ See language-specific gotchas for details.
 - Workflow history growing unboundedly
 
 **The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See the Large Data Handling pattern in `references/core/patterns.md`.
+
+**Eager validation (Go, Python):** Workers can size-check payloads before submission and fail fast instead of relying on server-side rejection. See `references/go/payload-validation.md` and `references/python/payload-validation.md`.

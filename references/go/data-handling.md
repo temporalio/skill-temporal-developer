@@ -259,6 +259,6 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 
 1. Use structs with exported fields for inputs and outputs
 2. Prefer JSON for readability during development, protobuf for performance in production
-3. Keep payloads small -- see `references/core/gotchas.md` for limits
+3. Keep payloads small -- see `references/core/gotchas.md` for limits, and `references/go/payload-validation.md` for eager Worker-side size checks
 4. Use `PayloadCodec` for encryption; never store sensitive data unencrypted
 5. Configure the same data converter on both client and worker
