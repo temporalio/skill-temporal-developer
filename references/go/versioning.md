@@ -239,30 +239,28 @@ temporal workflow list --query \
 
 ## Upgrade on Continue-as-New (Go)
 
-Long-running Workflows that use Continue-as-New can opt in, on a per-call basis, to upgrade to a newer Worker Deployment Version at the Continue-as-New boundary without requiring patching. This is a Public Preview, experimental SDK-level option <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 --> documented in `Upgrading on Continue-as-New` in `documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx` (lines 530-618).
+Long-running Workflows that use Continue-as-New can opt in, on a per-call basis, to upgrade to a newer Worker Deployment Version at the Continue-as-New boundary without requiring patching. This is a Public Preview, experimental SDK-level option  documented in `Upgrading on Continue-as-New` in `documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx` (lines 530-618).
 
 ### When to use it
 
-The decision table recommends this combination for **long-running Workflows (weeks to years) that use Continue-as-New**: register them as `PINNED` and opt in to upgrade-on-CaN, with no patching required <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:265 -->. Documented use cases include Customer entity Workflows and AI agent / Chatbot Workflows <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:275-276 -->.
+The decision table recommends this combination for **long-running Workflows (weeks to years) that use Continue-as-New**: register them as `PINNED` and opt in to upgrade-on-CaN, with no patching required . Documented use cases include Customer entity Workflows and AI agent / Chatbot Workflows .
 
 ### How it works
 
-- By default, Pinned Workflows stay on their original Worker Deployment Version even when they Continue-as-New <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:549-550 -->.
-- Each Workflow run remains pinned to its version, so no patching is required during a run <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:552 -->.
-- The Temporal Server tells the Workflow when a new Target Version becomes available <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:553 -->.
-- When the Workflow performs Continue-as-New with the upgrade option, the new run starts on the Target Version <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:554 -->.
+- By default, Pinned Workflows stay on their original Worker Deployment Version even when they Continue-as-New .
+- Each Workflow run remains pinned to its version, so no patching is required during a run .
+- The Temporal Server tells the Workflow when a new Target Version becomes available .
+- When the Workflow performs Continue-as-New with the upgrade option, the new run starts on the Target Version .
 
 ### Detecting the change
 
-The server-side concept is named `target_worker_deployment_version_changed` <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:558-559 -->. In Go, read it from `workflow.GetInfo(ctx)` via `info.GetTargetWorkerDeploymentVersionChanged()` <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:582-583 -->.
+The server-side concept is named `target_worker_deployment_version_changed` . In Go, read it from `workflow.GetInfo(ctx)` via `info.GetTargetWorkerDeploymentVersionChanged()` .
 
-This flag is refreshed after each Workflow Task completes -- it is a per-WFT check, not a sticky boolean <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:570-571 -->. You can check it periodically, or check it before accepting Updates, starting Activities, or starting Child Workflows <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:574-577 -->.
+This flag is refreshed after each Workflow Task completes -- it is a per-WFT check, not a sticky boolean . You can check it periodically, or check it before accepting Updates, starting Activities, or starting Child Workflows .
 
 ### Example
 
-The following is the canonical Go example from the docs. To opt in to the upgrade on Continue-as-New, build a Continue-as-New error with `workflow.NewContinueAsNewErrorWithOptions` and set `InitialVersioningBehavior` on `workflow.ContinueAsNewErrorOptions` to `workflow.ContinueAsNewVersioningBehaviorAutoUpgrade`; passing that value makes the new run start with AutoUpgrade behavior and use the Target Version of its Worker Deployment <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:584-594 -->.
-
-<!-- Source: documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:561-605 -->
+The following is the canonical Go example from the docs. To opt in to the upgrade on Continue-as-New, build a Continue-as-New error with `workflow.NewContinueAsNewErrorWithOptions` and set `InitialVersioningBehavior` on `workflow.ContinueAsNewErrorOptions` to `workflow.ContinueAsNewVersioningBehaviorAutoUpgrade`; passing that value makes the new run start with AutoUpgrade behavior and use the Target Version of its Worker Deployment .
 
 ```go
 func (w *Workflows) ContinueAsNewWithVersionUpgradeV1(
@@ -312,7 +310,7 @@ func (w *Workflows) ContinueAsNewWithVersionUpgradeV2(
 
 ### Limitations
 
-- **Lazy moving only.** Workflows must be invoked by executing a step to receive the Target-Version-Changed information; sleeping Workflows won't be proactively notified. For idle Workflows that you want to wake up so they can check `GetTargetWorkerDeploymentVersionChanged`, send them a Signal <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611-613 -->.
-- **Input compatibility.** When continuing as new to a different version, ensure the Workflow input produced by the previous version's Workflow definition is compatible with the new version's Workflow definition. If incompatible, the new run may fail on its first Workflow Task <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:614-616 -->.
+- **Lazy moving only.** Workflows must be invoked by executing a step to receive the Target-Version-Changed information; sleeping Workflows won't be proactively notified. For idle Workflows that you want to wake up so they can check `GetTargetWorkerDeploymentVersionChanged`, send them a Signal .
+- **Input compatibility.** When continuing as new to a different version, ensure the Workflow input produced by the previous version's Workflow definition is compatible with the new version's Workflow definition. If incompatible, the new run may fail on its first Workflow Task .
 
 Conceptual treatment in `references/core/versioning.md` §Upgrade on Continue-as-New.

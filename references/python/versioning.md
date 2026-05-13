@@ -334,47 +334,45 @@ temporal workflow list --query \
 
 ## Upgrade on Continue-as-New (Python)
 
-Long-running PINNED Workflows that already use [Continue-as-New](/workflow-execution/continue-as-new) can opt in to upgrade to a newer Worker Deployment Version at the Continue-as-New boundary, without using the patching APIs. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:530-533 -->
+Long-running PINNED Workflows that already use [Continue-as-New](/workflow-execution/continue-as-new) can opt in to upgrade to a newer Worker Deployment Version at the Continue-as-New boundary, without using the patching APIs.
 
-This feature is in **Public Preview** as an experimental SDK-level option. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 --> The canonical, language-neutral description lives in `documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx` under `## Upgrading on Continue-as-New`.
+This feature is in **Public Preview** as an experimental SDK-level option.  The canonical, language-neutral description lives in `documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx` under `## Upgrading on Continue-as-New`.
 
 ### When to use it
 
-The decision table recommends `PINNED` + upgrade-on-CaN for **long (weeks-to-years) Workflows that use Continue-as-New**. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:265 --> Common shapes: **Customer entity** Workflows (months-years) and **AI agent / Chatbot** Workflows with long sleeps. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:275-276 -->
+The decision table recommends `PINNED` + upgrade-on-CaN for **long (weeks-to-years) Workflows that use Continue-as-New**.  Common shapes: **Customer entity** Workflows (months-years) and **AI agent / Chatbot** Workflows with long sleeps.
 
 Do not enable this for Workflows that don't already perform Continue-as-New — the upgrade only happens at a CaN boundary triggered by the workflow itself.
 
 ### How it works
 
-By default, a PINNED Workflow stays on its original Worker Deployment Version across Continue-as-New. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:549-550 --> With the upgrade option enabled:
+By default, a PINNED Workflow stays on its original Worker Deployment Version across Continue-as-New.  With the upgrade option enabled:
 
 1. Each Workflow run remains pinned to its version (no patching needed within a single run).
 2. The Temporal Server tells the Workflow when a new [Target Version](/worker-versioning#versioning-definitions) becomes available.
 3. When the Workflow performs Continue-as-New with the upgrade option, the **new run** starts on the Target Version.
 
-<!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:551-554 -->
-
-The opt-in is **per Continue-as-New call**, not a Worker-level toggle — there is no Worker setting that flips this on globally. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:551-554 -->
+The opt-in is **per Continue-as-New call**, not a Worker-level toggle — there is no Worker setting that flips this on globally.
 
 ### Detecting that a new Target Version is available
 
-When a new Worker Deployment Version becomes Current or Ramping, an active Workflow can detect this through a conceptual flag the canonical docs name `target_worker_deployment_version_changed`. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:558-559 -->
+When a new Worker Deployment Version becomes Current or Ramping, an active Workflow can detect this through a conceptual flag the canonical docs name `target_worker_deployment_version_changed`.
 
-The flag is **refreshed after each Workflow Task completes** — it is not a sticky boolean and is not pushed in real time into the middle of a long sleep. If your Workflow spends most of its time idle, you need to give it an opportunity to take a Workflow Task (for example, after a timer fires, before accepting an Update, or before starting an Activity or Child Workflow) so the refreshed flag value can be observed. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:570-571 -->
+The flag is **refreshed after each Workflow Task completes** — it is not a sticky boolean and is not pushed in real time into the middle of a long sleep. If your Workflow spends most of its time idle, you need to give it an opportunity to take a Workflow Task (for example, after a timer fires, before accepting an Update, or before starting an Activity or Child Workflow) so the refreshed flag value can be observed.
 
-When the flag is true, the Workflow can perform Continue-as-New with the upgrade option set so the next run starts on the Target Version. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:583-594 -->
+When the flag is true, the Workflow can perform Continue-as-New with the upgrade option set so the next run starts on the Target Version.
 
 ### A note on the SDK identifiers
 
-The canonical docs only show a **Go** worked example for this feature — there is no Python code sample in the docs for Continue-as-New with the upgrade option, and the docs do not name the Python equivalents of `GetTargetWorkerDeploymentVersionChanged`, `NewContinueAsNewErrorWithOptions`, `ContinueAsNewErrorOptions`, `InitialVersioningBehavior`, or `ContinueAsNewVersioningBehaviorAutoUpgrade`. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:561-605 -->
+The canonical docs only show a **Go** worked example for this feature — there is no Python code sample in the docs for Continue-as-New with the upgrade option, and the docs do not name the Python equivalents of `GetTargetWorkerDeploymentVersionChanged`, `NewContinueAsNewErrorWithOptions`, `ContinueAsNewErrorOptions`, `InitialVersioningBehavior`, or `ContinueAsNewVersioningBehaviorAutoUpgrade`.
 
 For the exact Python identifiers, consult the Python SDK release notes for the version that introduced upgrade-on-Continue-as-New support, or read the typed bindings in your installed `temporalio` package. The canonical worked example, in Go, is reproduced in `references/go/versioning.md` and shows the shape (poll the flag periodically; on true, raise a Continue-as-New error carrying an "initial versioning behavior = auto-upgrade" option so the next run lands on the Target Version).
 
 ### Limitations
 
-- **Lazy moving only.** Sleeping Workflows are not proactively notified that the Target Version changed. If you have idle Workflows that you want to wake up so they can check the flag, send them a Signal to force a Workflow Task. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:611-613 -->
-- **Input compatibility.** When continuing as new across versions, the input produced by the previous version's Workflow definition must be compatible with the new version's Workflow definition. If it is not, the new run may fail on its first Workflow Task. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:614-616 -->
-- **Public Preview / experimental.** Expect the SDK surface to evolve; do not treat the API as generally available. <!-- documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 -->
+- **Lazy moving only.** Sleeping Workflows are not proactively notified that the Target Version changed. If you have idle Workflows that you want to wake up so they can check the flag, send them a Signal to force a Workflow Task.
+- **Input compatibility.** When continuing as new across versions, the input produced by the previous version's Workflow definition must be compatible with the new version's Workflow definition. If it is not, the new run may fail on its first Workflow Task.
+- **Public Preview / experimental.** Expect the SDK surface to evolve; do not treat the API as generally available.
 
 ### See also
 
