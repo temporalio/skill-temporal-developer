@@ -182,6 +182,7 @@ See `references/python/testing.md` for info on writing tests.
 - **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
 - **`references/python/ai-patterns.md`** - LLM integration, Pydantic data converter, AI workflow patterns
+- **`references/python/workflow-streams.md`** - Public-preview `temporalio.contrib.workflow_streams` library for durable, offset-addressed event channels from a Workflow to subscribers
 
 ### Python Integrations
 
