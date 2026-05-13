@@ -181,6 +181,7 @@ See `references/python/testing.md` for info on writing tests.
 - **`references/python/data-handling.md`** - Data converters, Pydantic, payload encryption
 - **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
+- **`references/python/workflow-randomness.md`** - Deterministic randomness inside Workflows: `workflow.random()`, `workflow.uuid4()`, anti-patterns
 - **`references/python/ai-patterns.md`** - LLM integration, Pydantic data converter, AI workflow patterns
 
 ### Python Integrations
