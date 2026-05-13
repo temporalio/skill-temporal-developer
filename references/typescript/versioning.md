@@ -146,63 +146,83 @@ After all V1 executions complete, remove the old Workflow function.
 
 ## Worker Versioning
 
-Worker Versioning allows multiple Worker versions to run simultaneously, routing Workflows to specific versions without code-level patching. Workflows are pinned to the Worker Deployment Version they started on.
+Worker Versioning routes Workflows to specific Worker Deployment Versions so that pinned Workflows complete on the version they started on and you can run multiple versions side-by-side without code-level patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:23-39 -->
 
-> **Note:** Worker Versioning is currently in Public Preview. The legacy Worker Versioning API (before 2025) will be removed from Temporal Server in March 2026.
+> **Note:** The legacy Worker Versioning API (the pre-2025 `useVersioning` / top-level `buildId` shape on `WorkerOptions`) will be removed from Temporal Server in March 2026. <!-- docs/develop/typescript/workflows/versioning.mdx:36-38 -->
 
 ### Key Concepts
 
-- **Worker Deployment**: A logical name for your application (e.g., "order-service")
-- **Worker Deployment Version**: A specific build identified by deployment name + Build ID
-- **Workflow Pinning**: Workflows complete on the Worker Deployment Version they started on
+- **Worker Deployment**: A logical service that groups Workers across versions for unified management. <!-- docs/encyclopedia/workers/worker-versioning.mdx:30-32 -->
+- **Worker Deployment Version**: An iteration of a Worker Deployment, identified by the deployment name plus a Build ID. <!-- docs/encyclopedia/workers/worker-versioning.mdx:36-40 -->
+- **Workflow Pinning**: A Pinned Workflow is guaranteed to complete on a single Worker Deployment Version. <!-- docs/encyclopedia/workers/worker-versioning.mdx:48-50 -->
 
-### Configuring Workers for Versioning
+### Configuring a Worker
+
+The TypeScript SDK exposes three Worker Versioning parameters under `workerDeploymentOptions`. The docs describe them as: `useWorkerVersioning` (the toggle that turns the feature on), `version` (deployment name + Build ID), and an **optional** `defaultVersioningBehavior` — if `defaultVersioningBehavior` is unset, each Workflow Type must declare its own behavior. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:141-149 -->
 
 ```typescript
-import { Worker, NativeConnection } from '@temporalio/worker';
+import { Worker } from '@temporalio/worker';
 
-const worker = await Worker.create({
-  workflowsPath: require.resolve('./workflows'),  // Use workflowBundle for production
-  taskQueue: 'my-queue',
-  connection: await NativeConnection.connect({ address: 'temporal:7233' }),
+const myWorker = await Worker.create({
+  workflowsPath: require.resolve('./workflows'),
+  taskQueue,
   workerDeploymentOptions: {
     useWorkerVersioning: true,
-    version: {
-      deploymentName: 'order-service',
-      buildId: '1.0.0',  // Git hash, semver, build number, etc.
-    },
+    version: { buildId: '1.0', deploymentName: 'llm_srv' },
   },
+  connection: nativeConnection,
 });
 ```
+<!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:209-219 -->
 
-**Configuration options:**
+**Option summary:**
 
-- `useWorkerVersioning`: Enables Worker Versioning
-- `version.deploymentName`: Logical name for your service (consistent across versions)
-- `version.buildId`: Unique identifier for this build
+- `useWorkerVersioning` — enables versioned routing for this Worker. Without it, Worker Versioning is off for the Worker. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:144 -->
+- `version` — `{ buildId, deploymentName }`. Together they identify the Worker Deployment Version this Worker reports as. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:145-146, :215 -->
+- `defaultVersioningBehavior` — **optional**. Provides a Worker-level default (`'PINNED'` or `'AUTO_UPGRADE'`) used when a Workflow Type does not declare its own behavior. The docs suggest *not* providing it when your Worker and Workflows are new, so each Workflow Type is annotated explicitly. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:147-149, :287-296 -->
+
+For the per-Workflow declaration (the value `defaultVersioningBehavior` falls back to when omitted), the TypeScript form is `setWorkflowOptions({ versioningBehavior: 'PINNED' }, helloWorld)` in the Workflow file. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:407-415 -->
+
+### Build ID identity vs. enabling Worker Versioning
+
+`useWorkerVersioning` and `version` are documented as independent parameters: one is the toggle, the other is the identity. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:141-146 -->
+
+For the modern `workerDeploymentOptions` API, the documented and canonical configuration enables versioning by setting `useWorkerVersioning: true` together with `version`. The docs do not show an explicit TypeScript example of supplying `version` while leaving `useWorkerVersioning` unset purely to report a Build ID without enrolling in versioned routing.
+<!-- VERIFY: docs/production-deployment/worker-deployments/worker-versioning.mdx shows only the `useWorkerVersioning: true` shape. If you want to set `workerDeploymentOptions.version` without enabling versioning purely to surface a Build ID, confirm the supported shape against the @temporalio/worker types before relying on it. -->
+
+The legacy (pre-2025, scheduled for March 2026 removal) TypeScript API kept the two concerns separate at the top level of `WorkerOptions`:
+
+```typescript
+// LEGACY API — for reference only; removed March 2026
+const worker = await Worker.create({
+  taskQueue: 'your_task_queue_name',
+  buildId: buildId,
+  useVersioning: true,
+});
+```
+<!-- docs/develop/typescript/worker-versioning-legacy.mdx:35-44 -->
+
+In the legacy shape, `buildId` was a top-level field and `useVersioning` was a separate boolean. Do not import that shape into the modern `workerDeploymentOptions` form; the field names and nesting differ. <!-- docs/develop/typescript/worker-versioning-legacy.mdx:17-22, :35-44 -->
 
 ### Deployment Workflow
 
-1. Deploy new Worker version with a new `buildId`
+1. Deploy a new Worker with a new `buildId` under the same `deploymentName`.
 2. Use the Temporal CLI to set the new version as current:
    ```bash
    temporal worker deployment set-current-version \
-     --deployment-name order-service \
-     --build-id 2.0.0
+       --deployment-name YourDeploymentName --build-id YourBuildID
    ```
-3. New Workflows start on the new version
-4. Existing Workflows continue on their original version until completion
-5. Decommission old Workers once all their Workflows complete
+   <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:332-335 -->
+3. New Workflows route to the new version; existing Pinned Workflows continue on their original version until they complete. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:38-39, :92-95 -->
+4. Once the old version reaches the `Drained` status (no open Pinned Workflows remain), you can decommission its Workers. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:622-632 -->
 
-### When to Use Worker Versioning
+`temporal worker deployment set-current-version` and `set-ramping-version` also accept `--unversioned` (mutually exclusive with `--build-id`) to target unversioned Workers as the current/ramping target. <!-- docs/cli/worker.mdx:373-388, :437-442 -->
 
-Worker Versioning is best suited for:
+### When to use Worker Versioning
 
-- **Short-running Workflows**: Old Workers only need to run briefly during deployment transitions
-- **Frequent deployments**: Eliminates the need for code-level patching on every change
-- **Blue-green deployments**: Run old and new versions simultaneously with traffic control
+Worker Versioning is the default recommendation for deploying Workflow code changes in production if you can run versioned Worker deployments; prefer it over patching. It pairs especially well with blue-green and rainbow deployments, supports gradual ramping, instant rollback, and Workflow Pinning. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:23-42, :117-126 -->
 
-For long-running Workflows, consider combining Worker Versioning with the Patching API, or use Continue-as-New to move Workflows to newer versions.
+For long-running Workflows, Temporal also supports an experimental "Upgrade on Continue-as-New" pattern, which lets Pinned Workflows advance to a newer version at Continue-as-New boundaries without patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:530-555 -->
 
 ## Best Practices
 
