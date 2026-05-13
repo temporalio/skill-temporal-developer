@@ -14,3 +14,4 @@ Temporal ships and supports a growing set of integrations with third-party frame
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
+| Spring AI (`temporal-spring-ai`) | Java | Durable Spring AI agents: chat-model calls run as Activities; tools dispatched per type (Activity stub, Nexus stub, `@SideEffectTool`, plain); vector stores, embeddings, and MCP clients auto-registered | `references/java/integrations/spring-ai.md` | `references/java/integrations/spring-boot.md`, `references/core/ai-patterns.md` |
