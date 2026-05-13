@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/typescript/worker-connections.md`** - TypeScript only: `NativeConnection` lifecycle for Workers (create, pass to `Worker.create()`, close on shutdown), configuration sources, and Cloud connection options
 
 ## Feedback
 
