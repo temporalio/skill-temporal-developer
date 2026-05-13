@@ -84,6 +84,8 @@ Runtime.install({ logger });
 
 ## Metrics
 
+The TypeScript SDK exposes telemetry through `Runtime.install({ telemetryOptions: { metrics: { … } } })`. Two metrics sinks are documented: a gRPC OpenTelemetry collector and a Prometheus bind address.
+
 ### Prometheus Metrics
 
 ```typescript
@@ -99,6 +101,22 @@ Runtime.install({
   },
 });
 ```
+
+The shape `metrics: { prometheus: { bindAddress } }` is the documented Prometheus form; the observability page's worked example uses `'0.0.0.0:9464'`.
+
+### OpenTelemetry collector
+
+The alternative documented sink is `metrics: { otel: { url } }`, pointing at a gRPC OpenTelemetry collector.
+
+### Custom metric handling (buffered metrics)
+
+TypeScript SDK metrics are defined in the Core SDK, which is the same shared core that backs the Python, .NET, and Ruby SDKs. On those sibling Core-based SDKs, the docs describe a custom-metric-handling path that bypasses Prometheus / OpenTelemetry export and instead lets the host application drain metric updates programmatically:
+
+- **Ruby:** an instance of `Temporalio::Runtime::MetricBuffer` is passed as the `buffer` argument to `MetricsOptions`, and `retrieve_updates` is called periodically on the buffer to get metric updates.
+- **.NET:** a `CustomMetricMeter` is set on `Telemetry.Metrics`; the `Temporalio.Extensions.DiagnosticSource` extension provides an implementation that forwards to a `System.Diagnostics.Metrics.Meter`.
+
+
+Until the TypeScript-side API is grounded in `docs/develop/typescript/platform/observability.mdx` (or an authoritative `sdk-typescript` source becomes available), prefer the documented Prometheus or OpenTelemetry sinks above. For end-to-end examples of metrics export from the TypeScript SDK, see the `interceptors-opentelemetry` sample referenced from the TypeScript observability page.
 
 ## Search Attributes (Visibility)
 
