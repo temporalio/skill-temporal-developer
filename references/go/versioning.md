@@ -236,3 +236,92 @@ temporal workflow list --query \
    ```
 3. **Test with replay** before removing old branches to verify determinism is preserved
 4. **Prefer Worker Versioning** for large-scale deployments to avoid accumulating patching branches
+
+## Upgrading on Continue-as-New
+
+Long-running Pinned Workflows that already use Continue-as-New can upgrade to newer Worker Deployment Versions at the CaN boundary without requiring patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:532 --> Each run stays pinned to its original version, the Server signals when a new Target Version becomes available, and the next CaN starts on that Target Version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:549 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:553 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:554 --> This feature is in Public Preview as an experimental SDK-level option. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541 -->
+
+### When to use it
+
+- **Entity Workflows** that run for months or years. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:537 -->
+- **Batch processing** Workflows that checkpoint with Continue-as-New. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:538 -->
+- **AI agent Workflows** with long sleeps waiting for user input. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:539 -->
+
+### Pinning the decision logic
+
+The [Decision Guide](/worker-versioning#decision-guide) is unambiguous for long-running Workflows: <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:261 -->
+
+- Long (weeks to years) **+ uses CaN** -> `PINNED` + upgrade-on-CaN; patching is never required. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:265 -->
+- Long (weeks to years) **+ does NOT use CaN** -> `AUTO_UPGRADE` + patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:266 -->
+
+### API surface (Go)
+
+Two Workflow APIs implement the pattern:
+
+- `workflow.GetInfo(ctx).GetTargetWorkerDeploymentVersionChanged()` returns `true` when the Worker Deployment now has a new Target Version (a different version has become Current or Ramping). The flag is refreshed after each WFT completes, so a Workflow that is asleep or otherwise idle will not observe the change until its next Workflow Task runs. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:558 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:570 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:571 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:583 -->
+- `workflow.NewContinueAsNewErrorWithOptions(ctx, workflow.ContinueAsNewErrorOptions{ InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade }, workflowType, args...)` returns a Continue-as-New error whose new run starts with AutoUpgrade behavior, so it lands on the Worker Deployment's Target Version. The options struct is passed before the positional `workflowType` and `args...`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:584 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:586 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:587 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:590 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:592 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:593 -->
+
+The only documented field on `workflow.ContinueAsNewErrorOptions` is `InitialVersioningBehavior`, and the only documented value is `workflow.ContinueAsNewVersioningBehaviorAutoUpgrade`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:586 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:590 -->
+
+### Worked example
+
+The Workflow Definition below ships a V1 that checks the target-version flag and continues-as-new into V2 when a new Target Version is detected. V1 represents your currently-deployed code; V2 represents the next Worker Deployment Version. The `attempt` argument is purely to demonstrate the upgrade hop in tests -- in production code, you check `GetTargetWorkerDeploymentVersionChanged` whenever your Workflow is awake (between activity calls, on Update or Signal handler entry, after a periodic timer fires, etc.) rather than on every iteration.
+
+```go
+func (w *Workflows) ContinueAsNewWithVersionUpgradeV1(
+  ctx workflow.Context,
+  attempt int,
+) (string, error) {
+  if attempt > 0 {
+    return "v1.0", nil
+  }
+
+  // Check GetTargetWorkerDeploymentVersionChanged periodically.
+  // GetTargetWorkerDeploymentVersionChanged is refreshed after each WFT completes.
+  for {
+    // Trigger a WFT when the timer expires, thereby refreshing the
+    // GetTargetWorkerDeploymentVersionChanged flag. In a real workflow that is
+    // already running activities, child workflows, or message handlers, you
+    // would not need to artificially trigger a WFT -- you could check the
+    // field periodically, or before accepting Updates, starting Activities, or
+    // starting Child Workflows.
+    err := workflow.Sleep(ctx, 10*time.Millisecond)
+    if err != nil {
+      return "", err
+    }
+    info := workflow.GetInfo(ctx)
+    if info.GetTargetWorkerDeploymentVersionChanged() {
+      return "", workflow.NewContinueAsNewErrorWithOptions(
+        ctx,
+        workflow.ContinueAsNewErrorOptions{
+          // Pass InitialVersioningBehavior=ContinueAsNewVersioningBehaviorAutoUpgrade
+          // so the new run starts with AutoUpgrade behavior and lands on the
+          // Target Version of its Worker Deployment.
+          InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade,
+        },
+        "ContinueAsNewWithVersionUpgrade",
+        attempt+1,
+      )
+    }
+  }
+}
+
+func (w *Workflows) ContinueAsNewWithVersionUpgradeV2(
+  ctx workflow.Context,
+  attempt int,
+) (string, error) {
+  return "v2.0", nil
+}
+```
+
+### The lazy-moving constraint
+
+The Target-Version-Changed information only propagates when the Workflow executes a step. A Workflow sleeping on a multi-hour or multi-day timer will not see the change until that timer fires, an Activity completes, or a Signal/Update arrives. The documented escape hatch for idle Workflows is to send them a Signal to wake them up so they can check `GetTargetWorkerDeploymentVersionChanged`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:612 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:613 --> For Entity or AI-agent shapes, this typically means scheduling a periodic timer that exists solely to refresh the flag, or checking `info.GetTargetWorkerDeploymentVersionChanged()` at the top of each Update/Signal handler and at activity boundaries.
+
+### Input compatibility across versions
+
+When the new run is built from a different Workflow Definition, the input passed by the previous version must be deserializable by the new version's signature. If incompatible, the new run may fail on its first Workflow Task. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:614 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:615 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:616 --> If you are designing for upgrade-on-CaN, keep the CaN-input struct additive-only: add fields with safe zero-value defaults, never rename or remove them, and never change their types.
+
+### Continue-as-New inheritance reminder
+
+Pinned Workflows pass their version across the Continue-as-New chain by default, so without the upgrade option a Pinned CaN run stays on the original version forever. If the new run's Task Queue is not in the same Worker Deployment as the original, no inheritance occurs and the new run starts on the Current Version of its Task Queue. <!-- docs/encyclopedia/workers/worker-versioning.mdx:129 --> <!-- docs/encyclopedia/workers/worker-versioning.mdx:130 --> <!-- docs/encyclopedia/workers/worker-versioning.mdx:132 --> Auto-Upgrade Workflows never inherit versions across CaN. <!-- docs/encyclopedia/workers/worker-versioning.mdx:136 --> Cron jobs never inherit versioning behavior or version. <!-- docs/encyclopedia/workers/worker-versioning.mdx:152 -->
