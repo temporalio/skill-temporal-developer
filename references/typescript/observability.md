@@ -100,6 +100,8 @@ Runtime.install({
 });
 ```
 
+For custom metric meters (buffered metrics, `RuntimeMetricMeter`, supported instrument types including `UpDownCounter`), see `references/typescript/buffered-metrics.md`.
+
 ## Search Attributes (Visibility)
 
 See the Search Attributes section of `references/typescript/data-handling.md`
