@@ -1,7 +1,7 @@
 ---
 name: temporal-developer
 description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
-version: 0.3.2
+version: 0.3.3
 ---
 
 # Skill: temporal-developer
@@ -76,6 +76,13 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+
+## Lambda Workers (Serverless Workers on AWS Lambda)
+
+If the developer is deploying Temporal Workers to **AWS Lambda**, point them at the lambda-workers references. The Go, Python, and TypeScript SDKs ship prerelease packages (`go.temporal.io/sdk/contrib/aws/lambdaworker`, `temporalio.contrib.aws.lambda_worker`, `@temporalio/lambda-worker`) for running a Worker inside a Lambda invocation. Worker Deployment Versioning is required. Java and .NET do not have Lambda Worker packages.
+
+- **`references/core/lambda-workers.md`** - Shared concepts: Worker Controller Instance (WCI), invocation lifecycle, scaling, IAM (two roles), deployment, troubleshooting, self-hosted setup
+  - Language-specific info at `references/{your_language}/lambda-workers.md` (Go, Python, TypeScript only)
 
 ## Task Queue Priority and Fairness
 
