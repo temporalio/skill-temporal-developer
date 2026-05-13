@@ -236,3 +236,83 @@ temporal workflow list --query \
    ```
 3. **Test with replay** before removing old branches to verify determinism is preserved
 4. **Prefer Worker Versioning** for large-scale deployments to avoid accumulating patching branches
+
+## Upgrade on Continue-as-New (Go)
+
+Long-running Workflows that use Continue-as-New can opt in, on a per-call basis, to upgrade to a newer Worker Deployment Version at the Continue-as-New boundary without requiring patching. This is a Public Preview, experimental SDK-level option <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 --> documented in `Upgrading on Continue-as-New` in `documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx` (lines 530-618).
+
+### When to use it
+
+The decision table recommends this combination for **long-running Workflows (weeks to years) that use Continue-as-New**: register them as `PINNED` and opt in to upgrade-on-CaN, with no patching required <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:265 -->. Documented use cases include Customer entity Workflows and AI agent / Chatbot Workflows <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:275-276 -->.
+
+### How it works
+
+- By default, Pinned Workflows stay on their original Worker Deployment Version even when they Continue-as-New <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:549-550 -->.
+- Each Workflow run remains pinned to its version, so no patching is required during a run <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:552 -->.
+- The Temporal Server tells the Workflow when a new Target Version becomes available <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:553 -->.
+- When the Workflow performs Continue-as-New with the upgrade option, the new run starts on the Target Version <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:554 -->.
+
+### Detecting the change
+
+The server-side concept is named `target_worker_deployment_version_changed` <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:558-559 -->. In Go, read it from `workflow.GetInfo(ctx)` via `info.GetTargetWorkerDeploymentVersionChanged()` <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:582-583 -->.
+
+This flag is refreshed after each Workflow Task completes -- it is a per-WFT check, not a sticky boolean <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:570-571 -->. You can check it periodically, or check it before accepting Updates, starting Activities, or starting Child Workflows <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:574-577 -->.
+
+### Example
+
+The following is the canonical Go example from the docs. To opt in to the upgrade on Continue-as-New, build a Continue-as-New error with `workflow.NewContinueAsNewErrorWithOptions` and set `InitialVersioningBehavior` on `workflow.ContinueAsNewErrorOptions` to `workflow.ContinueAsNewVersioningBehaviorAutoUpgrade`; passing that value makes the new run start with AutoUpgrade behavior and use the Target Version of its Worker Deployment <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:584-594 -->.
+
+<!-- Source: documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx:561-605 -->
+
+```go
+func (w *Workflows) ContinueAsNewWithVersionUpgradeV1(
+  ctx workflow.Context,
+  attempt int,
+) (string, error) {
+  if attempt > 0 {
+    return "v1.0", nil
+  }
+
+	// Check GetTargetWorkerDeploymentVersionChanged periodically.
+	// GetTargetWorkerDeploymentVersionChanged is refreshed after each WFT completes.
+  for {
+	// Trigger a WFT when timer expires, thereby refreshing the GetTargetWorkerDeploymentVersionChanged flag.
+	// Since this is just a test workflow, we aren't doing any real work. In a real workflow regularly
+	// doing non-sleep workflow tasks, you would not need to artificially trigger a WFT to refresh the
+	// GetTargetWorkerDeploymentVersionChanged flag. You could choose to check the field periodically, or you
+	// might want to check before accepting updates, starting activities, or starting child workflows.
+	err := workflow.Sleep(ctx, 10*time.Millisecond)
+	if err != nil {
+	  return "", err
+	}
+	info := workflow.GetInfo(ctx)
+	if info.GetTargetWorkerDeploymentVersionChanged() {
+	  return "", workflow.NewContinueAsNewErrorWithOptions(
+		ctx,
+		workflow.ContinueAsNewErrorOptions{
+		  // Pass InitialVersioningBehavior=workflow.ContinueAsNewVersioningBehaviorAutoUpgrade
+		  // to make the new run start with AutoUpgrade behavior and use the Target Version of
+		  // its Worker Deployment.
+		  InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade,
+		},
+		"ContinueAsNewWithVersionUpgrade",
+		attempt+1,
+	  )
+	}
+  }
+}
+
+func (w *Workflows) ContinueAsNewWithVersionUpgradeV2(
+  ctx workflow.Context,
+  attempt int,
+) (string, error) {
+  return "v2.0", nil
+}
+```
+
+### Limitations
+
+- **Lazy moving only.** Workflows must be invoked by executing a step to receive the Target-Version-Changed information; sleeping Workflows won't be proactively notified. For idle Workflows that you want to wake up so they can check `GetTargetWorkerDeploymentVersionChanged`, send them a Signal <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611-613 -->.
+- **Input compatibility.** When continuing as new to a different version, ensure the Workflow input produced by the previous version's Workflow definition is compatible with the new version's Workflow definition. If incompatible, the new run may fail on its first Workflow Task <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:614-616 -->.
+
+Conceptual treatment in `references/core/versioning.md` §Upgrade on Continue-as-New.
