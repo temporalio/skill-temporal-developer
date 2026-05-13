@@ -76,6 +76,7 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+  - For the Java `temporal-spring-ai` Spring Boot plugin (durable Spring AI agents, model calls, tools, vector stores, embeddings, MCP), see `references/java/spring-ai.md`.
 
 ## Task Queue Priority and Fairness
 

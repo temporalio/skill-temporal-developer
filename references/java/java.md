@@ -255,6 +255,7 @@ See `references/java/testing.md` for info on writing tests.
 ### Reference Files
 
 - **`references/java/spring-boot.md`** - Spring Boot integration: auto-discovery, dependency injection, worker lifecycle, testing
+- **`references/java/spring-ai.md`** - Spring AI integration (`temporal-spring-ai`): durable Spring AI agents, `ActivityChatModel` / `TemporalChatClient`, tool dispatch (Activity stubs, Nexus stubs, `@SideEffectTool`, plain tools), vector stores, embeddings, MCP
 - **`references/java/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/java/determinism.md`** - Determinism rules and safe alternatives for Java
 - **`references/java/gotchas.md`** - Java-specific mistakes and anti-patterns
