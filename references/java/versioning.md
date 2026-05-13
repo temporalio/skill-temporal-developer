@@ -280,3 +280,47 @@ temporal workflow count --query \
 5. **Use PINNED for short workflows** to simplify version management
 6. **Use AUTO_UPGRADE with patching** for long-running workflows that need updates
 7. **Generate Build IDs from code** (git hash) to ensure changes produce new versions
+
+## Upgrade on Continue-as-New (Java)
+
+This is a Public Preview, experimental SDK-level option. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 --> See the canonical docs at `documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx` §Upgrading on Continue-as-New for the authoritative description.
+
+### When to use it
+
+Use this pattern when a Workflow Type is `PINNED` and uses Continue-as-New to manage history size or run for long durations (weeks to years). It is the recommended fit on the decision table for long Workflows that use Continue-as-New. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:265 --> Typical examples are Customer entity Workflows and AI agent / Chatbot Workflows. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:275-276 -->
+
+By default, Pinned Workflows stay on their original Worker Deployment Version even when they Continue-as-New; opting into the upgrade option is what allows the next run to land on the Target Version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:549-550 -->
+
+### How it works
+
+The mechanic is a three-step interaction between the Server, the running Workflow, and Continue-as-New: <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:551-554 -->
+
+1. Each Workflow run remains pinned to its version, so no patching is needed inside a run.
+2. The Temporal Server tells the Workflow when a new Target Worker Deployment Version becomes available.
+3. When the Workflow performs Continue-as-New with the upgrade option, the new run starts on the Target Version.
+
+There is no Worker-level toggle for this behavior. The opt-in lives on the Continue-as-New call itself, so each Continue-as-New decides whether the next run should adopt the Target Version.
+
+### Detecting the change
+
+When a new Worker Deployment Version becomes Current or Ramping, active Workflows can detect this through the conceptual flag `target_worker_deployment_version_changed`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:558-559 -->
+
+This flag is refreshed after each Workflow Task completes, so it reflects the most recent server state rather than being a sticky one-time signal. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:570-571 --> A Workflow that wants to react can read the flag at natural decision points (for example, before accepting an Update, starting an Activity, or starting a Child Workflow) on each Workflow Task.
+
+### Java SDK identifiers
+
+The per-Continue-as-New opt-in concept exists across SDKs, but the canonical docs section currently provides a code example only for Go. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:561-605 --> The exact Java identifier names for the change-detection accessor, the Continue-as-New-with-options shape, and the "initial versioning behavior = auto-upgrade" hint are not enumerated in the docs file, so this skill does not name them.
+
+Java readers should:
+
+- Consult the Java SDK release notes and Javadoc that correspond to their SDK version for the exact identifier names.
+- Treat the Go example in `references/go/versioning.md` as the canonical shape — the same three pieces (read the change flag, build a Continue-as-New-with-options call, set the new run's initial versioning behavior to Auto-Upgrade so it picks up the Target Version) are what the Java equivalents must compose.
+
+### Limitations
+
+- **Lazy moving only.** Workflows must be invoked by executing a step to receive the Target-Version-Changed information; sleeping Workflows are not proactively notified. If you have idle Workflows that you want to wake up so that they can check the change flag, send them a Signal. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611-613 -->
+- **Input compatibility.** When continuing as new to a different version, ensure the Workflow input produced by the previous version's Workflow definition is compatible with the new version's Workflow definition. If incompatible, the new run may fail on its first Workflow Task. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:614-616 -->
+
+### See also
+
+Conceptual treatment in `references/core/versioning.md` §Upgrade on Continue-as-New. Canonical worked example (Go) in `references/go/versioning.md`.
