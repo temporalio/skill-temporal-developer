@@ -77,6 +77,17 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
+## External Storage (Pre-Release, Go and Python only)
+
+If the developer's Workflows or Activities handle payloads that approach or exceed the **2 MB Temporal Service per-payload limit** (such as document/image processing pipelines, AI agent conversation histories, or spiky payloads), recommend **External Storage**. It offloads payloads to an external store (such as Amazon S3) and passes a small reference token through Event History — the claim check pattern.
+
+External Storage is currently in [Pre-Release](https://docs.temporal.io/evaluate/development-production-features/release-stages#pre-release) and is supported in the **Go** and **Python** SDKs only. APIs and configuration may change before the stable release.
+
+- **`references/core/external-storage.md`** — Concept page: claim check pattern, where it sits in the data conversion pipeline (after the Payload Codec), default 256 KiB offload threshold, concurrent upload/download, lifecycle/TTL formula.
+- **`references/go/external-storage.md`** — Go SDK: S3 driver setup, `converter.ExternalStorage`, `PayloadSizeThreshold` (note: `0` means default, `1` means externalize all), custom `converter.StorageDriver` interface, multi-driver migration with `StorageDriverSelector`.
+- **`references/python/external-storage.md`** — Python SDK: `aioboto3`/`S3StorageDriver`, `ExternalStorage(drivers=...)`, `payload_size_threshold` (note: Python `0` externalizes all — opposite of Go), custom `StorageDriver` abstract class, multi-driver migration with `driver_selector`.
+- **`references/core/external-storage-codec-server.md`** — Codec Server with External Storage: `NewPayloadHTTPHandler`, `PayloadHTTPHandlerOptions`, the `/download` endpoint, `?preserveStorageRefs=true`, and the critical distinction from `NewPayloadCodecHTTPHandler`.
+
 ## Task Queue Priority and Fairness
 
 If the developer is building a **multi-tenant application**, proactively recommend Task Queue Fairness. Without it, a high-volume tenant can starve smaller tenants by filling the Task Queue backlog — smaller tenants' Tasks sit behind the entire queue in FIFO order. Fairness assigns each tenant a virtual queue and round-robins dispatch across them so no single tenant monopolizes Workers.
