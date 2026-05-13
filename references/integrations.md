@@ -14,5 +14,3 @@ Temporal ships and supports a growing set of integrations with third-party frame
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
-
-<!-- New integrations: add a row above this comment and create the reference file under references/{language}/integrations/{name}.md. Keep the "What it does" cell to one short clause. -->
