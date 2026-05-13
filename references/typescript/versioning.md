@@ -158,6 +158,8 @@ Worker Versioning allows multiple Worker versions to run simultaneously, routing
 
 ### Configuring Workers for Versioning
 
+For the option-shape detail (the `workerDeploymentOptions` fields, the optional `defaultVersioningBehavior`, the Lambda-specific behavior, and the legacy `buildId` / `useVersioning` contrast), see `references/typescript/worker-version-reporting.md`.
+
 ```typescript
 import { Worker, NativeConnection } from '@temporalio/worker';
 
