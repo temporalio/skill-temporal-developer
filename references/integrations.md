@@ -14,3 +14,5 @@ Temporal ships and supports a growing set of integrations with third-party frame
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
+| External Storage (S3 + custom drivers, **Pre-Release**) | Go | Offload large Payloads via the claim-check pattern; built-in S3 driver, custom `converter.StorageDriver`, multi-driver migration, storage-aware Codec Server | `references/go/integrations/external-storage.md` | `references/go/data-handling.md` |
+| External Storage (S3 + custom drivers, **Pre-Release**) | Python | Offload large Payloads via the claim-check pattern; built-in `S3StorageDriver` via `aioboto3` extra, custom `StorageDriver`, multi-driver migration, storage-aware Codec Server | `references/python/integrations/external-storage.md` | `references/python/data-handling.md` |
