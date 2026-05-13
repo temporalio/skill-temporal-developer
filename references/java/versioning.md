@@ -280,3 +280,67 @@ temporal workflow count --query \
 5. **Use PINNED for short workflows** to simplify version management
 6. **Use AUTO_UPGRADE with patching** for long-running workflows that need updates
 7. **Generate Build IDs from code** (git hash) to ensure changes produce new versions
+
+## Upgrading on Continue-as-New
+
+Long-running Workflows that use [Continue-as-New](https://docs.temporal.io/workflow-execution/continue-as-new) and run under `PINNED` versioning behavior can land on the latest Target Worker Deployment Version at each Continue-as-New (CaN) boundary without using the patching API. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:532-533 -->
+
+This feature is currently in **Public Preview** as an experimental SDK-level option. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 -->
+
+### When to use it
+
+- **Entity Workflows** that run for months or years <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:537 -->
+- **Batch processing** Workflows that checkpoint with Continue-as-New <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:538 -->
+- **AI agent Workflows** with long sleeps waiting for user input <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:539 -->
+
+### Decision logic
+
+The Decision guide in the canonical docs splits long-running Workflows by whether they use Continue-as-New: <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:261-266 -->
+
+- **Long-running + uses Continue-as-New** → `PINNED` + upgrade on Continue-as-New. Patching is **never required**. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:265 -->
+- **Long-running + no Continue-as-New** → `AUTO_UPGRADE` + patching with `Workflow.getVersion()`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:266 -->
+
+So if your Java Workflow is already structured around Continue-as-New (e.g., the `ClusterManagerWorkflow` shape with `Workflow.getInfo().isContinueAsNewSuggested()` checks), prefer `PINNED` plus upgrade-on-CaN over `AUTO_UPGRADE` plus patching.
+
+### How it works (language-neutral)
+
+By default, `PINNED` Workflows stay on their original Worker Deployment Version even when they Continue-as-New. With the upgrade-on-CaN option enabled: <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:549-550 -->
+
+1. Each individual Workflow run stays pinned to its starting Version, so no patching is needed mid-run. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:552 -->
+2. The Temporal Server notifies the Workflow when a new Target Worker Deployment Version becomes available (Current or Ramping). <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:553, 558-559 -->
+3. When the Workflow performs Continue-as-New with the upgrade option, the **new run** starts on the Target Version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:554 -->
+
+The new run can be started under `AUTO_UPGRADE` behavior so it picks up the Target Version of its Worker Deployment, but practically your code chooses to Continue-as-New at the next safe checkpoint and the new run boots on the new Version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:587-590 -->
+
+### Detection is lazy
+
+The "Target Version changed" signal is refreshed only as the Workflow runs Workflow Tasks. Sleeping or idle Workflows do **not** proactively learn that a new Target Version is available. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611-613 -->
+
+The documented escape hatch is to send the Workflow a **Signal** to wake it up so it can check the Target-Version-Changed flag and decide whether to Continue-as-New. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:612-613 -->
+
+In practice, check the flag in the natural places where a long-running Workflow already does Workflow Tasks: before accepting Updates, before starting Activities, before launching Child Workflows, or at regular timer boundaries.
+
+### Input compatibility caveat
+
+When you Continue-as-New across a Version change, the **previous Version writes the input** that the **new Version reads**. If the new Workflow definition's input shape is not compatible with what the old Version produced, the new run can fail on its first Workflow Task. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:614-616 -->
+
+Plan Continue-as-New input objects (e.g., the `ClusterManagerInput` style class) with the same care you give Activity input/output: additive, optional fields; no removed or renamed required fields between Versions.
+
+### Continue-as-New inheritance reminder
+
+By default, Continue-as-New on a `PINNED` Workflow inherits the parent's pinned Version across the chain — that is the behavior the upgrade-on-CaN option is designed to override at a chosen boundary. <!-- docs/encyclopedia/workers/worker-versioning.mdx:129-132 -->
+
+If the new run's Task Queue is **not** in the same Worker Deployment as the original Workflow, no inheritance occurs and the new run starts on the Current Version of its Task Queue instead. <!-- docs/encyclopedia/workers/worker-versioning.mdx:131-132 -->
+
+Auto-upgrade Workflows never inherit versions across Continue-as-New. <!-- docs/encyclopedia/workers/worker-versioning.mdx:134-136 -->
+
+### Java SDK API status
+
+The canonical Temporal documentation worked example for upgrade-on-Continue-as-New is currently provided **only in Go**, using `workflow.GetInfo(...).GetTargetWorkerDeploymentVersionChanged()` and `workflow.NewContinueAsNewErrorWithOptions(..., InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade, ...)`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:561-605 -->
+
+As of 2026-05, the docs clone does **not** document the equivalent Java SDK token names for this Public Preview feature, so this section deliberately omits a Java code snippet to avoid inventing symbol names. For the worked code example, see:
+
+- `references/go/versioning.md` § Upgrading on Continue-as-New
+- The canonical page: `docs/production-deployment/worker-deployments/worker-versioning.mdx` § Upgrading on Continue-as-New
+
+<!-- VERIFY: Java SDK token names for upgrade-on-CaN — docs only document Go as of 2026-05; consult Java SDK source or release notes -->
