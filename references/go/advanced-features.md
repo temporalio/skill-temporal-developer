@@ -124,6 +124,8 @@ w := worker.New(c, "my-task-queue", worker.Options{
 
 Scale pollers based on task queue throughput. If you observe high schedule-to-start latency, increase the number of pollers or add more workers.
 
+For dynamic, resource-aware slot allocation (resource-based and composite tuners, the `contrib/sysinfo` package), see `references/go/resource-tuning.md`. Tuners and the `MaxConcurrentXxx` options above cannot be used together — setting both errors at Worker initialization.
+
 ## Sessions
 
 Go-specific feature for routing multiple activities to the same worker. All activities using the session context execute on the same worker host.
