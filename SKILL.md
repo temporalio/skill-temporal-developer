@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/python/langsmith-tracing.md`** - Python only. Experimental `LangSmithPlugin` from `temporalio.contrib.langsmith` for tracing Workflows and Activities (and optionally Temporal operations) in LangSmith with replay-safe, propagated trace context.
 
 ## Feedback
 
