@@ -255,6 +255,25 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 })
 ```
 
+### Which converter encodes memo values?
+
+As of Go SDK **v1.42.0** (April 2025), memo values are encoded with the user-provided `DataConverter` first, with a fallback to the default JSON `DataConverter` if the user converter returns an error. <!-- sdk-go: internal/internal_flags.go SDKFlagMemoUserDCEncode; PR #2121; release v1.42.0 -->
+
+Behavior precisely:
+
+- The user `DataConverter.ToPayload(value)` is attempted first.
+- On error, the default data converter is tried (`converter.GetDefaultDataConverter().ToPayload`).
+- If the default DC also fails, the **user converter's error** is returned. <!-- sdk-go: internal/internal_flags.go SDKFlagMemoUserDCEncode (constant comment) -->
+
+This is controlled internally by the SDK flag `SDKFlagMemoUserDCEncode` (id `7`), which is **enabled by default** and negotiated via SDK metadata with the server — there is no public `client.Options` field. <!-- sdk-go: internal/internal_flags.go sdkFlagsAllowed[SDKFlagMemoUserDCEncode] = true -->
+
+**Implications:**
+
+- If your `DataConverter` is wrapped with `CodecDataConverter` (e.g., for encryption), memo payloads now pass through the `PayloadCodec` too. Memos written this way require the same codec to decode them in tooling such as the Web UI / CLI (configure a Codec Server).
+- Memos written by pre-v1.42.0 clients are still decodable: they were always encoded with the default JSON DC, and the default DC is registered as the JSON fallthrough in any standard composite data converter.
+
+**Opt-out (emergency only):** set the env var `TEMPORAL_SDK_FLAG_7=0` before the SDK initializes. The SDK source itself documents this mechanism as "strongly discouraged" — it exists as an escape hatch in case of an unanticipated regression. <!-- sdk-go: internal/internal_flags.go loadFlagOverridesFromEnv -->
+
 ## Best Practices
 
 1. Use structs with exported fields for inputs and outputs
