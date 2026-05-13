@@ -102,6 +102,63 @@ const worker = await Worker.create({
 - `shutdownGraceTime`: Time to wait for in-progress work before forced shutdown
 - `maxCachedWorkflows`: Number of workflows to keep in cache (reduces replay on cache hit)
 
+## Worker Connection Replacement
+
+Available since `@temporalio/worker` **v1.15.0**. <!-- sdk-typescript: releases v1.15.0, PR #1902 -->
+
+A running `Worker` exposes its underlying service connection as a property. Assigning a new `NativeConnection` to that property swaps the connection in place — the Worker keeps running, and **subsequent** calls it makes to Temporal use the new connection. <!-- sdk-typescript: packages/worker/src/worker.ts, JSDoc on `set connection` -->
+
+### API
+
+```typescript
+class Worker {
+  // Returns undefined for replay workers (workers created without a connection).
+  get client(): Client | undefined;          // <!-- sdk-typescript: packages/worker/src/worker.ts -->
+  get connection(): NativeConnection | undefined;  // <!-- sdk-typescript: packages/worker/src/worker.ts -->
+
+  // Replace the connection. The Worker must have been created with one.
+  set connection(newConnection: NativeConnection);  // <!-- sdk-typescript: packages/worker/src/worker.ts:1286 -->
+}
+```
+
+There is **no** `worker.replaceConnection(...)` method and **no** `worker.replaceClient(...)` method on the public API — assignment to the `connection` property is the entire surface. <!-- sdk-typescript: packages/worker/src/worker.ts -->
+
+### Usage
+
+```typescript
+import { Worker, NativeConnection } from '@temporalio/worker';
+
+const initialConnection = await NativeConnection.connect({ address: 'temporal-a:7233' });
+const worker = await Worker.create({
+  connection: initialConnection,
+  namespace: 'default',
+  taskQueue: 'my-queue',
+  workflowBundle: { codePath: require.resolve('./workflow-bundle.js') },
+  activities,
+});
+
+// Start the worker (do not await — runs until shutdown).
+void worker.run();
+
+// Later — swap the connection without restarting the worker.
+const replacementConnection = await NativeConnection.connect({ address: 'temporal-b:7233' });
+worker.connection = replacementConnection;  // <!-- sdk-typescript: packages/test/src/test-worker-connection-replacement.ts -->
+```
+
+### Behavior and constraints
+
+- **Must be created with a connection.** Assigning to `worker.connection` throws `IllegalStateError('Cannot replace connection on a worker without a connection')` if the Worker was constructed without one (for example, a replay worker). <!-- sdk-typescript: packages/worker/src/worker.ts:1287 -->
+- **Identity is a no-op.** If the new connection wraps the same underlying native client as the current one, the setter returns without doing anything. <!-- sdk-typescript: packages/worker/src/worker.ts:~1288 -->
+- **Previous connection is closed only if the SDK created it.** If the previous `NativeConnection` is one the SDK created internally (an `InternalNativeConnection`), it is closed asynchronously after replacement. A user-supplied `NativeConnection` on the previous slot is **not** closed by the setter — closing it is the caller's responsibility. <!-- sdk-typescript: packages/worker/src/worker.ts:~1303 -->
+- **Cached `client` is cleared.** `worker.client` is lazily constructed and cached; after replacement the cache is dropped and a new `Client` is created on the next access. <!-- sdk-typescript: packages/worker/src/worker.ts:~1300 -->
+- **Errors propagate.** If the native bridge fails to swap the underlying client, the setter throws. <!-- sdk-typescript: packages/worker/src/worker.ts, JSDoc on `set connection` -->
+
+### When to use it
+
+This API is intended for **refreshing** a Worker's connection — for example, after a transport-level disruption or when long-lived credentials need a fresh underlying gRPC channel. Note that for API-key updates specifically, the existing `connection.setApiKey(newKey)` on the same `NativeConnection` is usually sufficient and does not require replacing the connection object. <!-- docs/develop/typescript/client/temporal-client.mdx:473 -->
+
+Switching a Worker to a **different Temporal server** is technically possible via this API but is explicitly called out as "not a recommended use case" by the feature's introducing PR. <!-- sdk-typescript: PR #1902 description --> For server migrations, prefer shutting down the Worker and starting a new one against the new server.
+
 ## Sinks
 
 Sinks allow workflows to emit events for side effects (logging, metrics).
