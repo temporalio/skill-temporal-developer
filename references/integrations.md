@@ -13,4 +13,5 @@ Temporal ships and supports a growing set of integrations with third-party frame
 
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
+| Google ADK (`temporalio[google-adk]`) | Python | Run Google ADK agents inside Temporal Workflows; LLM calls, function tools, and MCP toolsets execute as Activities with durable retry/replay | `references/python/integrations/google-adk.md` | `references/python/ai-patterns.md` |
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
