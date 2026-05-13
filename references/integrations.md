@@ -14,3 +14,4 @@ Temporal ships and supports a growing set of integrations with third-party frame
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
+| Jackson 3 (`tools.jackson.core:jackson-databind:3.x`) | Java | Opt-in `JacksonJsonPayloadConverter.setDefaultAsJackson3(...)` swap of the default JSON payload converter to Jackson 3; wire-compatible (`json/plain`) with Jackson 2 | `references/java/integrations/jackson-3.md` | `references/java/data-handling.md`, `references/java/integrations/spring-boot.md` |
