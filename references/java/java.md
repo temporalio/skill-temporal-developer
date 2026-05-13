@@ -193,7 +193,7 @@ public class Starter {
 - `Worker` -- polls a single Task Queue, register workflows and activities on it
 - Call `factory.start()` to begin polling
 
-For Spring Boot apps, `temporal-spring-boot-starter` handles all of the above automatically via auto-configuration. See `references/java/spring-boot.md`.
+For Spring Boot apps, `temporal-spring-boot-starter` handles all of the above automatically via auto-configuration. See `references/java/integrations/spring-boot.md`.
 
 ## File Organization Best Practice
 
@@ -254,7 +254,6 @@ See `references/java/testing.md` for info on writing tests.
 
 ### Reference Files
 
-- **`references/java/spring-boot.md`** - Spring Boot integration: auto-discovery, dependency injection, worker lifecycle, testing
 - **`references/java/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/java/determinism.md`** - Determinism rules and safe alternatives for Java
 - **`references/java/gotchas.md`** - Java-specific mistakes and anti-patterns
@@ -264,3 +263,7 @@ See `references/java/testing.md` for info on writing tests.
 - **`references/java/advanced-features.md`** - Schedules, worker tuning, and more
 - **`references/java/data-handling.md`** - Data converters, Jackson, payload encryption
 - **`references/java/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
+
+### Java Integrations
+
+For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see `references/integrations.md` and filter for Java. Reference files live under `references/java/integrations/`.

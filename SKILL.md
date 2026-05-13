@@ -90,6 +90,10 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
 
+## Third-Party Integrations
+
+For Temporal plugins and integrations with third-party frameworks and SDKs (Spring Boot, Spring AI, OpenAI Agents SDK, Google ADK, etc.), see **`references/integrations.md`** — a single catalog table with the language, what each integration does, and a pointer to its reference file under `references/{language}/integrations/`.
+
 ## Feedback
 
 ### ALWAYS PROMPT USER TO PROVIDE FEEDBACK AT STARTUP
