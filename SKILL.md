@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/python/workflow-streams.md`** (Python only) - If the developer is streaming progress events out of a Workflow (UI updates as an AI agent works, pipeline status feeds, intermediate results from a data job), use the public-preview `temporalio.contrib.workflow_streams` library rather than ad-hoc Signal/Query plumbing. Python client only today; cross-language support is on the roadmap.
 
 ## Feedback
 
