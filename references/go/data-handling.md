@@ -255,6 +255,12 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 })
 ```
 
+### Memo serialization and the user DataConverter
+
+`StartWorkflowOptions.Memo` is typed `map[string]interface{}` and each value is sent to the server as a `Payload`. Historically the Go SDK has serialized memo values with a built-in JSON converter independent of whichever `DataConverter` was installed on the client; a recent Go SDK release adds an opt-in flag that routes memo values through the same user `DataConverter` that is set via `client.Dial(client.Options{DataConverter: ...})`. The flag's exact identifier, location (client option vs. worker option vs. start option), and default are not yet covered by `../documentation/` — verify against the SDK release notes / `go.temporal.io/sdk` source before naming it in code.
+
+When the flag is enabled, the same `CompositeDataConverter` ordering described under [Custom Data Converter](#custom-data-converter) applies to memo values, and any `PayloadCodec` wrapped via `converter.NewCodecDataConverter` will encode memo payloads as well — memos are listed alongside Workflow inputs/outputs and Signal inputs as codec-eligible persisted data. Without the flag, custom `PayloadConverter`s registered only in the user `DataConverter` will not be consulted for memo values; plan accordingly if you rely on a non-JSON encoding (e.g., msgpack, custom proto) and need it to apply to memos.
+
 ## Best Practices
 
 1. Use structs with exported fields for inputs and outputs
