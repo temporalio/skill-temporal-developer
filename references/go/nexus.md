@@ -4,9 +4,9 @@ This file covers the Go SDK programming model for Temporal Nexus: import paths, 
 
 ## Support status
 
-Temporal Go SDK support for Nexus is **Generally Available**. <!-- docs/develop/go/nexus/feature-guide.mdx:23 -->
+Temporal Go SDK support for Nexus is **Generally Available**.
 
-Recommended prerequisites from the feature guide: <!-- docs/develop/go/nexus/feature-guide.mdx:50-52 -->
+Recommended prerequisites from the feature guide:
 
 - Temporal CLI v1.3.0 or higher.
 - Temporal Go SDK v1.33.0 or higher.
@@ -15,14 +15,14 @@ Recommended prerequisites from the feature guide: <!-- docs/develop/go/nexus/fea
 
 Nexus in Go spans four packages:
 
-- `github.com/nexus-rpc/sdk-go/nexus` — the cross-SDK Nexus primitives (`NewSyncOperation`, `NewService`, `StartOperationOptions`). <!-- docs/develop/go/nexus/feature-guide.mdx:149 -->
-- `go.temporal.io/sdk/temporalnexus` — Temporal-specific helpers and builders (`GetClient`, `NewWorkflowRunOperation`, `MustNewWorkflowRunOperationWithOptions`, `WorkflowRunOperationOptions`, `WorkflowHandle`, `ExecuteUntypedWorkflow`). <!-- docs/develop/go/nexus/feature-guide.mdx:126-130 -->
-- `go.temporal.io/sdk/workflow` — caller-side `NewNexusClient`, `NexusOperationOptions`, `NexusOperationExecution`. <!-- docs/develop/go/nexus/feature-guide.mdx:334-356 -->
-- `go.temporal.io/sdk/worker` and `go.temporal.io/sdk/client` — worker creation and Temporal Client. <!-- docs/develop/go/nexus/feature-guide.mdx:272-273 -->
+- `github.com/nexus-rpc/sdk-go/nexus` — the cross-SDK Nexus primitives (`NewSyncOperation`, `NewService`, `StartOperationOptions`).
+- `go.temporal.io/sdk/temporalnexus` — Temporal-specific helpers and builders (`GetClient`, `NewWorkflowRunOperation`, `MustNewWorkflowRunOperationWithOptions`, `WorkflowRunOperationOptions`, `WorkflowHandle`, `ExecuteUntypedWorkflow`).
+- `go.temporal.io/sdk/workflow` — caller-side `NewNexusClient`, `NexusOperationOptions`, `NexusOperationExecution`.
+- `go.temporal.io/sdk/worker` and `go.temporal.io/sdk/client` — worker creation and Temporal Client.
 
 ## Defining the Service contract
 
-A Nexus Service contract is a shared Go package that declares the Service and Operation **name constants** plus the input/output Go types. Callers and handlers both import this package so they speak the same wire contract. <!-- docs/develop/go/nexus/feature-guide.mdx:91-98 -->
+A Nexus Service contract is a shared Go package that declares the Service and Operation **name constants** plus the input/output Go types. Callers and handlers both import this package so they speak the same wire contract.
 
 ```go
 // service/api.go  --  docs/develop/go/nexus/feature-guide.mdx:100-116
@@ -40,11 +40,11 @@ type EchoInput struct {
 type EchoOutput EchoInput
 ```
 
-The default Data Converter encodes payloads in order: Null, Byte array, Protobuf JSON, then JSON; in polyglot setups prefer Protobuf or JSON-friendly types. <!-- docs/develop/go/nexus/feature-guide.mdx:95-98 -->
+The default Data Converter encodes payloads in order: Null, Byte array, Protobuf JSON, then JSON; in polyglot setups prefer Protobuf or JSON-friendly types.
 
 ## Synchronous Operation handler
 
-Use `nexus.NewSyncOperation` to expose a simple RPC-style handler. The handler signature is `func(ctx context.Context, input TIn, options nexus.StartOperationOptions) (TOut, error)`. <!-- docs/develop/go/nexus/feature-guide.mdx:136-167 -->
+Use `nexus.NewSyncOperation` to expose a simple RPC-style handler. The handler signature is `func(ctx context.Context, input TIn, options nexus.StartOperationOptions) (TOut, error)`.
 
 ```go
 // handler/app.go  --  docs/develop/go/nexus/feature-guide.mdx:142-166
@@ -68,13 +68,13 @@ var EchoOperation = nexus.NewSyncOperation(
 )
 ```
 
-Sync handlers should be **reliable** — the circuit breaker trips after 5 consecutive retryable errors and blocks all Operations from the caller to that Endpoint. <!-- docs/develop/go/nexus/feature-guide.mdx:124 -->
+Sync handlers should be **reliable** — the circuit breaker trips after 5 consecutive retryable errors and blocks all Operations from the caller to that Endpoint.
 
 ## Using the Temporal Client from a sync handler
 
-Inside a sync handler, call `temporalnexus.GetClient(ctx)` to get the same Temporal `client.Client` the Worker was initialized with. Typical uses are Signal, Query, Update, Signal-With-Start, and Update-With-Start. <!-- docs/develop/go/nexus/feature-guide.mdx:137,170-175 -->
+Inside a sync handler, call `temporalnexus.GetClient(ctx)` to get the same Temporal `client.Client` the Worker was initialized with. Typical uses are Signal, Query, Update, Signal-With-Start, and Update-With-Start.
 
-The `ctx` passed to the handler is already set with the Nexus request deadline. Pass that `ctx` straight into Temporal Client calls so the deadline propagates; Updates in particular should be short-lived to fit within the deadline. <!-- docs/develop/go/nexus/feature-guide.mdx:173-175 -->
+The `ctx` passed to the handler is already set with the Nexus request deadline. Pass that `ctx` straight into Temporal Client calls so the deadline propagates; Updates in particular should be short-lived to fit within the deadline.
 
 ```go
 // docs/develop/go/nexus/feature-guide.mdx:184-193
@@ -97,7 +97,7 @@ var GetLanguagesOperation = nexus.NewSyncOperation(
 
 ## Asynchronous Workflow-Run Operation
 
-Use `temporalnexus.NewWorkflowRunOperation` to expose a Workflow as an asynchronous Nexus Operation. The third argument is an options function that returns `client.StartWorkflowOptions`. <!-- docs/develop/go/nexus/feature-guide.mdx:200-217 -->
+Use `temporalnexus.NewWorkflowRunOperation` to expose a Workflow as an asynchronous Nexus Operation. The third argument is an options function that returns `client.StartWorkflowOptions`.
 
 ```go
 // handler/app.go  --  docs/develop/go/nexus/feature-guide.mdx:205-217
@@ -118,14 +118,14 @@ var HelloOperation = temporalnexus.NewWorkflowRunOperation(
 
 Two key points:
 
-- `options.RequestID` is **stable across retries** of the operation, which makes it a safe deterministic dedup key when no business ID is available. <!-- docs/develop/go/nexus/feature-guide.mdx:210-212 -->
-- If `TaskQueue` is omitted, the handler Workflow is started on the same task queue this Nexus Operation is handled on. <!-- docs/develop/go/nexus/feature-guide.mdx:213 -->
+- `options.RequestID` is **stable across retries** of the operation, which makes it a safe deterministic dedup key when no business ID is available.
+- If `TaskQueue` is omitted, the handler Workflow is started on the same task queue this Nexus Operation is handled on.
 
-For attaching multiple Nexus callers to a single handler Workflow, use a Conflict-Policy of Use-Existing (see core/nexus.md). <!-- docs/develop/go/nexus/feature-guide.mdx:223-227 -->
+For attaching multiple Nexus callers to a single handler Workflow, use a Conflict-Policy of Use-Existing (see core/nexus.md).
 
 ## Multiple Workflow arguments
 
-A Nexus Operation accepts only one input parameter. To start a Workflow that takes multiple arguments, use `MustNewWorkflowRunOperationWithOptions` (or `NewWorkflowRunOperationWithOptions`) together with `temporalnexus.WorkflowRunOperationOptions[TIn, TOut]` and `temporalnexus.ExecuteUntypedWorkflow`. <!-- docs/develop/go/nexus/feature-guide.mdx:231-257 -->
+A Nexus Operation accepts only one input parameter. To start a Workflow that takes multiple arguments, use `MustNewWorkflowRunOperationWithOptions` (or `NewWorkflowRunOperationWithOptions`) together with `temporalnexus.WorkflowRunOperationOptions[TIn, TOut]` and `temporalnexus.ExecuteUntypedWorkflow`.
 
 ```go
 // nexus-multiple-arguments/handler/app.go
@@ -153,11 +153,11 @@ var HelloOperation = temporalnexus.MustNewWorkflowRunOperationWithOptions(
 )
 ```
 
-`ExecuteUntypedWorkflow` returns a `temporalnexus.WorkflowHandle[TOut]`, which the framework uses to track the asynchronous result. <!-- docs/develop/go/nexus/feature-guide.mdx:239-242 -->
+`ExecuteUntypedWorkflow` returns a `temporalnexus.WorkflowHandle[TOut]`, which the framework uses to track the asynchronous result.
 
 ## Registering with a Worker
 
-Construct a `nexus.Service`, register your operations on it, then attach it to a `worker.Worker`. Also register the handler Workflow itself. <!-- docs/develop/go/nexus/feature-guide.mdx:295-311 -->
+Construct a `nexus.Service`, register your operations on it, then attach it to a `worker.Worker`. Also register the handler Workflow itself.
 
 ```go
 // handler/worker/main.go  --  docs/develop/go/nexus/feature-guide.mdx:266-310
@@ -204,11 +204,11 @@ func main() {
 }
 ```
 
-Order matters: register Workflows and the Nexus Service on the Worker **before** calling `w.Run`. <!-- docs/develop/go/nexus/feature-guide.mdx:303-309 -->
+Order matters: register Workflows and the Nexus Service on the Worker **before** calling `w.Run`.
 
 ## Caller Workflow
 
-A caller Workflow uses `workflow.NewNexusClient(endpointName, serviceName)` to build a Nexus client bound to a specific endpoint and service, then calls `ExecuteOperation`. The returned future is resolved when the operation finishes. <!-- docs/develop/go/nexus/feature-guide.mdx:333-343 -->
+A caller Workflow uses `workflow.NewNexusClient(endpointName, serviceName)` to build a Nexus client bound to a specific endpoint and service, then calls `ExecuteOperation`. The returned future is resolved when the operation finishes.
 
 ```go
 // caller/workflows.go  --  docs/develop/go/nexus/feature-guide.mdx:320-344
@@ -244,7 +244,7 @@ func EchoCallerWorkflow(ctx workflow.Context, message string) (string, error) {
 
 ### Waiting for the operation to start
 
-For async operations you can optionally wait for the start phase to complete by calling `fut.GetNexusOperationExecution()`. It resolves to a `workflow.NexusOperationExecution`, which carries the **operation token** — a handle suitable for follow-up actions like external cancellation. <!-- docs/develop/go/nexus/feature-guide.mdx:346-364 -->
+For async operations you can optionally wait for the start phase to complete by calling `fut.GetNexusOperationExecution()`. It resolves to a `workflow.NexusOperationExecution`, which carries the **operation token** — a handle suitable for follow-up actions like external cancellation.
 
 ```go
 // docs/develop/go/nexus/feature-guide.mdx:346-364
@@ -274,11 +274,11 @@ func HelloCallerWorkflow(ctx workflow.Context, name string, language service.Lan
 
 ## Setting timeouts
 
-Pass timeouts on `workflow.NexusOperationOptions` when calling `ExecuteOperation`. The three timeouts cover different stages of the operation lifecycle — see `core/nexus.md` for what each one means. <!-- docs/develop/go/nexus/feature-guide.mdx:369-406 -->
+Pass timeouts on `workflow.NexusOperationOptions` when calling `ExecuteOperation`. The three timeouts cover different stages of the operation lifecycle — see `core/nexus.md` for what each one means.
 
 ### Schedule-to-Close
 
-Limits the **total** duration of the operation, from scheduling through completion; the Nexus Machinery retries failed requests until this is exceeded. <!-- docs/develop/go/nexus/feature-guide.mdx:374-383 -->
+Limits the **total** duration of the operation, from scheduling through completion; the Nexus Machinery retries failed requests until this is exceeded.
 
 ```go
 fut := c.ExecuteOperation(ctx, service.HelloOperationName, service.HelloInput{Name: name, Language: language},
@@ -289,7 +289,7 @@ fut := c.ExecuteOperation(ctx, service.HelloOperationName, service.HelloInput{Na
 
 ### Schedule-to-Start
 
-Limits how long the caller will wait for the operation to be **started** by the handler. If not set, no Schedule-to-Start timeout is enforced. <!-- docs/develop/go/nexus/feature-guide.mdx:386-394 -->
+Limits how long the caller will wait for the operation to be **started** by the handler. If not set, no Schedule-to-Start timeout is enforced.
 
 ```go
 fut := c.ExecuteOperation(ctx, service.HelloOperationName, service.HelloInput{Name: name, Language: language},
@@ -300,7 +300,7 @@ fut := c.ExecuteOperation(ctx, service.HelloOperationName, service.HelloInput{Na
 
 ### Start-to-Close
 
-Limits how long the caller will wait for an **asynchronous** operation to complete after it has been started. Applies only to async operations; if not set, no Start-to-Close timeout is enforced. <!-- docs/develop/go/nexus/feature-guide.mdx:397-406 -->
+Limits how long the caller will wait for an **asynchronous** operation to complete after it has been started. Applies only to async operations; if not set, no Start-to-Close timeout is enforced.
 
 ```go
 fut := c.ExecuteOperation(ctx, service.HelloOperationName, service.HelloInput{Name: name, Language: language},
@@ -311,7 +311,7 @@ fut := c.ExecuteOperation(ctx, service.HelloOperationName, service.HelloInput{Na
 
 ## Cancellation
 
-To cancel a Nexus Operation from within a caller Workflow, derive a new context with `workflow.WithCancel`. The returned cancel function cancels any SDK call that received that context. The `ExecuteOperation` future is resolved when the operation finishes — whether it succeeds, fails, times out, or is canceled. <!-- docs/develop/go/nexus/feature-guide.mdx:558-562 -->
+To cancel a Nexus Operation from within a caller Workflow, derive a new context with `workflow.WithCancel`. The returned cancel function cancels any SDK call that received that context. The `ExecuteOperation` future is resolved when the operation finishes — whether it succeeds, fails, times out, or is canceled.
 
 ```go
 // docs/develop/go/nexus/feature-guide.mdx:558-562
@@ -323,17 +323,15 @@ var res service.HelloOutput
 err := fut.Get(ctx, &res) // resolves when the operation finishes (success, failure, timeout, or cancel)
 ```
 
-Key constraints from the Go feature guide: <!-- docs/develop/go/nexus/feature-guide.mdx:564-570 -->
+Key constraints from the Go feature guide:
 
 - **Only asynchronous operations can be canceled** — cancellation is delivered using the operation token.
 - The Workflow or other resource backing the operation may **ignore** the cancellation request; if ignored, the operation may end in a terminal state.
 - Once the caller Workflow completes, the Nexus Machinery will not make further attempts to cancel operations that are still running. To ensure cancellations are delivered, wait for all pending operations to finish before exiting the Workflow.
 
-<!-- VERIFY: The Go feature guide does not enumerate cancellation-type enum names (ABANDON / TRY_CANCEL / WAIT_REQUESTED / WAIT_COMPLETED). If those names exist on `workflow.NexusOperationOptions` in the Go SDK API, they are not documented in feature-guide.mdx. -->
-
 ## History events
 
-Nexus events are part of the **caller's** Workflow history. <!-- docs/develop/go/nexus/feature-guide.mdx:749-770 -->
+Nexus events are part of the **caller's** Workflow history.
 
 For **asynchronous** Nexus Operations:
 
@@ -346,7 +344,7 @@ For **synchronous** Nexus Operations:
 - `NexusOperationScheduled`
 - `NexusOperationCompleted`
 
-`NexusOperationStarted` is **not** reported for synchronous operations. <!-- docs/develop/go/nexus/feature-guide.mdx:766-770 -->
+`NexusOperationStarted` is **not** reported for synchronous operations.
 
 Inspect them with the standard CLI commands:
 
@@ -357,7 +355,7 @@ temporal workflow show -w <ID>
 
 ## End-to-end recipe pointer
 
-The full local-dev flow from the feature guide: <!-- docs/develop/go/nexus/feature-guide.mdx:46-87,513-555 -->
+The full local-dev flow from the feature guide:
 
 1. `temporal server start-dev` to bring up the dev server with Nexus enabled.
 2. `temporal operator namespace create --namespace my-target-namespace` and `--namespace my-caller-namespace`.
@@ -370,7 +368,7 @@ See the feature guide for the full sequence, including expected log output.
 
 ## Cross-Namespace in Temporal Cloud
 
-For Temporal Cloud, the feature guide uses `tcld` to create caller/handler namespaces and the Nexus Endpoint, plus mTLS certs (or API keys) for the Workers. The endpoint-creation command in the Go feature guide is: <!-- docs/develop/go/nexus/feature-guide.mdx:622-632 -->
+For Temporal Cloud, the feature guide uses `tcld` to create caller/handler namespaces and the Nexus Endpoint, plus mTLS certs (or API keys) for the Workers. The endpoint-creation command in the Go feature guide is:
 
 ```
 tcld nexus endpoint create \
@@ -380,8 +378,6 @@ tcld nexus endpoint create \
   --description-file description.md
 ```
 
-Creating a Nexus Endpoint requires a Developer account role or higher and NamespaceAdmin permission on the `--target-namespace`. <!-- docs/develop/go/nexus/feature-guide.mdx:622 -->
-
-<!-- VERIFY: The Go feature guide's tcld example does NOT include a `--allow-namespace` flag for restricting which caller namespaces may invoke the endpoint. Confirm whether that flag exists in the current tcld release before relying on it here; the core reference is the source of truth for any allow-list configuration. -->
+Creating a Nexus Endpoint requires a Developer account role or higher and NamespaceAdmin permission on the `--target-namespace`.
 
 For full Cloud setup (cert generation, `tcld namespace create`, connecting Workers with mTLS or API keys), see the feature guide and `core/nexus.md` rather than reproducing it here.
