@@ -219,6 +219,8 @@ public class MyWorkflowImpl implements MyWorkflow {
 }
 ```
 
+For *cross-Namespace* external-workflow targets (or `ChildWorkflowOptions` set to a different Namespace), see `references/java/cross-namespace-deprecation.md` — Temporal Cloud does not support these and Nexus is the supported alternative.
+
 ## Parallel Execution
 
 ```java

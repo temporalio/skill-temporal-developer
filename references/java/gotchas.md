@@ -177,3 +177,7 @@ public class GoodWorkflow implements MyWorkflow {
 ```
 
 **Why this matters:** `Thread.sleep` uses the system clock, which differs between original execution and replay. `Workflow.sleep` creates a durable timer in the event history, ensuring consistent behavior during replay. Unlike Python and TypeScript, there is no sandbox to catch this — the call silently succeeds and only fails on replay.
+
+## Cross-Namespace Child Workflows and External Signals
+
+Targeting a Workflow in a *different* Namespace via `ChildWorkflowOptions` (with a target Namespace) or `Workflow.newExternalWorkflowStub` is not supported on Temporal Cloud, and self-hosted operators must remove such calls before Cloud migration. Same-Namespace use of these APIs is unaffected. See `references/java/cross-namespace-deprecation.md`.

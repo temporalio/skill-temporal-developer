@@ -289,3 +289,7 @@ deadline := workflow.Now(ctx).Add(24 * time.Hour)
 ```
 
 **Why this matters:** `time.Now()`, `time.Sleep()`, and `time.After()` use the system clock, which differs between original execution and replay. The `workflow.*` equivalents create durable, deterministic entries in the event history.
+
+## Cross-Namespace Child Workflows and External Signals
+
+Targeting a Workflow in a *different* Namespace via `workflow.ChildWorkflowOptions{Namespace: ...}`, `workflow.SignalExternalWorkflow(..., targetNamespace, ...)`, or `workflow.RequestCancelExternalWorkflow(..., targetNamespace, ...)` is not supported on Temporal Cloud, and self-hosted operators must remove such calls before Cloud migration. Same-Namespace use (empty Namespace string, or matching the caller's Namespace) is unaffected. See `references/go/cross-namespace-deprecation.md`.

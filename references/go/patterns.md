@@ -187,6 +187,8 @@ func CoordinatorWorkflow(ctx workflow.Context, targetWorkflowID string) error {
 }
 ```
 
+For *cross-Namespace* signal/cancel/child usage (non-empty target Namespace), see `references/go/cross-namespace-deprecation.md` — Temporal Cloud does not support these and Nexus is the supported alternative.
+
 ## Parallel Execution
 
 Use `workflow.Go` to launch parallel work and `workflow.Selector` to collect results.
