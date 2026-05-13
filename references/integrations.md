@@ -14,3 +14,4 @@ Temporal ships and supports a growing set of integrations with third-party frame
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
+| LangSmith tracing (experimental) | Python | Plugin that emits LangSmith traces for Workflow and Activity executions; wires via `plugins=[…]` on Client and Worker | `references/python/integrations/langsmith.md` | `references/python/ai-patterns.md`, `references/python/observability.md` |
