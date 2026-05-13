@@ -322,6 +322,14 @@ class DurableAgentWorkflow:
         return result.output
 ```
 
+## Google ADK Integration
+
+If using [Google Agent Development Kit](https://adk.dev/) (`google.adk.agents.Agent`), Temporal ships a contrib package — `temporalio.contrib.google_adk_agents` — that routes ADK model calls and tools through Activities so the agent gets durable execution.
+
+The integration is gated behind an install extra (`pip install "temporalio[google-adk]"`) and exposes `TemporalModel`, `GoogleAdkPlugin`, `TemporalMcpToolSet`, and `TemporalMcpToolSetProvider`. The same `Agent` definition keeps working with `adk run`/`adk web` locally because `TemporalModel` and `TemporalMcpToolSet` fall back to direct execution outside a Workflow.
+
+See [`references/python/google-adk.md`](./google-adk.md) for the full setup (agent, worker, starting client, MCP toolsets, common mistakes).
+
 ## Best Practices
 
 1. **Always use Pydantic data converter** for complex types
