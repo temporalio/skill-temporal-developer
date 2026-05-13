@@ -172,6 +172,7 @@ See `references/python/testing.md` for info on writing tests.
 
 - **`references/python/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/python/determinism.md`** - Sandbox behavior, safe alternatives, pass-through pattern, history replay
+- **`references/python/workflow-randomness.md`** - Deterministic randomness inside Workflows: `workflow.random()`, `workflow.uuid4()`, sandbox interaction, common mistakes
 - **`references/python/gotchas.md`** - Python-specific mistakes and anti-patterns
 - **`references/python/error-handling.md`** - ApplicationError, retry policies, non-retryable errors, idempotency
 - **`references/python/observability.md`** - Logging, metrics, tracing, Search Attributes
