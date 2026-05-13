@@ -204,6 +204,39 @@ Worker Versioning is best suited for:
 
 For long-running Workflows, consider combining Worker Versioning with the Patching API, or use Continue-as-New to move Workflows to newer versions.
 
+### Reporting a Build ID without enabling Worker Versioning
+
+`workerDeploymentOptions` is a discriminated union on `useWorkerVersioning`. <!-- sdk-typescript: packages/worker/src/worker-options.ts WorkerDeploymentOptions discriminated union --> Setting `useWorkerVersioning: false` (or omitting it from a config that supplies a `version`) tells the Worker to report its Deployment Version — the deployment name plus Build ID — to the Temporal Server when it polls, <!-- docs/encyclopedia/workers/worker-versioning.mdx:40 --> without turning on the routing semantics (pinning, ramp, drainage) that `useWorkerVersioning: true` enables. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:144 -->
+
+```typescript
+import { Worker, NativeConnection } from '@temporalio/worker';
+
+const worker = await Worker.create({
+  workflowsPath: require.resolve('./workflows'),
+  taskQueue: 'my-queue',
+  connection: await NativeConnection.connect({ address: 'temporal:7233' }),
+  workerDeploymentOptions: {
+    useWorkerVersioning: false,
+    version: {
+      deploymentName: 'order-service',
+      buildId: '1.0.0',
+    },
+  },
+});
+```
+
+When `useWorkerVersioning` is `false`, `defaultVersioningBehavior` **must not be set**. The SDK types it as `never` in that branch of the union. <!-- sdk-typescript: packages/worker/src/worker-options.ts — JSDoc on defaultVersioningBehavior: "Required if useWorkerVersioning is true; should be left unset otherwise." --> Per-Workflow versioning behavior annotations also have no effect in this mode, because the server is not routing tasks by Worker Deployment Version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:144 -->
+
+**When to use this mode:**
+
+- You want the Build ID surfaced server-side for operational identification (which build is polling which Task Queue) without committing to versioned routing.
+- You're staging a rollout to full Worker Versioning: ship the `version` first so deployment names and Build IDs are flowing, then flip `useWorkerVersioning` to `true` in a follow-up deploy.
+- The Worker should behave like an unversioned Worker — no pinning, no per-version drainage — but should still be identifiable.
+
+This is **not** a substitute for Worker Versioning. With `useWorkerVersioning: false`, Workflows are not pinned to a Deployment Version, the Build ID is not used to route tasks, and `temporal worker deployment set-current-version` does not gate which Workers receive new Workflows. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:144 --> If you need any of those behaviors, set `useWorkerVersioning: true` and provide a `defaultVersioningBehavior`.
+
+> **Note:** The top-level `buildId` and `useVersioning` Worker options shown in older examples are part of the legacy Worker Versioning API and will be removed from Temporal Server in March 2026. <!-- docs/develop/typescript/workflows/versioning.mdx:37 --> Use `workerDeploymentOptions` instead.
+
 ## Best Practices
 
 1. Use descriptive `patchId` names that explain the change
