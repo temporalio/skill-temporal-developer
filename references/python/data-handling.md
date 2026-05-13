@@ -206,7 +206,7 @@ class OrderWorkflow:
 
 ## Deterministic APIs for Values
 
-Use these APIs within workflows for deterministic random values and UUIDs:
+Use these APIs within workflows for deterministic random values and UUIDs. For deeper coverage (seeding semantics, common mistakes), see `references/python/randomness.md`.
 
 ```python
 @workflow.defn

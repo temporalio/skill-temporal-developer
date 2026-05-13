@@ -29,6 +29,8 @@ The following are forbidden inside workflow code but are appropriate to use in a
 | `uuid.uuid4()` | `workflow.uuid4()` |
 | `time.time()` | `workflow.now().timestamp()` |
 
+For a focused walkthrough of `workflow.random()` and `workflow.uuid4()` (seeding, return shape, common mistakes), see `references/python/randomness.md`.
+
 ## Testing Replay Compatibility
 
 Use the `Replayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/python/testing.md`.
