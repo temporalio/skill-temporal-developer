@@ -212,3 +212,70 @@ For long-running Workflows, consider combining Worker Versioning with the Patchi
 4. Keep Worker Deployment names consistent across all versions
 5. Use unique, traceable Build IDs (git hashes, semver, timestamps)
 6. Test version transitions with replay tests before deploying
+
+## Upgrading on Continue-as-New
+
+Long-running **Pinned** Workflows that use [Continue-as-New](/workflow-execution/continue-as-new) can land on the latest Target Worker Deployment Version at each Continue-as-New boundary without requiring code-level patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:530-533 --> This feature is in **Public Preview** as an experimental SDK-level option. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 -->
+
+### When to use it
+
+This pattern is ideal for: <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:535-540 -->
+
+- **Entity Workflows** that run for months or years
+- **Batch processing** Workflows that checkpoint with Continue-as-New
+- **AI agent Workflows** with long sleeps waiting for user input
+
+### Decision logic
+
+Choose your versioning approach based on Workflow duration and whether the Workflow uses Continue-as-New: <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:261-266 -->
+
+- **Short** (completes before next deploy): `PINNED`, no patching needed
+- **Medium** (spans multiple deploys), no CaN: `AUTO_UPGRADE` with patching as needed
+- **Long** (weeks to years) with CaN: `PINNED` + upgrade on Continue-as-New (this section)
+- **Long** (weeks to years) without CaN: `AUTO_UPGRADE` + patching
+
+In short: if a Workflow is long-running and already structured to Continue-as-New, prefer Pinned + upgrade-on-CaN over Auto-Upgrade + patching.
+
+### How it works
+
+By default, Pinned Workflows stay on their original Worker Deployment Version even when they Continue-as-New. With the upgrade option enabled: <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:548-555 -->
+
+1. Each Workflow run remains pinned to its version, so no patching is required within a run.
+2. The Temporal Server notifies the Workflow when a new Target Worker Deployment Version becomes available.
+3. When the Workflow performs Continue-as-New with the upgrade option, the new run starts on the Target Version.
+
+### Detection is lazy
+
+The "Target Version changed" signal is delivered lazily. A Workflow only learns about a new Target Version when it executes a Workflow Task; Workflows that are sleeping or otherwise idle will not be proactively woken up. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611-613 -->
+
+If you have idle Workflows that you want to give a chance to upgrade promptly, the documented escape hatch is to send them a Signal, which triggers a Workflow Task and gives the Workflow a chance to observe the change and call Continue-as-New. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611-613 -->
+
+In TypeScript Workflows you already use [`wf.workflowInfo().continueAsNewSuggested`](https://typescript.temporal.io/) to decide *when* to Continue-as-New based on history size. <!-- docs/develop/typescript/workflows/continue-as-new.mdx:82-83 --> Upgrade-on-CaN is a separate signal: it tells you *which version* the next run should land on, not whether to Continue-as-New at all.
+
+### Input compatibility
+
+When continuing-as-new onto a newer Worker Deployment Version, the input passed by the old run must be compatible with the new run's Workflow Definition. If the schemas are incompatible, the new run may fail on its first Workflow Task. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:614-616 -->
+
+This means upgrade-on-CaN does not eliminate the need to evolve Workflow inputs carefully across versions; it only removes the need for in-run patching.
+
+### Continue-as-New inheritance
+
+These inheritance rules govern what happens if you Continue-as-New *without* opting into the upgrade: <!-- docs/encyclopedia/workers/worker-versioning.mdx:128-137 -->
+
+- **Pinned original Workflow:** the Pinned version is inherited across the Continue-as-New chain by default, so successive runs stay on the original version unless you explicitly opt into upgrading.
+- **Pinned original Workflow, different Worker Deployment:** if the new run's Task Queue is not in the same Worker Deployment, no inheritance occurs and the new run starts on the Current Version of its Task Queue.
+- **Auto-upgrade original Workflow:** no version inheritance occurs across Continue-as-New.
+
+Upgrade-on-CaN is the mechanism that overrides the first bullet on demand: the new run is started with Auto-Upgrade behavior so it picks up its Worker Deployment's Target Version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:586-591 -->
+
+### TypeScript API status
+
+As of 2026-05, the upgrade-on-Continue-as-New API is documented with a worked code example only in the Go SDK. The TypeScript-specific symbol names (the field on `wf.workflowInfo()` that surfaces "Target Version changed", and the option passed to `wf.continueAsNew<...>` to opt the new run into Auto-Upgrade behavior) are not given in the docs at the time of writing, so this skill does not include a TypeScript code sample for them. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:556-605 -->
+
+For the conceptual flow and a concrete worked example, see:
+
+- `references/go/versioning.md` § Upgrading on Continue-as-New
+- [`docs/production-deployment/worker-deployments/worker-versioning.mdx`](/worker-versioning#upgrade-on-continue-as-new)
+
+<!-- VERIFY: TypeScript SDK token names for upgrade-on-CaN — docs only document Go as of 2026-05; consult TypeScript SDK source or release notes -->
+
