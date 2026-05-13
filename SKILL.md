@@ -85,6 +85,13 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/core/priority-fairness.md`** - Priority keys, fairness keys and weights, rate limiting, SDK examples, and limitations
 
+## Temporal Nexus
+
+If the developer is exposing a Workflow / Signal / Query / Update so that another team's Workflow (in another Namespace) can invoke it, or is calling another team's service from a Workflow, this is Temporal Nexus. A Nexus Service is a named collection of Nexus Operations exposed through a Nexus Endpoint (a managed reverse proxy). Operations are synchronous (must complete within the ~10-second handler deadline; good for Signal/Query/Update) or asynchronous (backed by a Workflow; can run up to 60 days).
+
+- **`references/core/nexus.md`** - Cross-SDK concepts: services, operations, endpoints, lifecycle, timeouts, retries, circuit breaking, cancellation, patterns, registry, security, observability, and CLI management (`temporal operator nexus endpoint` / `tcld nexus endpoint`).
+- Language-specific surface at `references/{your_language}/nexus.md` — covers SDK-specific decorators/annotations/builders, Worker registration, and caller-side clients. Nexus is GA in the Go, Java, and Python SDKs; Public Preview in the TypeScript and .NET SDKs.
+
 ## Additional Topics
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
