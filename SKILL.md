@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/python/openai-agents-sandbox.md`** - Python only. Read when wiring the OpenAI Agents SDK (`temporalio.contrib.openai_agents`) into a Worker and when reasoning about how a plugin interacts with `SandboxedWorkflowRunner`.
 
 ## Feedback
 
