@@ -212,3 +212,35 @@ For long-running Workflows, consider combining Worker Versioning with the Patchi
 4. Keep Worker Deployment names consistent across all versions
 5. Use unique, traceable Build IDs (git hashes, semver, timestamps)
 6. Test version transitions with replay tests before deploying
+
+## Upgrade on Continue-as-New (TypeScript)
+
+Long-running Workflows that use [Continue-as-New](/workflow-execution/continue-as-new) can upgrade to a newer Worker Deployment Version at the Continue-as-New boundary, without patching. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:530-533 --> This is an SDK-level option that is currently in **Public Preview** as an experimental feature. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:541-545 --> See the canonical treatment in `documentation/docs/production-deployment/worker-deployments/worker-versioning.mdx` (section `## Upgrading on Continue-as-New`).
+
+### When to use it
+
+Reach for upgrade-on-Continue-as-New when your Workflow is annotated `PINNED` and uses Continue-as-New as part of its design — for example, very long-running Workflow types such as a Customer entity or an AI agent / Chatbot. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:265 --> <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:275-276 --> If your Workflow does not use Continue-as-New, this pattern does not apply and you should pick a different row from the decision table in `references/core/versioning.md`.
+
+### How it works
+
+- By default, Pinned Workflows stay on their original Worker Deployment Version even when they Continue-as-New. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:549-550 -->
+- Each Workflow run remains pinned to its version for the duration of that run (no patching needed within a run). <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:552 -->
+- The Temporal Server informs the Workflow when a new [Target Version](/worker-versioning#versioning-definitions) becomes available. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:553 -->
+- When the Workflow performs Continue-as-New using the upgrade option, the new run starts on the Target Version. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:554 -->
+
+Importantly, there is no Worker-level "upgrade on Continue-as-New" toggle — the opt-in is expressed on each Continue-as-New call site. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:551-554 -->
+
+### Detecting the change
+
+The conceptual flag that surfaces a Target Version change to a running Workflow is `target_worker_deployment_version_changed`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:558-559 --> This flag is refreshed after each Workflow Task completes, so a Workflow that is actively performing Workflow Tasks will observe a fresh value on each tick; it is not a one-shot sticky boolean. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:570-571 --> A common shape is to check the flag at natural decision points (e.g., before accepting an update, starting an Activity, starting a child Workflow, or at the top of a polling loop) and, when it indicates a change, return a Continue-as-New error that carries the upgrade option. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:573-595 -->
+
+The Temporal documentation only provides a worked code example for the **Go SDK** in this section. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:561-605 --> The corresponding TypeScript identifiers — for reading the change flag from Workflow info, for constructing a Continue-as-New error that opts into the upgrade, for an "initial versioning behavior" option, and for an Auto-Upgrade variant of that option — are not named in the canonical docs as of this writing. Consult the [TypeScript SDK release notes](https://github.com/temporalio/sdk-typescript/releases) and the TypeScript SDK's `@temporalio/workflow` API reference for the exact identifier names in your SDK version. The canonical shape of the pattern (loop, check flag, Continue-as-New with an upgrade option carrying an "initial versioning behavior" of Auto-Upgrade) is illustrated in `references/go/versioning.md`. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:584-594 -->
+
+### Limitations
+
+- **Lazy moving only.** A Workflow only receives the Target-Version-Changed information when it is actively executing a step. A Workflow that is idle (for example, sleeping on a long timer or awaiting a Signal) will not be proactively moved. To wake an idle Workflow so it can observe the flag, send it a Signal. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:611-613 -->
+- **Input compatibility across versions.** When the new run starts on the Target Version, the input passed via Continue-as-New is interpreted by the new version's Workflow definition. If that definition is not compatible with the input produced by the previous version, the new run may fail on its first Workflow Task. <!-- docs/production-deployment/worker-deployments/worker-versioning.mdx:614-616 -->
+
+### See also
+
+Conceptual treatment in `references/core/versioning.md` §Upgrade on Continue-as-New. Canonical worked example (Go) in `references/go/versioning.md`.
