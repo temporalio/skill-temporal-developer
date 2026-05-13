@@ -89,6 +89,7 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
+- **`references/{your_language}/payload-validation.md`** - Payload and gRPC message size limits, per-SDK failure modes when limits are exceeded, and how to keep payloads under the limits. Currently Go and Python.
 
 ## Third-Party Integrations
 
