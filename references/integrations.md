@@ -14,3 +14,4 @@ Temporal ships and supports a growing set of integrations with third-party frame
 | Integration | Language(s) | What it does | Reference | Related |
 |---|---|---|---|---|
 | Spring Boot (`temporal-spring-boot-starter`) | Java | Auto-configuration of `WorkflowClient`, worker factories, workflow/activity bean registration, lifecycle, testing | `references/java/integrations/spring-boot.md` | `references/java/java.md` |
+| OpenAI Agents SDK — Sandbox Support (`temporalio.contrib.openai_agents`) | Python | Routes `SandboxAgent` lifecycle and session I/O (exec/read/write/PTY) through durable Temporal activities, with per-backend `SandboxClientProvider` registration (Daytona, local Unix, etc.) | `references/python/integrations/openai-agents-sandbox.md` | `references/python/ai-patterns.md` |
