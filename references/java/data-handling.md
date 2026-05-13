@@ -16,7 +16,7 @@ The Java SDK uses data converters to serialize/deserialize workflow inputs, outp
 
 ## Jackson Integration
 
-Use `JacksonJsonPayloadConverter` with a custom `ObjectMapper` for advanced serialization (e.g., Java 8 time module, custom serializers):
+Use `JacksonJsonPayloadConverter` <!-- docs/develop/java/best-practices/converters-and-encryption.mdx:227 --> with a custom `ObjectMapper` <!-- docs/develop/java/best-practices/converters-and-encryption.mdx:232 --> for advanced serialization (e.g., Java 8 time module, custom serializers):
 
 ```java
 ObjectMapper mapper = new ObjectMapper()
@@ -36,6 +36,26 @@ WorkflowClient client = WorkflowClient.newInstance(
         .build()
 );
 ```
+
+The default JSON path uses Jackson — workflow inputs <!-- docs/develop/java/workflows/basics.mdx:150 --> and activity inputs <!-- docs/develop/java/activities/basics.mdx:75 --> must be serializable by the default Jackson JSON Payload Converter.
+
+## Jackson 3 Opt-In
+
+The Java SDK lets you opt into **Jackson 3** payload conversion at startup while remaining **wire-compatible** with the Jackson 2 converters described above. <!-- pipeline/planned-content/skill-temporal-developer/0017-jackson-3/info.json:3 -->
+
+What this means in practice:
+
+- **Default stays Jackson 2.** The `JacksonJsonPayloadConverter` shown in the section above is the documented default. <!-- docs/develop/java/best-practices/converters-and-encryption.mdx:227-235 --> Opting into Jackson 3 is a deliberate startup-time choice, not an automatic upgrade. <!-- VERIFY: confirm the default-vs-opt-in framing once Jackson 3 docs ship -->
+- **Wire compatibility.** Payloads produced by a Jackson 3 conversion path can be decoded by Jackson 2 converters, and vice versa. This is the design guarantee that lets a fleet upgrade incrementally — a worker running Jackson 3 can still read history events that were written by a Jackson 2 client, and a Jackson 2 client can still read results written by a Jackson 3 worker. <!-- pipeline/planned-content/skill-temporal-developer/0017-jackson-3/info.json:3 -->
+- **Scope: Java SDK only.** This opt-in exists only in the Java SDK; the Python, TypeScript, Go, and .NET SDKs are unaffected. <!-- pipeline/planned-content/skill-temporal-developer/0017-jackson-3/info.json:4-6 -->
+
+<!-- VERIFY: The exact opt-in API surface — class name (e.g. analogous to `JacksonJsonPayloadConverter`), builder method on `WorkflowClientOptions` / `WorkerFactoryOptions`, or standalone configuration entry point — is not yet present in `docs/develop/java/best-practices/converters-and-encryption.mdx`. Do not invent the symbol; consult the Java SDK 1.35.0+ release notes / `io.temporal.common.converter` javadoc for the verbatim token before writing a code example here. -->
+
+<!-- VERIFY: The Maven / Gradle artifact coordinates required to pull in the Jackson 3 conversion path (e.g. a separate `temporal-*` module or an additional `tools.jackson.*` dependency) are not documented in the docs clone. Do not invent coordinates. -->
+
+<!-- VERIFY: Whether the Jackson 3 opt-in changes the `encoding` metadata value on emitted payloads, or reuses the Jackson 2 `json/plain` encoding to preserve wire compatibility, is not stated in docs. The info.json wire-compatibility claim is consistent with reusing the existing encoding, but this should be confirmed against the SDK source before documenting. -->
+
+**Until the docs catch up:** keep using the documented Jackson 2 `JacksonJsonPayloadConverter` path shown in the section above. If you need Jackson 3 features today (e.g., the new `tools.jackson` API surface in your own code), wrap your serialization inside a custom `PayloadConverter` implementation (see "Custom Data Converter" below) rather than guessing at an unreleased Temporal-side API.
 
 ## Custom Data Converter
 
@@ -286,3 +306,4 @@ public String run() {
 3. Encrypt sensitive data with `PayloadCodec` and `CodecDataConverter`
 4. Use POJOs or Protobuf messages for workflow/activity parameters
 5. Use `Workflow.randomUUID()`, `Workflow.newRandom()`, and `Workflow.currentTimeMillis()` for deterministic values
+6. Prefer the documented Jackson 2 default (`JacksonJsonPayloadConverter`) until you have a specific reason to opt into Jackson 3; the two are wire-compatible, but the Jackson 3 opt-in API is not yet covered in the Temporal docs — verify the exact symbol in the Java SDK 1.35.0+ release notes and roll out through a staging environment first
