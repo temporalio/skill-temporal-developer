@@ -100,6 +100,79 @@ Runtime.install({
 });
 ```
 
+### Custom Metric Handling: Buffered Metrics
+
+`MetricsBuffer` is an **experimental** alternative to the Prometheus and OpenTelemetry exporters. Instead of pushing metrics out of the process, the buffer accumulates SDK-emitted metric updates in memory and lets your code drain them with `retrieveUpdates()` <!-- ts-api: classes/worker.MetricsBuffer -->. Reach for it when you want to forward metrics to a backend the SDK does not natively support, or when you want to assert on emitted metrics in tests. The buffered metrics API is documented as: "Buffered metrics is an experimental feature. APIs may be subject to change." <!-- ts-api: classes/worker.Runtime (metricsBuffer) --> — treat names below as subject to change.
+
+```typescript
+import { MetricsBuffer, Runtime } from '@temporalio/worker';
+
+const buffer = new MetricsBuffer({
+  maxBufferSize: 10_000,        // default: 10000 — events past this are dropped
+  useSecondsForDurations: false, // default: false (Core-based SDKs emit histograms in ms)
+});
+
+Runtime.install({
+  telemetryOptions: {
+    metrics: /* attach the buffer to the runtime's metrics exporter config */ buffer as any,
+    // VERIFY: the API reference describes MetricsBuffer as being set on
+    // `RuntimeOptions.telemetry.metricsExporter`, but the published docs and
+    // existing examples use `telemetryOptions.metrics`. Confirm the exact
+    // field name against the version of @temporalio/worker you're using.
+  },
+});
+
+// Drain the buffer periodically. Call frequency is application-specific —
+// the Ruby docs prescribe "periodically" without a specific cadence.
+setInterval(() => {
+  for (const update of buffer.retrieveUpdates()) {
+    // update.attributes: MetricTags
+    // update.metric: the Metric being updated
+    // update.value: number — "For counters this is a delta;
+    //                        for gauges and histograms this is the value itself."
+    forwardToBackend(update);
+  }
+}, 5_000);
+```
+
+Notes:
+
+- `MetricsBufferOptions.maxBufferSize` defaults to `10000`; when the buffer is full, "metric updates will be dropped and an error will be logged." <!-- ts-api: classes/worker.MetricsBuffer -->
+- `MetricsBufferOptions.useSecondsForDurations` defaults to `false`. Core-based SDKs emit histograms in milliseconds unless you opt into seconds. <!-- ts-api: interfaces/worker.MetricsBufferOptions; docs/references/sdk-metrics.mdx:55-65 -->
+- `BufferedMetricUpdate` has three fields: `attributes`, `metric`, `value`. No timestamp, no unit, no description field. <!-- ts-api: interfaces/worker.BufferedMetricUpdate -->
+
+This pattern mirrors the Ruby SDK's `Temporalio::Runtime::MetricBuffer` (provided as the `buffer` argument to `MetricsOptions`, drained via `retrieve_updates`) <!-- docs/develop/ruby/platform/observability.mdx:58-61 --> and the .NET SDK's `CustomMetricMeter` on `Telemetry.Metrics` <!-- docs/develop/dotnet/platform/observability.mdx:64-87 -->. Spelling differs by SDK — TypeScript uses `MetricsBuffer` / `retrieveUpdates()`, not the Ruby `MetricBuffer` / `retrieve_updates`.
+
+### Custom Metric Handling: Recording Your Own Metrics
+
+The runtime exposes a `MetricMeter` via `Runtime.metricMeter` <!-- ts-api: classes/worker.Runtime (metricMeter) -->. Use it to record your own application metrics through the same pipeline the SDK uses for its built-in metrics — they will flow to whatever exporter you have configured (Prometheus, OTel collector, or `MetricsBuffer`).
+
+`MetricMeter` supports four instrument types:
+
+| Method                                 | Instrument        | Use for                                                            |
+| -------------------------------------- | ----------------- | ------------------------------------------------------------------ |
+| `createCounter(name, …)`               | Counter           | Monotonically increasing totals (events, errors).                  |
+| `createHistogram(name, …)`             | Histogram         | Distributions (latencies, sizes).                                  |
+| `createGauge(name, …)`                 | Gauge             | Point-in-time absolute values (queue depth as a snapshot).         |
+| `createUpDownCounter(name, …)`         | UpDownCounter     | Signed deltas — values that can increase **and** decrease.         |
+
+<!-- ts-api: interfaces/common.MetricMeter -->
+
+`UpDownCounter` is the most recent addition. Its `add(value, extraTags?)` method accepts negative values: "Add the given value to the up-down counter. Value may be negative." <!-- ts-api: interfaces/common.MetricUpDownCounter --> Use it for things like in-flight request counters where `add(1)` on entry and `add(-1)` on exit produces a running balance, without you having to maintain the gauge value yourself.
+
+```typescript
+import { Runtime } from '@temporalio/worker';
+
+const meter = Runtime.instance().metricMeter;
+const inFlight = meter.createUpDownCounter('myapp_inflight_requests');
+
+inFlight.add(1, { route: '/checkout' });   // request started
+// ... do work ...
+inFlight.add(-1, { route: '/checkout' });  // request finished
+```
+
+The same `MetricMeter` exposes `withTags(tags)` to clone a meter with attributes pre-applied <!-- ts-api: interfaces/common.MetricMeter -->. Each instrument also has its own `withTags(tags)` to clone the instrument with additional tags.
+
 ## Search Attributes (Visibility)
 
 See the Search Attributes section of `references/typescript/data-handling.md`
