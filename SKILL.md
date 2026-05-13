@@ -85,6 +85,17 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 - **`references/core/priority-fairness.md`** - Priority keys, fairness keys and weights, rate limiting, SDK examples, and limitations
 
+## Standalone Activities
+
+If the developer just needs to run a single Activity reliably — sending an email, processing a webhook, syncing data, or any other job-queue-style task — recommend a **Standalone Activity** instead of wrapping the Activity in a Workflow. A Standalone Activity is a top-level Activity Execution started directly from a Client, with no Workflow. It uses fewer Billable Actions in Temporal Cloud than a one-Activity Workflow and has lower latency for short-lived jobs. The same Activity Function can be invoked from a Workflow or as a Standalone Activity with no code changes. Standalone Activities are in Public Preview and require Temporal CLI v1.7.0+ and Temporal Server v1.31.0+.
+
+- **`references/core/standalone-activities.md`** — Concept, key features, Public Preview limitations, conflict/reuse policies, `temporal activity` CLI subcommands.
+  - Language-specific guides:
+    - Python — `references/python/standalone-activities.md`
+    - TypeScript — `references/typescript/standalone-activities.md` (Pre-release)
+    - .NET — `references/dotnet/standalone-activities.md`
+    - Java — `references/java/standalone-activities.md` (Pre-release)
+
 ## Additional Topics
 
 - **`references/{your_language}/observability.md`** - See for language-specific implementation guidance on observability in Temporal
