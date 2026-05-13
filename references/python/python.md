@@ -182,6 +182,7 @@ See `references/python/testing.md` for info on writing tests.
 - **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
 - **`references/python/ai-patterns.md`** - LLM integration, Pydantic data converter, AI workflow patterns
+- **`references/python/standalone-activities.md`** - Run an Activity directly from a Client (no Workflow) using `client.execute_activity` / `start_activity` / `list_activities` / `count_activities` (Public Preview)
 
 ### Python Integrations
 

@@ -76,6 +76,8 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/dev-management.md`** - Dev cycle & management of server and workers
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+- **`references/core/standalone-activities.md`** - Standalone Activities (Public Preview): start and manage an Activity directly from a Client without a Workflow
+  - Language-specific info at `references/{your_language}/standalone-activities.md` (.NET, Java, Python, TypeScript)
 
 ## Task Queue Priority and Fairness
 
