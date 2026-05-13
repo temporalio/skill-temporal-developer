@@ -299,6 +299,10 @@ class DeepResearchWorkflow:
         return report
 ```
 
+## LangGraph Plugin
+
+If the application is built on LangGraph (Graph API `StateGraph` or Functional API `@entrypoint` / `@task`), use `temporalio.contrib.langgraph` to run each node/task as a Temporal Activity with durable execution, retries, and timeouts. See `references/python/langgraph-plugin.md` for installation, wiring, the required `execute_in` metadata, activity options, runtime context, human-in-the-loop via `interrupt()`, and continue-as-new with task result caching.
+
 ## OpenAI Agents SDK Integration
 
 If using the OpenAI Agent SDK to create an agent, use Temporal's OpenAI contrib module to create a Temporal-aware durable agent:
