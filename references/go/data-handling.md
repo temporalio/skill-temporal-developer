@@ -234,6 +234,8 @@ resp, err := c.ListWorkflow(ctx, &workflowservice.ListWorkflowExecutionsRequest{
 
 ## Workflow Memo
 
+`Memo` is a `map[string]interface{}` field on `StartWorkflowOptions`, default empty.
+
 Set in start options:
 
 ```go
@@ -247,13 +249,35 @@ handle, err := c.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 }, OrderWorkflow, input)
 ```
 
-Read memo from workflow info. Upsert memo (Go SDK only):
+Upsert memo from inside a workflow:
 
 ```go
 err := workflow.UpsertMemo(ctx, map[string]interface{}{
     "notes": "Updated notes",
 })
 ```
+
+### Which converter encodes memo values?
+
+By default the Go SDK encodes memo values with the **default** Data Converter -- not the converter you pass in `client.Options.DataConverter`. This matches the encyclopedia note that "Custom Data Converters are not applied to all data" ; in Go ≤ v1.40, Memos were one of those carve-outs alongside Search Attributes.
+
+**Go SDK v1.41.0** introduced an internal SDK flag, `SDKFlagMemoUserDCEncode` (flag id `7`), that opts memo encoding into the user-configured `DataConverter`. Its godoc reads: "use the user data converter when encoding a memo. If user data converter fails, we will fallback onto the default data converter. If the default DC fails, the user DC error will be returned."
+
+Key properties of the flag:
+
+- **Opt-in in v1.41.0.** The flag is **off by default** -- without action, memo encoding is unchanged from earlier releases.
+- **Encode-only.** PR #2121 modifies the memo encode path on workflow start, `ExecuteChildWorkflow`, `workflow.UpsertMemo`, and schedule actions. Decoding behavior is not changed by this flag.
+- **Fallback to default.** If the user converter returns an error, the SDK retries the encode with the default converter; if the default also errors, the user converter's error is returned.
+- **Process-wide, env-var controlled.** There is no public option field on `client.Options` or `worker.Options`. The override is read from the environment by `loadFlagOverridesFromEnv`, which maps each flag id to `TEMPORAL_SDK_FLAG_<id>` with value `1` (enable) or `0` (disable). For this flag:
+
+  ```bash
+  # Enable user-DC encoding for memos in the SDK process (v1.41.0+).
+  export TEMPORAL_SDK_FLAG_7=1
+  ```
+
+- **Planned default flip.** The PR notes the flag will be enabled by default "after a Go SDK release or two", aligning Go with other Temporal SDKs.
+
+When the flag is enabled, memo values flow through the same `CompositeDataConverter` you configured for workflow inputs/outputs (the `MsgpackPayloadConverter` example earlier in this file, for instance). No additional registration is needed -- the existing `client.Options.DataConverter` is reused.
 
 ## Best Practices
 
