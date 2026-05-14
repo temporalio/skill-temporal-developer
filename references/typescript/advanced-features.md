@@ -102,6 +102,41 @@ const worker = await Worker.create({
 - `shutdownGraceTime`: Time to wait for in-progress work before forced shutdown
 - `maxCachedWorkflows`: Number of workflows to keep in cache (reduces replay on cache hit)
 
+## Preload Modules
+
+`preloadModules` <!-- sdk-typescript: packages/worker/src/workflow/bundler.ts --> is a `string[]` bundler option that loads a list of modules once during reusable V8 context bootstrap; preloaded modules are then shared across workflows executing in the same V8 context. <!-- sdk-typescript: packages/worker/src/workflow/bundler.ts --> It is only beneficial when `reuseV8Context` is enabled, which is the default (`@default true`). <!-- sdk-typescript: packages/worker/src/worker-options.ts --> <!-- docs/develop/worker-tuning-reference.mdx:93 -->
+
+**Ahead-of-time bundling via `BundleOptions`:** <!-- sdk-typescript: packages/worker/src/workflow/bundler.ts -->
+
+```typescript
+import { bundleWorkflowCode } from '@temporalio/worker';
+
+const { code } = await bundleWorkflowCode({
+  workflowsPath: require.resolve('./workflows'),
+  preloadModules: ['lodash', './workflow-helpers'],
+});
+```
+
+**Startup bundling via `WorkerOptions.bundlerOptions`:** <!-- sdk-typescript: packages/worker/src/worker-options.ts -->
+
+```typescript
+const worker = await Worker.create({
+  taskQueue: 'my-queue',
+  workflowsPath: require.resolve('./workflows'),
+  activities,
+  bundlerOptions: {
+    preloadModules: ['lodash', './workflow-helpers'],
+  },
+});
+```
+
+**Constraints:**
+
+- **`preloadModules` is only beneficial when `reuseV8Context` is enabled (default `true`). <!-- sdk-typescript: packages/worker/src/worker-options.ts -->** If `reuseV8Context` is disabled, leave the list empty.
+- **Module top-level code runs once, before any workflow activator exists. <!-- sdk-typescript: packages/worker/src/workflow/bundler.ts -->** Only preload modules whose initialization is safe to execute that early.
+- **Preloading a module that internally stores per-workflow state will leak context across workflows and cause non-deterministic behavior. <!-- sdk-typescript: packages/worker/src/workflow/bundler.ts -->** Remove such modules from `preloadModules`.
+- **A module listed in both `preloadModules` and `ignoreModules` fails the bundle with `Cannot preload modules that are also ignored: '<module>'`. <!-- sdk-typescript: packages/worker/src/workflow/bundler.ts -->** Remove the module from one of the two lists.
+
 ## Sinks
 
 Sinks allow workflows to emit events for side effects (logging, metrics).
