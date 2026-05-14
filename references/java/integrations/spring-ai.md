@@ -215,7 +215,7 @@ Prefer **URI-based media** when attaching images, audio, or other binary content
 Media image = new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://cdn.example.com/pic.png"));
 ```
 
-Override the cap with the system property `io.temporal.springai.maxMediaBytes` set **before the worker starts** (positive integer; `0` disables the check). For anything larger than a small thumbnail, route the bytes to a binary store from an Activity and pass only the URL across the conversation.
+For anything larger than a small thumbnail, route the bytes to a binary store from an Activity and pass only the URL across the conversation.
 
 
 ## Vector stores, embeddings, and MCP
