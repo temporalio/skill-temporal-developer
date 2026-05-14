@@ -217,7 +217,6 @@ Media image = new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://cdn.example
 
 For anything larger than a small thumbnail, route the bytes to a binary store from an Activity and pass only the URL across the conversation.
 
-
 ## Vector stores, embeddings, and MCP
 
 When the corresponding Spring AI modules (`spring-ai-rag`, `spring-ai-mcp`) are on the classpath, the integration registers Activities for vector stores, embeddings, and MCP tool calls automatically. Inject the matching Spring AI types into your Activities or Workflows and use them as you would in any Spring AI application — each operation executes through a Temporal Activity.
