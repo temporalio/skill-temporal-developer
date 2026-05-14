@@ -271,6 +271,39 @@ temporal workflow count --query \
   'TemporalWorkerDeploymentVersion = "order-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
+## Upgrading on Continue-as-New
+
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+
+For long-running Pinned Workflows that use Continue-as-New, the Workflow can detect when a new Target Worker Deployment Version becomes available and continue-as-new onto it without patching. See `references/core/versioning.md` for the conceptual model — this section covers the Java-specific API.
+
+### What the docs say
+
+The published Temporal docs only show a Go code sample for this feature.  The two facts the docs commit to for *all* SDKs are:
+
+- A new Worker Deployment Version becoming Current or Ramping is surfaced to active Workflows as a "target Worker Deployment Version changed" signal on the per-Workflow info object.
+- To opt into upgrading at the next Continue-as-New boundary, the Workflow passes an `InitialVersioningBehavior` of `AutoUpgrade` to the Continue-as-New call so the new run starts on the Target Version.
+
+### Pattern (Java)
+
+```java
+// Inside a @WorkflowMethod implementation on a Pinned Workflow Type:
+//   - Periodically (between Activities, Updates, or child Workflows) check
+//     whether a new Target Worker Deployment Version is available on the
+//     Workflow info accessor.
+//   - If it is, throw the SDK's Continue-as-New exception with the new run's
+//     initial versioning behavior set to AUTO_UPGRADE so the new run picks
+//     up the Target Version. The Workflow Type itself stays annotated PINNED
+//     via @WorkflowVersioningBehavior(VersioningBehavior.PINNED).
+```
+
+### Limitations
+
+- **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check the flag.
+- **Workflow input must remain compatible across versions.** The new version's Workflow definition must accept the previous version's input; otherwise the new run may fail on its first Workflow Task.
+- **Pinned Workflow Types only.** Auto-Upgrade Workflows move at Workflow Task boundaries already; the upgrade-on-CaN pattern adds nothing for them.
+
 ## Best Practices
 
 1. **Check for open executions** before removing old code paths
