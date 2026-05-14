@@ -217,7 +217,6 @@ Media image = new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://cdn.example
 
 Override the cap with the system property `io.temporal.springai.maxMediaBytes` set **before the worker starts** (positive integer; `0` disables the check). For anything larger than a small thumbnail, route the bytes to a binary store from an Activity and pass only the URL across the conversation.
 
-Note: the 1 MiB number is the integration's inline-payload safeguard; the 2 MiB number is the Temporal server's hard limit on a single history event. They are different limits — don't conflate them.
 
 ## Vector stores, embeddings, and MCP
 
