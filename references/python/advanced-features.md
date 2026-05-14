@@ -114,6 +114,39 @@ worker = Worker(
 )
 ```
 
+## DNS Resolver Configuration
+
+`DnsLoadBalancingConfig` <!-- sdk-python/temporalio/service.py:136 --> makes Core periodically re-resolve the client's target host and round-robin requests across the resolved addresses <!-- sdk-python/temporalio/service.py:139-140 -->. Use it when `target_host` resolves to multiple A/AAAA records (e.g., a load-balanced gRPC frontend, multi-address private endpoints) and you want the client to spread RPCs across them.
+
+It is **not** the mechanism that makes Temporal Cloud HA failover work — failover is driven by Temporal Cloud rewriting a CNAME record and the OS resolver re-resolving on TTL expiry (`docs/cloud/high-availability/ha-connectivity.mdx:25-31`).
+
+### Configuration
+
+```python
+from temporalio.client import Client
+from temporalio.service import DnsLoadBalancingConfig
+
+client = await Client.connect(
+    "frontend.example.internal:7233",
+    dns_load_balancing_config=DnsLoadBalancingConfig(
+        resolution_interval_millis=5000,  # re-resolve every 5 seconds
+    ),
+)
+```
+
+- The only field is `resolution_interval_millis: int = 30000` <!-- sdk-python/temporalio/service.py:145 --> — how often to re-resolve DNS, in milliseconds.
+- `DnsLoadBalancingConfig.default` <!-- sdk-python/temporalio/service.py:147,158 --> is a pre-built instance with the default 30-second interval.
+- The `Client.connect` kwarg is `dns_load_balancing_config: DnsLoadBalancingConfig | None = None` <!-- sdk-python/temporalio/client.py:143 -->. Per the docstring: *"Default is to re-resolve DNS every 30s. Can be set to `None` to disable. Silently disabled when `http_connect_proxy_config` is set, since the two are mutually exclusive."* <!-- sdk-python/temporalio/client.py:199-203 -->
+- Pass `dns_load_balancing_config=None` to disable DNS load balancing entirely.
+
+### Mutual exclusion with HTTP CONNECT proxy
+
+DNS load balancing and `HttpConnectProxyConfig` cannot be used together. When `http_connect_proxy_config` is set on the same client, DNS load balancing is **silently disabled** <!-- sdk-python/temporalio/service.py:141-142, sdk-python/temporalio/bridge/src/client.rs:249-254 --> — there is no error and no precedence flag. If you need both, you cannot have both; choose the one your network requires.
+
+### CloudOperationsClient
+
+`CloudOperationsClient.connect` accepts the same `dns_load_balancing_config` kwarg <!-- sdk-python/temporalio/client.py:9786 -->, but its documented default differs: *"Default is disabled. Silently disabled when `http_connect_proxy_config` is set, since the two are mutually exclusive."* <!-- sdk-python/temporalio/client.py:9823-9826 -->
+
 ## Workflow Init Decorator
 
 You should always put state initialization logic in the `__init__` of your workflow class, so that it happens before signals/updates arrive.
