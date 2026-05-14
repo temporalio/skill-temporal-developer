@@ -6,7 +6,8 @@
 
 The integration is built on the Java SDK Plugin system  and ships as the `io.temporal:temporal-spring-ai`  module alongside the existing [`temporal-spring-boot-starter`](spring-boot.md) — which is a **required companion module**.
 
-**Status:** Public Preview.  APIs may change before GA; pin versions and re-read this reference when upgrading.
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
 For general Temporal AI/LLM patterns (retries, rate limits, timeouts, multi-agent orchestration) see `references/core/ai-patterns.md`. For Spring Boot autoconfigure mechanics (worker lifecycle, `@WorkflowImpl`, `@ActivityImpl`, auto-discovery) see `references/java/integrations/spring-boot.md`.
 
