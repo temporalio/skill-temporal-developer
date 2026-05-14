@@ -238,7 +238,7 @@ new McpPlugin();
 - **Missing model starter.** `temporal-spring-ai` does not bring its own model provider; you also need a Spring AI model starter such as `spring-ai-starter-model-openai`.
 - **Streaming.** Streaming responses are not currently supported — use non-streaming `call(...)` paths.
 - **Typos in `ChatModelActivityOptions` keys fail at startup, not at first call.** Any key that isn't a registered `ChatModel` bean name and isn't the literal `"default"` (`ChatModelTypes.DEFAULT_MODEL_NAME`) prevents plugin construction.
-- **Inline media over 1 MiB throws non-retryable `ApplicationFailure`.** Switch to URI-based `Media`, or raise `io.temporal.springai.maxMediaBytes` (set `0` to disable the safeguard) — but you still cannot exceed the 2 MiB history-event limit.
+- **Inline media over 1 MiB throws non-retryable `ApplicationFailure`.** Switch to URI-based `Media` as needed.
 - **Plain tools run on the workflow thread.** Plain `@Tool` classes are not Activities — they must obey workflow determinism rules. If a tool needs the system clock, file system, or network, make it an `@ActivityInterface` tool or annotate the class `@SideEffectTool`.
 
 ## Resources
