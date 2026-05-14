@@ -1,28 +1,26 @@
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:24 -->
-
 # Python Standalone Activities
 
-A Standalone Activity is a top-level Activity Execution started directly by a Temporal Client without using a Workflow <!-- docs/encyclopedia/activities/standalone-activity.mdx:50 -->, suitable for durable single-job tasks such as sending an email, processing a webhook, or syncing data <!-- docs/encyclopedia/activities/standalone-activity.mdx:73 -->. The Activity Function and Worker registration are identical to a Workflow Activity; only the invocation differs <!-- docs/develop/python/activities/standalone-activities.mdx:33 -->. For cross-SDK concepts and limitations, see [/standalone-activity](/standalone-activity) (`docs/encyclopedia/activities/standalone-activity.mdx`).
+A Standalone Activity is a top-level Activity Execution started directly by a Temporal Client without using a Workflow , suitable for durable single-job tasks such as sending an email, processing a webhook, or syncing data . The Activity Function and Worker registration are identical to a Workflow Activity; only the invocation differs . For cross-SDK concepts and limitations, see [/standalone-activity](/standalone-activity) (`docs/encyclopedia/activities/standalone-activity.mdx`).
 
 ## Guardrail: do not call from inside a Workflow
 
-Don't call `client.execute_activity` or `client.start_activity` from inside a `@workflow.defn` class — the docs explicitly say "Call this from your application code, not from inside a Workflow Definition." <!-- docs/develop/python/activities/standalone-activities.mdx:216 --> For Workflow-driven activity invocation, use `workflow.execute_activity` instead.
+Don't call `client.execute_activity` or `client.start_activity` from inside a `@workflow.defn` class — the docs explicitly say "Call this from your application code, not from inside a Workflow Definition."  For Workflow-driven activity invocation, use `workflow.execute_activity` instead.
 
 ## Prerequisites
 
-- Python 3.9+ <!-- docs/develop/python/activities/standalone-activities.mdx:59 -->
-- `temporalio` v1.23.0 or higher <!-- docs/develop/python/activities/standalone-activities.mdx:69 -->
-- Temporal CLI v1.7.0 or higher <!-- docs/develop/python/activities/standalone-activities.mdx:75 --> — see [`references/core/install_cli.md`](../core/install_cli.md).
-- Temporal Server v1.31.0 or higher is required for Standalone Activities <!-- docs/encyclopedia/activities/standalone-activity.mdx:23 -->. The Temporal Dev Server has Standalone Activities enabled by default for local testing <!-- docs/encyclopedia/activities/standalone-activity.mdx:139 -->.
+- Python 3.9+
+- `temporalio` v1.23.0 or higher
+- Temporal CLI v1.7.0 or higher  — see [`references/core/install_cli.md`](../core/install_cli.md).
+- Temporal Server v1.31.0 or higher is required for Standalone Activities . The Temporal Dev Server has Standalone Activities enabled by default for local testing .
 
-Start a local dev server with `temporal server start-dev` <!-- docs/develop/python/activities/standalone-activities.mdx:94 -->.
+Start a local dev server with `temporal server start-dev` .
 
 ## Worker setup
 
-Worker registration is identical to a Workflow-Activity worker — the Worker doesn't need to know whether the Activity will be invoked from a Workflow or as a Standalone Activity <!-- docs/develop/python/activities/standalone-activities.mdx:167 -->.
+Worker registration is identical to a Workflow-Activity worker — the Worker doesn't need to know whether the Activity will be invoked from a Workflow or as a Standalone Activity .
 
 ```python
 import asyncio
@@ -52,13 +50,11 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:175 -->
-
-The Activity itself is a normal function with `@activity.defn`; it can optionally be `async def` <!-- docs/develop/python/activities/standalone-activities.mdx:139 -->.
+The Activity itself is a normal function with `@activity.defn`; it can optionally be `async def` .
 
 ## Execute (await result)
 
-Use `client.execute_activity(...)` to durably enqueue the Activity, wait for it to be executed on a Worker, and fetch the result <!-- docs/develop/python/activities/standalone-activities.mdx:215 -->. Required arguments per the docs: the activity function (first positional), `args=[...]`, `id`, `task_queue`, and a timeout such as `start_to_close_timeout` <!-- docs/develop/python/activities/standalone-activities.mdx:237 -->.
+Use `client.execute_activity(...)` to durably enqueue the Activity, wait for it to be executed on a Worker, and fetch the result . Required arguments per the docs: the activity function (first positional), `args=[...]`, `id`, `task_queue`, and a timeout such as `start_to_close_timeout` .
 
 ```python
 from datetime import timedelta
@@ -72,11 +68,9 @@ activity_result = await client.execute_activity(
 )
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:237 -->
-
 ## Start (do not wait)
 
-Use `client.start_activity(...)` to durably enqueue the Activity without waiting for it to be executed, and get a handle back <!-- docs/develop/python/activities/standalone-activities.mdx:278 -->.
+Use `client.start_activity(...)` to durably enqueue the Activity without waiting for it to be executed, and get a handle back .
 
 ```python
 activity_handle = await client.start_activity(
@@ -88,11 +82,9 @@ activity_handle = await client.start_activity(
 )
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:283 -->
-
 ## Get an existing handle
 
-Use `client.get_activity_handle(...)` to create a handle to a previously started Standalone Activity <!-- docs/develop/python/activities/standalone-activities.mdx:311 -->.
+Use `client.get_activity_handle(...)` to create a handle to a previously started Standalone Activity .
 
 ```python
 activity_handle = client.get_activity_handle(
@@ -101,23 +93,19 @@ activity_handle = client.get_activity_handle(
 )
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:314 -->
-
-The handle can be used to wait for the result, describe, cancel, or terminate the Activity <!-- docs/develop/python/activities/standalone-activities.mdx:320 -->.
+The handle can be used to wait for the result, describe, cancel, or terminate the Activity .
 
 ## Await result later
 
-`client.execute_activity()` is equivalent to `client.start_activity()` followed by `await activity_handle.result()` <!-- docs/develop/python/activities/standalone-activities.mdx:324 -->.
+`client.execute_activity()` is equivalent to `client.start_activity()` followed by `await activity_handle.result()` .
 
 ```python
 activity_result = await activity_handle.result()
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:330 -->
-
 ## List Standalone Activities
 
-Use `client.list_activities(query=...)`; the result is an async iterator that yields `ActivityExecution` entries <!-- docs/develop/python/activities/standalone-activities.mdx:342 -->. Only Standalone Activity Executions are returned — Activities running inside Workflows are not included <!-- docs/develop/python/activities/standalone-activities.mdx:346 -->. The `query` parameter accepts [List Filter](/list-filter) syntax (e.g. `"ActivityType = 'MyActivity' AND Status = 'Running'"`) <!-- docs/develop/python/activities/standalone-activities.mdx:388 -->.
+Use `client.list_activities(query=...)`; the result is an async iterator that yields `ActivityExecution` entries . Only Standalone Activity Executions are returned — Activities running inside Workflows are not included . The `query` parameter accepts [List Filter](/list-filter) syntax (e.g. `"ActivityType = 'MyActivity' AND Status = 'Running'"`) .
 
 ```python
 activities = client.list_activities(
@@ -128,11 +116,9 @@ async for info in activities:
     print(f"ActivityID: {info.activity_id}, Type: {info.activity_type}, Status: {info.status}")
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:362 -->
-
 ## Count Standalone Activities
 
-Use `client.count_activities(query=...)` to count Standalone Activity Executions matching a List Filter query <!-- docs/develop/python/activities/standalone-activities.mdx:394 -->. The response exposes `resp.count` and `resp.groups` <!-- docs/develop/python/activities/standalone-activities.mdx:417 -->. This returns the total count of executions (running, completed, failed, etc.) — not the number of queued tasks <!-- docs/develop/python/activities/standalone-activities.mdx:396 -->.
+Use `client.count_activities(query=...)` to count Standalone Activity Executions matching a List Filter query . The response exposes `resp.count` and `resp.groups` . This returns the total count of executions (running, completed, failed, etc.) — not the number of queued tasks .
 
 ```python
 resp = await client.count_activities(
@@ -144,11 +130,9 @@ for group in resp.groups:
     print(f"Group {group.group_values}: {group.count}")
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:413 -->
-
 ## Temporal CLI mirror
 
-The `temporal activity` subcommand supports Standalone Activities with: `start`, `execute`, `result`, `list`, `count`, `describe`, `cancel`, and `terminate` <!-- docs/encyclopedia/activities/standalone-activity.mdx:136 -->. Documented invocations:
+The `temporal activity` subcommand supports Standalone Activities with: `start`, `execute`, `result`, `list`, `count`, `describe`, `cancel`, and `terminate` . Documented invocations:
 
 ```bash
 temporal activity execute \
@@ -159,8 +143,6 @@ temporal activity execute \
   --input '{"greeting": "Hello", "name": "World"}'
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:264 -->
-
 ```bash
 temporal activity start \
   --type compose_greeting \
@@ -170,35 +152,26 @@ temporal activity start \
   --input '{"greeting": "Hello", "name": "World"}'
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:301 -->
-
 ```bash
 temporal activity result --activity-id my-standalone-activity-id
 ```
-
-<!-- docs/develop/python/activities/standalone-activities.mdx:336 -->
 
 ```bash
 temporal activity list
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:385 -->
-
 ```bash
 temporal activity count
 ```
 
-<!-- docs/develop/python/activities/standalone-activities.mdx:436 -->
-
 ## Temporal Cloud
 
-The same code works against Temporal Cloud because `ClientConfig.load_client_connect_config()` reads environment variables and TOML profiles, so no code changes are needed <!-- docs/develop/python/activities/standalone-activities.mdx:441 -->. See the "Connect with mTLS" and "Connect with an API key" environment-variable blocks in the Python SDK page for the exact variables <!-- docs/develop/python/activities/standalone-activities.mdx:449 --> <!-- docs/develop/python/activities/standalone-activities.mdx:460 -->. Standalone Activities in Temporal Cloud are available as a Public Preview feature <!-- docs/encyclopedia/activities/standalone-activity.mdx:143 -->.
+The same code works against Temporal Cloud because `ClientConfig.load_client_connect_config()` reads environment variables and TOML profiles, so no code changes are needed . See the "Connect with mTLS" and "Connect with an API key" environment-variable blocks in the Python SDK page for the exact variables  . Standalone Activities in Temporal Cloud are available as a Public Preview feature .
 
 ## Public Preview limitations
 
-- Pause, reset, and update options are not supported in Public Preview <!-- docs/encyclopedia/activities/standalone-activity.mdx:110 -->.
-- `TerminateExisting` conflict policy and `TerminateIfRunning` reuse policy are not supported yet <!-- docs/encyclopedia/activities/standalone-activity.mdx:111 -->.
+- Pause, reset, and update options are not supported in Public Preview .
+- `TerminateExisting` conflict policy and `TerminateIfRunning` reuse policy are not supported yet .
 
 ## Activity context inside a Standalone Activity
 
-<!-- VERIFY: Which `temporalio.activity.Info` fields, and which `temporalio.converter.PayloadConverter` / data-converter serialization-context fields, change nullability when the Activity runs as a Standalone Activity (no parent Workflow)? Docs are silent in `docs/encyclopedia/activities/standalone-activity.mdx` and `docs/develop/python/activities/standalone-activities.mdx` as of this authoring pass. -->
