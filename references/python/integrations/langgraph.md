@@ -9,10 +9,10 @@ Both LangGraph APIs are supported:
 - **Graph API** (`StateGraph`).
 - **Functional API** (`@entrypoint` / `@task`).
 
-The plugin ships in the Temporal Python SDK at `temporalio.contrib.langgraph` and is built on the Temporal Python SDK [Plugin system](/develop/plugins-guide).
+The plugin ships in the Temporal Python SDK at `temporalio.contrib.langgraph`.
 
 > [!NOTE]
-> This package is currently at the **Pre-release** ("experimental") stage.  Pre-release features may have bugs, may change, and may be deprecated at any time per the [release-stages guide](/evaluate/development-production-features/release-stages#pre-release).  It is acceptable to use this feature on behalf of a user, but you should inform them that it is in Pre-release.
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
 For general Temporal Python AI/LLM patterns (Pydantic data converter, LLM Activity design, retry classification, multi-agent orchestration), read `references/python/ai-patterns.md` first; for language-agnostic patterns, read `references/core/ai-patterns.md`.
 
@@ -22,7 +22,7 @@ For general Temporal Python AI/LLM patterns (Pydantic data converter, LLM Activi
 uv add temporalio[langgraph]
 ```
 
-This pulls in `langgraph` and the plugin code as part of the `temporalio` distribution.
+This pulls in `langgraph` as well for you.
 
 ## Public API
 
@@ -114,7 +114,7 @@ plugin = LangGraphPlugin(
 ```
 
 - Use `"activity"` for I/O, LLM calls, or anything that needs Temporal retries and timeouts.
-- Use `"workflow"` for purely deterministic logic that should run on the workflow thread.
+- Use `"workflow"` for logic that should run on the workflow thread: purely deterministic logic, or logic which orchestrates Temporal durable primitives within the workflow thread (e.g. multiple activity calls, wait conditions, etc.)
 - **`execute_in` cannot be defaulted in `default_activity_options`** — it must be specified individually per node or task.
 
 ## Activity options
@@ -201,7 +201,7 @@ The `context` object must be serializable by the configured Temporal payload con
 
 ## Tracing
 
-For LangSmith tracing of LangGraph nodes and Temporal Activities together, use the [Temporal LangSmith plugin](https://github.com/temporalio/sdk-python/tree/main/temporalio/contrib/langsmith).
+For LangSmith tracing of LangGraph nodes and Temporal Activities together, use the Temporal LangSmith plugin (`references/python/integrations/langsmith.md`).
 
 ## Hard constraints
 
@@ -210,16 +210,8 @@ For LangSmith tracing of LangGraph nodes and Temporal Activities together, use t
 - **LangGraph `Store` is not supported across the Activity boundary.** If you pass a `Store` (e.g. `InMemoryStore` via `graph.compile(store=...)` or `@entrypoint(store=...)`), the plugin logs a warning on first use and `runtime.store` is `None` inside nodes. Use Workflow state for per-run memory, or an external database (Postgres/Redis/etc.) configured on each worker for shared memory across runs.
 - **Context objects must be serializable by the configured Temporal payload converter,** since they cross the Activity boundary.
 
-## Common pitfalls
-
-- **Missing `execute_in` metadata.** Add it to every node (Graph API) and every task (Functional API); there is no implicit default.
-- **Third-party checkpointer configured.** Use `InMemorySaver`; Temporal is the durability layer.
-- **Treating `Store` as shared memory.** Stores can't cross the Activity boundary — move shared state to an external database accessible from every worker.
-- **Non-serializable context.** If `runtime.context` contains types your payload converter doesn't handle, Activity dispatch fails. Configure `pydantic_data_converter` if you put Pydantic models in context.
-
 ## Resources
 
 - `references/python/ai-patterns.md` — Python AI/LLM patterns (Pydantic data converter, LLM Activity design, retry/error classification).
 - `references/core/ai-patterns.md` — language-agnostic AI/LLM patterns.
-- Plugin source and README: <https://github.com/temporalio/sdk-python/tree/main/temporalio/contrib/langgraph>.
-- Companion LangSmith plugin (tracing): <https://github.com/temporalio/sdk-python/tree/main/temporalio/contrib/langsmith>.
+- `references/python/integrations/langsmith.md` - Companion LangSmith plugin. 
