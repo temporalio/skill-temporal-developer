@@ -262,17 +262,17 @@ The timeout is still required because the subscriber may not be attached.  With 
 
 `subscribe()` exits cleanly when the Workflow reaches `COMPLETED`, `FAILED`, `CANCELED`, `TERMINATED`, or `TIMED_OUT`, but does not distinguish among them.  Call `await temporal_client.get_workflow_handle(workflow_id).describe()` after the loop to inspect the Workflow's status.
 
-## Continue-As-New
+## Continue-As-New (CAN)
 
-For streams that run hours or accumulate thousands of events, roll over to keep history bounded.  Subscribers automatically follow Continue-As-New chains.  Workflow Ids are stable across CAN.
+Skip this section for short-lived Workflows (single chat completion, order pipeline). CAN is for streams that run for hours or accumulate thousands of events
 
-CAN-following requires the client retained from `WorkflowStreamClient.create()` or `from_within_activity()`; clients constructed directly with a single handle cannot re-target the new run.
+Subscribers automatically follow Continue-As-New chains — the Workflow ID is stable, so the iterator fetches a fresh handle and continues polling from the carried offset.
 
-To carry both application state and stream state across the boundary:
+To roll a long-running streaming Workflow over without subscribers seeing a gap, carry both your application state and the stream state across the boundary:
 
-- Add a `WorkflowStreamState | None` field to your Workflow input.
-- Pass it to the constructor as `WorkflowStream(prior_state=...)`.
-- Call `WorkflowStream.continue_as_new(build_args)`; the helper drains waiting subscribers, waits for in-flight handlers, then calls `workflow.continue_as_new` with the args produced by `build_args(post_drain_state)`.
+- Add a `WorkflowStreamState | None` field to your Workflow input,
+- pass it to the constructor as `WorkflowStream(prior_state=...)`,
+- and call `WorkflowStream.continue_as_new(build_args)` to invoke the rollover. The helper drains waiting subscribers, waits for in-flight handlers to finish, then calls `workflow.continue_as_new` with the args produced by `build_args(post_drain_state)`.
 
 ```python
 from dataclasses import dataclass, field
