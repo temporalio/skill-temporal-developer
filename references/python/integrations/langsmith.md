@@ -68,7 +68,7 @@ Constructor is keyword-only.
 | Inside Workflow methods | Yes | Traces called from inside `@workflow.run`, `@workflow.signal`, etc.; sync and async methods. |
 | Inside Activity methods | Yes | Traces called from inside `@activity.defn`; sync and async methods. |
 | On `@activity.defn` functions | Yes | Stack `@traceable` on top of `@activity.defn` (decorator order matters). Fires on every retry. |
-| On `@workflow.defn` classes | No | Use `@traceable` inside `@workflow.run` instead. |
+| On Workflow methods | No | Do not wrap `@traceable` around `@workflow.defn`, `workflow.run`, `workflow.signal`; Use inside `@workflow.run` instead. |
 
 Decorator-order example for an Activity — `@traceable` on top:
 
