@@ -9,7 +9,6 @@ The integration is built on the Python SDK [Plugin system](https://docs.temporal
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-The upstream module README and the Temporal-hosted integration guide both flag the integration as experimental with possible breaking changes — surface this to the user when generating ADK + Temporal code.
 
 For general Temporal AI/LLM patterns (retries, rate limits, multi-agent orchestration) see `references/core/ai-patterns.md` and `references/python/ai-patterns.md`.
 
@@ -17,7 +16,6 @@ For general Temporal AI/LLM patterns (retries, rate limits, multi-agent orchestr
 
 | Dependency           | Minimum version |
 | -------------------- | --------------- |
-| Python               | 3.10            |
 | Temporal Python SDK  | 1.24.0          |
 | Google ADK           | a working `google-adk` install (pulled in by the extra) |
 
@@ -29,7 +27,7 @@ You also need access to a supported model (e.g. a Gemini API key for `gemini-fla
 pip install "temporalio[google-adk]"
 ```
 
-The extra name is `google-adk` (hyphen). The module path is `temporalio.contrib.google_adk_agents` (note the `_agents` suffix). Do **not** import from `temporalio.contrib.google_adk` or `temporalio.adk`.
+The extra name is `google-adk` (hyphen). The module path is `temporalio.contrib.google_adk_agents` (note the `_agents` suffix).
 
 ## Public API
 
@@ -213,12 +211,9 @@ The provider name (`"my-tools"` above) must match between `TemporalMcpToolSetPro
 
 ## Common mistakes
 
-- **Wrong extra:** `pip install "temporalio[adk]"` or `temporalio[google_adk]`. Use `temporalio[google-adk]`.
-- **Wrong module path:** importing from `temporalio.contrib.google_adk`. The module is `temporalio.contrib.google_adk_agents`.
 - **Mixing up `ActivityConfig` and `ActivityOptions`.** `TemporalModel` takes `activity_config=ActivityConfig(...)` from `temporalio.workflow`.
 - **Forgetting `not_in_workflow_toolset` on `TemporalMcpToolSet`.** Required for local fallback.
 - **Skipping `GoogleAdkPlugin()` on the client used by `execute_workflow`.** Data-converter and toolset wiring lives on the plugin; using only the worker-side plugin leads to serialization errors.
 - **Registering `activity_tool(...)` wrappers in `activities=`.** Register the underlying `@activity.defn` function instead.
-- **Calling `time.time()` / `uuid.uuid4()` inside an `@activity.defn`.** The plugin's determinism replacements only apply in workflow context — Activities are unaffected, and that's fine; don't try to "fix" Activity code by reaching for `workflow.now()`.
+- **Forgetting non-determinism rules.** As with Temporal broadly, workflow code must be deterministic. This plugin makes it a bit easier by auto-replacing common sources of non-determinism with Temporal durable variants, but you are strongly encouraged to just use those explicitly. In workflow code: use `workflow.now()`, etc. In activity code: use `time.time()` or whatever standard non-deterministic things, NOT `workflow.*` calls.
 - **Expecting streaming responses.** Not currently supported via `TemporalModel`.
-- **Treating ADK + Temporal as GA.** Tell the user the integration is experimental and breaking changes are possible.
