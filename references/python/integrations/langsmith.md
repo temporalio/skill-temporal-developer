@@ -100,7 +100,6 @@ The plugin makes `@traceable` replay-safe in the Workflow sandbox. You do not ne
 - The plugin injects metadata using `workflow.now()` for timestamps and `workflow.random()` for UUIDs instead of `datetime.now()` and `uuid4()`.
 - LangSmith HTTP calls run on a background thread pool that does not interfere with deterministic Workflow execution.
 
-A Worker crash mid-Workflow does not produce duplicate traces: replayed Activities skip execution and emit no new run; new work after the crash produces fresh traces.
 
 ## Context propagation
 
