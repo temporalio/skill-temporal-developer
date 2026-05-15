@@ -5,13 +5,12 @@
 
 ## Overview
 
-`temporalio.contrib.workflow_streams`  is a Public-Preview Python SDK `contrib` library that gives a Workflow a durable, offset-addressed event channel built on Temporal's basic message primitives: Signals, Updates, and Queries.  It batch-publishes events, deduplicates batches for exactly-once delivery to the log, supports topic filtering, and carries state across Continue-As-New.
+`temporalio.contrib.workflow_streams` is a Python SDK `contrib` library that gives a Workflow a durable, offset-addressed event channel built on Temporal's basic message primitives: Signals, Updates, and Queries.  It batch-publishes events, deduplicates batches for exactly-once delivery to the log, supports topic filtering, and carries state across Continue-As-New.
 
-Use it for modest fan-out progress streaming: AI-agent runs, order pipelines, data jobs.  It targets "tens of publishers and subscribers per Workflow, not thousands"; it is not suited to ultra-low-latency cases like real-time voice.
+Use it for modest fan-out progress streaming: AI-agent runs, order pipelines, multi-step workflow status updates, etc.  It targets "tens of publishers and subscribers per Workflow, not thousands"; it is not suited to ultra-low-latency cases like real-time voice.
 
-Only the Python client is available today; cross-language is on the roadmap.  The API may change before general availability.
+Only available in the Python SDK today; cross-language is on the roadmap.
 
-See [Public Preview release stage](/evaluate/development-production-features/release-stages#public-preview) and the [Workflow message-passing reference](/develop/python/workflows/message-passing) for the primitives this builds on.
 
 ## When to use / not to use
 
@@ -26,7 +25,6 @@ A `WorkflowStream` is hosted inside a Workflow. The Workflow Id is the address s
 - **Same-Workflow hosting (common shape):** the Workflow that does the work also hosts the stream. Its lifecycle aligns with the run. Use this for AI agents and most progress-streaming cases.
 - **Dedicated Workflow:** when the stream should outlive any single producer, accept fan-in from multiple unrelated sources, or be subscribable before any work has started. Producers publish from outside. Trade-off: explicit lifecycle management — the dedicated Workflow does not terminate on its own, so wire a signal-driven shutdown or a Continue-As-New strategy.
 - Multiple subscribers can attach to the same Workflow Id concurrently (e.g. a UI with multiple browser tabs).
-- Use distinct Workflow Ids for unrelated streams rather than packing them into one Workflow.
 
 ## Enable streaming on a Workflow
 
@@ -329,7 +327,7 @@ workflow.continue_as_new(
 )
 ```
 
-The carried `WorkflowStreamState` includes the entire in-memory log of the previous run.  Offload large items via [External Storage](/external-storage) so each item is a small reference, and combine with `truncate()` to keep the carried log itself small.
+The carried `WorkflowStreamState` includes the entire in-memory log of the previous run.  Offload large items via [External Storage](https://docs.temporal.io/external-storage) so each item is a small reference, and combine with `truncate()` to keep the carried log itself small.
 
 ## Tuning
 
@@ -383,7 +381,7 @@ A subscriber whose offset falls below the new base after `truncate()` is silentl
 - `__temporal_workflow_stream_poll` — long-poll Update that subscribers use.
 - `__temporal_workflow_stream_offset` — Query that reports the current head offset.
 
-**Poll responses are capped at roughly 1 MB**, by accumulating items until the next would exceed the budget.  A single item that exceeds 1 MB on its own is admitted unconditionally; offload via [External Storage](/external-storage).
+**Poll responses are capped at roughly 1 MB**, by accumulating items until the next would exceed the budget.  A single item that exceeds 1 MB on its own is admitted unconditionally; offload via [External Storage](https://docs.temporal.io/external-storage).
 
 **Batch dedup applies at the Signal layer, not the Activity layer.**  When Temporal retries the Activity, the retried execution constructs a new `WorkflowStreamClient` with its own client id, so every Activity attempt is a fresh publisher whose batches will not deduplicate against the prior attempt's.
 
@@ -522,6 +520,5 @@ Why these choices:
 
 - [Workflow Streams samples (samples-python)](https://github.com/temporalio/samples-python/tree/main/workflow_streams) — basic publish/subscribe, reconnecting subscribers, external publishers, bounded logs.
 - [`temporalio.contrib.workflow_streams` API reference](https://python.temporal.io/temporalio.contrib.workflow_streams.html).
-- [Workflow message passing](/develop/python/workflows/message-passing) — Signals, Updates, and Queries that Workflow Streams is built on.
 - `references/python/patterns.md` — Signals/Queries/Updates primitives this builds on.
 - `references/python/ai-patterns.md` — LLM patterns.
