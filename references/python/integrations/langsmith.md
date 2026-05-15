@@ -228,3 +228,7 @@ my_step
 - **Registering the plugin only on the Client.** Register on both Client and every Worker.
 - **Positional argument to `LangSmithPlugin`.** The constructor is keyword-only — use `LangSmithPlugin(project_name="...")`.
 - **Combining with `temporalio.contrib.opentelemetry` and expecting unified traces.** They are independent integrations; this reference covers LangSmith only.
+
+## Additional Resources
+
+- `references/python/integrations/langgraph.md` - LangGraph + Temporal plugin - enables running LangGraph agents as durable Temporal workflows.
