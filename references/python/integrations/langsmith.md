@@ -96,7 +96,7 @@ With `add_temporal_runs=True`, `StartFoo` and `RunFoo` appear as siblings: the s
 
 The plugin makes `@traceable` replay-safe in the Workflow sandbox. You do not need to write extra code for this.
 
-- Run IDs are derived deterministically from the Workflow's random seed, so replayed operations produce the same IDs and LangSmith deduplicates them.
+- Replay correctness and non-duplication is correctly handled by the plugin, no matter the cause of replay (happy paths, errors, crashes, etc.). Replayed Activities create no new trace data; new work after that produces fresh traces
 - The plugin injects metadata using `workflow.now()` for timestamps and `workflow.random()` for UUIDs instead of `datetime.now()` and `uuid4()`.
 - LangSmith HTTP calls run on a background thread pool that does not interfere with deterministic Workflow execution.
 
