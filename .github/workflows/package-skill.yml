@@ -160,6 +160,24 @@ jobs:
             base_tag=""
           fi
 
+          # The target repo's recorded version may not correspond to an
+          # actual tag in this source repo (e.g. the target was last
+          # updated from a different repo, or a tag was never published
+          # for that version). If the tag doesn't exist locally, find the
+          # most recent tag that's an ancestor of HEAD and predates the
+          # current tag; if nothing matches, leave base_tag empty so the
+          # fallback path runs.
+          if [ -n "$base_tag" ] && ! git rev-parse --verify --quiet "refs/tags/${base_tag}" >/dev/null; then
+            echo "Base tag ${base_tag} does not exist in this repo; searching for closest preceding tag"
+            fallback_tag=$(git tag --sort=-v:refname | awk -v cur="$current_tag" '$0 != cur' | head -1 || true)
+            if [ -n "$fallback_tag" ]; then
+              echo "Using ${fallback_tag} as base tag instead"
+              base_tag="$fallback_tag"
+            else
+              base_tag=""
+            fi
+          fi
+
           # Prefer GitHub's auto-generated notes for the range (nicely formatted
           # with PR links and contributors). Fall back to git log if unavailable.
           echo "Base tag: ${base_tag:-<none>} / Current tag: ${current_tag}"
@@ -174,7 +192,8 @@ jobs:
               echo "$notes" > /tmp/changelog.md
             else
               echo "generate-notes API call failed or empty; falling back to git log"
-              git log --oneline "${base_tag}..HEAD" > /tmp/changelog.md
+              git log --oneline "${base_tag}..HEAD" > /tmp/changelog.md \
+                || git log --oneline -20 > /tmp/changelog.md
             fi
           else
             echo "No base tag found; using last 20 commits"
