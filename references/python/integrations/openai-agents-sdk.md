@@ -124,8 +124,7 @@ from agents import Agent, Runner, function_tool
 
 @function_tool
 def calculate_circle_area(radius: float) -> float:
-    import math
-    return math.pi * radius ** 2
+    return 3.14 * radius ** 2
 
 @workflow.defn
 class MathAssistantAgent:
