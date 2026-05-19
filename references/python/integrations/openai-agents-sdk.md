@@ -4,7 +4,7 @@
 
 The Temporal Python SDK ships an in-tree integration that runs [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) agents as durable Temporal Workflows. Model calls execute as Temporal Activities; tools can be Activities, Nexus stubs, or workflow-resident `@function_tool`s; MCP servers, sandbox backends, and OpenTelemetry export are layered on top.
 
-The integration is delivered as a [Temporal plugin](../../../docs/develop/plugins-guide.mdx): `OpenAIAgentsPlugin` from `temporalio.contrib.openai_agents`, registered on both the client and the worker via `plugins=[...]`.
+The integration is delivered as a Temporal plugin: `OpenAIAgentsPlugin` from `temporalio.contrib.openai_agents`, registered on both the client and the worker via `plugins=[...]`.
 
 The Temporal documentation index for Python integrations points to this README as the canonical guide.
 
@@ -12,7 +12,7 @@ For language-agnostic AI/LLM patterns (centralized retries, multi-agent orchestr
 
 ## Install
 
-The integration lives at `temporalio.contrib.openai_agents`; no extra package install is required beyond `temporalio` and the upstream OpenAI Agents SDK (`agents`).
+The integration lives at `temporalio.contrib.openai_agents`; use it by installing `temporalio[openai-agents]` to get the extra OpenAI Agents SDK dep.
 
 ```python
 from temporalio.contrib.openai_agents import OpenAIAgentsPlugin, ModelActivityParameters
@@ -73,7 +73,7 @@ Register the workflow with a `Worker` exactly like any other Temporal workflow.
 
 ## Tools
 
-Two ways to wire a tool into an agent. Choose by the tool's side effects.
+Two ways to wire a tool into an agent. Choose based on whether the tool has side effects.
 
 ### Activities as tools — for I/O, retries, timeouts
 
@@ -118,7 +118,7 @@ Activity-as-tool sees a **read-only copy** of the OpenAI Agents context — muta
 
 ### `@function_tool` — for deterministic, in-process tools
 
-For pure computations or tools that mutate agent state, use the upstream `@function_tool` decorator. The tool runs on the workflow thread, so it must obey workflow determinism rules.
+For pure computations or tools that mutate agent state, use the upstream `@function_tool` decorator. The tool runs as part of the workflow, so it must obey workflow determinism rules.
 
 ```python
 from temporalio import workflow
@@ -144,7 +144,7 @@ class MathAssistantAgent:
 
 `@function_tool` bodies can read **and update** OpenAI Agents context. They can also call Temporal activities themselves if they need I/O at runtime.
 
-**Don't put I/O, system clock, or random sources inside a `@function_tool` body.** Make it an `@activity.defn` and wrap with `activity_as_tool` instead.
+**Don't put I/O, system clock, or sources of randomness inside a `@function_tool` body.** Make it an `@activity.defn` and wrap with `activity_as_tool` instead.
 
 ### Picking between the two
 
@@ -226,12 +226,12 @@ For network-accessible MCP servers, the upstream `HostedMCPTool` (OpenAI Respons
 
 ## Sandbox support
 
-> [!WARNING]
-> Sandbox support is **Pre-release** — surface and behavior may change before General Availability. Inform the user before building on it.
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-The OpenAI Agents SDK's `SandboxAgent` runs commands inside a remote or local sandbox (Daytona, Docker, E2B, local Unix). With this integration, every sandbox operation — creating a session, exec, file I/O, PTY — dispatches as a Temporal activity, so sandbox work is durable like any other activity and sandbox session state survives worker restarts.
+The OpenAI Agents SDK's `SandboxAgent` runs commands inside a remote or local sandbox (e.g. Daytona, Docker, E2B, local Unix). With this integration, every sandbox operation — creating a session, exec, file I/O, PTY — dispatches as a Temporal activity, so sandbox work is durable like any other activity and sandbox session state survives worker restarts.
 
-> Naming gotcha: this is the **Agents SDK** sandbox (remote command execution), **not** the Python SDK workflow sandbox (determinism protection). They are unrelated.
+> Naming gotcha: this is the **Agents SDK** sandbox (remote command execution), **not** the Temporal Python SDK workflow sandbox (determinism protection). They are unrelated.
 
 ### Worker setup
 
@@ -294,12 +294,12 @@ class MyWorkflow:
         return result.final_output
 ```
 
-A single workflow can target multiple backends by name; register each on the worker and reference each in the workflow.
+A single workflow can target multiple backends by name; register each on the worker and reference in the workflow.
 
 ## Streaming
 
-> [!WARNING]
-> Streaming is **Experimental** — surface and behavior may change before General Availability. Inform the user before building on it.
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
 Streaming uses the upstream `Runner.run_streamed` API. Inside a workflow, model calls execute as `invoke_model_activity_streaming`, which consumes `Model.stream_response` and returns the collected list of native OpenAI response events. The workflow surfaces those events via `RunResultStreaming.stream_events()`.
 
@@ -446,5 +446,4 @@ Tool context propagation:
 - `references/core/ai-patterns.md` — language-agnostic agent patterns (when to wrap a tool as an activity, centralized retry, multi-agent orchestration).
 - `references/python/ai-patterns.md` — Python-side LLM patterns for when you are **not** using this plugin (Pydantic data converter, OpenAI client `max_retries=0`).
 - `references/python/determinism.md` and `references/core/determinism.md` — determinism rules that apply to `@function_tool` bodies and any in-workflow agent code.
-- `../../../docs/develop/plugins-guide.mdx` — how the plugin system works under the hood.
 - Upstream samples — [`temporalio/samples-python/openai_agents`](https://github.com/temporalio/samples-python/tree/main/openai_agents).
