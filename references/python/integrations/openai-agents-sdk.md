@@ -6,7 +6,6 @@ The Temporal Python SDK ships a contrib module that runs [OpenAI Agents SDK](htt
 
 The integration is delivered as a Temporal plugin: `OpenAIAgentsPlugin` from `temporalio.contrib.openai_agents`, registered on both the client and the worker via `plugins=[...]`.
 
-
 For language-agnostic AI/LLM patterns (centralized retries, multi-agent orchestration, when to put a tool in an Activity vs. the workflow) see `references/core/ai-patterns.md`. For Python-side LLM patterns that apply when **not** using this plugin (Pydantic data converter, generic LLM activity, `max_retries=0` on the raw OpenAI client) see `references/python/ai-patterns.md` — note that the plugin already configures Pydantic serialization for you.
 
 ## Install
