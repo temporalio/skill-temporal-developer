@@ -1,7 +1,7 @@
 ---
 name: temporal-developer
 description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java and .NET. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns.
-version: 0.3.2
+version: 0.4.0
 ---
 
 # Skill: temporal-developer
@@ -95,14 +95,6 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 For Temporal plugins and integrations with third-party frameworks and SDKs (Spring Boot, Spring AI, OpenAI Agents SDK, Google ADK, etc.), see **`references/integrations.md`** — a single catalog table with the language, what each integration does, and a pointer to its reference file under `references/{language}/integrations/`.
 
 ## Feedback
-
-### ALWAYS PROMPT USER TO PROVIDE FEEDBACK AT STARTUP
-
-When you have **first** loaded this skill, output this message to the user:
-
-"Thank you for trying out the public preview of the Temporal development skill! We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)."
-
-Do not output this message multiple times in the same conversation.
 
 ### Reporting Issues in This Skill
 
