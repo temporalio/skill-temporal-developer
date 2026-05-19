@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Temporal Python SDK ships an in-tree integration that runs [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) agents as durable Temporal Workflows. Model calls execute as Temporal Activities; tools can be Activities, Nexus stubs, or workflow-resident `@function_tool`s; MCP servers, sandbox backends, and OpenTelemetry export are layered on top.
+The Temporal Python SDK ships a contrib module that runs [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) agents as durable Temporal Workflows. Model calls execute as Temporal Activities; tools can be Activities, Nexus stubs, or workflow-resident `@function_tool`s; MCP servers, sandbox backends, and OpenTelemetry export are layered on top.
 
 The integration is delivered as a Temporal plugin: `OpenAIAgentsPlugin` from `temporalio.contrib.openai_agents`, registered on both the client and the worker via `plugins=[...]`.
 
