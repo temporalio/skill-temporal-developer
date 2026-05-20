@@ -112,7 +112,18 @@ class WeatherAgent:
         return result.final_output
 ```
 
-Activity-as-tool sees a **read-only copy** of the OpenAI Agents context — mutations from the tool body are not visible to other tools or to the agent.
+Just like with standard `@function_tool` declarations, if your Activity-as-tool has a `RunContextWrapper[T]` as the first parameter, then it will receive the [OpenAI Agents context wrapper](https://openai.github.io/openai-agents-python/ref/run_context/#agents.run_context.RunContextWrapper). However, unlike with a `@function_tool`,
+it will only be a **read-only copy** of the OpenAI Agents context — mutations from the tool body are not visible to other tools or to the agent!
+
+```python
+@activity.defn
+async def get_weather(ctx: RunContextWrapper[MyState], city: str) -> Weather:
+    state: MyState = ctx.context
+    # Now we have **read-only** access to state which is shared across tool invocations.
+    pass
+```
+
+Note that the initial run context comes from the `context=...` argument you pass to `Runner.run()`, and is `None` by default.
 
 ### `@function_tool` — for deterministic, in-process tools
 
@@ -139,7 +150,20 @@ class MathAssistantAgent:
         return result.final_output
 ```
 
-`@function_tool` bodies can read **and update** OpenAI Agents context. They can also call Temporal activities themselves if they need I/O at runtime.
+`@function_tool` bodies can read **and update** OpenAI Agents context:
+
+```python
+@activity.defn
+async def calculate_circle_area(ctx: RunContextWrapper[MyState], radius: float) -> float:
+    state: MyState = ctx.context
+    # Now we have **read-write** access to state which is shared across tool invocations.
+    pass
+```
+
+Note that the initial run context comes from the `context=...` argument you pass to `Runner.run()`, and is `None` by default.
+
+In addition, since a `@function_tool` runs in the workflow, they can also call Temporal activities or other durable primitives themselves.
+
 
 **Don't put I/O, system clock, or sources of randomness inside a `@function_tool` body.** Make it an `@activity.defn` and wrap with `activity_as_tool` instead.
 
