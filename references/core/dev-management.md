@@ -25,8 +25,8 @@ The dev server is for local development only, not production. <!-- docs/cli/serv
 | `--ui-port` | `--port` + 1000 | Web UI port. <!-- docs/cli/server.mdx:83 --> |
 | `--ip` | `127.0.0.1` | IP address bound to the front-end service. Use `0.0.0.0` for Docker/LAN access. <!-- docs/cli/server.mdx:73 --> |
 | `--dynamic-config-value` | — | Dynamic config in `KEY=JSON_VALUE` form. Repeatable. <!-- docs/cli/server.mdx:70 --> |
-| `--log-level` | `warn` | Log level. Accepted values: `debug`, `info`, `warn`, `error`, `never`. <!-- docs/cli/server.mdx:109 --> |
-| `--log-format` | `text` | Log format. Accepted values: `text`, `json`. <!-- docs/cli/server.mdx:108 --> |
+| `--log-level` | `warn` | (Global flag) Log level. Accepted values: `debug`, `info`, `warn`, `error`, `never`. Default is `warn` for `start-dev`. <!-- docs/cli/server.mdx:109 --> |
+| `--log-format` | `text` | (Global flag) Log format. Accepted values: `text`, `json`. <!-- docs/cli/server.mdx:108 --> |
 | `--headless` | — | Disable the Web UI. <!-- docs/cli/server.mdx:71 --> |
 | `--http-port` | random free port | HTTP API port. <!-- docs/cli/server.mdx:72 --> |
 | `--metrics-port` | random free port | Prometheus `/metrics` port. <!-- docs/cli/server.mdx:75 --> |

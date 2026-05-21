@@ -29,31 +29,31 @@ temporal workflow start \
 
 Required flags: `--type`, `--task-queue`. <!-- docs/cli/workflow.mdx:201,203 --> Optional `--workflow-id` -- the Service generates a UUID if omitted. <!-- docs/cli/workflow.mdx:582 -->
 
-| Flag | Accepted values / format | Purpose |
+| Flag | Required | Purpose |
 |---|---|---|
-| `--type` | string | Workflow Type name. Required. <!-- docs/cli/workflow.mdx:581 --> |
-| `--task-queue`, `-t` | string | Workflow Task queue. Required. <!-- docs/cli/workflow.mdx:579 --> |
-| `--workflow-id`, `-w` | string | Workflow ID. Service generates a UUID if omitted. <!-- docs/cli/workflow.mdx:582 --> |
-| `--input`, `-i` | JSON string | Input value. Repeatable for multiple args. Mutually exclusive with `--input-file`. <!-- docs/cli/workflow.mdx:568 --> |
-| `--input-file` | path | Read input from file(s). Repeatable. Mutually exclusive with `--input`. <!-- docs/cli/workflow.mdx:570 --> |
-| `--input-base64` | bool | Decode `--input` as base64 before sending. <!-- docs/cli/workflow.mdx:569 --> |
-| `--input-meta` | `KEY=VALUE` | Override payload metadata (e.g., `encoding=json/protobuf`). Repeatable. <!-- docs/cli/workflow.mdx:571 --> |
-| `--id-reuse-policy` | `AllowDuplicate`, `AllowDuplicateFailedOnly`, `RejectDuplicate`, `TerminateIfRunning` | How to reuse a previously-seen Workflow ID. <!-- docs/cli/workflow.mdx:567 --> |
-| `--id-conflict-policy` | `Fail`, `UseExisting`, `TerminateExisting` | How to resolve conflicts with a currently-running execution sharing the same Workflow ID. <!-- docs/cli/workflow.mdx:566 --> |
-| `--execution-timeout` | duration | Fail a Workflow Execution if it lasts longer than this. Includes retries and ContinueAsNew. <!-- docs/cli/workflow.mdx:561 --> |
-| `--run-timeout` | duration | Fail a single Workflow Run if it lasts longer than this. <!-- docs/cli/workflow.mdx:574 --> |
-| `--task-timeout` | duration | Start-to-close timeout for a Workflow Task. <!-- docs/cli/workflow.mdx:580 --> |
-| `--search-attribute` | `KEY=VALUE` (JSON values) | Set a search attribute at start time. Repeatable. <!-- docs/cli/workflow.mdx:575 --> |
-| `--memo` | `KEY="VALUE"` (JSON values) | Attach unindexed metadata. Repeatable. <!-- docs/cli/workflow.mdx:572 --> |
-| `--start-delay` | duration | Delay before starting. Cannot combine with `--cron`. If the Workflow receives a signal or update before this time, it starts immediately. <!-- docs/cli/workflow.mdx:576 --> |
-| `--cron` | cron string | Legacy cron schedule (prefer `temporal schedule create`). <!-- docs/cli/workflow.mdx:560 --> |
-| `--priority-key` | `1`-`5` (default `3`) | Lower numbers = higher priority. <!-- docs/cli/workflow.mdx:573 --> |
-| `--fairness-key` | string (max 64 bytes) | Proportional task dispatch grouping key. <!-- docs/cli/workflow.mdx:563 --> |
-| `--fairness-weight` | `0.001`-`1000` | Weight for this fairness key. Keys dispatched proportionally to their weights. <!-- docs/cli/workflow.mdx:564 --> |
-| `--static-summary` | Markdown string | Human-readable summary for UIs. Single line. _(Experimental)_ <!-- docs/cli/workflow.mdx:578 --> |
-| `--static-details` | Markdown string | Human-readable details for UIs. May be multiple lines. _(Experimental)_ <!-- docs/cli/workflow.mdx:577 --> |
-| `--fail-existing` | bool | Fail if the Workflow already exists. <!-- docs/cli/workflow.mdx:562 --> |
-| `--headers` | `KEY=VALUE` (JSON values) | Temporal workflow headers (not gRPC). Repeatable. <!-- docs/cli/workflow.mdx:565 --> |
+| `--type` | Yes | Workflow Type name. <!-- docs/cli/workflow.mdx:581 --> |
+| `--task-queue`, `-t` | Yes | Workflow Task queue. <!-- docs/cli/workflow.mdx:579 --> |
+| `--workflow-id`, `-w` | No | Workflow ID. Service generates a UUID if omitted. <!-- docs/cli/workflow.mdx:582 --> |
+| `--input`, `-i` | No | Input value (JSON). Repeatable. Mutually exclusive with `--input-file`. <!-- docs/cli/workflow.mdx:568 --> |
+| `--input-file` | No | Read input from file(s). Repeatable. Mutually exclusive with `--input`. <!-- docs/cli/workflow.mdx:570 --> |
+| `--input-base64` | No | Decode `--input` as base64 before sending. <!-- docs/cli/workflow.mdx:569 --> |
+| `--input-meta` | No | Override payload metadata as `KEY=VALUE` (e.g., `encoding=json/protobuf`). Repeatable. <!-- docs/cli/workflow.mdx:571 --> |
+| `--id-reuse-policy` | No | How to reuse a previously-seen Workflow ID. Values: `AllowDuplicate`, `AllowDuplicateFailedOnly`, `RejectDuplicate`, `TerminateIfRunning`. <!-- docs/cli/workflow.mdx:567 --> |
+| `--id-conflict-policy` | No | How to resolve conflicts with a running execution sharing the same ID. Values: `Fail`, `UseExisting`, `TerminateExisting`. <!-- docs/cli/workflow.mdx:566 --> |
+| `--execution-timeout` | No | Fail a Workflow Execution if it lasts longer than this (duration). Includes retries and ContinueAsNew. <!-- docs/cli/workflow.mdx:561 --> |
+| `--run-timeout` | No | Fail a single Workflow Run if it lasts longer than this (duration). <!-- docs/cli/workflow.mdx:574 --> |
+| `--task-timeout` | No | Start-to-close timeout for a Workflow Task (duration). <!-- docs/cli/workflow.mdx:580 --> |
+| `--search-attribute` | No | Set a search attribute as `KEY=VALUE` (JSON values). Repeatable. <!-- docs/cli/workflow.mdx:575 --> |
+| `--memo` | No | Attach unindexed metadata as `KEY="VALUE"` (JSON values). Repeatable. <!-- docs/cli/workflow.mdx:572 --> |
+| `--start-delay` | No | Delay before starting (duration). Cannot combine with `--cron`. <!-- docs/cli/workflow.mdx:576 --> |
+| `--cron` | No | Legacy cron schedule (prefer `temporal schedule create`). <!-- docs/cli/workflow.mdx:560 --> |
+| `--priority-key` | No | Priority 1-5 (default 3). Lower = higher priority. <!-- docs/cli/workflow.mdx:573 --> |
+| `--fairness-key` | No | Proportional task dispatch grouping key (string, max 64 bytes). <!-- docs/cli/workflow.mdx:563 --> |
+| `--fairness-weight` | No | Weight for this fairness key (0.001-1000). Keys dispatched proportionally. <!-- docs/cli/workflow.mdx:564 --> |
+| `--static-summary` | No | Human-readable summary for UIs. Single line. _(Experimental)_ <!-- docs/cli/workflow.mdx:578 --> |
+| `--static-details` | No | Human-readable details for UIs. May be multi-line. _(Experimental)_ <!-- docs/cli/workflow.mdx:577 --> |
+| `--fail-existing` | No | Fail if the Workflow already exists. <!-- docs/cli/workflow.mdx:562 --> |
+| `--headers` | No | Temporal workflow headers as `KEY=VALUE` (JSON). Not gRPC headers. Repeatable. <!-- docs/cli/workflow.mdx:565 --> |
 
 <!-- Sources: docs/cli/workflow.mdx:544-582 -->
 

@@ -197,13 +197,9 @@ See language-specific gotchas for details.
 
 ## CLI Gotchas for Developers
 
-### Dev Server Is In-Memory by Default
+### Dev Server Is In-Memory and Not for Production
 
-All workflows, schedules, and history vanish on restart. Use `--db-filename temporal.db` for persistence. <!-- docs/cli/server.mdx:69 --> Do not rely on dev server state across restarts.
-
-### Dev Server Is Not for Production
-
-The dev server runs all services in a single process with no replication. Use Temporal Cloud or a self-hosted cluster for production. <!-- docs/cli/server.mdx:28-35 -->
+The dev server loses all state on restart (use `--db-filename` to persist) and runs everything in a single process. See `dev-management.md` for the full flag table and persistence guidance.
 
 ### `workflow update` Is a Command Group, Not a Single Command
 
