@@ -2,13 +2,13 @@
 
 ## Server Management
 
-Before starting workers or workflows, you MUST start a local dev server, using the Temporal CLI:
+Workers and workflows need a running Temporal Server. You can develop against a local dev server, a self-hosted cluster, or Temporal Cloud — the choice depends on your setup. If you need a local server, start one with the Temporal CLI:
 
 ```bash
 temporal server start-dev # Start this in the background.
 ```
 
-It is perfectly OK for this process to be shared across multiple projects / left running as you develop your Temporal code.
+The dev server can be shared across projects and left running as you develop.
 
 The dev server is in-memory by default -- all workflows, schedules, and history are lost on restart. Use `--db-filename temporal.db` to persist across restarts. <!-- docs/cli/server.mdx:69 -->
 
