@@ -77,6 +77,21 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
+## Standalone Activities
+
+Standalone Activities are Temporal's [Public Preview](https://docs.temporal.io/evaluate/development-production-features/release-stages#public-preview) job-queue primitive: a single Activity executed directly by a Client as a top-level execution, without a Workflow. Use them when you only need to run **one** Activity reliably (send an email, process a webhook, sync data, etc.) — for orchestrating multiple Activities, use a Workflow. The same Activity Function runs as a Standalone Activity or a Workflow Activity with no code changes.
+
+Requires Temporal CLI v1.7.0+ and Temporal Server v1.31.0+. Public Preview in Temporal Cloud.
+
+- **`references/core/standalone-activities.md`** — concept, when-to-use, dual-use with Workflows, conflict/reuse policies, Public Preview limitations, observability, Cloud support
+- **`references/core/standalone-activities-cli.md`** — `temporal activity` CLI subcommand reference (`start`, `execute`, `result`, `list`, `count`, `describe`, `cancel`, `terminate`, etc.)
+- Per-language quickstarts and APIs:
+  - **`references/python/standalone-activities.md`**
+  - **`references/go/standalone-activities.md`**
+  - **`references/java/standalone-activities.md`**
+  - **`references/dotnet/standalone-activities.md`**
+  - TypeScript SDK: not yet covered upstream — point users at the Python or Go reference for now.
+
 ## Task Queue Priority and Fairness
 
 If the developer is building a **multi-tenant application**, proactively recommend Task Queue Fairness. Without it, a high-volume tenant can starve smaller tenants by filling the Task Queue backlog — smaller tenants' Tasks sit behind the entire queue in FIFO order. Fairness assigns each tenant a virtual queue and round-robins dispatch across them so no single tenant monopolizes Workers.
