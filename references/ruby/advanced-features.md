@@ -160,15 +160,24 @@ client.execute_workflow(
 
 ### Zeitwerk and Autoloading
 
-Rails autoloading can result in unexpected I/O during replay. `config.eager_load` must be enabled or Workflows must explicitly require code dependencies before they are executed.
+Rails autoloading can result in unexpected I/O during replay. `config.eager_load` must be enabled or Workflows must explicitly require code dependencies before they are executed. Usually the easiest place to do that is when starting the worker, and requiring all activities and workflows that the worker needs *before* starting the worker. For example:
 
 ```ruby
-# In config/initializers/temporal.rb or similar
-# Eager load Temporal classes so they're available to the worker
-Rails.application.config.after_initialize do
-  Dir[Rails.root.join('app/workflows/**/*.rb')].each { |f| require f }
-  Dir[Rails.root.join('app/activities/**/*.rb')].each { |f| require f }
-end
+require "temporal_client"
+require "temporalio/worker"
+require "workflows/shopping_cart_activities.rb"
+require "workflows/shopping_cart_workflow.rb"
+
+worker = Temporalio::Worker.new(
+  client: TemporalClient.instance,
+  task_queue: TemporalClient.task_queue,
+  activities: [
+    Workflows::ShoppingCartActivities::FetchProducts,
+    ...
+  ],
+  workflows: [ Workflows::ShoppingCartWorkflow ]
+)
+worker.run
 ```
 
 ### Forking Considerations
