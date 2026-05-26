@@ -129,7 +129,7 @@ end
 # BAD - No heartbeat, can't detect stuck activities
 class ProcessLargeFile < Temporalio::Activity::Definition
   def execute(path)
-    File.readlines(path).each_slice(1000) do |chunk|
+    File.foreach(path).each_slice(1000) do |chunk|
       process(chunk)  # Takes hours, no heartbeat
     end
   end
@@ -140,7 +140,7 @@ end
 # GOOD - Regular heartbeats with progress
 class ProcessLargeFile < Temporalio::Activity::Definition
   def execute(path)
-    File.readlines(path).each_slice(1000).with_index do |chunk, i|
+    File.foreach(path).each_slice(1000).with_index do |chunk, i|
       Temporalio::Activity::Context.current.heartbeat("Processing chunk #{i}")
       process(chunk)
     end
