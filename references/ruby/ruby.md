@@ -87,7 +87,7 @@ puts "Result: #{result}"
 - Subclass `Temporalio::Workflow::Definition`
 - Define `def execute(args)` as the entry point
 - Use `Temporalio::Workflow.execute_activity` to call activities
-- Use signals, queries, and updates via class-level DSL methods
+- Define signals, queries, and updates via class-level DSL methods
 
 ### Activity Definition
 - Subclass `Temporalio::Activity::Definition`

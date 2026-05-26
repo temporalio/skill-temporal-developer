@@ -177,7 +177,7 @@ If using a forking server (Puma, Unicorn), workers must be created **after** the
 
 ```ruby
 # In Puma config (puma.rb)
-on_worker_boot do
+before_worker_boot do
   # Create Temporal client and worker AFTER fork
   client = Temporalio::Client.connect('localhost:7233')
   worker = Temporalio::Worker.new(

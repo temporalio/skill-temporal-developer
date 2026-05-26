@@ -258,7 +258,7 @@ end
 
 ## Cancellation (Token-based)
 
-Ruby uses `Temporalio::Cancellation` tokens instead of asyncio cancellation.
+Ruby uses `Temporalio::Cancellation` tokens.
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
