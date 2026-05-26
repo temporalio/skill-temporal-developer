@@ -160,7 +160,7 @@ client.execute_workflow(
 
 ### Zeitwerk and Autoloading
 
-Rails uses Zeitwerk for autoloading. Workflow and activity classes must be loadable by Zeitwerk or explicitly required.
+Rails autoloading can result in unexpected I/O during replay. `config.eager_load` must be enabled or Workflows must explicitly require code dependencies before they are executed.
 
 ```ruby
 # In config/initializers/temporal.rb or similar
