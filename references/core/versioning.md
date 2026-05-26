@@ -40,14 +40,17 @@ else:
 ### Three-Phase Lifecycle
 
 **Phase 1: Patch In**
+
 - Add both old and new code paths
 - New workflows take new path, old workflows take old path
 
 **Phase 2: Deprecate**
+
 - After all old workflows complete, remove old code
 - Keep deprecation marker for history compatibility
 
 **Phase 3: Remove**
+
 - After all deprecated workflows complete
 - Remove patch entirely, only new code remains
 
@@ -116,6 +119,7 @@ Worker v2.0 (Build ID: def456)
 **Build ID**: Specific code version (e.g., git commit hash)
 
 **Versioning Behaviors**:
+
 - `PINNED` - Workflows stay on original worker version
 - `AUTO_UPGRADE` - Workflows can move to newer versions
 

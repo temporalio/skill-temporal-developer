@@ -62,6 +62,7 @@ async def request_approval(request_id: str) -> None:
 # Later, complete the activity from another process
 async def complete_approval(request_id: str, approved: bool):
     client = await Client.connect("localhost:7233", namespace="default")
+    # Retrieve the task token from external storage (e.g., database)
     task_token = await get_task_token(request_id)
 
     handle = client.get_async_activity_handle(task_token=task_token)
@@ -85,6 +86,7 @@ The Python SDK runs workflows in a sandbox to help you ensure determinism. You c
 **The Python SDK is NOT compatible with gevent.** Gevent's monkey patching modifies Python's asyncio event loop in ways that break the SDK's deterministic execution model.
 
 If your application uses gevent:
+
 - You cannot run Temporal workers in the same process
 - Consider running workers in a separate process without gevent
 - Use a message queue or HTTP API to communicate between gevent and Temporal processes
@@ -114,9 +116,9 @@ worker = Worker(
 
 ## Workflow Init Decorator
 
-Use `@workflow.init` to run initialization code when a workflow is first created.
+You should always put state initialization logic in the `__init__` of your workflow class, so that it happens before signals/updates arrive.
 
-**Purpose:** Execute some setup code before signal/update happens or run is invoked.
+Normally, your `__init__` must have no arguments. However, if you add the `@workflow.init` decorator, then your `__init__` instead receives the same workflow arguments that `@workflow.run` receives:
 
 ```python
 @workflow.defn
@@ -128,10 +130,12 @@ class MyWorkflow:
         self._items: list[str] = []
 
     @workflow.run
-    async def run(self) -> str:
+    async def run(self, initial_value: str) -> str:
         # self._value and self._items are already initialized
         return self._value
 ```
+
+`__init__` (with `@workflow.init`) and `@workflow.run` must have the same parameters with the same types. You cannot make blocking calls (activities, sleeps, etc.) from the `__init__`.
 
 ## Workflow Failure Exception Types
 
@@ -163,4 +167,3 @@ worker = Worker(
     workflow_failure_exception_types=[ValueError, CustomBusinessError],
 )
 ```
-

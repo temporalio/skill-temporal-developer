@@ -100,6 +100,10 @@ Runtime.install({
 });
 ```
 
+## Search Attributes (Visibility)
+
+See the Search Attributes section of `references/typescript/data-handling.md`
+
 ## Best Practices
 
 1. Use `log` from `@temporalio/workflow` for production observability. For temporary print debugging, `console.log()` is fine—it's direct and immediate, whereas `log` goes through sinks which may lose messages on workflow errors
