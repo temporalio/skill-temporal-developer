@@ -31,6 +31,7 @@ The following are forbidden inside workflow code by default:
 - `Random.rand` / `SecureRandom` -- non-deterministic randomness
 - `Process` calls (`Process.spawn`, `Process.exec`, etc.)
 - Network calls (`Net::HTTP`, `Socket`, etc.)
+- `Mutex` / `synchronize`
 
 ## Safe Builtin Alternatives
 
@@ -41,6 +42,7 @@ The following are forbidden inside workflow code by default:
 | `Random.rand` / `SecureRandom` | `Temporalio::Workflow.random.rand(100)` |
 | `SecureRandom.uuid` | `Temporalio::Workflow.uuid` |
 | `Logger.new` / `puts` | `Temporalio::Workflow.logger.info(...)` |
+| `Mutex` / `synchronize` | explicit `Temporalio::Workflow::Mutex` |
 
 ## Testing Replay Compatibility
 

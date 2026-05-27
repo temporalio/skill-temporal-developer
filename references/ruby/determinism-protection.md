@@ -42,7 +42,7 @@ Default forbidden operations:
 - `Random.*` -- use `Temporalio::Workflow.random`
 - `SecureRandom.*` -- use `Temporalio::Workflow.uuid` for UUIDs
 - `Timeout.timeout` -- use `Temporalio::Workflow.sleep` with cancellation
-- `Mutex` -- use `Temporalio::Workflow::Mutex`
+- `Mutex` / `synchronize` -- use an explicit `Temporalio::Workflow::Mutex`
 
 Note: `Time.new('2000-12-31')` with arguments IS deterministic and allowed. Only `Time.now` (wall-clock) is forbidden.
 
