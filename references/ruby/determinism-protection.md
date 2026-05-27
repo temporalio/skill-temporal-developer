@@ -42,23 +42,9 @@ Default forbidden operations:
 - `Random.*` -- use `Temporalio::Workflow.random`
 - `SecureRandom.*` -- use `Temporalio::Workflow.uuid` for UUIDs
 - `Timeout.timeout` -- use `Temporalio::Workflow.sleep` with cancellation
+- `Mutex` -- use `Temporalio::Workflow::Mutex`
 
 Note: `Time.new('2000-12-31')` with arguments IS deterministic and allowed. Only `Time.now` (wall-clock) is forbidden.
-
-## Durable Fiber Scheduler
-
-The SDK provides a custom `Fiber::Scheduler` implementation that makes fiber primitives deterministic within the workflow.
-
-- `Kernel.sleep` and `Mutex` technically work under the durable scheduler but are **disabled by default** via illegal call tracing to prevent accidental misuse.
-- `Temporalio::Workflow.sleep` and `Temporalio::Workflow.wait_condition` are the correct alternatives.
-
-```ruby
-# Correct: deterministic sleep
-Temporalio::Workflow.sleep(30)
-
-# Correct: wait for a condition
-Temporalio::Workflow.wait_condition { @order_confirmed }
-```
 
 ## Disabling Illegal Call Tracing
 
