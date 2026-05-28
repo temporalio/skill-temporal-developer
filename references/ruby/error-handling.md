@@ -36,8 +36,15 @@ raise Temporalio::Error::ApplicationError.new(
 begin
   Temporalio::Workflow.execute_activity(MyActivity, 'arg', start_to_close_timeout: 10)
 rescue Temporalio::Error::ActivityError => e
+  # Let cancellation propagate so the workflow is canceled, not failed.
+  # Temporalio::Error.canceled? is true for a CanceledError, or an
+  # ActivityError/ChildWorkflowError whose cause is a CanceledError.
+  raise if Temporalio::Error.canceled?(e)
+
   Temporalio::Workflow.logger.error("Activity failed: #{e.message}")
-  # handle or re-raise
+  # Deliberately fail the workflow. Only raising an ApplicationError fails a
+  # workflow; other exceptions only fail/retry the workflow task.
+  raise Temporalio::Error::ApplicationError.new('Workflow failed due to activity error')
 end
 ```
 
