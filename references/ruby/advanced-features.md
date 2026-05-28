@@ -78,10 +78,15 @@ worker = Temporalio::Worker.new(
   workflows: [MyWorkflow],
   activities: [MyActivity],
   max_concurrent_workflow_tasks: 100,
-  max_concurrent_activities: 100
+  max_concurrent_activities: 100,
+  # Grace period (seconds) after shutdown is requested before in-progress
+  # activities are canceled. Defaults to 0 (cancel immediately on shutdown).
+  graceful_shutdown_period: 30
 )
 worker.run
 ```
+
+On shutdown the worker stops polling for new tasks and cancels the `worker_shutdown_cancellation` on each running activity's context. After `graceful_shutdown_period` seconds it then issues actual cancellation to any still-running activities. The worker will not finish shutting down until all in-progress activities complete, so activities that ignore cancellation can block shutdown indefinitely.
 
 ## Workflow Init
 
