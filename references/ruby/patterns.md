@@ -214,10 +214,11 @@ class MyWorkflow < Temporalio::Workflow::Definition
       # 3. but then fails for some other reason (timeout, reporting metrics, etc.)
       # 4. the activity failed, but the effect (reserved inventory) already happened
       # So the compensation must handle both reserved and unreserved states.
-      compensations << lambda {
+      compensations << lambda { |cancellation|
         Temporalio::Workflow.execute_activity(
           ReleaseInventoryIfReserved, order,
-          start_to_close_timeout: 300
+          start_to_close_timeout: 300,
+          cancellation: cancellation
         )
       }
       Temporalio::Workflow.execute_activity(
@@ -225,10 +226,11 @@ class MyWorkflow < Temporalio::Workflow::Definition
         start_to_close_timeout: 300
       )
 
-      compensations << lambda {
+      compensations << lambda { |cancellation|
         Temporalio::Workflow.execute_activity(
           RefundPaymentIfCharged, order,
-          start_to_close_timeout: 300
+          start_to_close_timeout: 300,
+          cancellation: cancellation
         )
       }
       Temporalio::Workflow.execute_activity(
@@ -245,9 +247,12 @@ class MyWorkflow < Temporalio::Workflow::Definition
 
     rescue => e
       Temporalio::Workflow.logger.error("Order failed: #{e}, running compensations")
+      # Use a detached cancellation so compensations still run even if the workflow
+      # was canceled (the workflow's own cancellation is already canceled by then).
+      detached_cancel, = Temporalio::Cancellation.new
       compensations.reverse.each do |compensate|
         begin
-          compensate.call
+          compensate.call(detached_cancel)
         rescue => comp_err
           Temporalio::Workflow.logger.error("Compensation failed: #{comp_err}")
         end
