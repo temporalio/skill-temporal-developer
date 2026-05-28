@@ -33,6 +33,8 @@ end
 - For replay with the marker: `patched()` returns `true` (history includes this patch)
 - For replay without the marker: `patched()` returns `false` (history predates this patch)
 
+**Note:** The `patched()` return value is memoized per patch ID. This means you cannot reliably use `patched()` in loops—it will return the same value every iteration. Workaround: append a sequence number to the patch ID for each iteration (e.g., `"my-change-#{i}"`).
+
 ### Three-Step Patching Process
 
 **Warning:** Failing to follow this process correctly will result in non-determinism errors for in-flight workflows.
