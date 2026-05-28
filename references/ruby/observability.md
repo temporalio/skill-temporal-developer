@@ -23,6 +23,19 @@ Temporalio::Activity::Context.current.logger.warn("Slow response: #{elapsed}s")
 
 Do not use `puts` or `print` in workflows. They are not replay-safe and produce duplicate output on replay.
 
+### Customizing Logger Configuration
+
+```ruby
+require 'logger'
+
+# The logger set on the client is used by Temporalio::Workflow.logger and
+# Temporalio::Activity::Context.current.logger. Defaults to stdout at WARN.
+client = Temporalio::Client.connect(
+  'localhost:7233', 'my-namespace',
+  logger: Logger.new($stdout, level: Logger::INFO)
+)
+```
+
 ## Metrics
 
 Configure telemetry via `Temporalio::Runtime`:
