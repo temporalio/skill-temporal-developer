@@ -38,6 +38,8 @@ client = Temporalio::Client.connect(
 
 ## Metrics
 
+### Enabling SDK Metrics
+
 Configure telemetry via `Temporalio::Runtime`:
 
 ```ruby
@@ -59,7 +61,7 @@ Temporalio::Runtime.default = runtime
 
 Set the default runtime **before** creating any clients or workers.
 
-Key metrics:
+### Key SDK Metrics
 
 - `temporal_workflow_completed` - workflow completions
 - `temporal_workflow_failed` - workflow failures
