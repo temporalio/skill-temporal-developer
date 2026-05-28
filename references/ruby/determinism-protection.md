@@ -96,17 +96,11 @@ Hash format:
 
 ### Third-party gems triggering NondeterminismError
 
-Gems that call `IO`, `Time.now`, or `Socket` internally will trigger errors even if you don't call those methods directly.
+Gems that call `IO`, `Time.now`, or `Socket` internally will trigger errors even if you don't call those methods directly. The correct fix is context-dependent and requires understanding and possibly debugging of the situation.
 
-**Fix 1:** Wrap in `illegal_call_tracing_disabled`:
+**Fix 1:** The call to a gem genuinely is doing IO, side effects, or other non-deterministic things. Then just like with other Temporal Workflow code, it should be moved into an activity.
 
-```ruby
-Temporalio::Workflow::Unsafe.illegal_call_tracing_disabled do
-  ThirdPartyGem.safe_pure_computation(data)
-end
-```
-
-**Fix 2:** For code that needs IO (e.g., reading a config file), use `io_enabled`:
+**Fix 2:** Escape hatch: for code that needs IO to run within the workflow, use `io_enabled`. You should very seriously consider why IO is needed in the workflow and not in an activity. If you use this escape hatch to create non-determinism issues, you might later face non-determinism errors.
 
 ```ruby
 Temporalio::Workflow::Unsafe.io_enabled do
@@ -114,13 +108,11 @@ Temporalio::Workflow::Unsafe.io_enabled do
 end
 ```
 
-**Fix 3:** Combine with replay check for side effects:
+**Fix 3:** Escape hatch: for code that triggers the illegal call tracing but doesn't cause actual non-determinism issues, you can disable `illegal_call_tracing_disabled`. Again, you must be sure that you are semantically correct that there is no non-determinism involved.
 
 ```ruby
-unless Temporalio::Workflow::Unsafe.replaying?
-  Temporalio::Workflow::Unsafe.illegal_call_tracing_disabled do
-    MetricsClient.increment('workflow.started')
-  end
+Temporalio::Workflow::Unsafe.illegal_call_tracing_disabled do
+  ThirdPartyGem.safe_pure_computation(data)
 end
 ```
 
