@@ -92,7 +92,7 @@ worker.run
 
 On shutdown the worker stops polling for new tasks and cancels the `worker_shutdown_cancellation` on each running activity's context. After `graceful_shutdown_period` seconds it then issues actual cancellation to any still-running activities. The worker will not finish shutting down until all in-progress activities complete, so activities that ignore cancellation can block shutdown indefinitely.
 
-## Workflow Init
+## Workflow Init Decorator
 
 Always initialize workflow state before signals/updates arrive. Signal and Update handlers can run *before* the main `execute` method -- for example with Signal-with-Start, when the Task Queue is backlogged, or right after continue-as-new -- so a handler may otherwise read uninitialized instance variables.
 
