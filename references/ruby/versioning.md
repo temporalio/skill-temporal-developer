@@ -198,8 +198,8 @@ worker = Temporalio::Worker.new(
   task_queue: 'my-task-queue',
   workflows: [MyWorkflow],
   activities: [MyActivity],
-  deployment_config: Temporalio::Worker::DeploymentConfig.new(
-    version: Temporalio::Worker::DeploymentVersion.new(
+  deployment_options: Temporalio::Worker::DeploymentOptions.new(
+    version: Temporalio::WorkerDeploymentVersion.new(
       deployment_name: 'my-service',
       build_id: 'v1.0.0' # or git commit hash
     ),
