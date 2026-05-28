@@ -176,7 +176,7 @@ class FailureTest < Minitest::Test
 end
 ```
 
-## Replay Testing
+## Workflow Replay Testing
 
 Use `WorkflowReplayer` to verify that workflow code changes remain compatible with existing histories:
 

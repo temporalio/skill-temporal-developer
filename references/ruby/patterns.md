@@ -109,6 +109,8 @@ class OrderWorkflow < Temporalio::Workflow::Definition
 end
 ```
 
+**Important:** Validators must NOT mutate workflow state or do anything blocking (no activities, sleeps, or other commands). They are read-only, similar to query handlers. Raise an exception to reject the update; return `nil` to accept.
+
 ## Child Workflows
 
 ```ruby

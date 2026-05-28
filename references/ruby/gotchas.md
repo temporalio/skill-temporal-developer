@@ -59,67 +59,6 @@ require_relative 'activities/my_activity'
 
 Transient network errors should be retried. Authentication errors should not be. See `references/ruby/error-handling.md` to understand how to classify errors with `non_retryable: true` and `non_retryable_error_types`.
 
-## Cancellation
-
-### Not Handling Workflow Cancellation
-
-```ruby
-# BAD - Cleanup doesn't run on cancellation
-class BadWorkflow < Temporalio::Workflow::Definition
-  def execute
-    Temporalio::Workflow.execute_activity(AcquireResource, start_to_close_timeout: 300)
-    Temporalio::Workflow.execute_activity(DoWork, start_to_close_timeout: 300)
-    Temporalio::Workflow.execute_activity(ReleaseResource, start_to_close_timeout: 300)  # Never runs if cancelled!
-  end
-end
-```
-
-```ruby
-# GOOD - Use ensure with detached cancellation for cleanup
-class GoodWorkflow < Temporalio::Workflow::Definition
-  def execute
-    Temporalio::Workflow.execute_activity(AcquireResource, start_to_close_timeout: 300)
-    Temporalio::Workflow.execute_activity(DoWork, start_to_close_timeout: 300)
-  ensure
-    # Create a detached cancellation (not tied to workflow cancellation)
-    # so cleanup activity runs even after workflow is cancelled
-    detached_cancel, _cancel_proc = Temporalio::Cancellation.new
-    Temporalio::Workflow.execute_activity(
-      ReleaseResource,
-      start_to_close_timeout: 300,
-      cancellation: detached_cancel
-    )
-  end
-end
-```
-
-### Activity Cancellation Requires Heartbeating
-
-Activities must **opt in** to receive cancellation. This requires heartbeating -- cancellation is delivered via the heartbeat response.
-
-```ruby
-# BAD - Activity ignores cancellation
-class LongActivity < Temporalio::Activity::Definition
-  def execute
-    do_expensive_work  # Runs to completion even if cancelled
-  end
-end
-```
-
-```ruby
-# GOOD - Heartbeat and handle cancellation
-class LongActivity < Temporalio::Activity::Definition
-  def execute
-    items.each do |item|
-      Temporalio::Activity::Context.current.heartbeat
-      process(item)
-    end
-  rescue Temporalio::Error::CancelledError
-    cleanup
-    raise
-  end
-end
-```
 
 ## Heartbeating
 
@@ -167,6 +106,71 @@ Temporalio::Workflow.execute_activity(
 ```
 
 Set heartbeat timeout as high as acceptable for your use case -- each heartbeat counts as an action.
+
+## Cancellation
+
+### Not Handling Workflow Cancellation
+
+```ruby
+# BAD - Cleanup doesn't run on cancellation
+class BadWorkflow < Temporalio::Workflow::Definition
+  def execute
+    Temporalio::Workflow.execute_activity(AcquireResource, start_to_close_timeout: 300)
+    Temporalio::Workflow.execute_activity(DoWork, start_to_close_timeout: 300)
+    Temporalio::Workflow.execute_activity(ReleaseResource, start_to_close_timeout: 300)  # Never runs if cancelled!
+  end
+end
+```
+
+```ruby
+# GOOD - Use ensure with detached cancellation for cleanup
+class GoodWorkflow < Temporalio::Workflow::Definition
+  def execute
+    Temporalio::Workflow.execute_activity(AcquireResource, start_to_close_timeout: 300)
+    Temporalio::Workflow.execute_activity(DoWork, start_to_close_timeout: 300)
+  ensure
+    # Create a detached cancellation (not tied to workflow cancellation)
+    # so cleanup activity runs even after workflow is cancelled
+    detached_cancel, _cancel_proc = Temporalio::Cancellation.new
+    Temporalio::Workflow.execute_activity(
+      ReleaseResource,
+      start_to_close_timeout: 300,
+      cancellation: detached_cancel
+    )
+  end
+end
+```
+
+### Not Handling Activity Cancellation
+
+Activities must **opt in** to receive cancellation. This requires:
+
+1. **Heartbeating** -- cancellation is delivered via the heartbeat response
+2. **Catching the cancellation exception** -- `Temporalio::Error::CancelledError` is raised when a heartbeat detects cancellation
+
+```ruby
+# BAD - Activity ignores cancellation
+class LongActivity < Temporalio::Activity::Definition
+  def execute
+    do_expensive_work  # Runs to completion even if cancelled
+  end
+end
+```
+
+```ruby
+# GOOD - Heartbeat and handle cancellation
+class LongActivity < Temporalio::Activity::Definition
+  def execute
+    items.each do |item|
+      Temporalio::Activity::Context.current.heartbeat
+      process(item)
+    end
+  rescue Temporalio::Error::CancelledError
+    cleanup
+    raise
+  end
+end
+```
 
 ## Testing
 

@@ -35,6 +35,8 @@ end
 
 ### Three-Step Patching Process
 
+**Warning:** Failing to follow this process correctly will result in non-determinism errors for in-flight workflows.
+
 **Step 1: Patch in New Code**
 
 Add the patch with both old and new code paths:
@@ -291,3 +293,4 @@ temporal workflow list --query \
 4. **Use PINNED for short workflows** to simplify version management
 5. **Use AUTO_UPGRADE with patching** for long-running workflows that need updates
 6. **Generate Build IDs from code** (git hash) to ensure changes produce new versions
+7. **Avoid rolling deployments** for high-availability services with long-running workflows

@@ -20,7 +20,7 @@ Configuration is via the `illegal_workflow_calls` parameter on `Temporalio::Work
 Temporalio::Worker.default_illegal_workflow_calls
 ```
 
-## Forbidden Operations
+## Forbidden Operations in Workflows
 
 The following are forbidden inside workflow code by default:
 
@@ -33,7 +33,7 @@ The following are forbidden inside workflow code by default:
 - Network calls (`Net::HTTP`, `Socket`, etc.)
 - `Mutex` / `synchronize`
 
-## Safe Builtin Alternatives
+## Safe Builtin Alternatives to Common Non Deterministic Things
 
 | Forbidden | Safe Alternative |
 |-----------|------------------|

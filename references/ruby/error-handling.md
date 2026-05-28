@@ -30,7 +30,7 @@ raise Temporalio::Error::ApplicationError.new(
 )
 ```
 
-## Handling Activity Errors in Workflows
+## Handling Activity Errors
 
 ```ruby
 begin
@@ -41,7 +41,7 @@ rescue Temporalio::Error::ActivityError => e
 end
 ```
 
-## Retry Configuration
+## Retry Policy Configuration
 
 ```ruby
 retry_policy: Temporalio::RetryPolicy.new(

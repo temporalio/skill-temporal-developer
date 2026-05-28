@@ -6,7 +6,7 @@ Temporal Ruby SDK provides logging, metrics, tracing, and visibility for monitor
 
 ## Logging
 
-Workflow (replay-safe):
+### Workflow Logging (Replay-Safe)
 
 ```ruby
 Temporalio::Workflow.logger.info("Processing order")
@@ -14,7 +14,7 @@ Temporalio::Workflow.logger.warn("Retrying with fallback")
 Temporalio::Workflow.logger.error("Order failed: #{reason}")
 ```
 
-Activity:
+### Activity Logging
 
 ```ruby
 Temporalio::Activity::Context.current.logger.info("Sending email")
@@ -53,6 +53,10 @@ Key metrics:
 - `temporal_activity_execution_latency` - activity duration
 - `temporal_sticky_cache_hit` - workflow cache hits
 - `temporal_workflow_task_execution_latency` - workflow task duration
+
+## Search Attributes (Visibility)
+
+See the Search Attributes section of `references/ruby/data-handling.md`
 
 ## Best Practices
 

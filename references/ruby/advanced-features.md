@@ -37,6 +37,8 @@ handle.delete
 
 For activities that complete asynchronously (e.g., human tasks, external callbacks).
 
+**Note:** If the external system that completes the asynchronous action can reliably be trusted to do the task and Signal back with the result, and it doesn't need to Heartbeat or receive Cancellation, then consider using **signals** instead.
+
 ```ruby
 class RequestApproval < Temporalio::Activity::Definition
   def execute(request_id)

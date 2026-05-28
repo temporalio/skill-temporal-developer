@@ -53,7 +53,7 @@ class OrderInput
 end
 ```
 
-## Custom Data Converter
+## Custom Data Conversion
 
 ```ruby
 converter = Temporalio::Converters::DataConverter.new(
@@ -147,7 +147,7 @@ Upsert from a workflow:
 Temporalio::Workflow.upsert_search_attributes({ key => 'new-value' })
 ```
 
-Query workflows:
+### Querying Workflows by Search Attributes
 
 ```ruby
 client.list_workflows("CustomerId = 'customer-123'")

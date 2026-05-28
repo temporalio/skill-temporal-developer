@@ -29,7 +29,7 @@ Key behaviors:
 - Detects transitive calls -- a gem calling `IO.read` deep in its internals will still be caught.
 - Only active on the workflow fiber, not on activity threads or other fibers.
 
-## Forbidden Operations
+## Forbidden Operations in Workflows
 
 Default forbidden operations:
 
