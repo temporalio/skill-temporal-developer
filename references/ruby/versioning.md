@@ -259,6 +259,25 @@ end
 
 **Important:** AUTO_UPGRADE workflows still need patching to handle version transitions safely since they can move between Worker versions.
 
+### Worker Configuration with Default Behavior
+
+```ruby
+worker = Temporalio::Worker.new(
+  client: client,
+  task_queue: 'orders-task-queue',
+  workflows: [OrderWorkflow],
+  activities: [ProcessOrderActivity],
+  deployment_options: Temporalio::Worker::DeploymentOptions.new(
+    version: Temporalio::WorkerDeploymentVersion.new(
+      deployment_name: 'order-service',
+      build_id: ENV.fetch('BUILD_ID')
+    ),
+    use_worker_versioning: true,
+    default_versioning_behavior: Temporalio::VersioningBehavior::PINNED
+  )
+)
+```
+
 ### Deployment Strategies
 
 **Blue-Green Deployments**
