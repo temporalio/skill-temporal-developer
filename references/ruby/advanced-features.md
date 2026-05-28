@@ -77,8 +77,12 @@ worker = Temporalio::Worker.new(
   task_queue: 'my-queue',
   workflows: [MyWorkflow],
   activities: [MyActivity],
-  max_concurrent_workflow_tasks: 100,
-  max_concurrent_activities: 100,
+  # Max concurrent execution slots (default 100 each): how many workflow tasks
+  # and activities run at once on this worker.
+  tuner: Temporalio::Worker::Tuner.create_fixed(
+    workflow_slots: 100,
+    activity_slots: 100
+  ),
   # Grace period (seconds) after shutdown is requested before in-progress
   # activities are canceled. Defaults to 0 (cancel immediately on shutdown).
   graceful_shutdown_period: 30
