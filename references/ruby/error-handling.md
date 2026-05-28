@@ -78,27 +78,21 @@ All timeout values are in seconds (numeric).
 
 Only `Temporalio::Error::ApplicationError` causes a workflow failure. Other exceptions cause a workflow task failure, which Temporal retries automatically.
 
-Control which exception types cause workflow failure:
-
 ```ruby
-class MyWorkflow
-  # Class method approach
-  def self.workflow_failure_exception_type
-    MyCustomError
+class MyWorkflow < Temporalio::Workflow::Definition
+  def execute
+    if some_condition
+      raise Temporalio::Error::ApplicationError.new(
+        'Cannot process order',
+        type: 'BusinessError'
+      )
+    end
+    'success'
   end
 end
 ```
 
-Or configure on the worker:
-
-```ruby
-Temporalio::Worker.new(
-  client: client,
-  task_queue: 'my-queue',
-  workflows: [MyWorkflow],
-  workflow_failure_exception_types: [MyCustomError]
-)
-```
+**Note:** Do not use `non_retryable:` with `ApplicationError` inside a workflow (as opposed to an activity).
 
 ## Best Practices
 
