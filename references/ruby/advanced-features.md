@@ -83,6 +83,42 @@ worker = Temporalio::Worker.new(
 worker.run
 ```
 
+## Workflow Init
+
+Always initialize workflow state before signals/updates arrive. Signal and Update handlers can run *before* the main `execute` method -- for example with Signal-with-Start, when the Task Queue is backlogged, or right after continue-as-new -- so a handler may otherwise read uninitialized instance variables.
+
+Normally `initialize` must accept no required arguments. If you place the `workflow_init` class method directly above `initialize`, the constructor receives the same workflow arguments that `execute` receives (the same input the Client sent). It is guaranteed to run before any handler.
+
+```ruby
+class GreetingWorkflow < Temporalio::Workflow::Definition
+  workflow_init
+  def initialize(input)
+    # Runs before any signal/update handler
+    @name_with_title = "Sir #{input['name']}"
+    @title_has_been_checked = false
+  end
+
+  def execute(input)
+    Temporalio::Workflow.wait_condition { @title_has_been_checked }
+    "Hello, #{@name_with_title}"
+  end
+
+  workflow_update
+  def check_title_validity
+    # Guaranteed to see workflow input, since initialize ran first
+    valid = Temporalio::Workflow.execute_activity(
+      CheckTitleValidityActivity,
+      @name_with_title,
+      start_to_close_timeout: 100
+    )
+    @title_has_been_checked = true
+    valid
+  end
+end
+```
+
+`initialize` (with `workflow_init`) and `execute` must have the same parameters with the same types. You cannot make blocking calls (activities, sleeps, etc.) from `initialize`.
+
 ## Workflow Failure Exception Types
 
 Control which exceptions cause workflow failure vs workflow task failure (which Temporal retries automatically).
