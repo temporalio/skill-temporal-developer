@@ -1,23 +1,23 @@
 # How to install Temporal CLI
 
-<!-- Source: docs/cli/setup-cli.mdx (Install the CLI) -->
-
 ## macOS
 
-Homebrew or CDN tarball:
+### Via homebrew
 
 ```bash
 brew install temporal
 ```
 
+### Via tarball download
+
 - [Darwin amd64](https://temporal.download/cli/archive/latest?platform=darwin&arch=amd64)
 - [Darwin arm64](https://temporal.download/cli/archive/latest?platform=darwin&arch=arm64)
 
-Extract any downloaded archive and add the `temporal` binary to your `PATH`. <!-- docs/cli/setup-cli.mdx:46 -->
+Extract any downloaded archive and add the `temporal` binary to your `PATH`.
 
 ## Linux
 
-Homebrew (if available), Snap, or CDN tarball: <!-- docs/cli/setup-cli.mdx:55-60 -->
+Homebrew (if available), Snap, or tarball download:
 
 ```bash
 brew install temporal
@@ -32,7 +32,7 @@ Extract any downloaded archive and add the `temporal` binary to your `PATH`.
 
 ## Windows
 
-Download from the CDN: <!-- docs/cli/setup-cli.mdx:76-78 -->
+Download the tarballs:
 
 - [Windows amd64](https://temporal.download/cli/archive/latest?platform=windows&arch=amd64)
 - [Windows arm64](https://temporal.download/cli/archive/latest?platform=windows&arch=arm64)
@@ -45,16 +45,12 @@ Extract the archive and add the `temporal.exe` binary to your `PATH`.
 docker run --rm temporalio/temporal --help
 ```
 
-<!-- docs/cli/setup-cli.mdx:87-89 -->
-
 ## `tcld` (Temporal Cloud CLI)
 
-Needed for Cloud-connected development (managing Cloud namespaces, API keys, etc.).
+Only needed for Cloud-connected development (managing Cloud namespaces, API keys, etc.).
 
 Homebrew:
 
 ```bash
 brew install temporalio/brew/tcld
 ```
-
-<!-- Source: skill-temporal-cli SKILL.md install section -->
