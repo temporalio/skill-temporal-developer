@@ -77,20 +77,20 @@ temporal workflow execute \
 
 `workflow execute` blocks until the run terminates; a non-zero exit means the run failed, was cancelled, terminated, or timed out.
 
-### 3. Create a prod stored environment
+### 3. Create a prod profile configuration
 
 ```bash
-temporal env set prod.address   "your-ns.your-acct.tmprl.cloud:7233"
-temporal env set prod.namespace "your-ns.your-acct"
-temporal env set prod.api-key   "your-key"
+temporal config --profile prod set --prop address --value "your-ns.your-acct.tmprl.cloud:7233"
+temporal config --profile prod set --prop namespace --value "your-ns.your-acct"
+temporal config --profile prod set --prop api-key --value "your-key"
 ```
 
-The environment-selecting flag is `--env <name>` (env var `TEMPORAL_ENV`).
+The profile-selecting flag is `--profile <name>`.
 
 ### 4. Smoke-test prod
 
 ```bash
-temporal workflow list --env prod --limit 1 --output json
+temporal workflow list --profile prod --limit 1 --output json
 ```
 
 If this returns (even an empty list), the connection descriptor is correct.
@@ -99,12 +99,10 @@ If this returns (even an empty list), the connection descriptor is correct.
 
 ```bash
 temporal workflow start \
-    --env prod \
+    --profile prod \
     --type MyWorkflow \
     --task-queue my-queue \
     --input '{"key": "value"}'
 ```
 
 `workflow start` is asynchronous (returns a Workflow/Run ID); use `workflow execute` instead if you want the CLI to block.
-
-For stored environment details, see skill-temporal-ops `cli-scripting.md`.
