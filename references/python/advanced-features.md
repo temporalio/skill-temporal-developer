@@ -118,8 +118,6 @@ worker = Worker(
 
 `DnsLoadBalancingConfig`  makes Core periodically re-resolve the client's target host and round-robin requests across the resolved addresses . Use it when `target_host` resolves to multiple A/AAAA records (e.g., a load-balanced gRPC frontend, multi-address private endpoints) and you want the client to spread RPCs across them.
 
-It is **not** the mechanism that makes Temporal Cloud HA failover work — failover is driven by Temporal Cloud rewriting a CNAME record and the OS resolver re-resolving on TTL expiry (`docs/cloud/high-availability/ha-connectivity.mdx:25-31`).
-
 ### Configuration
 
 ```python
@@ -136,16 +134,12 @@ client = await Client.connect(
 
 - The only field is `resolution_interval_millis: int = 30000`  — how often to re-resolve DNS, in milliseconds.
 - `DnsLoadBalancingConfig.default`  is a pre-built instance with the default 30-second interval.
-- The `Client.connect` kwarg is `dns_load_balancing_config: DnsLoadBalancingConfig | None = None` . Per the docstring: *"Default is to re-resolve DNS every 30s. Can be set to `None` to disable. Silently disabled when `http_connect_proxy_config` is set, since the two are mutually exclusive."*
+- `dns_load_balancing_config` defaults to 30 seconds if you don't pass anything explicitly. 
 - Pass `dns_load_balancing_config=None` to disable DNS load balancing entirely.
 
 ### Mutual exclusion with HTTP CONNECT proxy
 
 DNS load balancing and `HttpConnectProxyConfig` cannot be used together. When `http_connect_proxy_config` is set on the same client, DNS load balancing is **silently disabled**  — there is no error and no precedence flag. If you need both, you cannot have both; choose the one your network requires.
-
-### CloudOperationsClient
-
-`CloudOperationsClient.connect` accepts the same `dns_load_balancing_config` kwarg , but its documented default differs: *"Default is disabled. Silently disabled when `http_connect_proxy_config` is set, since the two are mutually exclusive."*
 
 ## Workflow Init Decorator
 
