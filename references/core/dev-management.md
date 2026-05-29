@@ -90,7 +90,7 @@ The environment-selecting flag is `--env <name>` (env var `TEMPORAL_ENV`).
 ### 4. Smoke-test prod
 
 ```bash
-temporal workflow list --env prod --limit 1
+temporal workflow list --env prod --limit 1 --output json
 ```
 
 If this returns (even an empty list), the connection descriptor is correct.
