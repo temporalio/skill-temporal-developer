@@ -2,7 +2,7 @@
 
 Developer-facing CLI commands for interacting with workflows during development and testing. These commands work identically against a dev server, a self-hosted cluster, or Temporal Cloud -- only the connection descriptor changes.
 
-All facts in this file are transcribed from the upstream CLI docs. Each section ends with a `<!-- Sources: path:line -->` footer.
+**IMPORTANT:** In order to make outputs of `temporal` CLI commands easier to read and parse, use the `--output json` flag. The below examples do not show it, for brevity, but generally you should use `--output json`.
 
 ## Table of contents
 
