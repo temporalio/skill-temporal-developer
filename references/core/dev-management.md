@@ -56,7 +56,7 @@ When you need a new worker, you should start it in the background (and preferrab
 
 ## Dev to Prod
 
-Steps to promote a workflow from a local dev server to a production backend. The workflow and worker code do not change between environments; only the connection descriptor does.
+Steps to promote a workflow from a local dev server to a production backend. For the most part, the workflow and worker code do not change between environments; only the connection descriptor does. If the connection code is in the application code, then just those spots in the code need to be updated.
 
 ### 1. Start a local dev server with persistence
 
