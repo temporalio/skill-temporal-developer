@@ -2,7 +2,7 @@
 
 Developer-facing CLI commands for interacting with workflows during development and testing. These commands work identically against a dev server, a self-hosted cluster, or Temporal Cloud -- only the connection descriptor changes.
 
-**IMPORTANT:** In order to make outputs of `temporal` CLI commands easier to read and parse, use the `--output json` flag. The below examples do not show it, for brevity, but generally you should use `--output json`.
+**IMPORTANT:** In order to make outputs of `temporal` CLI commands easier to read and parse, use the `--output json` flag.
 
 ## Table of contents
 
@@ -21,6 +21,7 @@ Start a new Workflow Execution asynchronously. Returns the Workflow ID and Run I
 
 ```bash
 temporal workflow start \
+    --output json \
     --workflow-id YourWorkflowId \
     --type YourWorkflow \
     --task-queue YourTaskQueue \
@@ -63,6 +64,7 @@ Start a Workflow Execution and block until it completes, streaming progress to s
 
 ```bash
 temporal workflow execute \
+    --output json \
     --workflow-id YourWorkflowId \
     --type YourWorkflow \
     --task-queue YourTaskQueue \
@@ -79,6 +81,7 @@ Send an asynchronous signal to a running Workflow Execution.
 
 ```bash
 temporal workflow signal \
+    --output json \
     --workflow-id YourWorkflowId \
     --name YourSignal \
     --input '{"YourInputKey": "YourInputValue"}'
@@ -101,6 +104,7 @@ Invoke a read-only query handler. Queries do not mutate workflow state and can r
 
 ```bash
 temporal workflow query \
+    --output json \
     --workflow-id YourWorkflowId \
     --name YourQueryType \
     --input '{"YourInputKey": "YourInputValue"}'
@@ -126,6 +130,7 @@ Initiate an update and wait for the validator to accept or reject it.
 
 ```bash
 temporal workflow update start \
+    --output json \
     --workflow-id YourWorkflowId \
     --name YourUpdate \
     --input '{"some-key": "some-value"}' \
@@ -150,6 +155,7 @@ Start an update and wait for it to complete or fail. Can also wait on an existin
 
 ```bash
 temporal workflow update execute \
+    --output json \
     --workflow-id YourWorkflowId \
     --name YourUpdate \
     --input '{"some-key": "some-value"}'
@@ -172,6 +178,7 @@ Wait for a previously started update to complete or fail, then print the result.
 
 ```bash
 temporal workflow update result \
+    --output json \
     --workflow-id YourWorkflowId \
     --update-id YourUpdateId
 ```
@@ -190,6 +197,7 @@ Inspect the current status of an update, including a result if it has finished.
 
 ```bash
 temporal workflow update describe \
+    --output json \
     --workflow-id YourWorkflowId \
     --update-id YourUpdateId
 ```
@@ -208,6 +216,7 @@ Atomically signal a Workflow Execution -- if the target run does not exist, a ne
 
 ```bash
 temporal workflow signal-with-start \
+    --output json \
     --signal-name YourSignal \
     --signal-input '{"some-key": "some-value"}' \
     --workflow-id YourWorkflowId \
@@ -236,6 +245,7 @@ Block until a running Workflow Execution completes, then print the result.
 
 ```bash
 temporal workflow result \
+    --output json \
     --workflow-id YourWorkflowId
 ```
 
@@ -252,6 +262,7 @@ Issue a query to read user-set summary and details metadata for a Workflow Execu
 
 ```bash
 temporal workflow metadata \
+    --output json \
     --workflow-id YourWorkflowId
 ```
 
