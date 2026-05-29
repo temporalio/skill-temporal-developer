@@ -199,7 +199,7 @@ See language-specific gotchas for details.
 
 ### Dev Server Is In-Memory and Not for Production
 
-The dev server loses all state on restart (use `--db-filename` to persist) and runs everything in a single process. See `dev-management.md` for the full flag table and persistence guidance.
+The dev server loses all state on restart (use `--db-filename` to persist) and runs everything in a single process. See `dev-management.md` for the full flag table and persistence guidance. Even with persistence enabled, the dev server should NEVER be used for production deployments.
 
 ### `workflow update` Is a Command Group, Not a Single Command
 
