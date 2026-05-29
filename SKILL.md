@@ -96,13 +96,6 @@ Priority and Fairness also apply to tiered workloads (batch vs. real-time), weig
 
 For Temporal plugins and integrations with third-party frameworks and SDKs (Spring Boot, Spring AI, OpenAI Agents SDK, Google ADK, etc.), see **`references/integrations.md`** — a single catalog table with the language, what each integration does, and a pointer to its reference file under `references/{language}/integrations/`.
 
-## Out of scope of the `temporal-developer` skill
-
-- **Operational CLI commands** (batch operations, health queries, Cloud admin, tcld, scripting) → Use the `temporal-ops` skill.
-- **Worker performance tuning, sizing, capacity planning** → Use the `temporal-workertuning` skill.
-
-If the conversation drifts into one of these areas, hand off to the relevant sibling skill rather than improvising.
-
 ## Feedback
 
 ### Reporting Issues in This Skill
