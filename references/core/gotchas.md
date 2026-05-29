@@ -205,18 +205,18 @@ The dev server loses all state on restart (use `--db-filename` to persist) and r
 
 Running `temporal workflow update` alone will not work. Use the correct subcommand:
 
-- `temporal workflow update execute` -- start an update and wait for completion. <!-- docs/cli/workflow.mdx:738-764 -->
-- `temporal workflow update start` -- fire an update and wait for acceptance. Requires `--wait-for-stage accepted`. <!-- docs/cli/workflow.mdx:785-813 -->
-- `temporal workflow update result` -- get the result of a previously started update. <!-- docs/cli/workflow.mdx:766-783 -->
-- `temporal workflow update describe` -- check an update's current status. <!-- docs/cli/workflow.mdx:719-736 -->
+- `temporal workflow update execute` -- start an update and wait for completion.
+- `temporal workflow update start` -- fire an update and wait for acceptance. Requires `--wait-for-stage accepted`.
+- `temporal workflow update result` -- get the result of a previously started update.
+- `temporal workflow update describe` -- check an update's current status.
 
 ### `--wait-for-stage` Only Accepts `accepted`
 
-Despite looking like an enum, the only valid value for `--wait-for-stage` on `temporal workflow update start` is `accepted`. <!-- docs/cli/workflow.mdx:812 --> Passing `completed` or other values will fail. The flag is required to allow a future CLI version to choose a default.
+Despite looking like an enum, the only valid value for `--wait-for-stage` on `temporal workflow update start` is `accepted`. Passing `completed` or other values will fail. The flag is required to allow a future CLI version to choose a default.
 
 ### `--reapply-type` Only Accepts `Signal` or `None`
 
-When resetting a workflow with `temporal workflow reset`, `--reapply-type` controls which events get reapplied after the reset point. Only `Signal` and `None` are valid values. <!-- docs/cli/cmd-options.mdx:497 -->
+When resetting a workflow with `temporal workflow reset`, `--reapply-type` controls which events get reapplied after the reset point. Only `Signal` and `None` are valid values.
 
 ## Payload Size Limits
 

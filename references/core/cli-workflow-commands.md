@@ -28,35 +28,33 @@ temporal workflow start \
     --input '{"some-key": "some-value"}'
 ```
 
-Required flags: `--type`, `--task-queue`. <!-- docs/cli/workflow.mdx:201,203 --> Optional `--workflow-id` -- the Service generates a UUID if omitted. <!-- docs/cli/workflow.mdx:582 -->
+Required flags: `--type`, `--task-queue`. Optional `--workflow-id` -- the Service generates a UUID if omitted.
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--type` | Yes | Workflow Type name. <!-- docs/cli/workflow.mdx:581 --> |
-| `--task-queue`, `-t` | Yes | Workflow Task queue. <!-- docs/cli/workflow.mdx:579 --> |
-| `--workflow-id`, `-w` | No | Workflow ID. Service generates a UUID if omitted. <!-- docs/cli/workflow.mdx:582 --> |
-| `--input`, `-i` | No | Input value (JSON). Repeatable. Mutually exclusive with `--input-file`. <!-- docs/cli/workflow.mdx:568 --> |
-| `--input-file` | No | Read input from file(s). Repeatable. Mutually exclusive with `--input`. <!-- docs/cli/workflow.mdx:570 --> |
-| `--input-base64` | No | Decode `--input` as base64 before sending. <!-- docs/cli/workflow.mdx:569 --> |
-| `--input-meta` | No | Override payload metadata as `KEY=VALUE` (e.g., `encoding=json/protobuf`). Repeatable. <!-- docs/cli/workflow.mdx:571 --> |
-| `--id-reuse-policy` | No | How to reuse a previously-seen Workflow ID. Values: `AllowDuplicate`, `AllowDuplicateFailedOnly`, `RejectDuplicate`, `TerminateIfRunning`. <!-- docs/cli/workflow.mdx:567 --> |
-| `--id-conflict-policy` | No | How to resolve conflicts with a running execution sharing the same ID. Values: `Fail`, `UseExisting`, `TerminateExisting`. <!-- docs/cli/workflow.mdx:566 --> |
-| `--execution-timeout` | No | Fail a Workflow Execution if it lasts longer than this (duration). Includes retries and ContinueAsNew. <!-- docs/cli/workflow.mdx:561 --> |
-| `--run-timeout` | No | Fail a single Workflow Run if it lasts longer than this (duration). <!-- docs/cli/workflow.mdx:574 --> |
-| `--task-timeout` | No | Start-to-close timeout for a Workflow Task (duration). <!-- docs/cli/workflow.mdx:580 --> |
-| `--search-attribute` | No | Set a search attribute as `KEY=VALUE` (JSON values). Repeatable. <!-- docs/cli/workflow.mdx:575 --> |
-| `--memo` | No | Attach unindexed metadata as `KEY="VALUE"` (JSON values). Repeatable. <!-- docs/cli/workflow.mdx:572 --> |
-| `--start-delay` | No | Delay before starting (duration). Cannot combine with `--cron`. <!-- docs/cli/workflow.mdx:576 --> |
-| `--cron` | No | Legacy cron schedule (prefer `temporal schedule create`). <!-- docs/cli/workflow.mdx:560 --> |
-| `--priority-key` | No | Priority 1-5 (default 3). Lower = higher priority. <!-- docs/cli/workflow.mdx:573 --> |
-| `--fairness-key` | No | Proportional task dispatch grouping key (string, max 64 bytes). <!-- docs/cli/workflow.mdx:563 --> |
-| `--fairness-weight` | No | Weight for this fairness key (0.001-1000). Keys dispatched proportionally. <!-- docs/cli/workflow.mdx:564 --> |
-| `--static-summary` | No | Human-readable summary for UIs. Single line. _(Experimental)_ <!-- docs/cli/workflow.mdx:578 --> |
-| `--static-details` | No | Human-readable details for UIs. May be multi-line. _(Experimental)_ <!-- docs/cli/workflow.mdx:577 --> |
-| `--fail-existing` | No | Fail if the Workflow already exists. <!-- docs/cli/workflow.mdx:562 --> |
-| `--headers` | No | Temporal workflow headers as `KEY=VALUE` (JSON). Not gRPC headers. Repeatable. <!-- docs/cli/workflow.mdx:565 --> |
-
-<!-- Sources: docs/cli/workflow.mdx:544-582 -->
+| `--type` | Yes | Workflow Type name. |
+| `--task-queue`, `-t` | Yes | Workflow Task queue. |
+| `--workflow-id`, `-w` | No | Workflow ID. Service generates a UUID if omitted. |
+| `--input`, `-i` | No | Input value (JSON). Repeatable. Mutually exclusive with `--input-file`. |
+| `--input-file` | No | Read input from file(s). Repeatable. Mutually exclusive with `--input`. |
+| `--input-base64` | No | Decode `--input` as base64 before sending. |
+| `--input-meta` | No | Override payload metadata as `KEY=VALUE` (e.g., `encoding=json/protobuf`). Repeatable. |
+| `--id-reuse-policy` | No | How to reuse a previously-seen Workflow ID. Values: `AllowDuplicate`, `AllowDuplicateFailedOnly`, `RejectDuplicate`, `TerminateIfRunning`. |
+| `--id-conflict-policy` | No | How to resolve conflicts with a running execution sharing the same ID. Values: `Fail`, `UseExisting`, `TerminateExisting`. |
+| `--execution-timeout` | No | Fail a Workflow Execution if it lasts longer than this (duration). Includes retries and ContinueAsNew. |
+| `--run-timeout` | No | Fail a single Workflow Run if it lasts longer than this (duration). |
+| `--task-timeout` | No | Start-to-close timeout for a Workflow Task (duration). |
+| `--search-attribute` | No | Set a search attribute as `KEY=VALUE` (JSON values). Repeatable. |
+| `--memo` | No | Attach unindexed metadata as `KEY="VALUE"` (JSON values). Repeatable. |
+| `--start-delay` | No | Delay before starting (duration). Cannot combine with `--cron`. |
+| `--cron` | No | Legacy cron schedule (prefer `temporal schedule create`). |
+| `--priority-key` | No | Priority 1-5 (default 3). Lower = higher priority. |
+| `--fairness-key` | No | Proportional task dispatch grouping key (string, max 64 bytes). |
+| `--fairness-weight` | No | Weight for this fairness key (0.001-1000). Keys dispatched proportionally. |
+| `--static-summary` | No | Human-readable summary for UIs. Single line. _(Experimental)_ |
+| `--static-details` | No | Human-readable details for UIs. May be multi-line. _(Experimental)_ |
+| `--fail-existing` | No | Fail if the Workflow already exists. |
+| `--headers` | No | Temporal workflow headers as `KEY=VALUE` (JSON). Not gRPC headers. Repeatable. |
 
 ## Workflow execute
 
@@ -89,14 +87,12 @@ temporal workflow signal \
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--workflow-id`, `-w` | Yes (or `--query`) | Workflow ID. <!-- docs/cli/workflow.mdx:473 --> |
-| `--name` | Yes | Signal name. <!-- docs/cli/workflow.mdx:468 --> |
-| `--input`, `-i` | No | Input value (JSON). Repeatable. <!-- docs/cli/workflow.mdx:464 --> |
-| `--run-id`, `-r` | No | Pin to a specific run. Only with `--workflow-id`. <!-- docs/cli/workflow.mdx:472 --> |
+| `--workflow-id`, `-w` | Yes (or `--query`) | Workflow ID. |
+| `--name` | Yes | Signal name. |
+| `--input`, `-i` | No | Input value (JSON). Repeatable. |
+| `--run-id`, `-r` | No | Pin to a specific run. Only with `--workflow-id`. |
 
 For bulk signaling with `--query` (runs as a batch job), see skill-temporal-ops.
-
-<!-- Sources: docs/cli/workflow.mdx:443-474 -->
 
 ## Workflow query
 
@@ -112,13 +108,11 @@ temporal workflow query \
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--workflow-id`, `-w` | Yes | Workflow ID. <!-- docs/cli/workflow.mdx:365 --> |
-| `--name` | Yes | Query Type/Name. <!-- docs/cli/workflow.mdx:362 --> |
-| `--input`, `-i` | No | Input value (JSON). Repeatable. <!-- docs/cli/workflow.mdx:358 --> |
-| `--run-id`, `-r` | No | Run ID. <!-- docs/cli/workflow.mdx:364 --> |
-| `--reject-condition` | No | Reject queries based on Workflow state. Accepted values: `not_open`, `not_completed_cleanly`. <!-- docs/cli/workflow.mdx:363 --> |
-
-<!-- Sources: docs/cli/workflow.mdx:339-365 -->
+| `--workflow-id`, `-w` | Yes | Workflow ID. |
+| `--name` | Yes | Query Type/Name. |
+| `--input`, `-i` | No | Input value (JSON). Repeatable. |
+| `--run-id`, `-r` | No | Run ID. |
+| `--reject-condition` | No | Reject queries based on Workflow state. Accepted values: `not_open`, `not_completed_cleanly`. |
 
 ## Workflow update
 
@@ -139,15 +133,13 @@ temporal workflow update start \
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--workflow-id`, `-w` | Yes | Workflow ID. <!-- docs/cli/workflow.mdx:813 --> |
-| `--name` | Yes | Handler method name. <!-- docs/cli/workflow.mdx:809 --> |
-| `--wait-for-stage` | Yes | Update stage to wait for. The **only** accepted value is `accepted`. Required to allow a future CLI version to choose a default. <!-- docs/cli/workflow.mdx:812 --> |
-| `--input`, `-i` | No | Input value (JSON). Repeatable. <!-- docs/cli/workflow.mdx:805 --> |
-| `--update-id` | No | Idempotency key. Defaults to a UUID. <!-- docs/cli/workflow.mdx:811 --> |
-| `--run-id`, `-r` | No | Run ID. If unset, targets the currently-running execution. <!-- docs/cli/workflow.mdx:810 --> |
-| `--first-execution-run-id` | No | Pin the update to the last execution in the chain started with this Run ID. <!-- docs/cli/workflow.mdx:803 --> |
-
-<!-- Sources: docs/cli/workflow.mdx:785-813 -->
+| `--workflow-id`, `-w` | Yes | Workflow ID. |
+| `--name` | Yes | Handler method name. |
+| `--wait-for-stage` | Yes | Update stage to wait for. The **only** accepted value is `accepted`. Required to allow a future CLI version to choose a default. |
+| `--input`, `-i` | No | Input value (JSON). Repeatable. |
+| `--update-id` | No | Idempotency key. Defaults to a UUID. |
+| `--run-id`, `-r` | No | Run ID. If unset, targets the currently-running execution. |
+| `--first-execution-run-id` | No | Pin the update to the last execution in the chain started with this Run ID. |
 
 ### `temporal workflow update execute`
 
@@ -163,14 +155,12 @@ temporal workflow update execute \
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--workflow-id`, `-w` | Yes | Workflow ID. <!-- docs/cli/workflow.mdx:764 --> |
-| `--name` | Yes | Handler method name. <!-- docs/cli/workflow.mdx:761 --> |
-| `--input`, `-i` | No | Input value (JSON). Repeatable. <!-- docs/cli/workflow.mdx:757 --> |
-| `--update-id` | No | Idempotency key. Defaults to a UUID. <!-- docs/cli/workflow.mdx:763 --> |
-| `--run-id`, `-r` | No | Run ID. If unset, targets the currently-running execution. <!-- docs/cli/workflow.mdx:762 --> |
-| `--first-execution-run-id` | No | Pin the update to the last execution in the chain started with this Run ID. <!-- docs/cli/workflow.mdx:755 --> |
-
-<!-- Sources: docs/cli/workflow.mdx:738-764 -->
+| `--workflow-id`, `-w` | Yes | Workflow ID. |
+| `--name` | Yes | Handler method name. |
+| `--input`, `-i` | No | Input value (JSON). Repeatable. |
+| `--update-id` | No | Idempotency key. Defaults to a UUID. |
+| `--run-id`, `-r` | No | Run ID. If unset, targets the currently-running execution. |
+| `--first-execution-run-id` | No | Pin the update to the last execution in the chain started with this Run ID. |
 
 ### `temporal workflow update result`
 
@@ -185,11 +175,9 @@ temporal workflow update result \
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--workflow-id`, `-w` | Yes | Workflow ID. <!-- docs/cli/workflow.mdx:783 --> |
-| `--update-id` | Yes | Update ID. Must be unique per Workflow Execution. <!-- docs/cli/workflow.mdx:782 --> |
-| `--run-id`, `-r` | No | Run ID. <!-- docs/cli/workflow.mdx:781 --> |
-
-<!-- Sources: docs/cli/workflow.mdx:766-783 -->
+| `--workflow-id`, `-w` | Yes | Workflow ID. |
+| `--update-id` | Yes | Update ID. Must be unique per Workflow Execution. |
+| `--run-id`, `-r` | No | Run ID. |
 
 ### `temporal workflow update describe`
 
@@ -204,11 +192,9 @@ temporal workflow update describe \
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--workflow-id`, `-w` | Yes | Workflow ID. <!-- docs/cli/workflow.mdx:736 --> |
-| `--update-id` | Yes | Update ID. Must be unique per Workflow Execution. <!-- docs/cli/workflow.mdx:735 --> |
-| `--run-id`, `-r` | No | Run ID. <!-- docs/cli/workflow.mdx:734 --> |
-
-<!-- Sources: docs/cli/workflow.mdx:719-736 -->
+| `--workflow-id`, `-w` | Yes | Workflow ID. |
+| `--update-id` | Yes | Update ID. Must be unique per Workflow Execution. |
+| `--run-id`, `-r` | No | Run ID. |
 
 ## Workflow signal-with-start
 
@@ -225,19 +211,17 @@ temporal workflow signal-with-start \
     --input '{"some-key": "some-value"}'
 ```
 
-Takes `--signal-name` (required), `--signal-input`, plus all start-time flags from `workflow start`. <!-- docs/cli/workflow.mdx:516,520-522 -->
+Takes `--signal-name` (required), `--signal-input`, plus all start-time flags from `workflow start`.
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--signal-name` | Yes | Signal name. <!-- docs/cli/workflow.mdx:516 --> |
-| `--signal-input` | No | Signal input value (JSON). Repeatable. <!-- docs/cli/workflow.mdx:512 --> |
-| `--type` | Yes | Workflow Type name. <!-- docs/cli/workflow.mdx:522 --> |
-| `--task-queue`, `-t` | Yes | Workflow Task queue. <!-- docs/cli/workflow.mdx:520 --> |
-| `--workflow-id`, `-w` | No | Workflow ID. Service generates a UUID if omitted. <!-- docs/cli/workflow.mdx:523 --> |
+| `--signal-name` | Yes | Signal name. |
+| `--signal-input` | No | Signal input value (JSON). Repeatable. |
+| `--type` | Yes | Workflow Type name. |
+| `--task-queue`, `-t` | Yes | Workflow Task queue. |
+| `--workflow-id`, `-w` | No | Workflow ID. Service generates a UUID if omitted. |
 
 All other start-time flags (`--input`, `--id-reuse-policy`, `--id-conflict-policy`, timeouts, `--search-attribute`, `--memo`, etc.) are accepted. See [Workflow start](#workflow-start) for the full flag table.
-
-<!-- Sources: docs/cli/workflow.mdx:476-523 -->
 
 ## Workflow result
 
@@ -251,10 +235,8 @@ temporal workflow result \
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--workflow-id`, `-w` | Yes | Workflow ID. <!-- docs/cli/workflow.mdx:419 --> |
-| `--run-id`, `-r` | No | Run ID. <!-- docs/cli/workflow.mdx:418 --> |
-
-<!-- Sources: docs/cli/workflow.mdx:405-419 -->
+| `--workflow-id`, `-w` | Yes | Workflow ID. |
+| `--run-id`, `-r` | No | Run ID. |
 
 ## Workflow metadata
 
@@ -268,8 +250,6 @@ temporal workflow metadata \
 
 | Flag | Required | Purpose |
 |---|---|---|
-| `--workflow-id`, `-w` | Yes | Workflow ID. <!-- docs/cli/workflow.mdx:324 --> |
-| `--run-id`, `-r` | No | Run ID. <!-- docs/cli/workflow.mdx:323 --> |
-| `--reject-condition` | No | Reject queries based on Workflow state. Accepted values: `not_open`, `not_completed_cleanly`. <!-- docs/cli/workflow.mdx:322 --> |
-
-<!-- Sources: docs/cli/workflow.mdx:307-324 -->
+| `--workflow-id`, `-w` | Yes | Workflow ID. |
+| `--run-id`, `-r` | No | Run ID. |
+| `--reject-condition` | No | Reject queries based on Workflow state. Accepted values: `not_open`, `not_completed_cleanly`. |
