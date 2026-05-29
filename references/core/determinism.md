@@ -89,6 +89,7 @@ Each Temporal SDK language provides a different level of protection against non-
 - Java: The Java SDK has no sandbox. Determinism is enforced by developer conventions — the SDK provides `Workflow.*` APIs as safe alternatives (e.g., `Workflow.sleep()` instead of `Thread.sleep()`), and non-determinism is only detected at replay time via `NonDeterministicException`. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time. Cooperative threading under a global lock eliminates the need for synchronization.
 - Go: The Go SDK has no runtime sandbox. Therefore, non-determinism bugs will never be immediately appararent, and are usually only observable during replay. The optional `workflowcheck` static analysis tool can be used to check for many sources of non-determinism at compile time.
 - .NET: The .NET SDK has no sandbox. It uses a custom TaskScheduler and a runtime EventListener to detect invalid task scheduling. Developers must use `Workflow.*` safe alternatives (e.g., Workflow.DelayAsync instead of Task.Delay) and avoid non-deterministic .NET Task APIs.
+- Ruby: The Ruby SDK uses Illegal Call Tracing (via `TracePoint`) to detect forbidden method calls at runtime on the workflow fiber, combined with a Durable Fiber Scheduler that makes fiber operations deterministic.
 
 Regardless of which SDK you are using, it is your responsibility to ensure that workflow code does not contain sources of non-determinism. Use SDK-specific tools as well as replay tests for doing so.
 
