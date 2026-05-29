@@ -69,11 +69,9 @@ temporal workflow execute \
     --input '{"some-key": "some-value"}'
 ```
 
-Accepts the same start-time flags as `workflow start`, plus `--detailed` (display events as sections rather than a table; not applied to JSON output). <!-- docs/cli/workflow.mdx:182 --> With `--output json`, the emitted blob includes the full `history` key for the run. <!-- docs/cli/workflow.mdx:175-176 -->
+Accepts the same start-time flags as `workflow start`. The only `workflow execute` specific flag is `--detailed` (display events as sections rather than a table; not applied to JSON output). With `--output json`, the emitted blob includes the full `history` key for the run.
 
 A non-zero exit code means the Workflow failed, was cancelled, terminated, or timed out. Useful for one-shot scripts and smoke tests during development.
-
-<!-- Sources: docs/cli/workflow.mdx:159-204 -->
 
 ## Workflow signal
 
