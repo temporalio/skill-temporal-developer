@@ -21,9 +21,9 @@ Don't call `client.activity.execute` / `client.activity.start` or any other Stan
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
-## Worker setup
+## Worker setup & activity registration
 
-Worker registration is identical to a Workflow-Activity Worker — register the Activity functions and run the Worker.
+The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
 ```typescript
 import { NativeConnection, Worker } from '@temporalio/worker';

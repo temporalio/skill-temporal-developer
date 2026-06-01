@@ -17,28 +17,9 @@ Don't call `client.ExecuteActivityAsync` / `client.StartActivityAsync` or any ot
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
-## Define the Activity
+## Worker setup & activity registration
 
-An Activity is a method decorated with `[Activity]`; nothing about Standalone Activities changes how you write or register it.
-
-```csharp
-namespace TemporalioSamples.StandaloneActivity;
-
-using Temporalio.Activities;
-
-public static class MyActivities
-{
-    [Activity]
-    public static Task<string> ComposeGreetingAsync(ComposeGreetingInput input) =>
-        Task.FromResult($"{input.Greeting}, {input.Name}!");
-}
-
-public record ComposeGreetingInput(string Greeting, string Name);
-```
-
-## Worker setup
-
-Worker registration is identical to a Workflow-Activity worker — connect a client, create a `TemporalWorker`, register the Activity, run the Worker.
+The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
 ```csharp
 using Microsoft.Extensions.Logging;

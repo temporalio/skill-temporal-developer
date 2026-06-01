@@ -18,10 +18,9 @@ Standalone Activities are conceptually the same across all SDKs. Read the [cross
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
-## Worker setup
+## Worker setup & activity registration
 
-- Worker registration is identical to a Workflow-Activity worker — the Worker doesn't need to know how the Activity will be invoked.
-- Minimal setup using `WorkerFactory.newInstance(client)`, `factory.newWorker(TASK_QUEUE)`, and `worker.registerActivitiesImplementations(...)`.
+The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
 ```java
 ClientConfigProfile profile = ClientConfigProfile.load();

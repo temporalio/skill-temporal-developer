@@ -17,9 +17,9 @@ Don't call `client.execute_activity` or `client.start_activity` or any other Sta
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
-## Worker setup
+## Worker setup & activity registration
 
-Worker registration is identical to a Workflow-Activity worker — the Worker doesn't need to know whether the Activity will be invoked from a Workflow or as a Standalone Activity .
+The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
 ```python
 import asyncio
@@ -49,8 +49,6 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
-
-The Activity itself is a normal function with `@activity.defn`; it can optionally be `async def` .
 
 ## Execute (await result)
 
