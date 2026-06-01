@@ -5,7 +5,7 @@
 
 ## Overview
 
-Standalone Activities are top-level Activity Executions started directly by a Temporal Client without a Workflow.  Use them when you need to run a single durable, retryable Activity instead of orchestrating multiple steps in a Workflow.  See the cross-SDK concept page at [/standalone-activity](/standalone-activity) for the full feature overview.
+Standalone Activities are top-level Activity Executions started directly by a Temporal Client without a Workflow.  Use them when you need to run a single durable, retryable Activity instead of orchestrating multiple steps in a Workflow.  See the cross-SDK concept page at [`references/core/standalone-activities.md`](../core/standalone-activities.md) for the full feature overview.
 
 The Activity Function itself is written the same way as a Workflow Activity; the same function can run as either with no code changes.
 
@@ -183,6 +183,4 @@ The same code works against Temporal Cloud because `loadClientConnectConfig()` r
 
 - Pause, reset, and update options are not supported in Public Preview but scheduled for GA.
 - `TerminateExisting` conflict policy / `TerminateIfRunning` reuse policy is not supported yet.
-
-## Activity context inside a Standalone Activity
 

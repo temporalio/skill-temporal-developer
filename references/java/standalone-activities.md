@@ -198,5 +198,3 @@ temporal activity count
 - Pause, reset, and update options are not supported in Public Preview.
 - `TerminateExisting` conflict policy / `TerminateIfRunning` reuse policy are not supported yet.
 
-## Activity context inside a Standalone Activity
-

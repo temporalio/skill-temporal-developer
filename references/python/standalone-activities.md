@@ -173,5 +173,3 @@ The same code works against Temporal Cloud because `ClientConfig.load_client_con
 - Pause, reset, and update options are not supported in Public Preview .
 - `TerminateExisting` conflict policy and `TerminateIfRunning` reuse policy are not supported yet .
 
-## Activity context inside a Standalone Activity
-
