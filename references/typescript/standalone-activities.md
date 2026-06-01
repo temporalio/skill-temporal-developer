@@ -30,15 +30,18 @@ import { NativeConnection, Worker } from '@temporalio/worker';
 import * as activities from './activities';
 import { loadClientConnectConfig } from '@temporalio/envconfig';
 
-const config = loadClientConnectConfig();
-const connection = await NativeConnection.connect(config.connectionOptions);
-const worker = await Worker.create({
-  connection,
-  namespace: 'default',
-  taskQueue: 'hello-standalone-activities',
-  activities,
-});
-await worker.run();
+async function run() {
+  const config = loadClientConnectConfig();
+  const connection = await NativeConnection.connect(config.connectionOptions);
+  const worker = await Worker.create({
+    connection,
+    taskQueue: 'hello-standalone-activities',
+    activities,
+  });
+  await worker.run();
+}
+
+run().catch(console.error);
 ```
 
 ## Execute with type checking

@@ -38,9 +38,32 @@ public record ComposeGreetingInput(string Greeting, string Name);
 
 ## Worker setup
 
-Worker registration is identical to a Workflow-Activity worker — create a `TemporalWorker`, register the Activity, run the Worker.
+Worker registration is identical to a Workflow-Activity worker — connect a client, create a `TemporalWorker`, register the Activity, run the Worker.
 
 ```csharp
+using Microsoft.Extensions.Logging;
+using Temporalio.Client;
+using Temporalio.Common.EnvConfig;
+using Temporalio.Worker;
+using TemporalioSamples.StandaloneActivity;
+
+var connectOptions = ClientEnvConfig.LoadClientConnectOptions();
+connectOptions.TargetHost ??= "localhost:7233";
+connectOptions.LoggerFactory = LoggerFactory.Create(builder =>
+    builder.
+        AddSimpleConsole(options => options.TimestampFormat = "[HH:mm:ss] ").
+        SetMinimumLevel(LogLevel.Information));
+var client = await TemporalClient.ConnectAsync(connectOptions);
+
+const string taskQueue = "standalone-activity-sample";
+
+using var tokenSource = new CancellationTokenSource();
+Console.CancelKeyPress += (_, eventArgs) =>
+{
+    tokenSource.Cancel();
+    eventArgs.Cancel = true;
+};
+
 using var worker = new TemporalWorker(
     client,
     new TemporalWorkerOptions(taskQueue).

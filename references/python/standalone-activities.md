@@ -23,7 +23,7 @@ Worker registration is identical to a Workflow-Activity worker — the Worker do
 
 ```python
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 
 from temporalio.client import Client
 from temporalio.envconfig import ClientConfig
@@ -36,13 +36,14 @@ async def main():
     connect_config = ClientConfig.load_client_connect_config()
     connect_config.setdefault("target_host", "localhost:7233")
     client = await Client.connect(**connect_config)
-    worker = Worker(
-        client,
-        task_queue="my-standalone-activity-task-queue",
-        activities=[compose_greeting],
-        activity_executor=ThreadPoolExecutor(5),
-    )
-    await worker.run()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as activity_executor:
+        worker = Worker(
+            client,
+            task_queue="my-standalone-activity-task-queue",
+            activities=[compose_greeting],
+            activity_executor=activity_executor,
+        )
+        await worker.run()
 
 
 if __name__ == "__main__":
