@@ -9,11 +9,6 @@ Standalone Activities are Activities run independently of any Workflow, started 
 
 Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the TypeScript SDK specific APIs for calling Standalone Activities.
 
-
-## Hard guardrail
-
-Don't call `client.activity.execute` / `client.activity.start` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`proxyActivities`) instead.
-
 ## Prerequisites
 
 - Temporal TypeScript SDK v1.17.0 or higher.
@@ -21,7 +16,7 @@ Don't call `client.activity.execute` / `client.activity.start` or any other Stan
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
-## Worker setup & activity registration
+## Hosting Activities on a Worker
 
 The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
@@ -44,7 +39,15 @@ async function run() {
 run().catch(console.error);
 ```
 
-## Execute with type checking
+## Calling and managing Standalone Activities
+
+Start and manage Standalone Activities from your application code using the Temporal Client.
+
+### Do not call from inside a Workflow
+
+Don't call `client.activity.execute` / `client.activity.start` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`proxyActivities`) instead.
+
+### Execute with type checking
 
 Call `client.activity.typed<typeof activities>()` to obtain a typed Activity Client interface.  Calling `typed` does not create a new Client object — it only adjusts the type annotation of the existing Client.  Unknown or mistyped Activity names, or wrong argument types, fail at compile time.
 
@@ -74,7 +77,7 @@ const result = await activitiesClient.execute('greet', {
 });
 ```
 
-## Execute without type checking
+### Execute without type checking
 
 Call `execute` or `start` directly on `client.activity` when Activity types aren't available. Neither the Activity name nor argument types are checked client-side.
 
@@ -86,7 +89,7 @@ await client.activity.execute('greet', {
 });
 ```
 
-## Start without waiting
+### Start without waiting
 
 Use `client.activity.start(...)` (or `activitiesClient.start(...)` on the typed interface) to durably enqueue the Activity and get back a handle without waiting for completion.
 
@@ -98,7 +101,7 @@ const handle = await activitiesClient.start('greet', {
 });
 ```
 
-## Get a handle to an existing Activity
+### Get a handle to an existing Activity
 
 Use `client.activity.getHandle<string>(activityId)` to construct a handle to a previously started Standalone Activity.  `getHandle` is not available on the typed interface.  The optional type argument constrains the result type but correctness is not verified.
 
@@ -108,7 +111,7 @@ const newHandle = client.activity.getHandle<string>(activityId);
 
 The handle can be used to wait for the result, describe, cancel, or terminate the Activity.
 
-## Wait for the result later
+### Wait for the result later
 
 `execute` is equivalent to `start` followed by `await handle.result()`.
 
@@ -116,7 +119,7 @@ The handle can be used to wait for the result, describe, cancel, or terminate th
 console.log(await handle.result());
 ```
 
-## List Standalone Activities
+### List Standalone Activities
 
 `client.activity.list(query)` returns an `AsyncIterable<ActivityExecutionInfo>` of entries that match a [List Filter](/list-filter) query.  Only Standalone Activity Executions are included; Activities running inside Workflows are not.  Each entry exposes `activityId`, `activityRunId`, `activityType`, `status`, and `closeTime`.
 
@@ -130,7 +133,7 @@ for await (const a of client.activity.list(query)) {
 }
 ```
 
-## Count Standalone Activities
+### Count Standalone Activities
 
 `client.activity.count(query)` returns `{ count }` — the total count of executions (running, completed, failed, etc.) matching a List Filter query, not the number of queued tasks.
 

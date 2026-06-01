@@ -8,17 +8,13 @@ Standalone Activities are Activities run independently of any Workflow, started 
 
 Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the Java SDK specific APIs for calling Standalone Activities.
 
-## Hard guardrail: do not call ActivityClient from inside a Workflow
-
-- Don't call `ActivityClient.execute` / `ActivityClient.start` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.newActivityStub(...)`) instead.
-
 ## Prerequisites
 
 - Temporal Java SDK v1.35.0 or higher.
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
-## Worker setup & activity registration
+## Hosting Activities on a Worker
 
 The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
@@ -34,7 +30,15 @@ worker.registerActivitiesImplementations(new GreetingActivitiesImpl());
 factory.start();
 ```
 
-## Hard pre-step: construct the ActivityClient
+## Calling and managing Standalone Activities
+
+Start and manage Standalone Activities from your application code using the Temporal Client.
+
+### Do not call from inside a Workflow
+
+Don't call `ActivityClient.execute` / `ActivityClient.start` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.newActivityStub(...)`) instead.
+
+### Hard pre-step: construct the ActivityClient
 
 - You cannot call `execute` / `start` / `getHandle` / `listExecutions` / `countExecutions` without first constructing an `ActivityClient`.
 
@@ -45,7 +49,7 @@ ActivityClient client =
         ActivityClientOptions.newBuilder().setNamespace(profile.getNamespace()).build());
 ```
 
-## StartActivityOptions — hard constraints
+### StartActivityOptions — hard constraints
 
 - `StartActivityOptions` **must** set `id`, `taskQueue`, and at least one of `startToCloseTimeout` or `scheduleToCloseTimeout`.
 
@@ -58,7 +62,7 @@ StartActivityOptions options =
         .build();
 ```
 
-## Execute and wait for the result — typed method-reference form
+### Execute and wait for the result — typed method-reference form
 
 - `client.execute(...)` durably enqueues the Standalone Activity, waits for a Worker to run it, and returns the typed result.
 - The typed form takes the Activity interface class and an unbound method reference; the SDK infers the Activity type name and result type at runtime.
@@ -73,7 +77,7 @@ String result =
         "World");
 ```
 
-## Execute — string-name form
+### Execute — string-name form
 
 - When you don't have the interface class available, call the Activity by its string type name and pass the result class.
 
@@ -81,7 +85,7 @@ String result =
 String result = client.execute("ComposeGreeting", String.class, options, "Hello", "World");
 ```
 
-## Start without waiting — ActivityHandle
+### Start without waiting — ActivityHandle
 
 - `client.start(...)` returns an `ActivityHandle<R>` after the Activity is durably enqueued; the call does not wait for the Worker to run it.
 - Block for the result later by calling `handle.getResult()`.
@@ -98,7 +102,7 @@ ActivityHandle<String> handle =
 String result = handle.getResult();
 ```
 
-## Get a handle to an existing Standalone Activity
+### Get a handle to an existing Standalone Activity
 
 - Use `client.getHandle(...)` to attach a typed handle to a previously started Standalone Activity.
 - Passing `null` as the run ID targets the latest run of that Activity ID; the handle can then wait for the result, describe, cancel, or terminate.
@@ -108,7 +112,7 @@ ActivityHandle<String> handle =
     client.getHandle("standalone-activity-id", null, String.class);
 ```
 
-## Await result later
+### Await result later
 
 - `handle.getResult()` blocks until the Activity completes and returns the typed result.
 - `handle.getResultAsync()` returns a `CompletableFuture<R>` for non-blocking waits.
@@ -118,7 +122,7 @@ String result = handle.getResult();
 CompletableFuture<String> future = handle.getResultAsync();
 ```
 
-## List Standalone Activity Executions
+### List Standalone Activity Executions
 
 - `client.listExecutions(query)` returns a `Stream<ActivityExecutionMetadata>` that fetches pages from the server on demand as the stream is consumed.
 - Only Standalone Activity Executions are returned; Activities running inside Workflows are not included.
@@ -134,7 +138,7 @@ client
                 info.getActivityId(), info.getActivityType(), info.getStatus()));
 ```
 
-## Count Standalone Activity Executions
+### Count Standalone Activity Executions
 
 - `client.countExecutions(query)` returns an `ActivityExecutionCount` exposing `getCount()` and `getGroups()`.
 - Each group exposes `getGroupValues()` and `getCount()`.

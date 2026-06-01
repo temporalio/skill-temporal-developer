@@ -7,17 +7,13 @@ Standalone Activities are Activities run independently of any Workflow, started 
 
 Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the .NET SDK specific APIs for calling Standalone Activities.
 
-## Hard guardrail — do not call from inside a Workflow
-
-Don't call `client.ExecuteActivityAsync` / `client.StartActivityAsync` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.ExecuteActivityAsync`) instead.
-
 ## Prerequisites
 
 - Temporal .NET SDK v1.12.0 or higher.
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
-## Worker setup & activity registration
+## Hosting Activities on a Worker
 
 The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
@@ -53,7 +49,15 @@ using var worker = new TemporalWorker(
 await worker.ExecuteAsync(tokenSource.Token);
 ```
 
-## Execute (wait for result)
+## Calling and managing Standalone Activities
+
+Start and manage Standalone Activities from your application code using the Temporal Client.
+
+### Do not call from inside a Workflow
+
+Don't call `client.ExecuteActivityAsync` / `client.StartActivityAsync` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.ExecuteActivityAsync`) instead.
+
+### Execute (wait for result)
 
 Use `client.ExecuteActivityAsync(...)` to durably enqueue the Activity, wait for it to run on a Worker, and return the result.
 
@@ -80,13 +84,13 @@ var result = await client.ExecuteActivityAsync<string>(
     });
 ```
 
-## `StartActivityOptions` requirements
+### `StartActivityOptions` requirements
 
 `StartActivityOptions` requires `Id`, `TaskQueue`, and at least one of `ScheduleToCloseTimeout` or `StartToCloseTimeout`.  This is a hard constraint — there is no workaround; you must supply all three.
 
 The options type is `Temporalio.Client.StartActivityOptions`.
 
-## Start (do not wait)
+### Start (do not wait)
 
 Use `client.StartActivityAsync(...)` to enqueue the Activity and get a handle back without blocking on the result.
 
@@ -102,7 +106,7 @@ var handle = await client.StartActivityAsync(
 var result = await handle.GetResultAsync();
 ```
 
-## Get an existing handle
+### Get an existing handle
 
 Use `client.GetActivityHandle(...)` to rebind a handle to a previously started Standalone Activity.
 
@@ -116,7 +120,7 @@ var typedHandle = client.GetActivityHandle<string>("my-activity-id", runId: "the
 
 The handle can be used to wait for the result, describe, cancel, or terminate the Activity.
 
-## Await result later
+### Await result later
 
 Calling `client.ExecuteActivityAsync()` is equivalent to `client.StartActivityAsync()` followed by `await handle.GetResultAsync()`.
 
@@ -124,7 +128,7 @@ Calling `client.ExecuteActivityAsync()` is equivalent to `client.StartActivityAs
 var result = await handle.GetResultAsync();
 ```
 
-## List
+### List
 
 Use `client.ListActivitiesAsync(query)` — it returns an `IAsyncEnumerable<ActivityExecution>`.  Only Standalone Activity Executions are returned; Activities running inside Workflows are not included.
 
@@ -139,7 +143,7 @@ await foreach (var info in client.ListActivitiesAsync(
 
 The `query` argument uses [List Filter](/list-filter) syntax — e.g. `"ActivityType = 'ComposeGreeting' AND Status = 'Running'"`.
 
-## Count
+### Count
 
 Use `client.CountActivitiesAsync(query)`; the response exposes `Count` (total executions matching the filter — running, completed, failed, etc.; not queued tasks).
 

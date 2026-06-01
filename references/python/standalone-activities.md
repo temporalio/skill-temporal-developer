@@ -1,15 +1,11 @@
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-# Python Standalone Activities
+## Overview
 
 Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. See the [cross-SDK concept page](references/core/standalone-activities.md). The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
 
 Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the Python SDK specific APIs for calling Standalone Activities.
-
-## Guardrail: do not call from inside a Workflow
-
-Don't call `client.execute_activity` or `client.start_activity` or any other Standalone Activity APIs from inside a `@workflow.defn` class — for Workflow-driven activity invocation, use `workflow.execute_activity` instead.
 
 ## Prerequisites
 
@@ -17,7 +13,7 @@ Don't call `client.execute_activity` or `client.start_activity` or any other Sta
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
-## Worker setup & activity registration
+## Hosting Activities on a Worker
 
 The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
@@ -50,7 +46,15 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Execute (await result)
+## Calling and managing Standalone Activities
+
+Start and manage Standalone Activities from your application code using the Temporal Client.
+
+### Do not call from inside a Workflow
+
+Don't call `client.execute_activity` or `client.start_activity` or any other Standalone Activity APIs from inside a `@workflow.defn` class — for Workflow-driven activity invocation, use `workflow.execute_activity` instead.
+
+### Execute (await result)
 
 Use `client.execute_activity(...)` to durably enqueue the Activity, wait for it to be executed on a Worker, and fetch the result . Required arguments per the docs: the activity function (first positional), `args=[...]`, `id`, `task_queue`, and a timeout such as `start_to_close_timeout` .
 
@@ -66,7 +70,7 @@ activity_result = await client.execute_activity(
 )
 ```
 
-## Start (do not wait)
+### Start (do not wait)
 
 Use `client.start_activity(...)` to durably enqueue the Activity without waiting for it to be executed, and get a handle back .
 
@@ -80,7 +84,7 @@ activity_handle = await client.start_activity(
 )
 ```
 
-## Get an existing handle
+### Get an existing handle
 
 Use `client.get_activity_handle(...)` to create a handle to a previously started Standalone Activity .
 
@@ -93,7 +97,7 @@ activity_handle = client.get_activity_handle(
 
 The handle can be used to wait for the result, describe, cancel, or terminate the Activity .
 
-## Await result later
+### Await result later
 
 `client.execute_activity()` is equivalent to `client.start_activity()` followed by `await activity_handle.result()` .
 
@@ -101,7 +105,7 @@ The handle can be used to wait for the result, describe, cancel, or terminate th
 activity_result = await activity_handle.result()
 ```
 
-## List Standalone Activities
+### List Standalone Activities
 
 Use `client.list_activities(query=...)`; the result is an async iterator that yields `ActivityExecution` entries . Only Standalone Activity Executions are returned — Activities running inside Workflows are not included . The `query` parameter accepts [List Filter](/list-filter) syntax (e.g. `"ActivityType = 'MyActivity' AND Status = 'Running'"`) .
 
@@ -114,7 +118,7 @@ async for info in activities:
     print(f"ActivityID: {info.activity_id}, Type: {info.activity_type}, Status: {info.status}")
 ```
 
-## Count Standalone Activities
+### Count Standalone Activities
 
 Use `client.count_activities(query=...)` to count Standalone Activity Executions matching a List Filter query . The response exposes `resp.count` and `resp.groups` . This returns the total count of executions (running, completed, failed, etc.) — not the number of queued tasks .
 
