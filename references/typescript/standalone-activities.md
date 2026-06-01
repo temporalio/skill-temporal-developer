@@ -5,19 +5,21 @@
 
 ## Overview
 
-Standalone Activities are top-level Activity Executions started directly by a Temporal Client without a Workflow.  Use them when you need to run a single durable, retryable Activity instead of orchestrating multiple steps in a Workflow.  See the cross-SDK concept page at [`references/core/standalone-activities.md`](../core/standalone-activities.md) for the full feature overview.
+Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
 
-The Activity Function itself is written the same way as a Workflow Activity; the same function can run as either with no code changes.
+Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the TypeScript SDK specific APIs for calling Standalone Activities.
+
 
 ## Hard guardrail
 
-Don't call `client.activity.execute` / `client.activity.start` from inside a Workflow Definition — use Workflow-side activity invocation (`proxyActivities`) instead.
+Don't call `client.activity.execute` / `client.activity.start` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`proxyActivities`) instead.
 
 ## Prerequisites
 
 - Temporal TypeScript SDK v1.17.0 or higher.
 - All `@temporalio/*` packages must be pinned to the same version (heads-up — install/upgrade them together).
-- Temporal CLI v1.7.0 or higher; see [references/core/install_cli.md](../core/install_cli.md).
+- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
+- For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
 ## Worker setup
 
@@ -133,54 +135,3 @@ for await (const a of client.activity.list(query)) {
 const { count } = await client.activity.count(query);
 console.log(`Total activities: ${count}`);
 ```
-
-## Temporal CLI mirror
-
-The `temporal activity` subcommand supports `start`, `execute`, `result`, `list`, `count`, `describe`, `cancel`, and `terminate`.
-
-Execute (wait for result):
-
-```bash
-temporal activity execute \
-  --type greet \
-  --activity-id my-standalone-activity-id \
-  --task-queue hello-standalone-activities \
-  --start-to-close-timeout 10s \
-  --input '"World"'
-```
-
-Start (do not wait):
-
-```bash
-temporal activity start \
-  --type greet \
-  --activity-id my-standalone-activity-id \
-  --task-queue hello-standalone-activities \
-  --start-to-close-timeout 10s \
-  --input '"World"'
-```
-
-Fetch a result by Activity Id:
-
-```bash
-temporal activity result --activity-id my-standalone-activity-id
-```
-
-List and count:
-
-```bash
-temporal activity list
-temporal activity count
-```
-
-The `--input` value is JSON-encoded, so a string argument is passed as `'"World"'` (single-quoted JSON string).
-
-## Temporal Cloud
-
-The same code works against Temporal Cloud because `loadClientConnectConfig()` reads TOML profiles and environment variables, so no code changes are needed.  For mTLS or API-key environment variable setup, see the "Connect with mTLS" and "Connect with an API key" sections of `docs/develop/typescript/activities/standalone-activities.mdx`.
-
-## Public Preview limitations
-
-- Pause, reset, and update options are not supported in Public Preview but scheduled for GA.
-- `TerminateExisting` conflict policy / `TerminateIfRunning` reuse policy is not supported yet.
-

@@ -3,20 +3,19 @@
 
 ## Overview
 
-Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration.  See the cross-SDK concept page at [/standalone-activity](/standalone-activity).  The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
+Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. See the [cross-SDK concept page](references/core/standalone-activities.md). The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
+
+Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the .NET SDK specific APIs for calling Standalone Activities.
 
 ## Hard guardrail — do not call from inside a Workflow
 
-Don't call `client.ExecuteActivityAsync` / `client.StartActivityAsync` from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.ExecuteActivityAsync`) instead. The docs explicitly say: "Call this from your application code, not from inside a Workflow Definition."
+Don't call `client.ExecuteActivityAsync` / `client.StartActivityAsync` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.ExecuteActivityAsync`) instead.
 
 ## Prerequisites
 
-- .NET 8.0+
 - Temporal .NET SDK v1.12.0 or higher.
-- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](../core/install_cli.md).
-- Temporal Server v1.31.0 or higher (the Temporal Dev Server has Standalone Activities enabled by default).
-
-Start a local dev server with `temporal server start-dev`.
+- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
+- For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
 ## Define the Activity
 
@@ -145,57 +144,3 @@ var resp = await client.CountActivitiesAsync(
     "TaskQueue = 'standalone-activity-sample'");
 Console.WriteLine($"Total activities: {resp.Count}");
 ```
-
-## Temporal CLI mirror
-
-The `temporal activity` subcommand mirrors the SDK operations.
-
-Execute (wait for result):
-
-```bash
-temporal activity execute \
-  --type ComposeGreeting \
-  --activity-id standalone-activity-id \
-  --task-queue standalone-activity-sample \
-  --schedule-to-close-timeout 10s \
-  --input '{"Greeting": "Hello", "Name": "World"}'
-```
-
-Start (do not wait):
-
-```bash
-temporal activity start \
-  --type ComposeGreeting \
-  --activity-id standalone-activity-id \
-  --task-queue standalone-activity-sample \
-  --schedule-to-close-timeout 10s \
-  --input '{"Greeting": "Hello", "Name": "World"}'
-```
-
-Wait for result by ID:
-
-```bash
-temporal activity result --activity-id my-standalone-activity-id
-```
-
-List:
-
-```bash
-temporal activity list
-```
-
-Count:
-
-```bash
-temporal activity count
-```
-
-## Temporal Cloud
-
-The same code runs against Temporal Cloud because `ClientEnvConfig.LoadClientConnectOptions()` reads environment variables and TOML profiles — no code changes needed.  See the docs' "Connect with mTLS" and "Connect with an API key" env-var blocks for the exact `TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE`, `TEMPORAL_TLS_CLIENT_CERT_PATH`, `TEMPORAL_TLS_CLIENT_KEY_PATH`, and `TEMPORAL_API_KEY` variables to set.
-
-## Public Preview limitations
-
-- Pause, reset, and update options are not supported in Public Preview.
-- `TerminateExisting` conflict policy / `TerminateIfRunning` reuse policy is not supported.
-

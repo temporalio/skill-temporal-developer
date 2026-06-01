@@ -4,17 +4,19 @@
 
 ## Overview
 
-Standalone Activities run independently of any Workflow and are the right tool when you only need to execute a single durable, retryable task rather than orchestrate multiple steps; see the [Standalone Activity encyclopedia page](/standalone-activity) for the cross-SDK concept.  In the Java SDK you start a Standalone Activity directly "from a Temporal Client using `ActivityClient`."  The Activity interface, implementation, and Worker registration are identical to a Workflow Activity — the same Activity Function can be invoked either way with no code changes.
+Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. See the [cross-SDK concept page](references/core/standalone-activities.md). The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
+
+Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the Java SDK specific APIs for calling Standalone Activities.
 
 ## Hard guardrail: do not call ActivityClient from inside a Workflow
 
-- Don't call `ActivityClient.execute` / `ActivityClient.start` from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.newActivityStub(...)`) instead. The Java docs are explicit: "Call this from your application code, not from inside a Workflow Definition."
+- Don't call `ActivityClient.execute` / `ActivityClient.start` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.newActivityStub(...)`) instead.
 
 ## Prerequisites
 
-- **Java** 8+.
-- **Temporal Java SDK** v1.35.0 or higher.
-- **Temporal CLI** v1.7.0 or higher — see [references/core/install_cli.md](../core/install_cli.md).
+- Temporal Java SDK v1.35.0 or higher.
+- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
+- For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
 ## Worker setup
 
@@ -147,54 +149,3 @@ resp.getGroups()
         group ->
             System.out.println("Group " + group.getGroupValues() + ": " + group.getCount()));
 ```
-
-## Temporal CLI mirror
-
-Equivalent CLI invocations use kebab-case flags.
-
-Execute and wait:
-```bash
-temporal activity execute \
-  --type ComposeGreeting \
-  --activity-id standalone-activity-id \
-  --task-queue standalone-activity-task-queue \
-  --start-to-close-timeout 10s \
-  --input '"Hello"' \
-  --input '"World"'
-```
-
-Start without waiting:
-```bash
-temporal activity start \
-  --type ComposeGreeting \
-  --activity-id standalone-activity-id \
-  --task-queue standalone-activity-task-queue \
-  --start-to-close-timeout 10s \
-  --input '"Hello"' \
-  --input '"World"'
-```
-
-Wait for result by Activity ID:
-```bash
-temporal activity result --activity-id standalone-activity-id
-```
-
-List:
-```bash
-temporal activity list
-```
-
-Count:
-```bash
-temporal activity count
-```
-
-## Temporal Cloud
-
-- The same code runs against Temporal Cloud because `ClientConfigProfile.load()` reads TOML profiles and environment variables; no code changes are required.  See the doc's "Connect with mTLS" and "Connect with an API key" sections for the exact `TEMPORAL_ADDRESS` / `TEMPORAL_NAMESPACE` / `TEMPORAL_TLS_CLIENT_CERT_PATH` / `TEMPORAL_TLS_CLIENT_KEY_PATH` / `TEMPORAL_API_KEY` env-var blocks.
-
-## Public Preview limitations
-
-- Pause, reset, and update options are not supported in Public Preview.
-- `TerminateExisting` conflict policy / `TerminateIfRunning` reuse policy are not supported yet.
-
