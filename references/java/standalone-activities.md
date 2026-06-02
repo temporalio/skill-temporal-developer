@@ -1,4 +1,3 @@
-
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
@@ -38,9 +37,9 @@ Start and manage Standalone Activities from your application code using the Temp
 
 Don't call `ActivityClient.execute` / `ActivityClient.start` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.newActivityStub(...)`) instead.
 
-### Hard pre-step: construct the ActivityClient
+### Connect a Client
 
-- You cannot call `execute` / `start` / `getHandle` / `listExecutions` / `countExecutions` without first constructing an `ActivityClient`.
+The Standalone Activity operations are methods on a connected `ActivityClient`. The examples below assume this `client`.
 
 ```java
 ActivityClient client =

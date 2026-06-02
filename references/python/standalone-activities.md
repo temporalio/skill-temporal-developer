@@ -54,6 +54,19 @@ Start and manage Standalone Activities from your application code using the Temp
 
 Don't call `client.execute_activity` or `client.start_activity` or any other Standalone Activity APIs from inside a `@workflow.defn` class — for Workflow-driven activity invocation, use `workflow.execute_activity` instead.
 
+### Connect a Client
+
+The Standalone Activity operations are methods on a connected `Client`. The examples below assume this `client`.
+
+```python
+from temporalio.client import Client
+from temporalio.envconfig import ClientConfig
+
+connect_config = ClientConfig.load_client_connect_config()
+connect_config.setdefault("target_host", "localhost:7233")
+client = await Client.connect(**connect_config)
+```
+
 ### Execute (await result)
 
 Use `client.execute_activity(...)` to durably enqueue the Activity, wait for it to be executed on a Worker, and fetch the result . Required arguments per the docs: the activity function (first positional), `args=[...]`, `id`, `task_queue`, and a timeout such as `start_to_close_timeout` .

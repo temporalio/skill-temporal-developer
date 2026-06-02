@@ -45,19 +45,26 @@ Start and manage Standalone Activities from your application code using the Temp
 
 Don't call `client.activity.execute` / `client.activity.start` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`proxyActivities`) instead.
 
+### Connect a Client
+
+The Standalone Activity operations are methods on `client.activity`, where `client` is a connected `Client`. The examples below assume this `client`.
+
+```typescript
+import { Connection, Client } from '@temporalio/client';
+import { loadClientConnectConfig } from '@temporalio/envconfig';
+
+const config = loadClientConnectConfig();
+const connection = await Connection.connect(config.connectionOptions);
+const client = new Client({ connection });
+```
+
 ### Execute with type checking
 
 Call `client.activity.typed<typeof activities>()` to obtain a typed Activity Client interface.  Calling `typed` does not create a new Client object — it only adjusts the type annotation of the existing Client.  Unknown or mistyped Activity names, or wrong argument types, fail at compile time.
 
 ```typescript
-import { Connection, Client } from '@temporalio/client';
-import { loadClientConnectConfig } from '@temporalio/envconfig';
 import * as activities from './activities';
 import { nanoid } from 'nanoid';
-
-const config = loadClientConnectConfig();
-const connection = await Connection.connect(config.connectionOptions);
-const client = new Client({ connection });
 
 const activitiesClient = client.activity.typed<typeof activities>();
 

@@ -57,6 +57,19 @@ Start and manage Standalone Activities from your application code using the Temp
 
 Don't call `client.ExecuteActivityAsync` / `client.StartActivityAsync` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`Workflow.ExecuteActivityAsync`) instead.
 
+### Connect a Client
+
+The Standalone Activity operations are methods on a connected `TemporalClient`. The examples below assume this `client`.
+
+```csharp
+using Temporalio.Client;
+using Temporalio.Common.EnvConfig;
+
+var connectOptions = ClientEnvConfig.LoadClientConnectOptions();
+connectOptions.TargetHost ??= "localhost:7233";
+var client = await TemporalClient.ConnectAsync(connectOptions);
+```
+
 ### Execute (wait for result)
 
 Use `client.ExecuteActivityAsync(...)` to durably enqueue the Activity, wait for it to run on a Worker, and return the result.
