@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Temporal Rust SDK (`temporalio-sdk`) provides a native Rust API for building Workflows, Activities, Workers, and Clients. The SDK is in Public Preview, so prefer the current official docs and `docs.rs` when exact method names matter.
+The Temporal Rust SDK (`temporalio-sdk`) provides a native Rust API for building Workflows, Activities, Workers, and Clients. The SDK is in Public Preview, so prefer the [current official docs](https://docs.temporal.io/develop/rust) and [docs.rs](https://docs.rs/temporalio-sdk/latest/temporalio_sdk/) when exact method names matter.
 
 Rust Workflows are structs plus macro-decorated methods. Activities are async methods on an `impl` block. Workers register Workflow and Activity types, then poll a Task Queue.
 
