@@ -40,6 +40,6 @@ Appropriately adjust the installation directory based on your coding agent.
 - [x] Go ✅
 - [x] Java ✅
 - [x] .NET ✅
-- [x] Rust ✅
+- [x] Rust (Preview)
 - [x] Ruby ✅
 - [ ] PHP 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/40))
