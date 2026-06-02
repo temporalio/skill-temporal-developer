@@ -2,146 +2,129 @@
 
 ## Overview
 
-The Temporal Rust SDK (`temporalio-sdk`) provides a native Rust API for building Workflows, Activities, Workers, and Clients. The SDK is in Public Preview, so prefer the [current official docs](https://docs.temporal.io/develop/rust) and [docs.rs](https://docs.rs/temporalio-sdk/latest/temporalio_sdk/) when exact method names matter.
+The Temporal Rust SDK (`temporalio-sdk`) provides native Rust APIs for Workflows, Activities, Workers, and Clients. The SDK is in Public Preview and under active development, so verify exact crate versions and method names against the official docs before giving precise implementation guidance.
 
-Rust Workflows are structs plus macro-decorated methods. Activities are async methods on an `impl` block. Workers register Workflow and Activity types, then poll a Task Queue.
+Rust Workflows are structs with macro-decorated methods. Activities are async methods on an `impl` block. Workers register Workflow and Activity types, then poll a Task Queue.
 
-## Quick Start
+## Official References
 
-**Add dependencies:** The [official quickstart](https://docs.temporal.io/develop/rust/quickstart) currently uses the `0.4.0` crate family.
+- [Rust SDK developer guide](https://docs.temporal.io/develop/rust) - Rust documentation hub.
+- [Rust SDK Quickstart](https://docs.temporal.io/develop/rust/quickstart) - setup, dependencies, local dev server, and a complete hello-world example.
+- [Workflow basics](https://docs.temporal.io/develop/rust/workflows/basics) - Workflow structs, `#[run]`, optional `#[init]`, and message handlers.
+- [Activity basics](https://docs.temporal.io/develop/rust/activities/basics) - Activity macros, parameters, and Activity boundaries.
+- [Worker processes](https://docs.temporal.io/develop/rust/workers/worker-process) - Worker setup, registration, and Task Queue polling.
+- [Temporal Client](https://docs.temporal.io/develop/rust/client/temporal-client) - connecting to Temporal Service, starting Workflows, and fetching results.
+- [docs.rs temporalio-sdk](https://docs.rs/temporalio-sdk/latest/temporalio_sdk/) - generated Rust API documentation.
+- [sdk-rust examples](https://github.com/temporalio/sdk-rust/tree/main/crates/sdk/examples) - current example programs from the SDK repository.
 
-```toml
-[dependencies]
-anyhow = "1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-temporalio-client = "0.4.0"
-temporalio-common = "0.4.0"
-temporalio-macros = "0.4.0"
-temporalio-sdk = "0.4.0"
-temporalio-sdk-core = "0.4.0"
-tokio = { version = "1", features = ["full"] }
-```
+## Quick Demo of Temporal
 
-**activities.rs** - Activity definitions:
+**Add dependencies:** Follow the [official Rust SDK Quickstart](https://docs.temporal.io/develop/rust/quickstart) for the current `Cargo.toml` dependencies. Do not rely on pinned versions in this file.
+
+**src/activities.rs** - Activity definition:
 
 ```rust
 use temporalio_macros::activities;
 use temporalio_sdk::activities::{ActivityContext, ActivityError};
 
-pub struct GreetingActivities;
+pub struct MyActivities;
 
 #[activities]
-impl GreetingActivities {
+impl MyActivities {
     #[activity]
     pub async fn greet(_ctx: ActivityContext, name: String) -> Result<String, ActivityError> {
-        Ok(format!("Hello, {name}!"))
+        Ok(format!("Hello, {}!", name))
     }
 }
 ```
 
-**workflows.rs** - Workflow definition:
+**src/workflows.rs** - Workflow definition:
 
 ```rust
-use std::time::Duration;
 use temporalio_macros::{workflow, workflow_methods};
-use temporalio_sdk::{ActivityOptions, WorkflowContext, WorkflowResult};
+use temporalio_sdk::{ActivityOptions, WorkflowContext, WorkflowContextView, WorkflowResult};
+use std::time::Duration;
 
-use crate::activities::GreetingActivities;
+use crate::activities::MyActivities;
 
 #[workflow]
-#[derive(Default)]
-pub struct HelloWorldWorkflow;
+pub struct GreetingWorkflow {
+    name: String,
+}
 
 #[workflow_methods]
-impl HelloWorldWorkflow {
+impl GreetingWorkflow {
+    #[init]
+    fn new(_ctx: &WorkflowContextView, name: String) -> Self {
+        Self { name }
+    }
+
     #[run]
-    pub async fn run(ctx: &mut WorkflowContext<Self>, name: String) -> WorkflowResult<String> {
-        let greeting = ctx
-            .start_activity(
-                GreetingActivities::greet,
-                name,
-                ActivityOptions::start_to_close_timeout(Duration::from_secs(10)),
-            )
-            .await?;
+    pub async fn run(ctx: &mut WorkflowContext<Self>) -> WorkflowResult<String> {
+        let name = ctx.state(|s| s.name.clone());
+
+        // Execute an activity
+        let greeting = ctx.start_activity(
+            MyActivities::greet,
+            name,
+            ActivityOptions::start_to_close_timeout(Duration::from_secs(30)),
+        ).await?;
+
+        println!("{}", greeting);
         Ok(greeting)
     }
 }
 ```
 
-**worker.rs** - Worker setup:
+**src/main.rs** - Worker setup:
 
 ```rust
-mod activities;
-mod workflows;
-
-use activities::GreetingActivities;
-use temporalio_client::{
-    Client, ClientOptions, Connection, envconfig::LoadClientConfigProfileOptions,
-};
-use temporalio_common::telemetry::TelemetryOptions;
+use temporalio_client::{Client, ClientOptions, Connection};
+use temporalio_common::envconfig::LoadClientConfigProfileOptions;
 use temporalio_sdk::{Worker, WorkerOptions};
 use temporalio_sdk_core::{CoreRuntime, RuntimeOptions};
-use workflows::HelloWorldWorkflow;
+
+mod workflows;
+mod activities;
+
+use crate::workflows::GreetingWorkflow;
+use crate::activities::MyActivities;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let runtime = CoreRuntime::new_assume_tokio(
-        RuntimeOptions::builder()
-            .telemetry_options(TelemetryOptions::builder().build())
-            .build()?,
-    )?;
-    let (conn_opts, client_opts) =
-        ClientOptions::load_from_config(LoadClientConfigProfileOptions::default())?;
-    let connection = Connection::connect(conn_opts).await?;
-    let client = Client::new(connection, client_opts)?;
+    let runtime = CoreRuntime::new_assume_tokio(RuntimeOptions::builder().build()?)?;
 
-    let worker_options = WorkerOptions::new("hello-world")
-        .register_workflow::<HelloWorldWorkflow>()?
-        .register_activities(GreetingActivities)
+    // Set up client connection options, loading from config if available
+    let (connection_options, client_options) = ClientOptions::load_from_config(
+        LoadClientConfigProfileOptions::default(),
+    )?;
+
+    let connection = Connection::connect(connection_options).await?;
+    let client = Client::new(connection, client_options)?;
+
+    let worker_options = WorkerOptions::new("my-task-queue")
+        .register_activities(MyActivities)
+        .register_workflow::<GreetingWorkflow>()
         .build();
 
-    let mut worker = Worker::new(&runtime, client, worker_options)?;
-    worker.run().await?;
+    Worker::new(&runtime, client, worker_options)?.run().await?;
+
     Ok(())
 }
 ```
 
-**starter.rs** - Start a Workflow Execution:
+**Run locally:**
 
-```rust
-mod workflows;
+1. Start the dev server with `temporal server start-dev`.
+2. Run the Worker with `cargo run`.
+3. Start a Workflow Execution with the CLI:
 
-use temporalio_client::{
-    Client, ClientOptions, Connection, WorkflowGetResultOptions, WorkflowStartOptions,
-    envconfig::LoadClientConfigProfileOptions,
-};
-use workflows::HelloWorldWorkflow;
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (conn_opts, client_opts) =
-        ClientOptions::load_from_config(LoadClientConfigProfileOptions::default())?;
-    let connection = Connection::connect(conn_opts).await?;
-    let client = Client::new(connection, client_opts)?;
-
-    let handle = client
-        .start_workflow(
-            HelloWorldWorkflow::run,
-            "Temporal".to_string(),
-            WorkflowStartOptions::new("hello-world", "hello-world-workflow-id").build(),
-        )
-        .await?;
-
-    let result = handle
-        .get_result(WorkflowGetResultOptions::default())
-        .await?;
-    println!("Workflow result: {result}");
-    Ok(())
-}
+```sh
+temporal workflow start \
+  --type GreetingWorkflow \
+  --task-queue my-task-queue \
+  --input '"Ziggy"'
 ```
-
-**Run locally:** Start `temporal server start-dev`, then run the Worker and starter in separate terminals.
 
 ## Key Concepts
 
@@ -149,29 +132,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 - Define a struct and annotate it with `#[workflow]`.
 - Put Workflow methods in a `#[workflow_methods]` impl block.
-- `#[run]` is required and contains the main async Workflow logic.
-- `#[init]` is optional and initializes state from Workflow input.
-- `#[signal]`, `#[query]`, and `#[update]` expose message handlers.
-- Workflow inputs, state, and return values should be serializable with `serde`.
+- Use `#[run]` for the main Workflow logic, and optionally use `#[init]`, `#[signal]`, `#[query]`, and `#[update]`.
 
 ### Activity Definition
 
 - Put Activity methods in a `#[activities]` impl block.
-- Each Activity method is annotated with `#[activity]`.
-- Activity methods are async, take `ActivityContext` first, and return `Result<T, ActivityError>`.
+- Annotate each Activity method with `#[activity]`.
 - Activities can perform I/O, call services, use system time, and do other non-deterministic work.
-- Use a single input struct for arguments that may evolve over time.
 
 ### Worker Setup
 
-- Load connection settings with `ClientOptions::load_from_config(...)` or build explicit options.
-- Create a `CoreRuntime`.
-- Create a `Client`, build `WorkerOptions`, register Workflows and Activities, then call `Worker::run().await`.
-- All Workers polling the same Task Queue should register the same Workflow and Activity types.
+- A Worker registers Workflow and Activity types, then polls one Task Queue.
+- Workers polling the same Task Queue should register the same Workflow and Activity types.
+- Keep Worker runtime, client, config, secrets, and logging setup outside Workflow code.
 
 ### Temporal Client
 
-- Use `temporalio-client` outside Workflow code to start Workflows and send Signals, Queries, and Updates.
+- Use the Rust client outside Workflow code to start Workflows and send Signals, Queries, and Updates.
 - Do not create or use a Temporal Client inside Workflow code.
 - A Client can be used inside an Activity when the Activity needs to interact with Temporal Service.
 
@@ -179,20 +156,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 Keep Workflow definitions, Activity implementations, Worker setup, and starter/client code separate. This makes the determinism boundary easy to inspect.
 
-```
+```text
 my_temporal_app/
 |-- src/
 |   |-- activities.rs   # Activity implementations and side effects
 |   |-- workflows.rs    # Workflow definitions and orchestration
-|   |-- worker.rs       # Worker process
-|   `-- starter.rs      # Client code that starts workflows
+|   `-- main.rs         # Worker process in the Quickstart
 `-- Cargo.toml
 ```
 
 ## Common Pitfalls
 
-1. **Using `tokio` primitives in Workflow code** - Use Temporal workflow primitives such as `ctx.timer()` and `temporalio_sdk::workflows::select!`.
-2. **Calling I/O from a Workflow** - Put network, database, filesystem, and process calls in Activities.
-3. **Skipping Activity timeouts** - Set `start_to_close_timeout` or `schedule_to_close_timeout` for each Activity Execution.
-4. **Forgetting `serde` derives** - Workflow and Activity payload types must serialize and deserialize correctly.
-5. **Mixing Worker and Workflow concerns** - Runtime setup, clients, secrets, logging sinks, and environment config belong outside Workflow code.
+1. **Calling I/O from a Workflow** - Put network, database, filesystem, process calls, and other side effects in Activities.
+2. **Skipping Activity timeouts** - Set a timeout such as `start_to_close_timeout` for each Activity Execution.
+3. **Mixing Worker and Workflow concerns** - Runtime setup, clients, secrets, environment config, and external logging sinks belong outside Workflow code.
+4. **Assuming APIs are stable** - The Rust SDK is Public Preview, so check official docs, docs.rs, and SDK examples before naming exact APIs.
+
+## Rust-Specific References Status
+
+Rust-specific local reference files do not exist yet. For deeper Rust SDK details, use the official Rust SDK docs, docs.rs, and `sdk-rust` examples. For SDK-neutral Temporal concepts, use the core references under `references/core/`.
