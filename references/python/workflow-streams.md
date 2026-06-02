@@ -11,7 +11,6 @@ Use it for modest fan-out progress streaming: AI-agent runs, order pipelines, mu
 
 Only available in the Python SDK today; cross-language is on the roadmap.
 
-
 ## When to use / not to use
 
 - Use it for: updating a UI as an AI agent works; surfacing status from a payment or order pipeline; reporting intermediate results from a data job.

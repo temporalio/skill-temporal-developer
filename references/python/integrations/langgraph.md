@@ -214,4 +214,4 @@ For LangSmith tracing of LangGraph nodes and Temporal Activities together, use t
 
 - `references/python/ai-patterns.md` — Python AI/LLM patterns (Pydantic data converter, LLM Activity design, retry/error classification).
 - `references/core/ai-patterns.md` — language-agnostic AI/LLM patterns.
-- `references/python/integrations/langsmith.md` - Companion LangSmith plugin. 
+- `references/python/integrations/langsmith.md` - Companion LangSmith plugin.

@@ -9,7 +9,6 @@ The integration is built on the Python SDK [Plugin system](https://docs.temporal
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-
 For general Temporal AI/LLM patterns (retries, rate limits, multi-agent orchestration) see `references/core/ai-patterns.md` and `references/python/ai-patterns.md`.
 
 ## Prerequisites
