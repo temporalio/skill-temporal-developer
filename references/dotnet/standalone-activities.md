@@ -3,7 +3,7 @@
 
 ## Overview
 
-Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. See the [cross-SDK concept page](references/core/standalone-activities.md). The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
+Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
 
 Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the .NET SDK specific APIs for calling Standalone Activities.
 
@@ -44,7 +44,7 @@ Console.CancelKeyPress += (_, eventArgs) =>
 using var worker = new TemporalWorker(
     client,
     new TemporalWorkerOptions(taskQueue).
-        AddActivity(MyActivities.ComposeGreetingAsync));
+        AddActivity(MyActivities.ComposeGreetingAsync)); // register whatever your activity(ies) is/are
 
 await worker.ExecuteAsync(tokenSource.Token);
 ```

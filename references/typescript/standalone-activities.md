@@ -1,5 +1,3 @@
-
-
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
@@ -31,7 +29,7 @@ async function run() {
   const worker = await Worker.create({
     connection,
     taskQueue: 'hello-standalone-activities',
-    activities,
+    activities, // register whatever your activity(ies) is/are
   });
   await worker.run();
 }

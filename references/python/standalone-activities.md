@@ -3,7 +3,7 @@
 
 ## Overview
 
-Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. See the [cross-SDK concept page](references/core/standalone-activities.md). The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
+Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
 
 Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the Python SDK specific APIs for calling Standalone Activities.
 
@@ -36,7 +36,7 @@ async def main():
         worker = Worker(
             client,
             task_queue="my-standalone-activity-task-queue",
-            activities=[compose_greeting],
+            activities=[compose_greeting], # register whatever your activity(ies) is/are
             activity_executor=activity_executor,
         )
         await worker.run()
