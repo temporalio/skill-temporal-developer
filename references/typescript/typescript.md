@@ -181,4 +181,5 @@ See `references/typescript/testing.md` for info on writing tests.
 - **`references/typescript/advanced-features.md`** - Schedules, worker tuning, and more
 - **`references/typescript/data-handling.md`** - Data converters, payload encryption, etc.
 - **`references/typescript/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
+- **`references/typescript/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
 - **`references/typescript/determinism-protection.md`** - V8 sandbox and bundling

@@ -199,4 +199,5 @@ See `references/dotnet/testing.md` for info on writing tests.
 - **`references/dotnet/advanced-features.md`** — Schedules, worker tuning, dependency injection
 - **`references/dotnet/data-handling.md`** — Data converters, payload encryption, etc.
 - **`references/dotnet/versioning.md`** — Patching API, workflow type versioning, Worker Versioning
+- **`references/dotnet/standalone-activities.md`** — Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
 - **`references/dotnet/determinism-protection.md`** — Runtime task detection, .NET Task determinism rules
