@@ -52,7 +52,7 @@ Start and manage Standalone Activities from your application code using the Temp
 
 ### Do not call from inside a Workflow
 
-Don't call `client.execute_activity` or `client.start_activity` or any other Standalone Activity APIs from inside a `@workflow.defn` class — for Workflow-driven activity invocation, use `workflow.execute_activity` instead.
+Don't call `client.execute_activity` / `client.start_activity` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`workflow.execute_activity`) instead.
 
 ### Connect a Client
 
@@ -67,80 +67,91 @@ connect_config.setdefault("target_host", "localhost:7233")
 client = await Client.connect(**connect_config)
 ```
 
-### Execute (await result)
+### Execute (wait for result)
 
-Use `client.execute_activity(...)` to durably enqueue the Activity, wait for it to be executed on a Worker, and fetch the result . Required arguments per the docs: the activity function (first positional), `args=[...]`, `id`, `task_queue`, and a timeout such as `start_to_close_timeout` .
+Use `client.execute_activity(...)` to durably enqueue the Activity, wait for it to run on a Worker, and return the result. Required arguments: the activity (first positional), `args=[...]`, `id`, `task_queue`, and a timeout such as `start_to_close_timeout`.
+
+#### With type checking
+
+Use when activity definitions are available in this language. Pass the activity function reference; the SDK infers the result type from its signature.
+
+```python
+import uuid
+from datetime import timedelta
+
+# In practice, use a meaningful business identifier, like customer or transaction identifier
+activity_id = str(uuid.uuid4())
+
+activity_result = await client.execute_activity(
+    compose_greeting,
+    args=[ComposeGreetingInput("Hello", "World")],
+    id=activity_id,
+    task_queue="my-standalone-activity-task-queue",
+    start_to_close_timeout=timedelta(seconds=10),
+)
+```
+
+#### Without type checking
+
+Use when activity definitions are unavailable in this language (i.e. you can't import them). Pass the activity type name as a string; optionally set `result_type` to decode the result.
 
 ```python
 from datetime import timedelta
 
 activity_result = await client.execute_activity(
-    compose_greeting,
+    "compose_greeting",
     args=[ComposeGreetingInput("Hello", "World")],
-    id="my-standalone-activity-id",
+    id=activity_id,
     task_queue="my-standalone-activity-task-queue",
     start_to_close_timeout=timedelta(seconds=10),
+    result_type=str,
 )
 ```
 
-### Start (do not wait)
+### Start (do not wait for result)
 
-Use `client.start_activity(...)` to durably enqueue the Activity without waiting for it to be executed, and get a handle back .
-
-```python
-activity_handle = await client.start_activity(
-    compose_greeting,
-    args=[ComposeGreetingInput("Hello", "World")],
-    id="my-standalone-activity-id",
-    task_queue="my-standalone-activity-task-queue",
-    start_to_close_timeout=timedelta(seconds=10),
-)
-```
-
-### Get an existing handle
-
-Use `client.get_activity_handle(...)` to create a handle to a previously started Standalone Activity .
+Use `client.start_activity(...)` to durably enqueue the Activity and get back a handle without waiting for completion. This takes the **exact same arguments as `execute_activity`**.
 
 ```python
-activity_handle = client.get_activity_handle(
-    activity_id="my-standalone-activity-id",
-    run_id="the-run-id",
-)
+activity_handle = await client.start_activity(...)
 ```
 
-The handle can be used to wait for the result, describe, cancel, or terminate the Activity .
+### Get a handle to an existing Activity execution
 
-### Await result later
-
-`client.execute_activity()` is equivalent to `client.start_activity()` followed by `await activity_handle.result()` .
+Use `client.get_activity_handle(...)` to attach a handle to a previously started Standalone Activity. Omitting `run_id` (or passing `None`) targets the latest run of that Activity ID.
 
 ```python
-activity_result = await activity_handle.result()
+activity_handle = client.get_activity_handle(activity_id="my-standalone-activity-id")
 ```
+
+### Wait for the result of a handle
+
+```python
+result = await activity_handle.result()
+```
+
+Calling `execute_activity` is equivalent to `start_activity` followed by `await activity_handle.result()`.
 
 ### List Standalone Activities
-
-Use `client.list_activities(query=...)`; the result is an async iterator that yields `ActivityExecution` entries . Only Standalone Activity Executions are returned — Activities running inside Workflows are not included . The `query` parameter accepts [List Filter](/list-filter) syntax (e.g. `"ActivityType = 'MyActivity' AND Status = 'Running'"`) .
 
 ```python
 activities = client.list_activities(
     query="TaskQueue = 'my-standalone-activity-task-queue'",
-)
+)  # returns an async iterator of ActivityExecution
 
 async for info in activities:
     print(f"ActivityID: {info.activity_id}, Type: {info.activity_type}, Status: {info.status}")
 ```
 
+Only Standalone Activity Executions are returned; Activities running inside Workflows are not included.
+
 ### Count Standalone Activities
 
-Use `client.count_activities(query=...)` to count Standalone Activity Executions matching a List Filter query . The response exposes `resp.count` and `resp.groups` . This returns the total count of executions (running, completed, failed, etc.) — not the number of queued tasks .
+Use `client.count_activities(query=...)` to count matching executions; this takes the **exact same arguments as `list_activities`**.
 
 ```python
 resp = await client.count_activities(
     query="TaskQueue = 'my-standalone-activity-task-queue'",
 )
-
 print("Total activities:", resp.count)
-for group in resp.groups:
-    print(f"Group {group.group_values}: {group.count}")
 ```

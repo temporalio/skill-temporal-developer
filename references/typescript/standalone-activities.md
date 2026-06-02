@@ -58,9 +58,13 @@ const connection = await Connection.connect(config.connectionOptions);
 const client = new Client({ connection });
 ```
 
-### Execute with type checking
+### Execute (wait for result)
 
-Call `client.activity.typed<typeof activities>()` to obtain a typed Activity Client interface.  Calling `typed` does not create a new Client object — it only adjusts the type annotation of the existing Client.  Unknown or mistyped Activity names, or wrong argument types, fail at compile time.
+Use `execute` to durably enqueue the Activity, wait for it to run on a Worker, and return the result. The options require `id`, `taskQueue`, and at least one of `startToCloseTimeout` or `scheduleToCloseTimeout`.
+
+#### With type checking
+
+Use when activity definitions are available in this language. Call `client.activity.typed<typeof activities>()` to obtain a typed Activity Client interface. Calling `typed` does not create a new Client object — it only adjusts the type annotation of the existing Client.
 
 ```typescript
 import * as activities from './activities';
@@ -73,6 +77,7 @@ const activityOptions = {
   startToCloseTimeout: '10s',
 };
 
+// In practice, use a meaningful business identifier, like customer or transaction identifier
 const activityId = nanoid();
 
 const result = await activitiesClient.execute('greet', {
@@ -82,65 +87,59 @@ const result = await activitiesClient.execute('greet', {
 });
 ```
 
-### Execute without type checking
+#### Without type checking
 
-Call `execute` or `start` directly on `client.activity` when Activity types aren't available. Neither the Activity name nor argument types are checked client-side.
+Use when activity definitions are unavailable in this language (i.e. you can't import them). Call `execute` directly on `client.activity`.
 
 ```typescript
-await client.activity.execute('greet', {
+const result = await client.activity.execute<string>('greet', {
   ...activityOptions,
   id: activityId,
   args: [1],
 });
 ```
 
-### Start without waiting
+### Start (do not wait for result)
 
-Use `client.activity.start(...)` (or `activitiesClient.start(...)` on the typed interface) to durably enqueue the Activity and get back a handle without waiting for completion.
+Use `activitiesClient.start(...)` (or `client.activity.start<R>(...)` on the untyped interface) to durably enqueue the Activity and get back a handle without waiting for completion. This takes the **exact same arguments as `execute`**.
 
 ```typescript
-const handle = await activitiesClient.start('greet', {
-  ...activityOptions,
-  id: activityId,
-  args: ['Temporal'],
-});
+const handle = await activitiesClient.start(...);
 ```
 
-### Get a handle to an existing Activity
+### Get a handle to an existing Activity execution
 
-Use `client.activity.getHandle<string>(activityId)` to construct a handle to a previously started Standalone Activity.  `getHandle` is not available on the typed interface.  The optional type argument constrains the result type but correctness is not verified.
+Use `client.activity.getHandle<R>(activityId, runId?)` to attach a handle to a previously started Standalone Activity. Omitting `runId` targets the latest run of that Activity ID. `getHandle` is not available on the typed interface, and the optional type argument constrains the result type but isn't verified.
 
 ```typescript
 const newHandle = client.activity.getHandle<string>(activityId);
 ```
 
-The handle can be used to wait for the result, describe, cancel, or terminate the Activity.
-
-### Wait for the result later
-
-`execute` is equivalent to `start` followed by `await handle.result()`.
+### Wait for the result of a handle
 
 ```typescript
-console.log(await handle.result());
+const result = await handle.result();
 ```
 
-### List Standalone Activities
+Calling `execute` is equivalent to `start` followed by `await handle.result()`.
 
-`client.activity.list(query)` returns an `AsyncIterable<ActivityExecutionInfo>` of entries that match a [List Filter](/list-filter) query.  Only Standalone Activity Executions are included; Activities running inside Workflows are not.  Each entry exposes `activityId`, `activityRunId`, `activityType`, `status`, and `closeTime`.
+### List Standalone Activities
 
 ```typescript
 const query = 'TaskQueue="hello-standalone-activities"';
 
-for await (const a of client.activity.list(query)) {
+for await (const a of client.activity.list(query)) { // returns an AsyncIterable<ActivityExecutionInfo>
   console.log(
     `${a.activityId} | ${a.activityRunId} | ${a.activityType} | ${a.status} | ${a.closeTime?.toISOString()}`,
   );
 }
 ```
 
+Only Standalone Activity Executions are returned; Activities running inside Workflows are not included.
+
 ### Count Standalone Activities
 
-`client.activity.count(query)` returns `{ count }` — the total count of executions (running, completed, failed, etc.) matching a List Filter query, not the number of queued tasks.
+Use `client.activity.count(query)` to count matching executions; this takes the **exact same arguments as `list`**.
 
 ```typescript
 const { count } = await client.activity.count(query);

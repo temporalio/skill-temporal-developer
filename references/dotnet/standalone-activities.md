@@ -72,56 +72,49 @@ var client = await TemporalClient.ConnectAsync(connectOptions);
 
 ### Execute (wait for result)
 
-Use `client.ExecuteActivityAsync(...)` to durably enqueue the Activity, wait for it to run on a Worker, and return the result.
+Use `client.ExecuteActivityAsync(...)` to durably enqueue the Activity, wait for it to run on a Worker, and return the result. The activity options require `Id`, `TaskQueue`, and at least one of `ScheduleToCloseTimeout` or `StartToCloseTimeout`.
 
-Lambda form (type-safe):
+#### With type checking
+
+Use when activity definitions are available in this language. Pass a lambda invoking the activity method:
 
 ```csharp
+// In practice, use a meaningful business identifier, like customer or transaction identifier
+var activityId = Guid.NewGuid().ToString();
+
 var result = await client.ExecuteActivityAsync(
     () => MyActivities.ComposeGreetingAsync(new ComposeGreetingInput("Hello", "World")),
-    new("standalone-activity-id", "standalone-activity-sample")
+    new(activityId, "standalone-activity-sample")
     {
         ScheduleToCloseTimeout = TimeSpan.FromSeconds(10),
     });
 ```
 
-String-name form:
+#### Without type checking
+
+Use when activity definitions are unavailable in this language (i.e. you can't import them). Pass the activity type name as a string and an argument array:
 
 ```csharp
 var result = await client.ExecuteActivityAsync<string>(
     "ComposeGreeting",
     new object?[] { new ComposeGreetingInput("Hello", "World") },
-    new("standalone-activity-id", "standalone-activity-sample")
+    new(activityId, "standalone-activity-sample")
     {
         ScheduleToCloseTimeout = TimeSpan.FromSeconds(10),
     });
 ```
 
-### `StartActivityOptions` requirements
+### Start (do not wait for result)
 
-`StartActivityOptions` requires `Id`, `TaskQueue`, and at least one of `ScheduleToCloseTimeout` or `StartToCloseTimeout`.  This is a hard constraint — there is no workaround; you must supply all three.
-
-The options type is `Temporalio.Client.StartActivityOptions`.
-
-### Start (do not wait)
-
-Use `client.StartActivityAsync(...)` to enqueue the Activity and get a handle back without blocking on the result.
+Use `client.StartActivityAsync(...)` to durably enqueue the Activity and get back a handle without waiting for completion. This takes the **exact same arguments as `ExecuteActivityAsync`**.
 
 ```csharp
-var handle = await client.StartActivityAsync(
-    () => MyActivities.ComposeGreetingAsync(new ComposeGreetingInput("Hello", "World")),
-    new("standalone-activity-id", "standalone-activity-sample")
-    {
-        ScheduleToCloseTimeout = TimeSpan.FromSeconds(10),
-    });
-
-// Wait for the result later
-var result = await handle.GetResultAsync();
+var handle = await client.StartActivityAsync(...);
 ```
 
-### Get an existing handle
+### Get a handle to an existing Activity execution
 
-Use `client.GetActivityHandle(...)` to rebind a handle to a previously started Standalone Activity.
+Use `client.GetActivityHandle(...)` to attach a handle to a previously started Standalone Activity. Passing `null` as the run ID (the default) targets the latest run of that Activity ID.
 
 ```csharp
 // Without a known result type
@@ -131,34 +124,30 @@ var handle = client.GetActivityHandle("my-activity-id", runId: "the-run-id");
 var typedHandle = client.GetActivityHandle<string>("my-activity-id", runId: "the-run-id");
 ```
 
-The handle can be used to wait for the result, describe, cancel, or terminate the Activity.
-
-### Await result later
-
-Calling `client.ExecuteActivityAsync()` is equivalent to `client.StartActivityAsync()` followed by `await handle.GetResultAsync()`.
+### Wait for the result of a handle
 
 ```csharp
 var result = await handle.GetResultAsync();
 ```
 
-### List
+Calling `ExecuteActivityAsync` is equivalent to `StartActivityAsync` followed by `await handle.GetResultAsync()`.
 
-Use `client.ListActivitiesAsync(query)` — it returns an `IAsyncEnumerable<ActivityExecution>`.  Only Standalone Activity Executions are returned; Activities running inside Workflows are not included.
+### List Standalone Activities
 
 ```csharp
 await foreach (var info in client.ListActivitiesAsync(
-    "TaskQueue = 'standalone-activity-sample'"))
+    "TaskQueue = 'standalone-activity-sample'")) // returns an IAsyncEnumerable<ActivityExecution>
 {
     Console.WriteLine(
         $"ActivityID: {info.ActivityId}, Type: {info.ActivityType}, Status: {info.Status}");
 }
 ```
 
-The `query` argument uses [List Filter](/list-filter) syntax — e.g. `"ActivityType = 'ComposeGreeting' AND Status = 'Running'"`.
+Only Standalone Activity Executions are returned; Activities running inside Workflows are not included.
 
-### Count
+### Count Standalone Activities
 
-Use `client.CountActivitiesAsync(query)`; the response exposes `Count` (total executions matching the filter — running, completed, failed, etc.; not queued tasks).
+Use `client.CountActivitiesAsync(query)` to count matching executions; this takes the **exact same arguments as `ListActivitiesAsync`**.
 
 ```csharp
 var resp = await client.CountActivitiesAsync(

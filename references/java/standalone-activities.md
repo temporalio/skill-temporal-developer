@@ -48,25 +48,25 @@ ActivityClient client =
         ActivityClientOptions.newBuilder().setNamespace(profile.getNamespace()).build());
 ```
 
-### StartActivityOptions — hard constraints
+### Execute (wait for result)
 
-- `StartActivityOptions` **must** set `id`, `taskQueue`, and at least one of `startToCloseTimeout` or `scheduleToCloseTimeout`.
+Use `client.execute(...)` to durably enqueue the Activity, wait for it to run on a Worker, and return the result. `StartActivityOptions` must set `id`, `taskQueue`, and at least one of `startToCloseTimeout` or `scheduleToCloseTimeout`.
+
+#### With type checking
+
+Use when activity definitions are available in this language. The typed form takes the Activity interface class and an unbound method reference; the SDK infers the Activity type name and result type at runtime.
 
 ```java
+// In practice, use a meaningful business identifier, like customer or transaction identifier
+String activityId = UUID.randomUUID().toString();
+
 StartActivityOptions options =
     StartActivityOptions.newBuilder()
-        .setId(ACTIVITY_ID)
+        .setId(activityId)
         .setTaskQueue(TASK_QUEUE)
         .setStartToCloseTimeout(Duration.ofSeconds(10))
         .build();
-```
 
-### Execute and wait for the result — typed method-reference form
-
-- `client.execute(...)` durably enqueues the Standalone Activity, waits for a Worker to run it, and returns the typed result.
-- The typed form takes the Activity interface class and an unbound method reference; the SDK infers the Activity type name and result type at runtime.
-
-```java
 String result =
     client.execute(
         GreetingActivities.class,
@@ -76,60 +76,45 @@ String result =
         "World");
 ```
 
-### Execute — string-name form
+#### Without type checking
 
-- When you don't have the interface class available, call the Activity by its string type name and pass the result class.
+Use when activity definitions are unavailable in this language (i.e. you can't import them). Call the Activity by its string type name and pass the result class.
 
 ```java
 String result = client.execute("ComposeGreeting", String.class, options, "Hello", "World");
 ```
 
-### Start without waiting — ActivityHandle
+### Start (do not wait for result)
 
-- `client.start(...)` returns an `ActivityHandle<R>` after the Activity is durably enqueued; the call does not wait for the Worker to run it.
-- Block for the result later by calling `handle.getResult()`.
-
-```java
-ActivityHandle<String> handle =
-    client.start(
-        GreetingActivities.class,
-        GreetingActivities::composeGreeting,
-        options,
-        "Hello",
-        "World");
-
-String result = handle.getResult();
-```
-
-### Get a handle to an existing Standalone Activity
-
-- Use `client.getHandle(...)` to attach a typed handle to a previously started Standalone Activity.
-- Passing `null` as the run ID targets the latest run of that Activity ID; the handle can then wait for the result, describe, cancel, or terminate.
+Use `client.start(...)` to durably enqueue the Activity and get back an `ActivityHandle` without waiting for completion. This takes the **exact same arguments as `execute`**.
 
 ```java
-ActivityHandle<String> handle =
-    client.getHandle("standalone-activity-id", null, String.class);
+ActivityHandle<String> handle = client.start(...);
 ```
 
-### Await result later
+### Get a handle to an existing Activity execution
 
-- `handle.getResult()` blocks until the Activity completes and returns the typed result.
-- `handle.getResultAsync()` returns a `CompletableFuture<R>` for non-blocking waits.
+Use `client.getHandle(...)` to attach a typed handle to a previously started Standalone Activity. Passing `null` as the run ID targets the latest run of that Activity ID.
+
+```java
+ActivityHandle<String> handle = client.getHandle("standalone-activity-id", null, String.class);
+```
+
+### Wait for the result of a handle
 
 ```java
 String result = handle.getResult();
+// or, for a non-blocking wait...
 CompletableFuture<String> future = handle.getResultAsync();
 ```
 
-### List Standalone Activity Executions
+Calling `execute` is equivalent to `start` followed by `getResult()`.
 
-- `client.listExecutions(query)` returns a `Stream<ActivityExecutionMetadata>` that fetches pages from the server on demand as the stream is consumed.
-- Only Standalone Activity Executions are returned; Activities running inside Workflows are not included.
-- The query parameter accepts the same List Filter syntax used for Workflow Visibility, for example `ActivityType = 'composeGreeting' AND Status = 'Running'`.
+### List Standalone Activities
 
 ```java
 client
-    .listExecutions("TaskQueue = '" + TASK_QUEUE + "'")
+    .listExecutions("TaskQueue = '" + TASK_QUEUE + "'") // returns a Stream<ActivityExecutionMetadata>
     .forEach(
         info ->
             System.out.printf(
@@ -137,17 +122,13 @@ client
                 info.getActivityId(), info.getActivityType(), info.getStatus()));
 ```
 
-### Count Standalone Activity Executions
+Only Standalone Activity Executions are returned; Activities running inside Workflows are not included.
 
-- `client.countExecutions(query)` returns an `ActivityExecutionCount` exposing `getCount()` and `getGroups()`.
-- Each group exposes `getGroupValues()` and `getCount()`.
-- This is the total count of executions (running, completed, failed, etc.) — not the number of queued tasks.
+### Count Standalone Activities
+
+Use `client.countExecutions(query)` to count matching executions; this takes the **exact same arguments as `listExecutions`**.
 
 ```java
 ActivityExecutionCount resp = client.countExecutions("TaskQueue = '" + TASK_QUEUE + "'");
 System.out.println("Total activities: " + resp.getCount());
-resp.getGroups()
-    .forEach(
-        group ->
-            System.out.println("Group " + group.getGroupValues() + ": " + group.getCount()));
 ```
