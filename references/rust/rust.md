@@ -8,7 +8,7 @@ Rust Workflows are structs plus macro-decorated methods. Activities are async me
 
 ## Quick Start
 
-**Add dependencies:** The official quickstart currently uses the `0.4.0` crate family.
+**Add dependencies:** The [official quickstart](https://docs.temporal.io/develop/rust/quickstart) currently uses the `0.4.0` crate family.
 
 ```toml
 [dependencies]
@@ -196,22 +196,3 @@ my_temporal_app/
 3. **Skipping Activity timeouts** - Set `start_to_close_timeout` or `schedule_to_close_timeout` for each Activity Execution.
 4. **Forgetting `serde` derives** - Workflow and Activity payload types must serialize and deserialize correctly.
 5. **Mixing Worker and Workflow concerns** - Runtime setup, clients, secrets, logging sinks, and environment config belong outside Workflow code.
-
-## Writing Tests
-
-See `references/rust/testing.md` for testing guidance. At minimum, run `cargo test` for app code and an end-to-end worker/starter check against `temporal server start-dev` before trusting a new Workflow path.
-
-## Additional Resources
-
-### Reference Files
-
-- **`references/rust/patterns.md`** - Signals, queries, updates, child Workflows, timers, cancellation, and sagas
-- **`references/rust/determinism.md`** - Workflow replay rules and safe Rust alternatives
-- **`references/rust/determinism-protection.md`** - Runtime nondeterminism detector and its limits
-- **`references/rust/versioning.md`** - Patching, Workflow type versioning, Worker deployment versioning
-- **`references/rust/testing.md`** - Unit, integration, and SDK-repo validation commands
-- **`references/rust/error-handling.md`** - Activity errors, retry policy, timeouts, cancellation, and idempotency
-- **`references/rust/data-handling.md`** - Serde payloads, payload limits, search attributes, codecs, and config
-- **`references/rust/observability.md`** - Tracing, telemetry, heartbeats, and visibility
-- **`references/rust/gotchas.md`** - Rust-specific mistakes and anti-patterns
-- **`references/rust/advanced-features.md`** - Schedules, local Activities, worker tuning, interceptors, Nexus, and WASM notes
