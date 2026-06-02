@@ -215,3 +215,5 @@ public class MyWorkflow
 3. Encrypt sensitive data with `IPayloadCodec`
 4. Use `Workflow.NewGuid()` and `Workflow.Random` for deterministic values
 5. Use camelCase converter if interoperating with other SDKs
+
+For the serialization-context object that other SDKs pass to External Storage drivers — and the current .NET coverage gap — see `references/dotnet/serialization-context.md`.

@@ -73,6 +73,8 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
   - Language-specific info at `references/{your_language}/versioning.md`
 - **`references/core/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview)
   - Language-specific info at `references/{your_language}/standalone-activities.md`
+- **`references/core/serialization-context.md`** - Serialization context: External Storage drivers receive a context with namespace + Workflow/Activity identity, including a Standalone-Activity branch (Public Preview)
+  - Language-specific info at `references/{your_language}/serialization-context.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries

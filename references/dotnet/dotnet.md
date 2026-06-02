@@ -201,3 +201,4 @@ See `references/dotnet/testing.md` for info on writing tests.
 - **`references/dotnet/versioning.md`** — Patching API, workflow type versioning, Worker Versioning
 - **`references/dotnet/standalone-activities.md`** — Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
 - **`references/dotnet/determinism-protection.md`** — Runtime task detection, .NET Task determinism rules
+- **`references/dotnet/serialization-context.md`** — Serialization context for External Storage drivers. .NET docs are currently silent on this surface; the file is a placeholder with `` markers. Concept overview at `references/core/serialization-context.md`.

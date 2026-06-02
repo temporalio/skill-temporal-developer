@@ -59,7 +59,6 @@ require_relative 'activities/my_activity'
 
 Transient network errors should be retried. Authentication errors should not be. See `references/ruby/error-handling.md` to understand how to classify errors with `non_retryable: true` and `non_retryable_error_types`.
 
-
 ## Heartbeating
 
 ### Forgetting to Heartbeat Long Activities

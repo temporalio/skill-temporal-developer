@@ -164,7 +164,6 @@ Note that the initial run context comes from the `context=...` argument you pass
 
 In addition, since a `@function_tool` runs in the workflow, they can also call Temporal activities or other durable primitives themselves.
 
-
 **Don't put I/O, system clock, or sources of randomness inside a `@function_tool` body.** Make it an `@activity.defn` and wrap with `activity_as_tool` instead.
 
 ### Picking between the two

@@ -230,3 +230,5 @@ class MyWorkflow:
 3. Encrypt sensitive data with PayloadCodec
 4. Use dataclasses for simple data structures
 5. Use `workflow.uuid4()` and `workflow.random()` for deterministic values
+
+For External Storage drivers that need the owning Workflow or Standalone-Activity identity, see `references/python/serialization-context.md`.

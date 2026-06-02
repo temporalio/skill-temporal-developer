@@ -262,3 +262,5 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 3. Keep payloads small -- see `references/core/gotchas.md` for limits
 4. Use `PayloadCodec` for encryption; never store sensitive data unencrypted
 5. Configure the same data converter on both client and worker
+
+For External Storage drivers that need the owning Workflow or Standalone-Activity identity, see `references/go/serialization-context.md`.
