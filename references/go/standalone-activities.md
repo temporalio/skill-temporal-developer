@@ -3,20 +3,19 @@
 
 ## Overview
 
-Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the Go SDK specific APIs for calling Standalone Activities.
+Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
 
-In Go, you start a Standalone Activity from a Temporal Client with `client.ExecuteActivity()` instead of from inside a Workflow with `workflow.ExecuteActivity()`.  The Activity definition and Worker registration are identical to regular Activities; only the execution path differs.
+Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the Go SDK specific APIs for calling Standalone Activities.
 
 ## Prerequisites
 
 - Temporal Go SDK v1.41.0 or higher.
-- Go 1.22+.
 - Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. The Temporal Dev Server has Standalone Activities enabled by default.
 - For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
 
 ## Hosting Activities on a Worker
 
-Running a Worker for Standalone Activities is identical to running a Worker for Workflow-driven Activities — create a Worker, register the Activity, and call `Run()`. The Worker does not need to know whether the Activity will be invoked from a Workflow or as a Standalone Activity.
+The Activity is defined just as activities normally are in Temporal. Worker registration is also the same.
 
 ```go
 package main
@@ -49,20 +48,21 @@ func main() {
 
 ## Calling and managing Standalone Activities
 
-All Standalone Activity calls go through the Temporal `Client`. Use the operations below from your application code (for example, a starter program), not from inside a Workflow Definition.
+Start and manage Standalone Activities from your application code using the Temporal `Client`.
 
 ### Do not call from inside a Workflow
 
-Don't call `client.ExecuteActivity` from inside a Workflow Definition — use `workflow.ExecuteActivity(ctx, ...)` instead.
+Don't call `client.ExecuteActivity` or any other Standalone Activity APIs from inside a Workflow Definition — use Workflow-side activity invocation (`workflow.ExecuteActivity(ctx, ...)`) instead.
 
 ### Connect a Client
 
-Use `envconfig.MustLoadDefaultClientOptions()` so the same code runs against a local dev server and Temporal Cloud with no changes.
+The Standalone Activity operations are methods on a connected `Client`. The examples below assume this client `c`.
 
 ```go
 import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/envconfig"
+	"context"
 )
 
 c, err := client.Dial(envconfig.MustLoadDefaultClientOptions())
@@ -72,11 +72,17 @@ if err != nil {
 defer c.Close()
 ```
 
-### Execute (start and get a handle)
+### Execute a Standalone Activity
 
-`client.ExecuteActivity()` returns an `ActivityHandle` immediately — it does not wait for completion.  To wait for the result, call `handle.Get(ctx, &out)` (see [Wait for the result of a handle](#wait-for-the-result-of-a-handle) below). There is no separate `Start` function in the Go SDK; `ExecuteActivity` is the only entry point.
+Use `client.ExecuteActivity(...)` to durably enqueue the Activity. It then returns an `ActivityHandle` immediately — it does not wait for completion. After that, call `handle.Get(ctx, &out)` to wait for the result. There is no separate `Start` function in the Go SDK; `ExecuteActivity` is the only entry point.
 
 `client.StartActivityOptions` requires `ID`, `TaskQueue`, and at least one of `ScheduleToCloseTimeout` or `StartToCloseTimeout`.
+
+#### With type checking
+
+Use when activity definitions are available in this language. Pass the activity function reference.
+
+Pass the Activity as a function reference:
 
 ```go
 activityOptions := client.StartActivityOptions{
@@ -91,27 +97,44 @@ if err != nil {
 }
 
 log.Println("Started", "ActivityID", handle.GetID(), "RunID", handle.GetRunID())
-```
 
-#### With type checking
-
-Pass the Activity as a function reference:
-
-```go
-handle, err := c.ExecuteActivity(ctx, options, helloworld.Activity, "Temporal")
+var result string
+err := handle.Get(context.Background(), &result)
+if err != nil {
+	log.Fatalln("Activity failed", err)
+}
+log.Println("Activity result:", result)
 ```
 
 #### Without type checking
 
-Pass the Activity type name as a string — useful when the starter cannot import the Activity package:
+Use when activity definitions are unavailable in this language (i.e. you can't import them). Pass the activity type name as a string.
 
 ```go
-handle, err := c.ExecuteActivity(ctx, options, "Activity", "Temporal")
+activityOptions := client.StartActivityOptions{
+	ID:                     "send-welcome-email:user-42",
+	TaskQueue:              "standalone-activity-helloworld",
+	ScheduleToCloseTimeout: 10 * time.Second,
+}
+
+handle, err := c.ExecuteActivity(context.Background(), activityOptions, "Activity", "Temporal")
+if err != nil {
+	log.Fatalln("Unable to execute activity", err)
+}
+
+log.Println("Started", "ActivityID", handle.GetID(), "RunID", handle.GetRunID())
+
+var result string
+err := handle.Get(context.Background(), &result)
+if err != nil {
+	log.Fatalln("Activity failed", err)
+}
+log.Println("Activity result:", result)
 ```
 
 ### Get a handle to an existing Activity execution
 
-Use `client.GetActivityHandle()` to rebind a handle to a previously started Standalone Activity. Both `ActivityID` and `RunID` are required.
+Use `client.GetActivityHandle()` to attach a handle to a previously started Standalone Activity. Both `ActivityID` and `RunID` are required.
 
 ```go
 handle := c.GetActivityHandle(client.GetActivityHandleOptions{
@@ -137,8 +160,6 @@ Calling `ExecuteActivity` and then `handle.Get(ctx, &out)` is the Go equivalent 
 
 ### List Standalone Activities
 
-Use `client.ListActivities()` with a [List Filter](https://docs.temporal.io/list-filter) query. The result's `Results` field is a range-over-func iterator that yields `(ActivityExecutionInfo, error)` pairs.
-
 ```go
 resp, err := c.ListActivities(context.Background(), client.ListActivitiesOptions{
 	Query: "TaskQueue = 'standalone-activity-helloworld'",
@@ -147,7 +168,7 @@ if err != nil {
 	log.Fatalln("Unable to list activities", err)
 }
 
-for info, err := range resp.Results {
+for info, err := range resp.Results { // a range-over-func iterator that yields `(ActivityExecutionInfo, error)` pairs.
 	if err != nil {
 		log.Fatalln("Error iterating activities", err)
 	}
@@ -160,7 +181,7 @@ Only Standalone Activity Executions are returned; Activities running inside Work
 
 ### Count Standalone Activities
 
-Use `client.CountActivities()` with the same arguments as `ListActivities`. `resp.Count` is the total count of matching executions (running, completed, failed, etc.) — not the number of queued tasks.
+Use `client.CountActivities()` to count matching executions; this takes the **exact same arguments as `ListActivities`**.
 
 ```go
 resp, err := c.CountActivities(context.Background(), client.CountActivitiesOptions{
