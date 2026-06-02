@@ -134,7 +134,7 @@ client = await Client.connect(
 
 - The only field is `resolution_interval_millis: int = 30000`  — how often to re-resolve DNS, in milliseconds.
 - `DnsLoadBalancingConfig.default`  is a pre-built instance with the default 30-second interval.
-- `dns_load_balancing_config` defaults to 30 seconds if you don't pass anything explicitly. 
+- `dns_load_balancing_config` defaults to 30 seconds if you don't pass anything explicitly.
 - Pass `dns_load_balancing_config=None` to disable DNS load balancing entirely.
 
 ### Mutual exclusion with HTTP CONNECT proxy
