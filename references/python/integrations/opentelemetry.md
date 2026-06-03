@@ -2,10 +2,9 @@
 
 ## Overview
 
-`temporalio.contrib.opentelemetry` ships two ways to wire OpenTelemetry tracing into Temporal:
-the new `OpenTelemetryPlugin` (recommended, experimental) and the legacy `TracingInterceptor` (stable).
+`temporalio.contrib.opentelemetry` wires OpenTelemetry tracing into Temporal through the `OpenTelemetryPlugin`.
 
-Both propagate W3C TraceContext + W3C Baggage through Temporal headers across Client, Workflow, Activity, Child Workflow, and Nexus boundaries.
+It propagates W3C TraceContext + W3C Baggage through Temporal headers across Client, Workflow, Activity, Child Workflow, and Nexus boundaries.
 
 For non-OTel observability (metrics, logging, telemetry runtime) read `references/python/observability.md`.
 For trace propagation through `client.start_activity` / `client.execute_activity` see `references/python/standalone-activities.md`.
@@ -13,7 +12,7 @@ For trace propagation through `client.start_activity` / `client.execute_activity
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-`OpenTelemetryPlugin` is marked experimental in its docstring; `TracingInterceptor` is stable.
+`OpenTelemetryPlugin` is marked experimental in its docstring.
 
 ## Install
 
@@ -25,23 +24,15 @@ The extra is `opentelemetry`. `uv add temporalio[opentelemetry]` works too.
 
 ## Public API
 
-All five symbols are re-exported from `temporalio.contrib.opentelemetry`.
+All three symbols are re-exported from `temporalio.contrib.opentelemetry`.
 
 | Symbol | Purpose |
 |---|---|
-| `OpenTelemetryPlugin` | New, recommended Client plugin; installs `OpenTelemetryInterceptor` and adds `opentelemetry` sandbox passthrough.  |
+| `OpenTelemetryPlugin` | Client plugin; installs `OpenTelemetryInterceptor` and adds `opentelemetry` sandbox passthrough.  |
 | `OpenTelemetryInterceptor` | Underlying interceptor used by `OpenTelemetryPlugin`; requires the global tracer provider be a `ReplaySafeTracerProvider`.  |
-| `TracingInterceptor` | Legacy stable interceptor — register on `Client.connect(interceptors=...)`.  |
-| `TracingWorkflowInboundInterceptor` | Workflow-side half of the legacy interceptor; subclass it only when customizing header key, propagator, or payload converter.  |
 | `create_tracer_provider` | Builds a `ReplaySafeTracerProvider`; required when using `OpenTelemetryPlugin`.  |
 
-## Pick a registration path
-
-- Use `OpenTelemetryPlugin` (new, recommended) for new code: accurate workflow span durations and direct `opentelemetry.trace.get_tracer(...)` usage inside workflows.
-- Use `TracingInterceptor` (legacy, stable) when you need immediate span visibility before workflow completion or a non-experimental API.
-- Do not register both on the same Client.
-
-## `OpenTelemetryPlugin` (recommended)
+## `OpenTelemetryPlugin`
 
 Build a `ReplaySafeTracerProvider` with `create_tracer_provider()`, attach span processors, set it as the global tracer provider, then connect with `plugins=[OpenTelemetryPlugin()]`. Workers created from the returned Client inherit the plugin automatically.
 
@@ -94,46 +85,6 @@ class MyWorkflow:
             )
 ```
 
-## `TracingInterceptor` (legacy)
-
-Register on the Client. Workers built from that Client inherit the interceptor.
-
-```python
-from temporalio.client import Client
-from temporalio.contrib.opentelemetry import TracingInterceptor
-from temporalio.worker import Worker
-
-client = await Client.connect(
-    "localhost:7233",
-    interceptors=[TracingInterceptor()],
-)
-
-worker = Worker(
-    client,
-    task_queue="my-task-queue",
-    workflows=[MyWorkflow],
-    activities=[my_activity],
-)
-```
-
-Constructor: `TracingInterceptor(tracer: opentelemetry.trace.Tracer | None = None, *, always_create_workflow_spans: bool = False)`. `tracer` defaults to `opentelemetry.trace.get_tracer(__name__)`. `always_create_workflow_spans=True` creates workflow spans even without an upstream client span (risk: orphaned spans after replay).
-
-Inside a Workflow, standard `opentelemetry.trace` APIs do not work correctly. Use `temporalio.contrib.opentelemetry.workflow.completed_span(...)`. Workflow spans have zero duration.
-
-```python
-import temporalio.contrib.opentelemetry.workflow as otel_workflow
-from temporalio import workflow
-
-@workflow.defn
-class MyWorkflow:
-    @workflow.run
-    async def run(self) -> None:
-        otel_workflow.completed_span(
-            "workflow-operation",
-            attributes={"business.unit": "payments", "request.id": "req-123"},
-        )
-```
-
 ## Standalone Activities
 
 Trace context propagates through `client.start_activity` and `client.execute_activity` via Temporal headers, the same way it propagates from a Workflow. The client outbound's `start_activity(input: StartActivityInput)` opens a `StartActivity:{activity_type}` span (kind=CLIENT) and injects context into `input.headers`; the activity-side `_TracingActivityInboundInterceptor.execute_activity` extracts that context from `input.headers` and opens a `RunActivity:{activity_type}` span (kind=SERVER).
@@ -142,26 +93,18 @@ See `references/python/standalone-activities.md`.
 
 ## Nexus
 
-`OpenTelemetryInterceptor.intercept_nexus_operation` (and the legacy `TracingInterceptor`'s equivalent) wraps inbound Nexus handlers with `RunStartNexusOperationHandler:{service}/{operation}` and `RunCancelNexusOperationHandler:{service}/{operation}` spans (kind=SERVER), extracting context from Nexus operation headers.
+`OpenTelemetryInterceptor.intercept_nexus_operation` wraps inbound Nexus handlers with `RunStartNexusOperationHandler:{service}/{operation}` and `RunCancelNexusOperationHandler:{service}/{operation}` spans (kind=SERVER), extracting context from Nexus operation headers.
 
 See `https://github.com/temporalio/samples-python/tree/main/open_telemetry`.
 
-## Migration from `TracingInterceptor` to `OpenTelemetryPlugin`
-
-1. Replace `interceptors=[TracingInterceptor()]` on `Client.connect` with `plugins=[OpenTelemetryPlugin()]`, and add `create_tracer_provider()` + `opentelemetry.trace.set_tracer_provider(provider)` before connecting.
-2. Replace `temporalio.contrib.opentelemetry.workflow.completed_span("my-span")` calls inside workflows with `tracer = get_tracer(__name__)` + `with tracer.start_as_current_span("my-span"):`.
-3. Re-verify any monitoring or analysis tools that depend on the legacy trace structure — span shapes change.
-
 ## Common mistakes
 
-- **Registering the same plugin or interceptor on both Client and Worker.** Register on the Client only; Workers inherit.
-- **Mixing `OpenTelemetryPlugin` and `TracingInterceptor`.** They are two paths; pick one.
+- **Registering the same plugin on both Client and Worker.** Register on the Client only; Workers inherit.
 - **Calling `Client.connect` before `opentelemetry.trace.set_tracer_provider(provider)`.** With `OpenTelemetryPlugin`, the workflow interceptor factory raises `ValueError("When using OpenTelemetryPlugin, the global trace provider must be a ReplaySafeTracerProvider. Use init_tracer_provider to create one.")`.
 - **Building a plain `opentelemetry.sdk.trace.TracerProvider` and passing it to `set_tracer_provider`.** `OpenTelemetryPlugin` requires `ReplaySafeTracerProvider` — build it via `create_tracer_provider(...)`.
 - **Using `addTemporalSpans=True` or other camelCase.** The parameter is `add_temporal_spans` (Python snake_case).
 - **Passing the install extra as `temporalio[otel]`.** The extra is `opentelemetry`.
-- **Calling `get_tracer().start_as_current_span` inside a Workflow with only `TracingInterceptor` registered.** That path requires `OpenTelemetryPlugin`; under the legacy interceptor use `temporalio.contrib.opentelemetry.workflow.completed_span(...)` instead.
-- **Adding `with_passthrough_modules("opentelemetry")` to a `SandboxedWorkflowRunner` manually when using the plugin.** The plugin already does this.
+- **Adding `with_passthrough_modules("opentelemetry")` to a `SandboxedWorkflowRunner` manually.** The plugin already does this.
 
 ## Resources
 

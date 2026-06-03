@@ -46,7 +46,7 @@ Peer packages this integration normally needs:
 | `OpenTelemetryWorkflowExporter` | type | `@temporalio/interceptors-opentelemetry` |
 | `SerializableSpan` | type | `@temporalio/interceptors-opentelemetry` |
 
-## Register via the plugin (recommended)
+## Register via the plugin
 
 Construct one `OpenTelemetryPlugin` instance and pass it to BOTH `bundleWorkflowCode({ plugins })` and `Worker.create({ plugins })` so the Workflow-side interceptors are included in the bundle.
 
