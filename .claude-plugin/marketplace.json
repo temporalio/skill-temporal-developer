@@ -1,0 +1,14 @@
+{
+  "name": "temporal",
+  "owner": {
+    "name": "Temporal Technologies Inc.",
+    "url": "https://temporal.io"
+  },
+  "plugins": [
+    {
+      "name": "temporal-developer",
+      "source": "./",
+      "description": "Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET and Ruby."
+    }
+  ]
+}

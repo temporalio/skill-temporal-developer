@@ -1,0 +1,14 @@
+{
+  "name": "temporal-developer",
+  "version": "0.5.0",
+  "description": "Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET and Ruby.",
+  "author": {
+    "name": "Temporal Technologies Inc.",
+    "url": "https://temporal.io"
+  },
+  "homepage": "https://github.com/temporalio/skill-temporal-developer",
+  "repository": "https://github.com/temporalio/skill-temporal-developer",
+  "license": "MIT",
+  "keywords": ["temporal", "durable-execution", "workflows", "activities", "workers"],
+  "skills": ["./"]
+}

@@ -18,6 +18,29 @@ This skill is packaged as a plugin for major coding agents, which provides a sim
 
 See each repo's README for installation instructions.
 
+<details>
+<summary><b>Install the Claude Code plugin directly from this repo</b></summary>
+
+This repository ships its own Claude Code marketplace, so you can install the plugin without the separate wrapper repo. From within Claude Code:
+
+1. Add this repo as a marketplace:
+
+   ```
+   /plugin marketplace add temporalio/skill-temporal-developer
+   ```
+
+2. Install the plugin from it:
+
+   ```
+   /plugin install temporal-developer@temporal
+   ```
+
+3. Confirm the `temporal-developer` skill is available (e.g. via `/plugin` or by listing skills).
+
+To update later, re-run `/plugin marketplace update temporal` and reinstall.
+
+</details>
+
 ### Standalone Installation
 
 If you prefer to install the skill directly without the plugin wrapper:
