@@ -2,7 +2,7 @@
 
 ## Overview
 
-`@temporalio/interceptors-opentelemetry` is a contrib package for the Temporal TypeScript SDK that ships an `OpenTelemetryPlugin` plus per-tier interceptors for tracing Workflow Executions, Child Workflows, Activity invocations, Nexus Operations, and Client `start`/`signal` calls with OpenTelemetry.
+`@temporalio/interceptors-opentelemetry` is a contrib package for the Temporal TypeScript SDK that ships an `OpenTelemetryPlugin` plus per-tier interceptors for tracing Workflow Executions, Child Workflows, Activity invocations, and Client `start`/`signal` calls with OpenTelemetry.
 
 Workflow-side spans are emitted out of the Workflow isolate through an injected Sink (`makeWorkflowExporter`) that hands serialized spans to a host-side `SpanProcessor`.
 
@@ -34,8 +34,6 @@ Peer packages this integration normally needs:
 | `OpenTelemetryWorkflowClientCallsInterceptor` | `@deprecated` alias of above | `@temporalio/interceptors-opentelemetry` |
 | `OpenTelemetryActivityInboundInterceptor` | class (Activity) | `@temporalio/interceptors-opentelemetry` |
 | `OpenTelemetryActivityOutboundInterceptor` | class (Activity) | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryNexusInboundInterceptor` | class (Nexus) | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryNexusOutboundInterceptor` | class (Nexus) | `@temporalio/interceptors-opentelemetry` |
 | `OpenTelemetryInboundInterceptor` | class (Workflow inbound) | `@temporalio/interceptors-opentelemetry` |
 | `OpenTelemetryOutboundInterceptor` | class (Workflow outbound) | `@temporalio/interceptors-opentelemetry` |
 | `OpenTelemetryInternalsInterceptor` | class (Workflow internals) | `@temporalio/interceptors-opentelemetry` |
@@ -101,8 +99,8 @@ const client = new Client({
 | Field | Type | Required | Purpose |
 |---|---|---|---|
 | `resource` | `Resource` (`@opentelemetry/resources`) | Yes | Resource attributes attached to exported spans. |
-| `spanProcessor` | `SpanProcessor` (`@opentelemetry/sdk-trace-base`) | Yes | Receives Workflow, Activity, Client, and Nexus spans. |
-| `tracer` | `otel.Tracer` (`@opentelemetry/api`) | No | Override the tracer used by Client/Activity/Nexus interceptors; defaults to `otel.trace.getTracer('@temporalio/interceptor-client'|'-activity'|'-nexus')`. |
+| `spanProcessor` | `SpanProcessor` (`@opentelemetry/sdk-trace-base`) | Yes | Receives Workflow, Activity, and Client spans. |
+| `tracer` | `otel.Tracer` (`@opentelemetry/api`) | No | Override the tracer used by Client/Activity interceptors; defaults to `otel.trace.getTracer('@temporalio/interceptor-client'|'-activity')`. |
 
 ## Trace context propagation
 
@@ -139,9 +137,6 @@ propagation.setGlobalPropagator(
 | `ACTIVITY_START` | `StartActivity` | Workflow outbound `scheduleActivity` / `scheduleLocalActivity` |
 | `ACTIVITY_EXECUTE` | `RunActivity` | Activity inbound `execute` |
 | `CONTINUE_AS_NEW` | `ContinueAsNew` | Workflow outbound `continueAsNew` |
-| `NEXUS_OPERATION_START` | `StartNexusOperation` | Workflow outbound `startNexusOperation` |
-| `NEXUS_START_OPERATION_EXECUTE` | `RunStartNexusOperation` | Nexus inbound `startOperation` |
-| `NEXUS_CANCEL_OPERATION_EXECUTE` | `RunCancelNexusOperation` | Nexus inbound `cancelOperation` |
 
 ## Standalone Activities
 
@@ -149,15 +144,9 @@ propagation.setGlobalPropagator(
 
 For Standalone Activities themselves read `references/typescript/standalone-activities.md`.
 
-## Nexus
-
-`OpenTelemetryNexusInboundInterceptor` wraps inbound `startOperation` and `cancelOperation`, extracting parent context from `input.ctx.headers` and tagging spans with `NEXUS_SERVICE_ATTR_KEY` / `NEXUS_OPERATION_ATTR_KEY`. `OpenTelemetryNexusOutboundInterceptor` emits `trace_id` / `span_id` / `trace_flags` on log attributes and metric tags when a valid span context is active.
-
-OpenTelemetry is the supported tracing path for Nexus in TypeScript; see the [`interceptors-opentelemetry`](https://github.com/temporalio/samples-typescript/tree/main/interceptors-opentelemetry) sample.
-
 ## Log and metric correlation
 
-When a valid OTel span context is active during an Activity, Workflow, or Nexus call, the outbound interceptors merge three keys — `trace_id`, `span_id`, `trace_flags` — into the result of `getLogAttributes` (used by `log.*`) and `getMetricTags` (used by worker metric tags). `trace_flags` is formatted as `0${spanContext.traceFlags.toString(16)}`.
+When a valid OTel span context is active during an Activity or Workflow call, the outbound interceptors merge three keys — `trace_id`, `span_id`, `trace_flags` — into the result of `getLogAttributes` (used by `log.*`) and `getMetricTags` (used by worker metric tags). `trace_flags` is formatted as `0${spanContext.traceFlags.toString(16)}`.
 
 ## Common mistakes
 

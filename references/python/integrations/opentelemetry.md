@@ -4,7 +4,7 @@
 
 `temporalio.contrib.opentelemetry` wires OpenTelemetry tracing into Temporal through the `OpenTelemetryPlugin`.
 
-It propagates W3C TraceContext + W3C Baggage through Temporal headers across Client, Workflow, Activity, Child Workflow, and Nexus boundaries.
+It propagates W3C TraceContext + W3C Baggage through Temporal headers across Client, Workflow, Activity, and Child Workflow boundaries.
 
 For non-OTel observability (metrics, logging, telemetry runtime) read `references/python/observability.md`.
 For trace propagation through `client.start_activity` / `client.execute_activity` see `references/python/standalone-activities.md`.
@@ -90,12 +90,6 @@ class MyWorkflow:
 Trace context propagates through `client.start_activity` and `client.execute_activity` via Temporal headers, the same way it propagates from a Workflow. The client outbound's `start_activity(input: StartActivityInput)` opens a `StartActivity:{activity_type}` span (kind=CLIENT) and injects context into `input.headers`; the activity-side `_TracingActivityInboundInterceptor.execute_activity` extracts that context from `input.headers` and opens a `RunActivity:{activity_type}` span (kind=SERVER).
 
 See `references/python/standalone-activities.md`.
-
-## Nexus
-
-`OpenTelemetryInterceptor.intercept_nexus_operation` wraps inbound Nexus handlers with `RunStartNexusOperationHandler:{service}/{operation}` and `RunCancelNexusOperationHandler:{service}/{operation}` spans (kind=SERVER), extracting context from Nexus operation headers.
-
-See `https://github.com/temporalio/samples-python/tree/main/open_telemetry`.
 
 ## Common mistakes
 
