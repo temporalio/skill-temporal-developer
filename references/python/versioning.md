@@ -327,29 +327,44 @@ temporal workflow list --query \
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For long-running Pinned Workflows that use Continue-as-New, the Workflow can detect when a new Target Worker Deployment Version becomes available and continue-as-new onto it without patching. See `references/core/versioning.md` for the conceptual model — this section covers the Python-specific API.
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `workflow.info()` and continue-as-new with `ContinueAsNewVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version. See `references/core/versioning.md` for the conceptual model.
 
-### What the docs say
+### Detecting the Target Version change
 
-The published Temporal docs only show a Go code sample for this feature.  The two facts the docs commit to for *all* SDKs are:
+`workflow.info().is_target_worker_deployment_version_changed()` returns `True` when a new Current or Ramping Version is available for this Workflow's Worker Deployment.  The flag is refreshed after each Workflow Task completes.
 
-- A new Worker Deployment Version becoming Current or Ramping is surfaced to active Workflows as a "target Worker Deployment Version changed" signal on the per-Workflow info object.
-- To opt into upgrading at the next Continue-as-New boundary, the Workflow passes an `InitialVersioningBehavior` of `AutoUpgrade` to the Continue-as-New call so the new run starts on the Target Version.
+Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
 
-### Pattern (Python)
+### Continue-as-new with upgrade
+
+Call `workflow.continue_as_new` with `initial_versioning_behavior=ContinueAsNewVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version of its Worker Deployment.
 
 ```python
-# Inside a @workflow.run method on a Pinned Workflow Type:
-#   - Periodically (between Activities, Updates, or child Workflows) check whether
-#     a new Target Worker Deployment Version is available on workflow.info().
-#   - If it is, raise the SDK's Continue-as-New exception with the new run's
-#     initial versioning behavior set to AutoUpgrade so the new run picks up
-#     the Target Version. The Workflow Type itself stays annotated Pinned.
+from datetime import timedelta
+
+from temporalio import workflow
+from temporalio.workflow import ContinueAsNewVersioningBehavior
+
+
+@workflow.defn
+class ContinueAsNewWithVersionUpgrade:
+    @workflow.run
+    async def run(self, attempt: int) -> str:
+        if attempt > 0:
+            return "v1.0"
+
+        while True:
+            await workflow.sleep(timedelta(milliseconds=10))
+            if workflow.info().is_target_worker_deployment_version_changed():
+                workflow.continue_as_new(
+                    attempt + 1,
+                    initial_versioning_behavior=ContinueAsNewVersioningBehavior.AUTO_UPGRADE,
+                )
 ```
 
 ### Limitations
 
-- **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check the flag.
+- **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check `is_target_worker_deployment_version_changed`.
 - **Workflow input must remain compatible across versions.** The new version's Workflow definition must accept the previous version's input; otherwise the new run may fail on its first Workflow Task.
 - **Pinned Workflow Types only.** Auto-Upgrade Workflows move at Workflow Task boundaries already; the upgrade-on-CaN pattern adds nothing for them.
 

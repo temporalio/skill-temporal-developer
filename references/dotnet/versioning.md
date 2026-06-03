@@ -301,31 +301,53 @@ temporal workflow list --query \
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For long-running Pinned Workflows that use Continue-as-New, the Workflow can detect when a new Target Worker Deployment Version becomes available and continue-as-new onto it without patching. See `references/core/versioning.md` for the conceptual model — this section covers the .NET-specific API.
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.TargetWorkerDeploymentVersionChanged` and continue-as-new with `InitialVersioningBehavior.AutoUpgrade` so the new run starts on the Target Version. See `references/core/versioning.md` for the conceptual model.
 
-### What the docs say
+### Detecting the Target Version change
 
-The published Temporal docs only show a Go code sample for this feature.  The two facts the docs commit to for *all* SDKs are:
+`Workflow.TargetWorkerDeploymentVersionChanged` is `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment.  The flag is refreshed after each Workflow Task completes.
 
-- A new Worker Deployment Version becoming Current or Ramping is surfaced to active Workflows as a "target Worker Deployment Version changed" signal on the per-Workflow info object.
-- To opt into upgrading at the next Continue-as-New boundary, the Workflow passes an `InitialVersioningBehavior` of `AutoUpgrade` to the Continue-as-New call so the new run starts on the Target Version.
+Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
 
-### Pattern (.NET)
+### Continue-as-new with upgrade
+
+Throw the exception from `Workflow.CreateContinueAsNewException`, passing a `ContinueAsNewOptions` whose `InitialVersioningBehavior` is `AutoUpgrade`, so the new run starts on the Target Version of its Worker Deployment.
 
 ```csharp
-// Inside a [WorkflowRun] method on a Pinned Workflow Type:
-//   - Periodically (between Activities, Updates, or child Workflows) check
-//     whether a new Target Worker Deployment Version is available on
-//     Workflow.Info.
-//   - If it is, call Workflow.ContinueAsNewAsync with the new run's initial
-//     versioning behavior set to AutoUpgrade so the new run picks up the
-//     Target Version. The Workflow Type itself stays annotated
-//     [Workflow(VersioningBehavior = VersioningBehavior.Pinned)].
+using Temporalio.Common;
+using Temporalio.Workflows;
+
+[Workflow]
+public class ContinueAsNewWithVersionUpgrade
+{
+    [WorkflowRun]
+    public async Task<string> RunAsync(int attempt)
+    {
+        if (attempt > 0)
+        {
+            return "v1.0";
+        }
+
+        while (true)
+        {
+            await Workflow.DelayAsync(TimeSpan.FromMilliseconds(10));
+            if (Workflow.TargetWorkerDeploymentVersionChanged)
+            {
+                throw Workflow.CreateContinueAsNewException(
+                    (ContinueAsNewWithVersionUpgrade wf) => wf.RunAsync(attempt + 1),
+                    new ContinueAsNewOptions
+                    {
+                        InitialVersioningBehavior = InitialVersioningBehavior.AutoUpgrade,
+                    });
+            }
+        }
+    }
+}
 ```
 
 ### Limitations
 
-- **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check the flag.
+- **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check `TargetWorkerDeploymentVersionChanged`.
 - **Workflow input must remain compatible across versions.** The new version's Workflow definition must accept the previous version's input; otherwise the new run may fail on its first Workflow Task.
 - **Pinned Workflow Types only.** Auto-Upgrade Workflows move at Workflow Task boundaries already; the upgrade-on-CaN pattern adds nothing for them.
 
