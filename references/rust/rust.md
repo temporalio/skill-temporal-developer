@@ -176,4 +176,4 @@ my_temporal_app/
 
 ## Rust-Specific References Status
 
-Rust-specific local reference files do not exist yet. For deeper Rust SDK details, use the official Rust SDK docs, docs.rs, and `sdk-rust` examples. For SDK-neutral Temporal concepts, use the core references under `references/core/`.
+Rust-specific local reference files do not exist yet. For deeper Rust SDK details, use the official Rust SDK docs, docs.rs, and [`sdk-rust` examples](https://github.com/temporalio/sdk-rust/tree/main/crates/sdk/examples). For SDK-neutral Temporal concepts, use the core references under `references/core/`.
