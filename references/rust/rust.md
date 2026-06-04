@@ -171,9 +171,8 @@ my_temporal_app/
 ## Common Pitfalls
 
 1. **Calling I/O from a Workflow** - Put network, database, filesystem, process calls, and other side effects in Activities.
-2. **Skipping Activity timeouts** - Set a timeout such as `start_to_close_timeout` for each Activity Execution.
-3. **Mixing Worker and Workflow concerns** - Runtime setup, clients, secrets, environment config, and external logging sinks belong outside Workflow code.
-4. **Assuming APIs are stable** - The Rust SDK is Public Preview, so check official docs, docs.rs, and SDK examples before naming exact APIs.
+2. **Mixing Worker and Workflow concerns** - Runtime setup, clients, secrets, environment config, and external logging sinks belong outside Workflow code.
+3. **Assuming APIs are stable** - The Rust SDK is Public Preview, so check official docs, docs.rs, and SDK examples before naming exact APIs.
 
 ## Rust-Specific References Status
 
