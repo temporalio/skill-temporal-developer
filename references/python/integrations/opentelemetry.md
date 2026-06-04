@@ -11,7 +11,7 @@ For non-OTel observability (metrics, logging) read `references/python/observabil
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-## Install
+## Install the plugin
 
 Modify your dependency on the `temporalio` package to add the `opentelemetry` extra, e.g. `uv add temporalio[opentelemetry]` or whatever is appropriate for your package manager.
 
@@ -45,7 +45,7 @@ worker = Worker(
 )
 ```
 
-Then just use standard OpenTelemetry APIs in your workflow or activity code — durations are accurate.
+Then just use standard OpenTelemetry APIs in your workflow code — durations are accurate.
 
 ```python
 from datetime import timedelta
@@ -63,10 +63,6 @@ class MyWorkflow:
                 start_to_close_timeout=timedelta(seconds=30),
             )
 ```
-
-## Standalone Activities
-
-Standalone activities (`references/python/standalone-activities.md`) are supported automatically.
 
 ## Common mistakes
 
