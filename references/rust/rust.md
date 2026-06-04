@@ -22,7 +22,7 @@ Rust Workflows are structs with macro-decorated methods. Activities are async me
 
 ## Quick Demo of Temporal
 
-**Add dependencies:** Follow the [official Rust SDK Quickstart](https://docs.temporal.io/develop/rust/quickstart) for the current `Cargo.toml` dependencies. Do not rely on pinned versions in this file.
+**Add dependencies:** Follow the [official Rust SDK Quickstart](https://docs.temporal.io/develop/rust/quickstart) for the current `Cargo.toml` dependencies.
 
 **src/activities.rs** - Activity definition:
 
