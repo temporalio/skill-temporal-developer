@@ -286,34 +286,26 @@ Check the flag from code that runs as part of a Workflow Task — for example, b
 
 ### Continue-as-new with upgrade
 
-Call `Workflow.continueAsNew` with a `ContinueAsNewOptions` whose `InitialVersioningBehavior` is `AUTO_UPGRADE` so the new run starts on the Target Version of its Worker Deployment.
+When the flag is set, call `Workflow.continueAsNew` with a `ContinueAsNewOptions` whose `InitialVersioningBehavior` is `AUTO_UPGRADE` so the new run starts on the Target Version of its Worker Deployment.
 
 ```java
 import io.temporal.common.InitialVersioningBehavior;
 import io.temporal.workflow.ContinueAsNewOptions;
 import io.temporal.workflow.Workflow;
-import java.time.Duration;
 
-public class ContinueAsNewWithVersionUpgradeImpl implements ContinueAsNewWithVersionUpgrade {
-  @Override
-  public String run(int attempt) {
-    if (attempt > 0) {
-      return "v1.0";
-    }
-
-    while (true) {
-      Workflow.sleep(Duration.ofMillis(10));
-      if (Workflow.getInfo().isTargetWorkerDeploymentVersionChanged()) {
-        Workflow.continueAsNew(
-            ContinueAsNewOptions.newBuilder()
-                .setInitialVersioningBehavior(InitialVersioningBehavior.AUTO_UPGRADE)
-                .build(),
-            attempt + 1);
-      }
-    }
-  }
+// At a natural Workflow Task boundary, e.g. before accepting Updates,
+// starting Activities, starting child Workflows, etc.:
+if (Workflow.getInfo().isTargetWorkerDeploymentVersionChanged()) {
+  Workflow.continueAsNew(
+      ContinueAsNewOptions.newBuilder()
+          .setInitialVersioningBehavior(InitialVersioningBehavior.AUTO_UPGRADE)
+          .build(),
+      nextInput);
 }
 ```
+
+> [!IMPORTANT]
+> Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
 
 ### Limitations
 

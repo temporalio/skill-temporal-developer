@@ -337,30 +337,23 @@ Check the flag from code that runs as part of a Workflow Task — for example, b
 
 ### Continue-as-new with upgrade
 
-Call `workflow.continue_as_new` with `initial_versioning_behavior=ContinueAsNewVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version of its Worker Deployment.
+When the flag is set, call `workflow.continue_as_new` with `initial_versioning_behavior=ContinueAsNewVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version of its Worker Deployment.
 
 ```python
-from datetime import timedelta
-
 from temporalio import workflow
 from temporalio.workflow import ContinueAsNewVersioningBehavior
 
-
-@workflow.defn
-class ContinueAsNewWithVersionUpgrade:
-    @workflow.run
-    async def run(self, attempt: int) -> str:
-        if attempt > 0:
-            return "v1.0"
-
-        while True:
-            await workflow.sleep(timedelta(milliseconds=10))
-            if workflow.info().is_target_worker_deployment_version_changed():
-                workflow.continue_as_new(
-                    attempt + 1,
-                    initial_versioning_behavior=ContinueAsNewVersioningBehavior.AUTO_UPGRADE,
-                )
+# At a natural Workflow Task boundary, e.g. before accepting Updates,
+# starting Activities, starting child Workflows, etc.:
+if workflow.info().is_target_worker_deployment_version_changed():
+    workflow.continue_as_new(
+        next_input,
+        initial_versioning_behavior=ContinueAsNewVersioningBehavior.AUTO_UPGRADE,
+    )
 ```
+
+> [!IMPORTANT]
+> Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
 
 ### Limitations
 

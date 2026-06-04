@@ -311,39 +311,27 @@ Check the flag from code that runs as part of a Workflow Task — for example, b
 
 ### Continue-as-new with upgrade
 
-Throw the exception from `Workflow.CreateContinueAsNewException`, passing a `ContinueAsNewOptions` whose `InitialVersioningBehavior` is `AutoUpgrade`, so the new run starts on the Target Version of its Worker Deployment.
+When the flag is set, throw the exception from `Workflow.CreateContinueAsNewException`, passing a `ContinueAsNewOptions` whose `InitialVersioningBehavior` is `AutoUpgrade`, so the new run starts on the Target Version of its Worker Deployment.
 
 ```csharp
 using Temporalio.Common;
 using Temporalio.Workflows;
 
-[Workflow]
-public class ContinueAsNewWithVersionUpgrade
+// At a natural Workflow Task boundary, e.g. before accepting Updates,
+// starting Activities, starting child Workflows, etc.:
+if (Workflow.TargetWorkerDeploymentVersionChanged)
 {
-    [WorkflowRun]
-    public async Task<string> RunAsync(int attempt)
-    {
-        if (attempt > 0)
+    throw Workflow.CreateContinueAsNewException(
+        (MyWorkflow wf) => wf.RunAsync(nextInput),
+        new ContinueAsNewOptions
         {
-            return "v1.0";
-        }
-
-        while (true)
-        {
-            await Workflow.DelayAsync(TimeSpan.FromMilliseconds(10));
-            if (Workflow.TargetWorkerDeploymentVersionChanged)
-            {
-                throw Workflow.CreateContinueAsNewException(
-                    (ContinueAsNewWithVersionUpgrade wf) => wf.RunAsync(attempt + 1),
-                    new ContinueAsNewOptions
-                    {
-                        InitialVersioningBehavior = InitialVersioningBehavior.AutoUpgrade,
-                    });
-            }
-        }
-    }
+            InitialVersioningBehavior = InitialVersioningBehavior.AutoUpgrade,
+        });
 }
 ```
+
+> [!IMPORTANT]
+> Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
 
 ### Limitations
 

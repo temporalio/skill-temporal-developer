@@ -219,27 +219,24 @@ Check the flag from code that runs as part of a Workflow Task — for example, b
 
 ### Continue-as-new with upgrade
 
-Build the Continue-as-New function with `makeContinueAsNewFunc`, passing `initialVersioningBehavior: InitialVersioningBehavior.AUTO_UPGRADE`, so the new run starts on the Target Version of its Worker Deployment.
+When the flag is set, build the Continue-as-New function with `makeContinueAsNewFunc`, passing `initialVersioningBehavior: InitialVersioningBehavior.AUTO_UPGRADE`, so the new run starts on the Target Version of its Worker Deployment.
 
 ```ts
 import * as wf from '@temporalio/workflow';
 import { InitialVersioningBehavior } from '@temporalio/common';
 
-export async function continueAsNewWithVersionUpgrade(attempt: number): Promise<string> {
-  if (attempt > 0) {
-    return 'v1.0';
-  }
-
-  for (;;) {
-    await wf.sleep('10ms');
-    if (wf.workflowInfo().targetWorkerDeploymentVersionChanged) {
-      return await wf.makeContinueAsNewFunc<typeof continueAsNewWithVersionUpgrade>({
-        initialVersioningBehavior: InitialVersioningBehavior.AUTO_UPGRADE,
-      })(attempt + 1);
-    }
-  }
+// At a natural Workflow Task boundary, e.g. before accepting Updates,
+// starting Activities, starting child Workflows, etc.:
+if (wf.workflowInfo().targetWorkerDeploymentVersionChanged) {
+  const continueAsNew = wf.makeContinueAsNewFunc<typeof myWorkflow>({
+    initialVersioningBehavior: InitialVersioningBehavior.AUTO_UPGRADE,
+  });
+  await continueAsNew(nextInput);
 }
 ```
+
+> [!IMPORTANT]
+> Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
 
 ### Limitations
 

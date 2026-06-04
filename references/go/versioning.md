@@ -241,36 +241,25 @@ Check the flag from code that runs as part of a Workflow Task — for example, b
 
 ### Continue-as-new with upgrade
 
-Return `workflow.NewContinueAsNewErrorWithOptions` with `InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade` so the new run starts on the Target Version of its Worker Deployment.
+When the flag is set, return `workflow.NewContinueAsNewErrorWithOptions` with `InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade` so the new run starts on the Target Version of its Worker Deployment.
 
 ```go
-func (w *Workflows) ContinueAsNewWithVersionUpgradeV1(
-  ctx workflow.Context,
-  attempt int,
-) (string, error) {
-  if attempt > 0 {
-    return "v1.0", nil
-  }
-
-  for {
-    err := workflow.Sleep(ctx, 10*time.Millisecond)
-    if err != nil {
-      return "", err
-    }
-    info := workflow.GetInfo(ctx)
-    if info.GetTargetWorkerDeploymentVersionChanged() {
-      return "", workflow.NewContinueAsNewErrorWithOptions(
-        ctx,
-        workflow.ContinueAsNewErrorOptions{
-          InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade,
-        },
-        "ContinueAsNewWithVersionUpgrade",
-        attempt+1,
-      )
-    }
-  }
+// At a natural Workflow Task boundary, e.g. before accepting Updates,
+// starting Activities, starting child Workflows, etc.:
+if workflow.GetInfo(ctx).GetTargetWorkerDeploymentVersionChanged() {
+  return "", workflow.NewContinueAsNewErrorWithOptions(
+    ctx,
+    workflow.ContinueAsNewErrorOptions{
+      InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade,
+    },
+    "ContinueAsNewWithVersionUpgrade",
+    nextInput,
+  )
 }
 ```
+
+> [!IMPORTANT]
+> Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
 
 ### Limitations
 
