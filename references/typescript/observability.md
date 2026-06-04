@@ -120,7 +120,7 @@ const worker = await Worker.create({ connection, taskQueue, workflowBundle: bund
 
 **Correlation with logging and metrics.** When a valid span context is active during an Activity or Workflow call, the plugin merges `trace_id` / `span_id` / `trace_flags` into the log metadata used by the `log.*` calls in [Workflow Logging](#workflow-logging) / [Activity Logging](#activity-logging) **and** into the worker metric tags from the [Metrics](#metrics) section — so traces, logs, and metrics share correlation IDs without extra wiring.
 
-This is a deliberately minimal orientation. For the full public API, constructor options, span names, propagator customization, and Standalone Activity propagation, see `references/typescript/integrations/opentelemetry.md`. (That file links back here for the logging, metrics, and sink topics above.)
+This is a deliberately minimal orientation. For the full setup, constructor options, propagator customization, and Standalone Activity propagation, see `references/typescript/integrations/opentelemetry.md`.
 
 > [!NOTE]
 > `OpenTelemetryPlugin` is in Public Preview. It is fine to use on a user's behalf, but tell them it is a Public Preview feature.

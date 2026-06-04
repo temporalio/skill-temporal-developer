@@ -2,51 +2,22 @@
 
 ## Overview
 
-`@temporalio/interceptors-opentelemetry` is a contrib package for the Temporal TypeScript SDK that ships an `OpenTelemetryPlugin` plus per-tier interceptors for tracing Workflow Executions, Child Workflows, Activity invocations, and Client `start`/`signal` calls with OpenTelemetry.
+`@temporalio/interceptors-opentelemetry` wires OpenTelemetry tracing into Temporal through the `OpenTelemetryPlugin`. It traces Workflow Executions, Child Workflows, Activity invocations, and Client `start`/`signal` calls, propagating W3C TraceContext + Baggage across all of them.
 
-Workflow-side spans are emitted out of the Workflow isolate through an injected Sink (`makeWorkflowExporter`) that hands serialized spans to a host-side `SpanProcessor`.
+Workflow-side spans are emitted out of the Workflow isolate through an injected Sink that hands serialized spans to a host-side `SpanProcessor`.
+
+For non-OTel observability (metrics, runtime logger, sinks) read `references/typescript/observability.md`.
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For non-OTel observability (metrics, runtime logger, sinks) read `references/typescript/observability.md`. For Standalone Activities (client-scheduled Activities) read `references/typescript/standalone-activities.md`.
-
 ## Install
 
-```bash
-npm i @temporalio/interceptors-opentelemetry
-```
+Install `@temporalio/interceptors-opentelemetry` plus the OpenTelemetry peer packages you use — typically `@opentelemetry/api`, `@opentelemetry/sdk-trace-base`, `@opentelemetry/resources`, and an exporter (e.g. `@opentelemetry/exporter-trace-otlp-grpc`).
 
-Peer packages this integration normally needs:
+## `OpenTelemetryPlugin`
 
-- `@opentelemetry/api` — global propagator, tracer, context.
-- `@opentelemetry/sdk-trace-base` — `SpanProcessor`, `BatchSpanProcessor`, `BasicTracerProvider`.
-- `@opentelemetry/resources` — `Resource` attached to exported spans.
-- An exporter, e.g. `@opentelemetry/exporter-trace-otlp-grpc`.
-
-## Public API
-
-| Export | Kind | From |
-|---|---|---|
-| `OpenTelemetryPlugin` | class extending `SimplePlugin` | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryPluginOptions` | interface | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryWorkflowClientInterceptor` | class (Client) | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryWorkflowClientCallsInterceptor` | `@deprecated` alias of above | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryActivityInboundInterceptor` | class (Activity) | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryActivityOutboundInterceptor` | class (Activity) | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryInboundInterceptor` | class (Workflow inbound) | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryOutboundInterceptor` | class (Workflow outbound) | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryInternalsInterceptor` | class (Workflow internals) | `@temporalio/interceptors-opentelemetry` |
-| `makeWorkflowExporter` | function | `@temporalio/interceptors-opentelemetry` |
-| `SpanName` | enum | `@temporalio/interceptors-opentelemetry` |
-| `SPAN_DELIMITER` | const (`':'`) | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetrySinks` | type | `@temporalio/interceptors-opentelemetry` |
-| `OpenTelemetryWorkflowExporter` | type | `@temporalio/interceptors-opentelemetry` |
-| `SerializableSpan` | type | `@temporalio/interceptors-opentelemetry` |
-
-## Register via the plugin
-
-Construct one `OpenTelemetryPlugin` instance and pass it to BOTH `bundleWorkflowCode({ plugins })` and `Worker.create({ plugins })` so the Workflow-side interceptors are included in the bundle.
+Construct one `OpenTelemetryPlugin` and pass it to the Client, `bundleWorkflowCode`, and `Worker.create`. It must reach `bundleWorkflowCode` so the Workflow-side interceptors are included in the bundle. Lifecycle spans (workflow / activity / client) are then created automatically.
 
 ```ts
 import { Resource } from '@opentelemetry/resources';
@@ -62,6 +33,8 @@ const provider = new BasicTracerProvider({ resource });
 provider.addSpanProcessor(spanProcessor);
 provider.register();
 
+// `resource` and `spanProcessor` are required; pass an optional `tracer` to override
+// the tracer used by the Client/Activity interceptors.
 const plugin = new OpenTelemetryPlugin({ resource, spanProcessor });
 
 const bundle = await bundleWorkflowCode({
@@ -80,11 +53,10 @@ const worker = await Worker.create({
 await worker.run();
 ```
 
-The Client accepts the same plugin via the standard plugin path; the plugin contributes `OpenTelemetryWorkflowClientInterceptor` so client-side `start` and `signal` calls are traced.
+Pass the same plugin to the Client so client-side `start` and `signal` calls are traced:
 
 ```ts
 import { Client, Connection } from '@temporalio/client';
-import { OpenTelemetryPlugin } from '@temporalio/interceptors-opentelemetry';
 
 const client = new Client({
   connection: await Connection.connect(),
@@ -92,74 +64,23 @@ const client = new Client({
 });
 ```
 
-## Constructor options
-
-`new OpenTelemetryPlugin(otelOptions: OpenTelemetryPluginOptions)`.
-
-| Field | Type | Required | Purpose |
-|---|---|---|---|
-| `resource` | `Resource` (`@opentelemetry/resources`) | Yes | Resource attributes attached to exported spans. |
-| `spanProcessor` | `SpanProcessor` (`@opentelemetry/sdk-trace-base`) | Yes | Receives Workflow, Activity, and Client spans. |
-| `tracer` | `otel.Tracer` (`@opentelemetry/api`) | No | Override the tracer used by Client/Activity interceptors; defaults to `otel.trace.getTracer('@temporalio/interceptor-client'|'-activity')`. |
-
-## Trace context propagation
-
-The TypeScript SDK uses the global OpenTelemetry propagator; the default is W3C TraceContext + W3C Baggage.
-
-To extend (e.g. add Jaeger), call `propagation.setGlobalPropagator(new CompositePropagator({ propagators: [...] }))` at the top level of your Workflow code BEFORE the Worker bundles it.
-
-```ts
-import { propagation } from '@opentelemetry/api';
-import { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } from '@opentelemetry/core';
-import { JaegerPropagator } from '@opentelemetry/propagator-jaeger';
-
-propagation.setGlobalPropagator(
-  new CompositePropagator({
-    propagators: [
-      new W3CTraceContextPropagator(),
-      new W3CBaggagePropagator(),
-      new JaegerPropagator(),
-    ],
-  }),
-);
-```
-
-## Span names
-
-`SpanName` enum values; emitted spans are formed as `${SpanName.X}${SPAN_DELIMITER}${suffix}` where `SPAN_DELIMITER = ':'`.
-
-| Enum | String | Where |
-|---|---|---|
-| `WORKFLOW_START` | `StartWorkflow` | Client `start` |
-| `WORKFLOW_SIGNAL` | `SignalWorkflow` | Client `signal`, Workflow `signalWorkflow` outbound |
-| `WORKFLOW_EXECUTE` | `RunWorkflow` | Workflow inbound `execute` |
-| `CHILD_WORKFLOW_START` | `StartChildWorkflow` | Workflow outbound `startChildWorkflowExecution` |
-| `ACTIVITY_START` | `StartActivity` | Workflow outbound `scheduleActivity` / `scheduleLocalActivity` |
-| `ACTIVITY_EXECUTE` | `RunActivity` | Activity inbound `execute` |
-| `CONTINUE_AS_NEW` | `ContinueAsNew` | Workflow outbound `continueAsNew` |
+The SDK uses the global OpenTelemetry propagator (default: W3C TraceContext + Baggage). To use a non-default propagator (e.g. Jaeger), call `propagation.setGlobalPropagator(...)` at the top level of your Workflow code BEFORE the Worker bundles it.
 
 ## Standalone Activities
 
-`OpenTelemetryActivityInboundInterceptor` extracts the parent span context from `input.headers` regardless of whether the Activity was scheduled by a Workflow or directly by a Client (Standalone Activities). The same plugin registration traces both paths.
-
-For Standalone Activities themselves read `references/typescript/standalone-activities.md`.
+Standalone Activities (`references/typescript/standalone-activities.md`) are traced automatically — the same plugin registration extracts the parent span context whether the Activity was scheduled by a Workflow or directly by a Client.
 
 ## Log and metric correlation
 
-When a valid OTel span context is active during an Activity or Workflow call, the outbound interceptors merge three keys — `trace_id`, `span_id`, `trace_flags` — into the result of `getLogAttributes` (used by `log.*`) and `getMetricTags` (used by worker metric tags). `trace_flags` is formatted as `0${spanContext.traceFlags.toString(16)}`.
+When a valid OTel span context is active during an Activity or Workflow call, the plugin merges `trace_id`, `span_id`, and `trace_flags` into `getLogAttributes` (used by `log.*`) and `getMetricTags` (used by worker metric tags), so traces, logs, and metrics share correlation IDs.
 
 ## Common mistakes
 
-- Don't pass only `resource` or only `spanProcessor`. Both are required on `OpenTelemetryPluginOptions`.
-- Don't call `new OpenTelemetryPlugin()` with no argument; the constructor requires `otelOptions`.
-- Don't pass the plugin to `Worker.create` but skip `bundleWorkflowCode` — Workflow-side interceptors must be in the bundle.
-- Don't install `@temporalio/opentelemetry`. The package is `@temporalio/interceptors-opentelemetry`.
-- Don't use the `makeWorkflowExporter(spanExporter, resource)` overload — it is `@deprecated`. Pass a `SpanProcessor` instead.
-- Don't expect non-default propagators (e.g. Jaeger) to work without setting the global propagator before `bundleWorkflowCode` runs.
+- **Passing only `resource` or only `spanProcessor`.** Both are required; `new OpenTelemetryPlugin()` with no argument throws.
+- **Passing the plugin to `Worker.create` but not `bundleWorkflowCode`.** Workflow-side interceptors must be in the bundle.
+- **Installing `@temporalio/opentelemetry`.** The package is `@temporalio/interceptors-opentelemetry`.
+- **Expecting a non-default propagator (e.g. Jaeger) to work without setting the global propagator before `bundleWorkflowCode` runs.**
 
 ## Resources
 
-- TypeScript observability guide: <https://docs.temporal.io/develop/typescript/platform/observability>
-- Contrib package README: <https://github.com/temporalio/sdk-typescript/blob/main/contrib/interceptors-opentelemetry/README.md>
-- Sample: <https://github.com/temporalio/samples-typescript/tree/main/interceptors-opentelemetry>
-- SDK metrics reference: <https://docs.temporal.io/references/sdk-metrics>
+- SDK metrics / observability reference: `references/typescript/observability.md`
