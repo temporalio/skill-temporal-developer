@@ -59,7 +59,7 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
    - Java -> read `references/java/java.md`
    - .NET (C#) -> read `references/dotnet/dotnet.md`
    - Ruby -> read `references/ruby/ruby.md`
-   - Rust -> read `references/rust/rust.md`
+   - Rust -> read `references/rust/rust.md` (in Public Preview)
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
 ## Primary References
