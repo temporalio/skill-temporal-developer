@@ -1,5 +1,8 @@
 # Temporal Rust SDK Reference
 
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+
 ## Overview
 
 The Temporal Rust SDK (`temporalio-sdk`) provides native Rust APIs for Workflows, Activities, Workers, and Clients. The SDK is in Public Preview and under active development, so verify exact crate versions and method names against the official docs before giving precise implementation guidance.
