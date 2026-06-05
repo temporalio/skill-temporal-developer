@@ -4,7 +4,7 @@
 
 The TypeScript SDK provides replay-aware logging, metrics, and distributed tracing (OpenTelemetry) for production observability.
 
-These pillars are complementary: **logging** (below) captures discrete events, **metrics** capture aggregate worker health, **tracing** stitches a single request across Client/Workflow/Activity boundaries, and **Search Attributes** make executions queryable. With the tracing plugin installed they also reinforce each other — trace IDs are injected into log metadata and metric tags (see [Distributed Tracing](#distributed-tracing-opentelemetry)).
+These pillars are complementary: **logging** (below) captures discrete events, **metrics** capture aggregate worker health, **tracing** stitches a single request across Client/Workflow/Activity boundaries, and **Search Attributes** make executions queryable.
 
 ## Replay-Aware Logging
 
@@ -104,6 +104,9 @@ Runtime.install({
 
 ## Distributed Tracing (OpenTelemetry)
 
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+
 OpenTelemetry is the supported way to add distributed tracing to Temporal applications. The `OpenTelemetryPlugin` (from `@temporalio/interceptors-opentelemetry`) traces Workflow Executions, Child Workflows, Activity invocations, and Client `start`/`signal` calls, propagating W3C TraceContext + Baggage across all of them. Workflow-side spans are exported out of the Workflow isolate through an injected Sink.
 
 Construct one plugin instance and pass it to the Client, to `bundleWorkflowCode`, and to `Worker.create` (the Workflow-side interceptors must be in the bundle):
@@ -118,12 +121,7 @@ const worker = await Worker.create({ connection, taskQueue, workflowBundle: bund
 // const client = new Client({ connection, plugins: [plugin] });
 ```
 
-**Correlation with logging and metrics.** When a valid span context is active during an Activity or Workflow call, the plugin merges `trace_id` / `span_id` / `trace_flags` into the log metadata used by the `log.*` calls in [Workflow Logging](#workflow-logging) / [Activity Logging](#activity-logging) **and** into the worker metric tags from the [Metrics](#metrics) section — so traces, logs, and metrics share correlation IDs without extra wiring.
-
-This is a deliberately minimal orientation. For the full setup, constructor options, propagator customization, and Standalone Activity propagation, see `references/typescript/integrations/opentelemetry.md`.
-
-> [!NOTE]
-> `OpenTelemetryPlugin` is in Public Preview. It is fine to use on a user's behalf, but tell them it is a Public Preview feature.
+For the full setup and options, see `references/typescript/integrations/opentelemetry.md`.
 
 ## Search Attributes (Visibility)
 
@@ -136,4 +134,4 @@ See the Search Attributes section of `references/typescript/data-handling.md`
 3. Configure Winston or similar for production log aggregation
 4. Monitor Prometheus metrics for worker health
 5. Use Event History for debugging workflow issues
-6. Use the `OpenTelemetryPlugin` for distributed tracing — it also stamps trace IDs onto your logs and metrics (see [Distributed Tracing](#distributed-tracing-opentelemetry))
+6. Use the `OpenTelemetryPlugin` for distributed tracing across Client/Workflow/Activity boundaries.
