@@ -112,13 +112,39 @@ OpenTelemetry is the supported way to add distributed tracing to Temporal applic
 Construct one plugin instance and pass it to the Client, to `bundleWorkflowCode`, and to `Worker.create` (the Workflow-side interceptors must be in the bundle):
 
 ```typescript
+import { Resource } from '@opentelemetry/resources';
+import { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { Client, Connection } from '@temporalio/client';
+import { NativeConnection, Worker, bundleWorkflowCode } from '@temporalio/worker';
 import { OpenTelemetryPlugin } from '@temporalio/interceptors-opentelemetry';
+
+const resource = new Resource({ 'service.name': 'my-worker' });
+const spanProcessor = new SimpleSpanProcessor(new ConsoleSpanExporter());  // swap in your own exporter
+
+const provider = new BasicTracerProvider({ resource });
+provider.addSpanProcessor(spanProcessor);
+provider.register();
 
 const plugin = new OpenTelemetryPlugin({ resource, spanProcessor });
 
-const bundle = await bundleWorkflowCode({ workflowsPath, plugins: [plugin] });
-const worker = await Worker.create({ connection, taskQueue, workflowBundle: bundle, plugins: [plugin] });
-// const client = new Client({ connection, plugins: [plugin] });
+// In your worker process:
+const bundle = await bundleWorkflowCode({
+  workflowsPath: require.resolve('./workflows'),
+  plugins: [plugin],
+});
+const worker = await Worker.create({
+  connection: await NativeConnection.connect(),
+  taskQueue: 'my-task-queue',
+  workflowBundle: bundle,
+  plugins: [plugin],
+});
+await worker.run();
+
+// In your client process, pass the same plugin:
+const client = new Client({
+  connection: await Connection.connect(),
+  plugins: [plugin],
+});
 ```
 
 For the full setup and options, see `references/typescript/integrations/opentelemetry.md`.
