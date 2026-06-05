@@ -33,12 +33,13 @@ If you prefer to install the skill directly without the plugin wrapper:
 
 Appropriately adjust the installation directory based on your coding agent.
 
-## Currently Supported Temporal SDK Langages
+## Currently Supported Temporal SDK Languages
 
 - [x] Python ✅
 - [x] TypeScript ✅
 - [x] Go ✅
 - [x] Java ✅
 - [x] .NET ✅
+- [x] Rust (Public Preview)
 - [x] Ruby ✅
 - [ ] PHP 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/40))

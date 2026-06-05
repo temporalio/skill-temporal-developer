@@ -296,6 +296,49 @@ temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
+## Upgrading on Continue-as-New
+
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.TargetWorkerDeploymentVersionChanged` and continue-as-new with `InitialVersioningBehavior.AutoUpgrade` so the new run starts on the Target Version. See `references/core/versioning.md` for the conceptual model.
+
+### Detecting the Target Version change
+
+`Workflow.TargetWorkerDeploymentVersionChanged` is `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment.  The flag is refreshed after each Workflow Task completes.
+
+Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
+
+### Continue-as-new with upgrade
+
+When the flag is set, throw the exception from `Workflow.CreateContinueAsNewException`, passing a `ContinueAsNewOptions` whose `InitialVersioningBehavior` is `AutoUpgrade`, so the new run starts on the Target Version of its Worker Deployment.
+
+```csharp
+using Temporalio.Common;
+using Temporalio.Workflows;
+
+// At a natural Workflow Task boundary, e.g. before accepting Updates,
+// starting Activities, starting child Workflows, etc.:
+if (Workflow.TargetWorkerDeploymentVersionChanged)
+{
+    throw Workflow.CreateContinueAsNewException(
+        (MyWorkflow wf) => wf.RunAsync(nextInput),
+        new ContinueAsNewOptions
+        {
+            InitialVersioningBehavior = InitialVersioningBehavior.AutoUpgrade,
+        });
+}
+```
+
+> [!IMPORTANT]
+> Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
+
+### Limitations
+
+- **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check `TargetWorkerDeploymentVersionChanged`.
+- **Workflow input must remain compatible across versions.** The new version's Workflow definition must accept the previous version's input; otherwise the new run may fail on its first Workflow Task.
+- **Pinned Workflow Types only.** Auto-Upgrade Workflows move at Workflow Task boundaries already; the upgrade-on-CaN pattern adds nothing for them.
+
 ## Best Practices
 
 1. **Check for open executions** before removing old code paths

@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET and Ruby. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, Ruby, and Rust. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
 version: 0.5.0
 ---
 
@@ -8,7 +8,7 @@ version: 0.5.0
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, Java, .NET, and Ruby.
+Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, Java, .NET, Ruby, and Rust.
 
 ## Core Architecture
 
@@ -59,6 +59,7 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
    - Java -> read `references/java/java.md`
    - .NET (C#) -> read `references/dotnet/dotnet.md`
    - Ruby -> read `references/ruby/ruby.md`
+   - Rust -> read `references/rust/rust.md` (in Public Preview)
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
 ## Primary References
