@@ -96,9 +96,6 @@ Runtime.set_default(runtime, error_if_already_set=True)
 - `temporal_activity_execution_latency` - Activity execution time
 - `temporal_workflow_task_replay_latency` - Replay duration
 
-> [!TIP]
-> For span-level timing that complements these aggregate metrics, enable Temporal spans on the tracing plugin (`OpenTelemetryPlugin(add_temporal_spans=True)`) — see [Distributed Tracing](#distributed-tracing-opentelemetry).
-
 ## Distributed Tracing (OpenTelemetry)
 
 > [!NOTE]
