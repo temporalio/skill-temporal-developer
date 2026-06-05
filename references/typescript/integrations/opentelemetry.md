@@ -70,10 +70,6 @@ The SDK uses the global OpenTelemetry propagator (default: W3C TraceContext + Ba
 
 Standalone Activities (`references/typescript/standalone-activities.md`) are traced automatically — the same plugin registration extracts the parent span context whether the Activity was scheduled by a Workflow or directly by a Client.
 
-## Log and metric correlation
-
-When a valid OTel span context is active during an Activity or Workflow call, the plugin merges `trace_id`, `span_id`, and `trace_flags` into `getLogAttributes` (used by `log.*`) and `getMetricTags` (used by worker metric tags), so traces, logs, and metrics share correlation IDs.
-
 ## Common mistakes
 
 - **Passing only `resource` or only `spanProcessor`.** Both are required; `new OpenTelemetryPlugin()` with no argument throws.
