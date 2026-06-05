@@ -69,7 +69,6 @@ class MyWorkflow:
 - **Registering the same plugin on both Client and Worker.** Register on the Client only; Workers inherit.
 - **Calling `Client.connect` before `opentelemetry.trace.set_tracer_provider(provider)`.**`OpenTelemetryPlugin`, will raise an exception if you do this
 - **Building a plain `opentelemetry.sdk.trace.TracerProvider` and passing it to `set_tracer_provider`.** `OpenTelemetryPlugin` requires `ReplaySafeTracerProvider` — build it via `create_tracer_provider(...)`.
-- **Adding `with_passthrough_modules("opentelemetry")` to a `SandboxedWorkflowRunner` manually.** The plugin already does this.
 
 ## Resources
 
