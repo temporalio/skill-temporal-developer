@@ -2,9 +2,7 @@
 
 ## Overview
 
-The TypeScript SDK provides replay-aware logging, metrics, and distributed tracing (OpenTelemetry) for production observability.
-
-These pillars are complementary: **logging** (below) captures discrete events, **metrics** capture aggregate worker health, **tracing** stitches a single request across Client/Workflow/Activity boundaries, and **Search Attributes** make executions queryable.
+The TypeScript SDK provides replay-aware logging, metrics, and integrations for production observability.
 
 ## Replay-Aware Logging
 
@@ -102,53 +100,6 @@ Runtime.install({
 });
 ```
 
-## Distributed Tracing (OpenTelemetry)
-
-> [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
-OpenTelemetry is the supported way to add distributed tracing to Temporal applications. The `OpenTelemetryPlugin` (from `@temporalio/interceptors-opentelemetry`) traces Workflow Executions, Child Workflows, Activity invocations, and Client `start`/`signal` calls, propagating W3C TraceContext + Baggage across all of them. Workflow-side spans are exported out of the Workflow isolate through an injected Sink.
-
-Construct one plugin instance and pass it to the Client, to `bundleWorkflowCode`, and to `Worker.create` (the Workflow-side interceptors must be in the bundle):
-
-```typescript
-import { Resource } from '@opentelemetry/resources';
-import { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { Client, Connection } from '@temporalio/client';
-import { NativeConnection, Worker, bundleWorkflowCode } from '@temporalio/worker';
-import { OpenTelemetryPlugin } from '@temporalio/interceptors-opentelemetry';
-
-const resource = new Resource({ 'service.name': 'my-worker' });
-const spanProcessor = new SimpleSpanProcessor(new ConsoleSpanExporter());  // swap in your own exporter
-
-const provider = new BasicTracerProvider({ resource });
-provider.addSpanProcessor(spanProcessor);
-provider.register();
-
-const plugin = new OpenTelemetryPlugin({ resource, spanProcessor });
-
-// In your worker process:
-const bundle = await bundleWorkflowCode({
-  workflowsPath: require.resolve('./workflows'),
-  plugins: [plugin],
-});
-const worker = await Worker.create({
-  connection: await NativeConnection.connect(),
-  taskQueue: 'my-task-queue',
-  workflowBundle: bundle,
-  plugins: [plugin],
-});
-await worker.run();
-
-// In your client process, pass the same plugin:
-const client = new Client({
-  connection: await Connection.connect(),
-  plugins: [plugin],
-});
-```
-
-For the full setup and options, see `references/typescript/integrations/opentelemetry.md`.
-
 ## Search Attributes (Visibility)
 
 See the Search Attributes section of `references/typescript/data-handling.md`
@@ -160,4 +111,3 @@ See the Search Attributes section of `references/typescript/data-handling.md`
 3. Configure Winston or similar for production log aggregation
 4. Monitor Prometheus metrics for worker health
 5. Use Event History for debugging workflow issues
-6. Use the `OpenTelemetryPlugin` for distributed tracing across Client/Workflow/Activity boundaries.
