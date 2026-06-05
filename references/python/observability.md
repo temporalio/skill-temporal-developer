@@ -108,11 +108,12 @@ OpenTelemetry is the supported way to add distributed tracing to Temporal applic
 
 ```python
 import opentelemetry.trace
+from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 from temporalio.client import Client
 from temporalio.contrib.opentelemetry import OpenTelemetryPlugin, create_tracer_provider
 
 provider = create_tracer_provider()
-# provider.add_span_processor(...)  # attach your exporter
+provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))  # attach your span processors as normal for OTel
 opentelemetry.trace.set_tracer_provider(provider)
 
 client = await Client.connect("localhost:7233", plugins=[OpenTelemetryPlugin()])
