@@ -4,7 +4,7 @@
 
 [Braintrust](https://braintrust.dev) is an LLM observability and prompt-management platform. The Temporal TypeScript integration is delivered as the `@braintrust/temporal` package, which exposes a `BraintrustTemporalPlugin` that registers on both the Temporal Client and the Worker. Once registered, the plugin produces Braintrust spans for Workflow and Activity executions and propagates trace context across the Worker boundary.
 
-The Temporal TypeScript documentation lists Braintrust as a supported integration and points to the Braintrust-hosted guide as the canonical reference. <!-- docs/develop/typescript/integrations/index.mdx:17-23 -->
+The Temporal TypeScript documentation lists Braintrust as a supported integration and points to the Braintrust-hosted guide as the canonical reference.
 
 > Canonical TypeScript guide: <https://www.braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript>. Treat the Braintrust-hosted page as authoritative for TypeScript-specific API surface; this reference file captures only what is independently verifiable from Temporal's documentation and the canonical guide.
 
@@ -20,7 +20,6 @@ For conceptual LLM patterns shared across SDKs read `references/core/ai-patterns
 ```bash
 npm install @braintrust/temporal braintrust @temporalio/client @temporalio/worker @temporalio/workflow @temporalio/activity @temporalio/common
 ```
-<!-- braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript -->
 
 The integration package is `@braintrust/temporal`; it sits alongside the standard `braintrust` SDK and the relevant `@temporalio/*` packages.
 
@@ -33,7 +32,6 @@ import * as braintrust from "braintrust";
 
 braintrust.initLogger({ projectName: "my-project" });
 ```
-<!-- braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript -->
 
 ## Register `BraintrustTemporalPlugin` on the Client and the Worker
 
@@ -58,15 +56,12 @@ const worker = await Worker.create({
   plugins: [plugin],
 });
 ```
-<!-- braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript -->
 
 The Client registration links client-initiated spans to the Workflow Executions they start. The Worker registration produces the Workflow and Activity spans inside Braintrust.
 
 ## API credentials
 
 The Worker process needs the `BRAINTRUST_API_KEY` environment variable available so the plugin can post spans to Braintrust. The Client process that starts Workflow Executions does not call Braintrust directly.
-
-<!-- VERIFY: The TypeScript integration page should be consulted for any additional environment variables (e.g. BRAINTRUST_PROJECT, BRAINTRUST_API_URL) before recommending them; only BRAINTRUST_API_KEY is universally documented. -->
 
 ## Tracing LLM calls, custom spans, and prompt management
 
@@ -78,8 +73,6 @@ Braintrust's standard TypeScript SDK provides:
 
 These helpers are not Temporal-specific; consult the canonical Braintrust TypeScript SDK documentation and the Temporal-specific guide at <https://www.braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript> for current API surface before using them inside Activities or client code.
 
-<!-- VERIFY: Confirm exact import paths, signatures, and Activity-vs-Workflow placement for wrapTraced/startSpan/loadPrompt against the canonical Braintrust TypeScript guide before generating code that uses them. The Temporal Python docs ground these patterns explicitly; the TypeScript guide is hosted externally. -->
-
 ## Common mistakes
 
 - **Initializing the Braintrust logger after constructing the Client or Worker.** Call `braintrust.initLogger({ projectName: ... })` first so the Worker process attaches spans to the correct project.
@@ -88,6 +81,6 @@ These helpers are not Temporal-specific; consult the canonical Braintrust TypeSc
 
 ## Additional Resources
 
-- Canonical TypeScript guide: <https://www.braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript>. <!-- docs/develop/typescript/integrations/index.mdx:22 -->
+- Canonical TypeScript guide: <https://www.braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript>.
 - `references/python/integrations/braintrust.md` — the Python integration is the closest documented analogue; the high-level patterns (Plugin on Client + Worker, LLM calls in Activities, prompts loaded from Braintrust) carry over conceptually.
 - `references/core/ai-patterns.md` — conceptual LLM patterns shared across SDKs.
