@@ -118,7 +118,28 @@ client = await Client.connect("localhost:7233", plugins=[OpenTelemetryPlugin()])
 
 Workers created from this Client inherit the plugin automatically. Inside a Workflow you then use standard OpenTelemetry APIs (`get_tracer(...).start_as_current_span(...)`); pass `OpenTelemetryPlugin(add_temporal_spans=True)` to also emit `StartWorkflow` / `RunWorkflow` / `StartActivity` / `RunActivity` spans automatically alongside the SDK metrics above.
 
-For the full setup and options, see `references/python/integrations/opentelemetry.md`.
+```python
+from datetime import timedelta
+from opentelemetry.trace import get_tracer
+from temporalio import workflow
+
+@workflow.defn
+class MyWorkflow:
+    @workflow.run
+    async def run(self) -> None:
+        tracer = get_tracer(__name__)
+        with tracer.start_as_current_span("workflow-operation"):
+            await workflow.execute_activity(
+                my_activity,
+                start_to_close_timeout=timedelta(seconds=30),
+            )
+```
+
+**Common mistakes:**
+
+- **Registering the same plugin on both Client and Worker.** Register on the Client only; Workers inherit.
+- **Calling `Client.connect` before `opentelemetry.trace.set_tracer_provider(provider)`.** `OpenTelemetryPlugin` raises an exception unless the global tracer provider is already set.
+- **Building a plain `opentelemetry.sdk.trace.TracerProvider` and passing it to `set_tracer_provider`.** `OpenTelemetryPlugin` requires a `ReplaySafeTracerProvider` — build it via `create_tracer_provider(...)`.
 
 ## Search Attributes (Visibility)
 
