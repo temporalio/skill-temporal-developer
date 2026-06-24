@@ -2,8 +2,6 @@
 
 A comprehensive skill for developers to use when building [Temporal](https://temporal.io/) applications.
 
-> [!WARNING]
-> This Skill is currently in Public Preview, and will continue to evolve and improve.
 > We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)
 
 ## Installation
