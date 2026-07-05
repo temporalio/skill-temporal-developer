@@ -11,7 +11,7 @@ on:
 
 jobs:
   package-and-sync:
-    uses: temporalio/skill-ci/.github/workflows/package-and-sync.yml@48a520426816427539079e0a5ea09bc87aa6278c # v1
+    uses: temporalio/skill-ci/.github/workflows/package-and-sync.yml@v1
     permissions:
       contents: write
     secrets: inherit
