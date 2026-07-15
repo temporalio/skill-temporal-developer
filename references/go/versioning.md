@@ -4,7 +4,7 @@ For conceptual overview and guidance on choosing an approach, see `references/co
 
 ## GetVersion API
 
-`workflow.GetVersion` safely performs backwards-incompatible changes to Workflow Definitions. It returns the version to branch on, recording the result as a marker in the Event History.
+[`workflow.GetVersion`](https://pkg.go.dev/go.temporal.io/sdk/workflow#GetVersion) safely performs backwards-incompatible changes to Workflow Definitions. It returns the version to branch on, recording the result as a marker in the Event History.
 
 ```go
 v := workflow.GetVersion(ctx, "changeID", workflow.DefaultVersion, maxSupported)
@@ -15,9 +15,11 @@ v := workflow.GetVersion(ctx, "changeID", workflow.DefaultVersion, maxSupported)
 - `maxSupported`: current/newest version
 - Returns `maxSupported` for new executions; returns the recorded version on replay
 
-### Three-Step Lifecycle
+### Retirement Lifecycle
 
-**Step 1: Add GetVersion with both code paths**
+Treat `GetVersion` cleanup as replay-safety work, not ordinary dead-code removal. Removing an old branch and deleting the first marker call are separate changes with different gates.
+
+#### Step 1: Add `GetVersion` with both code paths
 
 Original code calls `ActivityA`. You want to replace it with `ActivityC`:
 
@@ -32,26 +34,82 @@ if v == workflow.DefaultVersion {
 }
 ```
 
-For new executions, `GetVersion` returns `1` and records a marker. For replay of pre-change workflows (no marker), it returns `DefaultVersion` (`-1`).
+For new executions, `GetVersion` returns `1` and records a marker. For replay of pre-change workflows with no marker for `Step1`, it returns `workflow.DefaultVersion` (`-1`). **`DefaultVersion` is not version `0`**; do not search for `Step1-0` unless the code actually recorded version `0`.
 
-**Step 2: Remove old branch (increase minSupported)**
+#### Step 2: Inventory and prove the old version has left retention
 
-After all `DefaultVersion` Workflow Executions have completed:
+Before raising `minSupported`, record enough context to review each change independently:
+
+| Field | Example |
+|---|---|
+| Workflow type | `OrderWorkflow` |
+| Change ID | `Step1` |
+| Old version | `workflow.DefaultVersion`, `0`, or `1` |
+| Retained version | `1` |
+| Branch effect | Activity, child workflow, timer, signal/update flow |
+| Call location | Startup, loop, selector, or handler |
+
+For a recorded integer version, query the exact old `changeID-version` value across open and closed executions still in retention. For example, when retiring version `1` after a later `1 → 2` migration:
+
+```bash
+temporal workflow list --query \
+  'WorkflowType = "OrderWorkflow" AND TemporalChangeVersion = "Step1-1"'
+```
+
+A nonzero result means version `1` has not left retention. Keep that branch. In the initial `workflow.DefaultVersion → 1` example above, the old branch has no recorded integer value, so use the marker-absence procedure instead.
+
+Histories from before the first `GetVersion` call have no `TemporalChangeVersion` entry for that change ID. If this is the workflow's only patch marker, find the simple pre-marker population still in retention with:
+
+```bash
+temporal workflow list --query \
+  'WorkflowType = "OrderWorkflow" AND TemporalChangeVersion IS NULL'
+```
+
+For workflows with multiple patch markers, query all running executions of the workflow type and inspect their `TemporalChangeVersion` values for the absence of the retained marker. Do the same when the `GetVersion` call is on an optional path: absence can mean either a pre-marker history or an execution that has not reached that call.
+
+Treat marker absence as an unverified candidate set. Before raising `minSupported`, classify every candidate using its history or establish another authoritative population bound that proves every execution which could return the old version has left retention. Representative replay is still required for compatibility evidence, but it cannot classify an unexamined population.
+
+A zero count of running old-version executions is necessary operational evidence, but it is not the retirement gate: closed histories can still be replayed or reset while retained. Do not raise `minSupported` until executions on the old version have left retention. A replay test can show whether selected histories are compatible; it does not prove that the old-version population has left retention.
+
+#### Step 3: Remove the old branch but keep the first marker call
+
+After executions on the old version have left retention, raise `minSupported` and collapse the branch:
 
 ```go
-v := workflow.GetVersion(ctx, "Step1", 1, 1)
-// Only the new code path remains
+_ = workflow.GetVersion(ctx, "Step1", 1, 1)
 err = workflow.ExecuteActivity(ctx, ActivityC, data).Get(ctx, &result1)
 ```
 
-Keep the `GetVersion` call even with a single branch. This ensures:
+Keep the first `GetVersion` call for the change ID at the same deterministic point in the Workflow. Moving it across other Commands can itself break replay. The pinned call causes an older unsupported history to fail at the version boundary instead of continuing with the wrong behavior, and it leaves a safe place to add a later version.
 
-1. If an older execution replays on this code, it fails fast instead of proceeding incorrectly
-2. If you need further changes, you just bump `maxSupported`
+Only the first call for a change ID needs to be retained. Subsequent calls with that same change ID return the recorded value and can be removed once their surrounding branches are gone.
 
-**Step 3: Further changes (bump maxSupported)**
+Deploy and replay representative open and closed histories before making another retirement change.
 
-Later, replace `ActivityC` with `ActivityD`:
+#### Step 4: Optionally remove the first marker call
+
+Deleting the first `GetVersion` call is stricter than removing an old branch. Do it only when:
+
+1. All executions with older versions have left retention.
+2. Replay verification covers the retained behavior.
+3. You will permanently retire that change ID.
+
+After deleting the call, you **must never reuse** `Step1`. A future change at the same code location needs a new change ID and must start again from `workflow.DefaultVersion`:
+
+```go
+v := workflow.GetVersion(ctx, "Step1-activity-d", workflow.DefaultVersion, 1)
+if v == workflow.DefaultVersion {
+	err = workflow.ExecuteActivity(ctx, ActivityC, data).Get(ctx, &result1)
+} else {
+	err = workflow.ExecuteActivity(ctx, ActivityD, data).Get(ctx, &result1)
+}
+```
+
+When in doubt, leave the pinned marker call in place. It is small, explicit replay-safety state.
+
+#### Further changes before final marker removal
+
+To replace `ActivityC` with `ActivityD` while retaining `Step1`, bump `maxSupported`:
 
 ```go
 v := workflow.GetVersion(ctx, "Step1", 1, 2)
@@ -62,12 +120,24 @@ if v == 1 {
 }
 ```
 
-After all version-1 executions complete, collapse again:
+After executions on version `1` have left retention, collapse again while preserving the first call:
 
 ```go
 _ = workflow.GetVersion(ctx, "Step1", 2, 2)
 err = workflow.ExecuteActivity(ctx, ActivityD, data).Get(ctx, &result1)
 ```
+
+#### Replay verification checklist
+
+Before raising `minSupported` or deleting a marker call:
+
+- Replay saved histories for every known version, including `DefaultVersion` when applicable.
+- Replay both open and closed histories, especially long-running and error-path executions.
+- Disable test caching so the evidence comes from the current code.
+- Inspect targeted histories when marker absence is ambiguous.
+- Record the visibility query, result count, replay command, and code version in the change review.
+
+Replay and visibility answer different questions: replay tests compatibility for the histories selected, while visibility helps estimate whether an old-version population still exists. Use both; neither substitutes for the other.
 
 ### Using GetVersion in Loops
 
@@ -269,11 +339,12 @@ if workflow.GetInfo(ctx).GetTargetWorkerDeploymentVersionChanged() {
 
 ## Best Practices
 
-1. **Keep GetVersion calls** even when only a single branch remains -- it guards against stale replays and simplifies future changes
-2. **Use `TemporalChangeVersion` search attribute** to find Workflows running on old versions:
+1. **Keep the first `GetVersion` call** when collapsing to a single branch unless the final retention and change-ID retirement gates are satisfied
+2. **Query the exact recorded value** using `changeID-version`:
    ```bash
    temporal workflow list --query \
-     'WorkflowType = "MyWorkflow" AND ExecutionStatus = "Running" AND TemporalChangeVersion = "Step1"'
+     'WorkflowType = "MyWorkflow" AND TemporalChangeVersion = "Step1-1"'
    ```
-3. **Test with replay** before removing old branches to verify determinism is preserved
-4. **Prefer Worker Versioning** for large-scale deployments to avoid accumulating patching branches
+3. **Treat `DefaultVersion` as marker absence, not version `0`**, and inspect histories when absence is ambiguous
+4. **Test with replay** before removing old branches or marker calls, while remembering that sampled replay does not prove a version has left retention
+5. **Prefer Worker Versioning** for large-scale deployments to avoid accumulating patching branches
