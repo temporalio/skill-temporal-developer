@@ -100,6 +100,10 @@ Runtime.install({
 });
 ```
 
+### Custom metrics & buffered metrics
+
+For emitting application metrics with the `MetricMeter` API (Counter, UpDownCounter, Gauge, Histogram) or forwarding all metric updates to a custom transport via `MetricsBuffer`, see `references/typescript/buffered-metrics.md`.
+
 ## Search Attributes (Visibility)
 
 See the Search Attributes section of `references/typescript/data-handling.md`
