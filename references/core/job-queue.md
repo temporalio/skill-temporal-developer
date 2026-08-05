@@ -20,7 +20,7 @@ What is different from a conventional broker-plus-worker stack, in job-queue ter
 - **No dead-letter queue to operate.** A job that exhausts its Retry Policy ends as a failed execution, retained in visibility with its last error and findable with a List Filter.
 - **Retries, timeouts, and backoff are enforced by the platform**, not by a decorator argument the handler can ignore.
 - **The same code graduates into orchestration.** One Activity Function runs as a background job today and as a step inside a multi-step Workflow tomorrow, with no code change and no Worker change. That upgrade path is the reason to pick Temporal over a job queue you would outgrow.
-- **Cheaper than the usual workaround.** Wrapping a single Activity in a Workflow costs extra billable Actions in Temporal Cloud and extra Worker round-trips; a Standalone Activity avoids both.
+- **Cheaper than the usual workaround.** Wrapping a single Activity in a Workflow costs an extra billable Action in Temporal Cloud and extra Worker round-trips; a Standalone Activity avoids both.
 
 See `references/core/standalone-activities.md` for the rest of the feature list (execution semantics, deduplication, addressability, visibility, metrics).
 
@@ -35,7 +35,7 @@ See `references/core/standalone-activities.md` for the rest of the feature list 
 | Worker process consuming the queue | Temporal Worker polling a Task Queue |
 | Queue name / routing key | Task Queue name |
 | Job ID | Activity ID — you choose it; use a business identifier |
-| Result backend | The Activity's result, retrieved from the handle or `temporal activity result` |
+| Result backend (a database or store you provide) | The Activity's result, stored by the Server in the authoritative Activity record and retrieved from the handle or `temporal activity result` |
 | `max_retries` + backoff config | Retry Policy: maximum attempts, backoff coefficient, non-retryable error types. Note it counts *total attempts*, not retries — a framework's `retry: 5` is `maximum_attempts: 6` |
 | "Run this at most once" | Retry Policy with maximum attempts = 1 |
 | Unique-job / idempotency key | Activity ID, plus an ID conflict policy (`UseExisting`) or ID reuse policy (`RejectDuplicate`) |
@@ -43,12 +43,13 @@ See `references/core/standalone-activities.md` for the rest of the feature list 
 | Long job keepalive / progress reporting | Activity Heartbeats, with heartbeat details for checkpointing |
 | Cancel a job | `cancel` (cooperative, surfaced on the next heartbeat) or `terminate` (forceful) |
 | Priority queues | Priority keys — free, Public Preview. See `references/core/priority-fairness.md` |
-| Per-tenant fairness / avoiding noisy neighbors | Fairness keys and weights — Public Preview, and a paid feature in Temporal Cloud. See `references/core/priority-fairness.md` |
-| Dashboard (Flower, Sidekiq Web, Bull Board) | Temporal Web UI, `temporal activity list` / `describe`, and the list/count client APIs |
+| Per-tenant fairness / avoiding noisy neighbors (usually not supported) | Fairness keys and weights — Public Preview, and a paid feature in Temporal Cloud. See `references/core/priority-fairness.md` |
+| Delayed job (`countdown`, `enqueue_in`, `perform_in`) | A start delay on the Standalone Activity itself — no Workflow needed. Any duration, at any scale |
+| Dashboard (Flower, Sidekiq Web, Bull Board) | Temporal Web UI, `temporal activity list` (with Search Attribute support) / `describe`, and the list/count client APIs |
 | Job metrics | Standard Activity metrics: scheduled, started, completed, failed, timed out, canceled |
 | Manual/external job completion | Manual completion by Activity ID or task token |
 
-On head-of-line blocking: a slow job occupies one Worker slot rather than stalling a single-threaded consumer, so one slow job does not block dispatch of the rest. Backlog-level starvation across tenants is a separate problem — by default Tasks dispatch FIFO, so a tenant enqueueing 100k jobs does put a small tenant behind the whole backlog. Fairness is what fixes that.
+On head-of-line blocking: a slow job occupies one Worker slot rather than stalling a single-threaded consumer, so one slow job does not block dispatch of the rest. Backlog-level starvation across tenants is a separate problem — by default Tasks dispatch FIFO, so a tenant enqueueing 100k jobs does put a small tenant behind the whole backlog. Fairness is what fixes that and in most cases only Temporal provides fairness.
 
 ## Job-queue features that need a different Temporal primitive
 
@@ -59,14 +60,13 @@ Not every "job queue" request is a single job. Route these away from Standalone 
 | Chained jobs, DAGs, Celery canvas / chords, "when job A finishes run B and C" | A **Workflow**. That is orchestration, which is what Workflows are for. |
 | Fan-out with a join, or a batch with a completion callback | A **Workflow** that starts the Activities in parallel and awaits them. |
 | Compensation / rollback when a later step fails | A **Workflow** using the saga pattern — see `references/core/patterns.md`. |
-| Recurring or periodic jobs (Celery beat, `sidekiq-cron`, a crontab) | A **Temporal Schedule**. |
-| "Run this job in 10 minutes" | A **Workflow** started with a start delay (`temporal workflow start --start-delay`, or the SDK equivalent), which then calls the Activity. |
+| Recurring or periodic jobs (Celery beat, `sidekiq-cron`, a crontab) | A **Temporal Schedule**, which starts a thin Workflow that calls the one Activity. Scheduled Standalone Activities are coming in a future release. |
 | A job that waits for human approval or an external event | A **Workflow** with a Signal or Update handler. |
 | Long-lived per-entity state (a per-user or per-order actor) | The **entity Workflow** pattern — see `references/core/patterns.md`. |
 
-Schedules and start-delay both target Workflows, not Standalone Activities. So a delayed or recurring job legitimately needs a thin Workflow that calls the one Activity — that is the sanctioned exception to anti-pattern 1 below, not a violation of it.
+A one-shot delayed job ("run this in 10 minutes") uses a start delay on the Standalone Activity itself — `start_delay` on the start request. Temporal accepts any duration at any scale, where job frameworks like Celery limit both.
 
-The rule of thumb stays simple: **one unit of work, run now → Standalone Activity; more than one step, or anything that has to wait → Workflow.**
+Rule of thumb: **one unit of work → Standalone Activity, delayed or not; more than one step, or waiting on an external event → Workflow.**
 
 ## Migrating from an existing job queue
 
@@ -77,7 +77,7 @@ The shape of the port is the same regardless of source system:
 3. **`delay()` / `perform_async` / `queue.add()` → Client `start` or `execute`.** This is the only real call-site change. It happens in producer code, which must be non-Workflow application code.
 4. **Retry/timeout config → Retry Policy and Activity timeouts** on the start options, not on the handler. Remember the attempts-vs-retries off-by-one.
 5. **Job ID → Activity ID.** Reuse whatever idempotency key already exists. If there was none, derive one from the business entity.
-6. **Monitoring → visibility.** Replace Flower/Sidekiq Web/Bull Board polling of a Redis key with `list`/`count`/`describe` and the Web UI.
+6. **Monitoring → built-in visibility and metrics.** Replace Flower/Sidekiq Web/Bull Board polling of a Redis key with `list`/`count`/`describe` and the Web UI.
 
 Framework-specific notes worth stating when they come up:
 
@@ -91,7 +91,7 @@ Framework-specific notes worth stating when they come up:
 
 Anti-patterns to avoid when building a job queue on Temporal:
 
-1. **A Workflow per job that runs exactly one Activity.** It costs extra billable Actions and extra Worker round-trips for no orchestration benefit. Prefer a Standalone Activity. (Exception: delayed and recurring jobs, per the table above.)
+1. **A Workflow per job that runs exactly one Activity.** It costs an extra billable Action and extra Worker round-trips for no orchestration benefit. Prefer a Standalone Activity, including for delayed jobs, which take a start delay directly. Recurring jobs on a Schedule are the exception, since Schedules start Workflows.
 2. **A long-lived "queue manager" Workflow** that accepts jobs by Signal and dispatches them. It reinvents a queue the Server already provides, grows unbounded Event History, forces continue-as-new, and reintroduces head-of-line blocking.
 3. **An Activity that polls Redis/SQS/a database table for work** and then dispatches it. Once on Temporal, the producer should enqueue Standalone Activities directly. (Polling an external system you do not control is a different, legitimate pattern — see `references/core/patterns.md`.)
 4. **Hand-rolled retry loops inside the Activity.** Configure a Retry Policy instead; a `for attempt in range(3)` inside an Activity hides failures from visibility and metrics.
@@ -104,7 +104,9 @@ A job queue built on Standalone Activities has three pieces, and they belong in 
 
 - **The Activity Definition** — plain Activity code, identical to one written for a Workflow.
 - **The Worker** — registers the Activity and polls the Task Queue. It does not know or care whether the Activity will be invoked standalone or from a Workflow.
-- **The producer** — application code, an HTTP handler, or a CLI entry point that calls the Client. Never a Workflow.
+- **The producer** — application code, an HTTP handler, or a CLI entry point that calls the Client.
+
+A Workflow that needs a job to outlive it can start a Standalone Activity from inside a regular in-Workflow Activity, using the SDK Client there. Workflow code cannot start one directly today; that is planned for a future release.
 
 ## SDK guides and runnable samples
 

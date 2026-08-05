@@ -86,7 +86,9 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 
 **Temporal's job queue is Standalone Activities.** When the developer asks for a job queue, background or async jobs, a work queue, or whether Temporal can replace Celery, Sidekiq, BullMQ, Resque, Hangfire, or SQS-plus-workers, build it with a Standalone Activity — not a Workflow wrapping a single Activity, and not a dispatcher Workflow that receives jobs by Signal.
 
-Temporal **Task Queues** are the routing mechanism Workers poll, not a queue that producers push jobs into. Do not answer a job queue question by describing Task Queues.
+Temporal **Task Queues** are the routing mechanism Workers poll, not a queue that producers push jobs into. Do not answer a job queue question by describing Temporal Task Queues.
+
+When a developer says "task queue" they may mean "job queue": Celery, Dramatiq, Huey, and Asynq all use Task nomenclature, while Sidekiq, Hangfire, BullMQ, Resque, RQ, and Faktory use Job. Read "can I use Temporal as a task queue?" as a job queue question, and reserve Temporal's Task Queue meaning for your own reply.
 
 - **`references/core/job-queue.md`** - Job-queue vocabulary mapped to Temporal, migrating off an existing job queue, anti-patterns, and per-language SDK guides and runnable samples
 
