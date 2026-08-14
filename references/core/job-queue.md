@@ -38,7 +38,7 @@ See `references/core/standalone-activities.md` for the rest of the feature list 
 | Result backend (a database or store you provide) | The Activity's result, stored by the Server in the authoritative Activity record and retrieved from the handle or `temporal activity result` |
 | `max_retries` + backoff config | Retry Policy: maximum attempts, backoff coefficient, non-retryable error types. Note it counts *total attempts*, not retries — a framework's `retry: 5` is `maximum_attempts: 6` |
 | "Run this at most once" | Retry Policy with maximum attempts = 1 |
-| Unique-job / idempotency key | Activity ID, plus an ID conflict policy (`UseExisting`) or ID reuse policy (`RejectDuplicate`) |
+| Unique-job / idempotency key | Activity ID, plus an ID conflict policy (`Fail`, `UseExisting`) for an ID currently running **and** an ID reuse policy (`AllowDuplicate`, `AllowDuplicateFailedOnly`, `RejectDuplicate`) for an ID that has already completed. A unique-job gem generally wants both set; `AllowDuplicateFailedOnly` is the closest match to "re-run only if the last attempt failed" |
 | Job timeout | Start-To-Close and/or Schedule-To-Close timeout (at least one is required) |
 | Long job keepalive / progress reporting | Activity Heartbeats, with heartbeat details for checkpointing |
 | Cancel a job | `cancel` (cooperative, surfaced on the next heartbeat) or `terminate` (forceful) |
@@ -49,7 +49,7 @@ See `references/core/standalone-activities.md` for the rest of the feature list 
 | Job metrics | Standard Activity metrics: scheduled, started, completed, failed, timed out, canceled |
 | Manual/external job completion | Manual completion by Activity ID or task token |
 
-On head-of-line blocking: a slow job occupies one Worker slot rather than stalling a single-threaded consumer, so one slow job does not block dispatch of the rest. Backlog-level starvation across tenants is a separate problem — by default Tasks dispatch FIFO, so a tenant enqueueing 100k jobs does put a small tenant behind the whole backlog. Fairness is what fixes that and in most cases only Temporal provides fairness.
+On head-of-line blocking: a slow job occupies one Worker slot rather than stalling a single-threaded consumer, so one slow job does not block dispatch of the rest. Backlog-level starvation across tenants is a separate problem — by default Tasks dispatch FIFO, so a tenant enqueueing 100k jobs does put a small tenant behind the whole backlog. Fairness is what fixes that, and few job queues offer fairness keys that can be used to enforce multi-tenant fairness or other fine-grained fairness schemes.
 
 ## Job-queue features that need a different Temporal primitive
 
