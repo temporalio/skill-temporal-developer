@@ -64,7 +64,7 @@ Not every "job queue" request is a single job. Route these away from Standalone 
 | A job that waits for human approval or an external event | A **Workflow** with a Signal or Update handler. |
 | Long-lived per-entity state (a per-user or per-order actor) | The **entity Workflow** pattern — see `references/core/patterns.md`. |
 
-A one-shot delayed job ("run this in 10 minutes") uses a start delay on the Standalone Activity itself — `start_delay` on the start request. Temporal accepts any duration at any scale, where job frameworks like Celery limit both.
+A one-shot delayed job ("run this in 10 minutes") uses a start delay on the Standalone Activity itself — `start_delay` on the start request, or `--start-delay` on `temporal activity start`. Temporal accepts any duration at any scale, where job frameworks like Celery limit both.
 
 Rule of thumb: **one unit of work → Standalone Activity, delayed or not; more than one step, or waiting on an external event → Workflow.**
 
