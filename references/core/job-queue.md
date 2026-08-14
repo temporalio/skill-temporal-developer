@@ -44,7 +44,7 @@ See `references/core/standalone-activities.md` for the rest of the feature list 
 | Cancel a job | `cancel` (cooperative, surfaced on the next heartbeat) or `terminate` (forceful) |
 | Priority queues | Priority keys — free, Public Preview. See `references/core/priority-fairness.md` |
 | Per-tenant fairness / avoiding noisy neighbors (usually not supported) | Fairness keys and weights — Public Preview, and a paid feature in Temporal Cloud. See `references/core/priority-fairness.md` |
-| Delayed job (`countdown`, `enqueue_in`, `perform_in`) | A start delay on the Standalone Activity itself — no Workflow needed. Any duration, at any scale |
+| Delayed job (`countdown`, `enqueue_in`, `perform_in`) | A start delay on the Standalone Activity itself — no Workflow needed. Requires Server 1.32.0+ or Temporal Cloud |
 | Dashboard (Flower, Sidekiq Web, Bull Board) | Temporal Web UI, `temporal activity list` (with Search Attribute support) / `describe`, and the list/count client APIs |
 | Job metrics | Standard Activity metrics: scheduled, started, completed, failed, timed out, canceled |
 | Manual/external job completion | Manual completion by Activity ID or task token |
@@ -64,7 +64,7 @@ Not every "job queue" request is a single job. Route these away from Standalone 
 | A job that waits for human approval or an external event | A **Workflow** with a Signal or Update handler. |
 | Long-lived per-entity state (a per-user or per-order actor) | The **entity Workflow** pattern — see `references/core/patterns.md`. |
 
-A one-shot delayed job ("run this in 10 minutes") uses a start delay on the Standalone Activity itself — `start_delay` on the start request, or `--start-delay` on `temporal activity start`. Temporal accepts any duration at any scale, where job frameworks like Celery limit both.
+A one-shot delayed job ("run this in 10 minutes") uses a start delay on the Standalone Activity itself — `start_delay` on the start request, or `--start-delay` on `temporal activity start`. This needs Temporal Server 1.32.0 or higher (or Temporal Cloud); check the version in play before recommending it. Temporal accepts long delays at scale, where job frameworks like Celery limit both.
 
 Rule of thumb: **one unit of work → Standalone Activity, delayed or not; more than one step, or waiting on an external event → Workflow.**
 
@@ -91,7 +91,7 @@ Framework-specific notes worth stating when they come up:
 
 Anti-patterns to avoid when building a job queue on Temporal:
 
-1. **A Workflow per job that runs exactly one Activity.** It costs an extra billable Action and extra Worker round-trips for no orchestration benefit. Prefer a Standalone Activity, including for delayed jobs, which take a start delay directly. Recurring jobs on a Schedule are the exception, since Schedules start Workflows.
+1. **A Workflow per job that runs exactly one Activity.** It costs an extra billable Action and extra Worker round-trips for no orchestration benefit. Prefer a Standalone Activity, including for delayed jobs, which take a start delay directly on a recent enough Server. Recurring jobs on a Schedule are the exception, since Schedules start Workflows.
 2. **A long-lived "queue manager" Workflow** that accepts jobs by Signal and dispatches them. It reinvents a queue the Server already provides, grows unbounded Event History, forces continue-as-new, and reintroduces head-of-line blocking.
 3. **An Activity that polls Redis/SQS/a database table for work** and then dispatches it. Once on Temporal, the producer should enqueue Standalone Activities directly. (Polling an external system you do not control is a different, legitimate pattern — see `references/core/patterns.md`.)
 4. **Hand-rolled retry loops inside the Activity.** Configure a Retry Policy instead; a `for attempt in range(3)` inside an Activity hides failures from visibility and metrics.

@@ -30,7 +30,7 @@ end
 
 ```ruby
 require 'temporalio/client'
-require 'temporalio/envconfig'
+require 'temporalio/env_config'
 require 'temporalio/worker'
 
 args, kwargs = Temporalio::EnvConfig::ClientConfig.load_client_connect_options
@@ -62,7 +62,7 @@ The Standalone Activity operations are methods on a connected `Temporalio::Clien
 
 ```ruby
 require 'temporalio/client'
-require 'temporalio/envconfig'
+require 'temporalio/env_config'
 
 args, kwargs = Temporalio::EnvConfig::ClientConfig.load_client_connect_options
 args[0] ||= 'localhost:7233'
