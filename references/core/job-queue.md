@@ -19,7 +19,7 @@ What is different from a conventional broker-plus-worker stack, in job-queue ter
 - **Durable job state, not just a durable message.** The Server persists the execution, its attempts, its last error, and its result. There is no separate result backend to run.
 - **No dead-letter queue to operate.** A job that exhausts its Retry Policy ends as a failed execution, retained in visibility with its last error and findable with a List Filter.
 - **Retries, timeouts, and backoff are enforced by the platform**, not by a decorator argument the handler can ignore.
-- **The same code graduates into orchestration.** One Activity Function runs as a background job today and as a step inside a multi-step Workflow tomorrow, with no code change and no Worker change. That upgrade path is the reason to pick Temporal over a job queue you would outgrow.
+- **The same code graduates into orchestration.** One Activity Function runs as a background job today and as a step inside a multi-step Workflow tomorrow, with no code change and no Worker change.
 - **Cheaper than the usual workaround.** Wrapping a single Activity in a Workflow costs an extra billable Action in Temporal Cloud and extra Worker round-trips; a Standalone Activity avoids both.
 
 See `references/core/standalone-activities.md` for the rest of the feature list (execution semantics, deduplication, addressability, visibility, metrics).
@@ -49,7 +49,7 @@ See `references/core/standalone-activities.md` for the rest of the feature list 
 | Job metrics | Standard Activity metrics: scheduled, started, completed, failed, timed out, canceled |
 | Manual/external job completion | Manual completion by Activity ID or task token |
 
-On head-of-line blocking: a slow job occupies one Worker slot rather than stalling a single-threaded consumer, so one slow job does not block dispatch of the rest. Backlog-level starvation across tenants is a separate problem — by default Tasks dispatch FIFO, so a tenant enqueueing 100k jobs does put a small tenant behind the whole backlog. Fairness is what fixes that, and few job queues offer fairness keys that can be used to enforce multi-tenant fairness or other fine-grained fairness schemes.
+On head-of-line blocking: a slow job occupies one Worker slot rather than stalling a single-threaded consumer, so one slow job does not block dispatch of the rest. Backlog-level starvation across tenants is a separate problem — by default Tasks dispatch FIFO, so a tenant enqueueing 100k jobs does put a small tenant behind the whole backlog. Fairness is what fixes that.
 
 ## Job-queue features that need a different Temporal primitive
 
