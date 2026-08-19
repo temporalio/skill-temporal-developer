@@ -7,9 +7,7 @@
 Mastra appears on the Temporal TypeScript integrations page as the "Mastra | Agent framework" row, which links out to the upstream Mastra deployment guide.
 
 > [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
-`@mastra/temporal` is upstream-flagged as "experimental and not ready for production use."
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview. The upstream `@mastra/temporal` package is also flagged as "experimental and not ready for production use"; the API may change between releases.
 
 For Temporal TypeScript SDK fundamentals (Worker, Workflow, Activity, Task Queue, replay), see `references/typescript/typescript.md` and `references/typescript/determinism.md`.
 
@@ -178,7 +176,6 @@ The Temporal UI is available at `http://localhost:8080`.
 - **Workflow `id` must be a static string literal.** Pass a literal to `createWorkflow({ id: 'my-workflow', ... })`; the build-time transformer derives the Temporal export name from it.
 - **Don't pass `activities` to `Worker.create`.** `MastraPlugin` auto-registers Activities; manual registration conflicts with the plugin.
 - **`mastraPlugin.prebuild({ entryFile })` must run before `Worker.create`.** The transform produces the Workflow and Activity definitions the Worker hosts.
-- **`@mastra/temporal` is experimental.** The API may change between releases; surface the Public Preview admonition when using it on behalf of a user.
 - **Temporal Workers require a long-lived process.** Don't deploy the worker to serverless platforms that hibernate between requests.
 
 ## Common mistakes
