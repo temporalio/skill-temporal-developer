@@ -195,15 +195,6 @@ client = await Client.connect(
 )
 ```
 
-If an Activity calls `logfire.info(...)` and `pandas` is installed, pass `pandas` through the Workflow sandbox to avoid its import race:
-
-```python
-from temporalio import workflow
-
-with workflow.unsafe.imports_passed_through():
-    import pandas
-```
-
 ## End-to-end example
 
 ```python
