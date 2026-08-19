@@ -12,7 +12,6 @@ For Python AI patterns (Pydantic data converter, disabling client-side LLM retri
 ## Prerequisites
 
 - An existing Temporal Python development environment as described in `references/python/python.md`.
-- Familiarity with Braintrust.
 
 ## Install
 
