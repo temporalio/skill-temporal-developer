@@ -53,7 +53,7 @@ In Workflow code, call AI SDK functions exactly as you would outside Temporal, b
 
 ```ts
 import { generateText } from 'ai';
-import { temporalProvider } from '@temporalio/ai-sdk';
+import { temporalProvider } from '@temporalio/ai-sdk/workflow';
 
 export async function haikuAgent(prompt: string): Promise<string> {
   const result = await generateText({
