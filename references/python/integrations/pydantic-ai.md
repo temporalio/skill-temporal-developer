@@ -18,7 +18,7 @@ pip install "pydantic-ai-slim[temporal]"
 
 The `temporal` extra pulls in `temporalio>=1.24.0`.
 
-The umbrella `pydantic-ai[temporal]` also works if you want the full Pydantic AI install.
+Use `pip install pydantic-ai` if you want the full Pydantic AI install.
 
 ## Imports
 
@@ -81,9 +81,9 @@ Construct it once at module scope so the same instance is referenced from both t
 - **`TemporalAgent` does not accept arbitrary `Model` instances.** Use model strings (`"openai:gpt-4o"`) or pre-register via `models={"my-model": MyModel(...)}`.
 - **If no `activity_config` is given, model and tool Activities default to `start_to_close_timeout=60s`.** Override per-tier (`model_activity_config`, `toolset_activity_config`, `tool_activity_config`) when you need different timeouts or retry policies.
 
-## Register the plugin on Client and Worker
+## Register the plugin on the Client
 
-Pass `PydanticAIPlugin()` to both the Temporal `Client` and `Worker`:
+Pass `PydanticAIPlugin()` to `Client.connect()`:
 
 ```python
 from temporalio.client import Client
@@ -103,7 +103,7 @@ async with Worker(
     ...
 ```
 
-`PydanticAIPlugin` configures `pydantic_data_converter` on the Client so Pydantic models cross the Activity boundary correctly, registers the dynamically created Activities on the Worker, and treats `pydantic_ai.exceptions.UserError` as non-retryable.
+`PydanticAIPlugin` configures `pydantic_data_converter` on the Client so Pydantic models cross the Activity boundary correctly, registers the dynamically created Activities on Workers created from that Client, and treats `pydantic_ai.exceptions.UserError` as non-retryable. Temporal automatically propagates Client plugins that implement the Worker plugin protocol, so do not also pass `PydanticAIPlugin()` to `Worker`; doing so runs the plugin twice.
 
 Do not also set `data_converter=pydantic_data_converter` yourself — the plugin owns that wiring. The standalone `pydantic_data_converter` setup in `references/python/ai-patterns.md` is for code paths that are **not** using `TemporalAgent`.
 
@@ -224,7 +224,7 @@ async def main() -> None:
 - **`Agent.name` must be set and stable.** It anchors Activity identity for the agent's model and toolset Activities; renaming after deploy breaks replay.
 - **Dynamic toolsets must set `id=` explicitly** for the same reason.
 - **The Pydantic AI integration ships in `pydantic_ai.durable_exec.temporal`**, not in `temporalio.contrib`. Install it via `pip install "pydantic-ai-slim[temporal]"`.
-- **Register `PydanticAIPlugin` on both Client and Worker.** The Client side configures `pydantic_data_converter`; the Worker side registers the dynamically created Activities.
+- **Register `PydanticAIPlugin` on `Client.connect()` only.** Workers created from that Client inherit the plugin; passing it to `Worker` again runs it twice.
 - **`TemporalAgent` does not accept arbitrary `Model` instances.** Use model strings or pre-register via `models={...}`.
 - **Streaming via `Agent.run_stream()` / `run_stream_events()` / `iter()` is unsupported.** Use `event_stream_handler` and an out-of-band sink.
 - **Dependencies passed to `TemporalAgent.run(deps=...)` must be Pydantic-serializable** because they cross the Activity boundary.
@@ -232,12 +232,8 @@ async def main() -> None:
 
 ## Common mistakes
 
-- **Importing from `temporalio.contrib.pydantic_ai`.** That path does not exist; the integration lives at `pydantic_ai.durable_exec.temporal`.
-- **Forgetting `name=` on the `Agent`.** `TemporalAgent` raises at wrap time; this is non-recoverable without a code change.
-- **Forgetting `id=` on `@agent.toolset` dynamic toolsets.** Same failure mode as the agent `name`.
+- **Omitting `id=` on an `@agent.toolset` dynamic toolset.** `TemporalAgent` raises while wrapping the agent; define a stable ID before constructing the wrapper.
 - **Setting `data_converter=pydantic_data_converter` in addition to `PydanticAIPlugin()`.** The plugin already configures the data converter — drop the extra arg.
-- **Calling `Agent.run_stream(...)` on the wrapped agent.** Switch to `event_stream_handler` and surface events via Workflow Streams or an external broker.
-- **Passing a raw `Model` instance directly to `Agent(...)` and expecting it to work under `TemporalAgent`.** Pre-register via `models={...}` or pass a model string.
 
 ## Resources
 
@@ -246,4 +242,3 @@ async def main() -> None:
 - `references/python/integrations/langsmith.md` — companion observability plugin if you prefer LangSmith over Logfire.
 - Upstream guide — [Pydantic AI Temporal integration](https://pydantic.dev/docs/ai/integrations/durable_execution/temporal/).
 - Upstream API reference — [`pydantic_ai.durable_exec.temporal`](https://pydantic.dev/docs/ai/api/pydantic-ai/durable_exec/).
-- Upstream example — [`pydantic/pydantic-ai-temporal-example`](https://github.com/pydantic/pydantic-ai-temporal-example).
