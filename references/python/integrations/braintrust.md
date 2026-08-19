@@ -2,7 +2,7 @@
 
 ## Overview
 
-[Braintrust](https://braintrust.dev) is an LLM observability and prompt-management platform. The Temporal Python SDK integrates with it through `braintrust.contrib.temporal.BraintrustPlugin`, which traces every Workflow and Activity as a span in Braintrust, links client-initiated spans to the Workflows they start, and pairs with Braintrust's existing helpers (`wrap_openai`, `start_span`, `load_prompt`) to capture LLM calls, custom context, and managed prompts.
+[Braintrust](https://braintrust.dev) is an LLM observability and prompt-management platform. The Temporal Python SDK integrates with it through `braintrust.contrib.temporal.BraintrustPlugin`, which traces every Workflow and Activity as a span in Braintrust and links client-initiated spans to the Workflows they start.
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
@@ -12,7 +12,7 @@ For Python AI patterns (Pydantic data converter, disabling client-side LLM retri
 ## Prerequisites
 
 - An existing Temporal Python development environment as described in `references/python/python.md`.
-- A Braintrust account; familiarity with Braintrust concepts (projects, spans, prompts).
+- Familiarity with Braintrust.
 
 ## Install
 

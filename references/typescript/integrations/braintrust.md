@@ -13,6 +13,7 @@ For conceptual LLM patterns shared across SDKs read `references/core/ai-patterns
 ## Prerequisites
 
 - An existing Temporal TypeScript development environment as described in `references/typescript/typescript.md`.
+- Temporal TypeScript SDK 2.1.0 or later.
 - A Braintrust account.
 
 ## Install
@@ -59,28 +60,21 @@ const worker = await Worker.create({
 
 The Client registration links client-initiated spans to the Workflow Executions they start. The Worker registration produces the Workflow and Activity spans inside Braintrust.
 
-## API credentials
+## What Braintrust traces
 
-The Worker process needs the `BRAINTRUST_API_KEY` environment variable available so the plugin can post spans to Braintrust. The Client process that starts Workflow Executions does not call Braintrust directly.
+The plugin captures:
 
-## Tracing LLM calls, custom spans, and prompt management
-
-Braintrust's standard TypeScript SDK provides:
-
-- `wrapTraced` / wrapped client helpers to capture LLM calls as spans.
-- `startSpan` to add application-level context (user query, final output) around `client.workflow.start` / `client.workflow.execute`.
-- `loadPrompt` to fetch prompts managed in the Braintrust UI so prompt edits ship without redeploying code.
-
-These helpers are not Temporal-specific; consult the canonical Braintrust TypeScript SDK documentation and the Temporal-specific guide at <https://www.braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript> for current API surface before using them inside Activities or client code.
+- Workflow execution spans named `temporal.workflow.<workflow_type>`, including Workflow type, ID, run ID, and errors.
+- Activity execution spans named `temporal.activity.<activity_type>`, including Activity type, ID, result, errors, and parent Workflow metadata.
+- Trace context propagated through Temporal headers to Activities, Local Activities, and Child Workflows.
+- Parent-child relationships across Client calls, Workflows, and Activities.
 
 ## Common mistakes
 
 - **Initializing the Braintrust logger after constructing the Client or Worker.** Call `braintrust.initLogger({ projectName: ... })` first so the Worker process attaches spans to the correct project.
 - **Registering `BraintrustTemporalPlugin` on only one side.** Register on both the Client and the Worker so client-side spans link to the Workflows they start.
-- **Calling LLM-tracing or prompt-loading APIs from inside a Workflow.** Workflows must be deterministic; place LLM calls and `loadPrompt` invocations inside Activities, matching the pattern documented for the Python integration in `references/python/integrations/braintrust.md`.
 
 ## Additional Resources
 
 - Canonical TypeScript guide: <https://www.braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript>.
-- `references/python/integrations/braintrust.md` — the Python integration is the closest documented analogue; the high-level patterns (Plugin on Client + Worker, LLM calls in Activities, prompts loaded from Braintrust) carry over conceptually.
 - `references/core/ai-patterns.md` — conceptual LLM patterns shared across SDKs.
