@@ -170,18 +170,6 @@ Generated Activities heartbeat in the background. Model Activities receive a 30-
 
 Temporal already retries failed Activities. Disable overlapping Pydantic AI HTTP retries and provider-client retries when possible, then configure the Temporal retry policy through `ActivityConfig`.
 
-## Streaming
-
-`Agent.run_stream()`, `Agent.run_stream_events()`, and `Agent.iter()` work inside a Temporal Workflow, but model events are buffered inside the durable Activity and replayed to Workflow code after that Activity completes. They are not a real-time transport across the Workflow boundary.
-
-Choose the handler location based on its behavior:
-
-- Put an I/O handler in `TemporalDurability(event_stream_handler=...)`. It runs in Activities and may execute more than once after a retry, so its side effects must be idempotent.
-- Use `ProcessEventStream` for a deterministic handler that runs in Workflow code against replayed events.
-- Use `event_stream_topic=` with a Temporal `WorkflowStream` for real-time delivery to an external consumer. The Workflow must construct its `WorkflowStream` during `@workflow.init`; see `references/python/workflow-streams.md`.
-
-A durability handler and `ProcessEventStream` are independent handlers; configuring both invokes both.
-
 ## Logfire
 
 Register `LogfirePlugin` alongside `PydanticAIPlugin` on the Client:
