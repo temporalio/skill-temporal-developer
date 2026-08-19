@@ -110,6 +110,7 @@ my-workflow-request (client span)
 Use `braintrust.start_span` from client code to capture application-level context (the user query, the final result) alongside the Workflow/Activity spans the plugin produces.
 
 ```python
+import uuid
 from braintrust import start_span
 
 async def run_research(query: str):
