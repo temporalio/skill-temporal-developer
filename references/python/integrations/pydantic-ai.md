@@ -182,25 +182,6 @@ Choose the handler location based on its behavior:
 
 A durability handler and `ProcessEventStream` are independent handlers; configuring both invokes both.
 
-## Migrating from `TemporalAgent`
-
-`TemporalAgent` is deprecated and will be removed in Pydantic AI v3. New code should use `Agent(..., capabilities=[TemporalDurability(...)])`.
-
-| `TemporalAgent` configuration | Capability-path replacement |
-|---|---|
-| `wrapped=` | Use the wrapped agent's configuration on a regular `Agent`. |
-| `name=` | Set `name=` on `Agent` or `TemporalDurability`. |
-| `models=` | Set `models=` on `TemporalDurability`. |
-| `provider_factory=` | Use a deps-aware `ResolveModelId` capability. |
-| `event_stream_handler=` | Keep it on `TemporalDurability` for Activity-side handling. |
-| Base/model/toolset Activity configs | Move them to the equivalent `TemporalDurability` parameters. |
-| `tool_activity_config=` | Use `metadata={"temporal": ...}` or `SetToolMetadata`. |
-| `run_context_type=` | Set it on `TemporalDurability`. |
-
-Existing Workflow histories replay on the capability path without draining or versioning first when the agent name, toolset IDs, and `models=` registry keys remain unchanged. If old histories used `event_stream_handler=`, keep it on `TemporalDurability` until those Workflows finish. Moving that handler to `ProcessEventStream` early changes recorded Activity behavior and breaks replay.
-
-The old `temporalize_toolset_func=` customization has no capability-path equivalent.
-
 ## Logfire
 
 Register `LogfirePlugin` alongside `PydanticAIPlugin` on the Client:
@@ -291,7 +272,7 @@ if __name__ == "__main__":
 - Use async Pydantic AI APIs inside Workflows.
 - Keep Activity-bound values Pydantic-serializable and within Temporal payload limits.
 - Keep Activity-side streaming effects idempotent and Workflow-side handlers deterministic.
-- Use `TemporalDurability`; keep `TemporalAgent` only while migrating existing code.
+- Use `TemporalDurability` for durable Pydantic AI agents.
 
 ## Resources
 
