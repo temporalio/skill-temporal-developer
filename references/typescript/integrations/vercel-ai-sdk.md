@@ -89,7 +89,7 @@ Workflow that exposes the Activity as a tool:
 ```ts
 import { proxyActivities } from '@temporalio/workflow';
 import { generateText, tool } from 'ai';
-import { temporalProvider } from '@temporalio/ai-sdk';
+import { temporalProvider } from '@temporalio/ai-sdk/workflow';
 import { z } from 'zod';
 import type * as activities from './activities';
 
@@ -157,7 +157,7 @@ With `StdioClientTransport`, the Worker starts the MCP server process and connec
 Inside the workflow, construct `new TemporalMCPClient({ name: '<server-name>' })` using the same name as the factory key, then call `await mcpClient.tools()` to get the tools to pass to `generateText`.
 
 ```ts
-import { TemporalMCPClient, temporalProvider } from '@temporalio/ai-sdk';
+import { TemporalMCPClient, temporalProvider } from '@temporalio/ai-sdk/workflow';
 import { generateText } from 'ai';
 
 export async function mcpAgent(prompt: string): Promise<string> {
@@ -176,7 +176,7 @@ export async function mcpAgent(prompt: string): Promise<string> {
 
 ## Common mistakes
 
-- **Importing from the wrong package.** `AiSdkPlugin`, `temporalProvider`, and `TemporalMCPClient` all come from `@temporalio/ai-sdk`; `generateText` and `tool` come from `ai`; `experimental_createMCPClient` comes from `@ai-sdk/mcp`.
+- **Importing from the wrong package.** `AiSdkPlugin` comes from `@temporalio/ai-sdk`, while Workflow-side helpers such as `temporalProvider` and `TemporalMCPClient` come from `@temporalio/ai-sdk/workflow`. `generateText` and `tool` come from `ai`; `experimental_createMCPClient` comes from `@ai-sdk/mcp`.
 - **Calling `fetch` (or any I/O) directly inside a tool's `execute`.** Tool functions run in the Workflow sandbox and must delegate to an Activity obtained through `proxyActivities`.
 - **Passing an option other than `modelProvider`/`mcpClientFactories` to `AiSdkPlugin`.** Only those two options are documented.
 - **Constructing `TemporalMCPClient` positionally.** Use the object form `new TemporalMCPClient({ name: '<server-name>' })`.
