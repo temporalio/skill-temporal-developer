@@ -2,7 +2,7 @@
 
 ## Overview
 
-`@temporalio/ai-sdk` is the Temporal TypeScript SDK integration for [Vercel's AI SDK](https://ai-sdk.dev/). It registers an `AiSdkPlugin` on the Worker so that LLM calls made by functions like `generateText()`, along with MCP tool invocations, run as Temporal Activities under Temporal's retry, timeout, and Durable Execution semantics. AI SDK tool functions execute inside the Workflow and must delegate any non-deterministic work to Activities, while the Workflow author otherwise writes normal AI SDK code.
+`@temporalio/ai-sdk` is the Temporal TypeScript SDK integration for [Vercel's AI SDK](https://ai-sdk.dev/) v7. It registers an `AiSdkPlugin` on the Worker so that LLM calls made by functions like `generateText()`, along with MCP tool invocations, run as Temporal Activities under Temporal's retry, timeout, and Durable Execution semantics. AI SDK tool functions execute inside the Workflow and must delegate any non-deterministic work to Activities, while the Workflow author otherwise writes normal AI SDK code.
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
