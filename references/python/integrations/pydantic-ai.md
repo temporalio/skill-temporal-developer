@@ -268,6 +268,5 @@ if __name__ == "__main__":
 - `references/python/ai-patterns.md` — Python AI/LLM patterns, payload conversion, and retry classification.
 - `references/core/ai-patterns.md` — language-agnostic agent and tool-placement patterns.
 - `references/python/workflow-streams.md` — exposing live events through Temporal Workflow Streams.
-- `references/python/integrations/langsmith.md` — companion observability integration.
 - Upstream guide — [Pydantic AI durable execution with Temporal](https://pydantic.dev/docs/ai/capabilities/durable_execution/temporal/).
 - Upstream API reference — [`pydantic_ai.durable_exec.temporal`](https://pydantic.dev/docs/ai/api/pydantic-ai/durable_exec/).
