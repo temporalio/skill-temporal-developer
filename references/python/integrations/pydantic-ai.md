@@ -263,17 +263,6 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Hard constraints
-
-- A call is durable only when it runs inside a Temporal Workflow.
-- Construct durable agents outside Workflow execution so the Worker can register their Activities.
-- Keep the agent name, toolset IDs, and model registry keys stable across replaying histories.
-- Register `PydanticAIPlugin()` on `Client.connect()` only; Workers inherit it from the Client.
-- Use async Pydantic AI APIs inside Workflows.
-- Keep Activity-bound values Pydantic-serializable and within Temporal payload limits.
-- Keep Activity-side streaming effects idempotent and Workflow-side handlers deterministic.
-- Use `TemporalDurability` for durable Pydantic AI agents.
-
 ## Resources
 
 - `references/python/ai-patterns.md` — Python AI/LLM patterns, payload conversion, and retry classification.
