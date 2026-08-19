@@ -16,7 +16,7 @@ For Python AI patterns (Pydantic data converter, disabling client-side LLM retri
 ## Install
 
 ```bash
-uv pip install "braintrust[temporal]"
+uv add "braintrust[temporal]"
 ```
 
 ## Initialize the logger before the Client or Worker
