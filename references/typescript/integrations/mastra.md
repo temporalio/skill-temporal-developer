@@ -2,7 +2,7 @@
 
 ## Overview
 
-[Mastra](https://mastra.ai/docs) is a TypeScript agent / workflow framework. The `@mastra/temporal` package  transforms Mastra workflow and step definitions into Temporal Workflows and Activities at build time, then auto-registers them on a Temporal Worker via the `MastraPlugin`. Each `createStep` becomes a Temporal Activity and each `createWorkflow` becomes a Temporal Workflow.
+[Mastra](https://mastra.ai/docs) is a TypeScript agent / workflow framework. The `@mastra/temporal` package transforms Mastra workflow and step definitions into Temporal Workflows and Activities at build time, then auto-registers them on a Temporal Worker via the `MastraPlugin`. Each `createStep` becomes a Temporal Activity and each `createWorkflow` becomes a Temporal Workflow.
 
 Mastra appears on the Temporal TypeScript integrations page as the "Mastra | Agent framework" row, which links out to the upstream Mastra deployment guide.
 
