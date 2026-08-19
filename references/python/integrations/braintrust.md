@@ -147,9 +147,9 @@ async def invoke_model(prompt_slug: str, user_input: str) -> str:
 
     built = prompt.build()
 
-    system_content = None
+    system_content = "You are a helpful assistant."
     for msg in built.get("messages", []):
-        if msg.get("role") == "system":
+        if msg.get("role") == "system" and msg.get("content"):
             system_content = msg["content"]
             break
 
