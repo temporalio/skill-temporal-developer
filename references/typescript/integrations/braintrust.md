@@ -42,6 +42,7 @@ Create one `BraintrustTemporalPlugin` instance and pass it to **both** the Clien
 import { Client, Connection } from "@temporalio/client";
 import { Worker } from "@temporalio/worker";
 import { BraintrustTemporalPlugin } from "@braintrust/temporal";
+import * as activities from "./activities";
 
 const plugin = new BraintrustTemporalPlugin();
 
