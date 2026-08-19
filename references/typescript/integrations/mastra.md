@@ -11,7 +11,7 @@ Mastra appears on the Temporal TypeScript integrations page as the "Mastra | Age
 
 `@mastra/temporal` is upstream-flagged as "experimental and not ready for production use."
 
-For Temporal TypeScript SDK fundamentals (Worker, Workflow, Activity, Task Queue, replay), see `references/typescript/typescript.md` and `references/core/determinism.md`.
+For Temporal TypeScript SDK fundamentals (Worker, Workflow, Activity, Task Queue, replay), see `references/typescript/typescript.md` and `references/typescript/determinism.md`.
 
 ## Install
 
