@@ -2,11 +2,11 @@
 
 ## Overview
 
-`@temporalio/interceptors-opentelemetry` wires OpenTelemetry tracing into Temporal through the `OpenTelemetryPlugin`. It traces Workflow Executions, Child Workflows, Activity invocations, and Client `start`/`signal` calls, propagating W3C TraceContext + Baggage across all of them.
+`@temporalio/interceptors-opentelemetry` wires OpenTelemetry tracing into Temporal through the `OpenTelemetryPlugin`. It traces Client, Workflow, Activity, and Nexus code, propagating W3C TraceContext + Baggage across all of them.
 
 Workflow-side spans are emitted out of the Workflow isolate through an injected Sink that hands serialized spans to a host-side `SpanProcessor`.
 
-For non-OTel observability (metrics, runtime logger, sinks) read `references/typescript/observability.md`.
+For observability beyond OpenTelemetry tracing (metrics, runtime logger, sinks) read `references/typescript/observability.md`.
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
@@ -17,7 +17,7 @@ Install `@temporalio/interceptors-opentelemetry` plus the OpenTelemetry peer pac
 
 ## `OpenTelemetryPlugin`
 
-Construct one `OpenTelemetryPlugin` and pass it to the Client, `bundleWorkflowCode`, and `Worker.create`. It must reach `bundleWorkflowCode` so the Workflow-side interceptors are included in the bundle. Lifecycle spans (workflow / activity / client) are then created automatically.
+Construct one `OpenTelemetryPlugin` and pass it to the Client, `bundleWorkflowCode`, and `Worker.create`. It must reach `bundleWorkflowCode` so the Workflow-side interceptors are included in the bundle. Lifecycle spans (workflow / activity / client / nexus) are then created automatically.
 
 ```ts
 import { Resource } from '@opentelemetry/resources';
@@ -52,7 +52,7 @@ const worker = await Worker.create({
 await worker.run();
 ```
 
-Pass the same plugin to the Client so client-side `start` and `signal` calls are traced:
+Pass the same plugin to the Client so client-side calls are traced:
 
 ```ts
 import { Client, Connection } from '@temporalio/client';

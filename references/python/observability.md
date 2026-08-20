@@ -4,7 +4,7 @@
 
 The Python SDK provides comprehensive observability through logging, metrics, tracing (OpenTelemetry), and visibility (Search Attributes).
 
-These pillars are complementary: **logging** (below) captures discrete events, **metrics** capture aggregate health, **tracing** stitches a single request across Client/Workflow/Activity boundaries, and **Search Attributes** make executions queryable.
+These pillars are complementary: **logging** (below) captures discrete events, **metrics** capture aggregate worker health, **tracing** stitches a single request across Client/Workflow/Activity/Nexus boundaries, and **Search Attributes** make executions queryable.
 
 ## Logging
 
@@ -98,48 +98,7 @@ Runtime.set_default(runtime, error_if_already_set=True)
 
 ## Distributed Tracing (OpenTelemetry)
 
-> [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
-OpenTelemetry is the supported way to add distributed tracing to Temporal applications. The `OpenTelemetryPlugin` (from `temporalio.contrib.opentelemetry`, installed via the `temporalio[opentelemetry]` extra) propagates W3C TraceContext + Baggage through Temporal headers across Client, Workflow, Activity (including Standalone), and Child Workflow boundaries, so one trace follows a request through your whole execution — with replay-safe, accurate span durations.
-
-```python
-import opentelemetry.trace
-from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
-from temporalio.client import Client
-from temporalio.contrib.opentelemetry import OpenTelemetryPlugin, create_tracer_provider
-
-provider = create_tracer_provider()
-provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))  # attach your span processors as normal for OTel
-opentelemetry.trace.set_tracer_provider(provider)
-
-client = await Client.connect("localhost:7233", plugins=[OpenTelemetryPlugin()])
-```
-
-Workers created from this Client inherit the plugin automatically. Inside a Workflow you then use standard OpenTelemetry APIs (`get_tracer(...).start_as_current_span(...)`); pass `OpenTelemetryPlugin(add_temporal_spans=True)` to also emit `StartWorkflow` / `RunWorkflow` / `StartActivity` / `RunActivity` spans automatically alongside the SDK metrics above.
-
-```python
-from datetime import timedelta
-from opentelemetry.trace import get_tracer
-from temporalio import workflow
-
-@workflow.defn
-class MyWorkflow:
-    @workflow.run
-    async def run(self) -> None:
-        tracer = get_tracer(__name__)
-        with tracer.start_as_current_span("workflow-operation"):
-            await workflow.execute_activity(
-                my_activity,
-                start_to_close_timeout=timedelta(seconds=30),
-            )
-```
-
-**Common mistakes:**
-
-- **Registering the same plugin on both Client and Worker.** Register on the Client only; Workers inherit.
-- **Calling `Client.connect` before `opentelemetry.trace.set_tracer_provider(provider)`.** `OpenTelemetryPlugin` raises an exception unless the global tracer provider is already set.
-- **Building a plain `opentelemetry.sdk.trace.TracerProvider` and passing it to `set_tracer_provider`.** `OpenTelemetryPlugin` requires a `ReplaySafeTracerProvider` — build it via `create_tracer_provider(...)`.
+See `references/python/integrations/opentelemetry.md`.
 
 ## Search Attributes (Visibility)
 
@@ -151,4 +110,4 @@ See the Search Attributes section of `references/python/data-handling.md`
 2. Don't use print() in workflows - it will produce duplicate output on replay
 3. Configure metrics for production monitoring
 4. Use Search Attributes for business-level visibility
-5. Use the `OpenTelemetryPlugin` for distributed tracing across Client/Workflow/Activity boundaries.
+5. Use the `OpenTelemetryPlugin` for distributed tracing across Client/Workflow/Activity/Nexus boundaries.
