@@ -148,8 +148,6 @@ After all V1 executions complete, remove the old Workflow function.
 
 Worker Versioning allows multiple Worker versions to run simultaneously, routing Workflows to specific versions without code-level patching. Workflows are pinned to the Worker Deployment Version they started on.
 
-> **Note:** Worker Versioning is currently in Public Preview. The legacy Worker Versioning API is deprecated.
-
 ### Key Concepts
 
 - **Worker Deployment**: A logical name for your application (e.g., "order-service")

@@ -184,7 +184,7 @@ temporal workflow list --query 'WorkflowType = "PizzaWorkflow" AND ExecutionStat
 Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
 
 > [!IMPORTANT]
-> Use the Worker Deployment APIs described below. The older Build ID-based APIs, including `Client.get_worker_build_id_compatibility()` and `Client.update_worker_build_id_compatibility()`, manage legacy compatibility sets and are deprecated.
+> Use the Worker Deployment APIs described below. The older Build ID-based APIs manage legacy compatibility sets and are deprecated.
 
 ### Key Concepts
 
