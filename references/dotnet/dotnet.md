@@ -59,13 +59,20 @@ using Temporalio.Worker;
 
 var client = await TemporalClient.ConnectAsync(new("localhost:7233"));
 
+using var tokenSource = new CancellationTokenSource();
+Console.CancelKeyPress += (_, eventArgs) =>
+{
+    tokenSource.Cancel();
+    eventArgs.Cancel = true;
+};
+
 using var worker = new TemporalWorker(
     client,
     new TemporalWorkerOptions("my-task-queue")
         .AddWorkflow<GreetingWorkflow>()
         .AddAllActivities(new MyActivities()));
 
-await worker.ExecuteAsync();
+await worker.ExecuteAsync(tokenSource.Token);
 ```
 
 **Start the dev server:** Start `temporal server start-dev` in the background.
