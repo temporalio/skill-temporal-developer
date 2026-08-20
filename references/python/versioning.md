@@ -184,7 +184,7 @@ temporal workflow list --query 'WorkflowType = "PizzaWorkflow" AND ExecutionStat
 Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
 
 > [!IMPORTANT]
-> Use the Worker Deployment APIs described below. The older Build ID-based APIs, including `Client.get_worker_build_id_compatibility()` and `Client.update_worker_build_id_compatibility()`, manage legacy compatibility sets and are deprecated; they are not the same as Worker Deployment Versioning.
+> Use the Worker Deployment APIs described below. The older Build ID-based APIs, including `Client.get_worker_build_id_compatibility()` and `Client.update_worker_build_id_compatibility()`, manage legacy compatibility sets and are deprecated.
 
 ### Key Concepts
 
@@ -213,11 +213,16 @@ worker = Worker(
 )
 ```
 
-**Configuration parameters:**
+`WorkerDeploymentConfig` accepts exactly three parameters:
 
+- `version`: A `WorkerDeploymentVersion` identifying this Worker Deployment Version
 - `use_worker_versioning`: Enables Worker Versioning
-- `version`: Identifies the Worker Deployment Version (deployment name + build ID)
-- `build_id`: The code-version component of a Worker Deployment Version, typically a git commit hash, version number, or timestamp
+- `default_versioning_behavior`: Fallback `VersioningBehavior` for Workflows that do not declare one
+
+`WorkerDeploymentVersion` accepts exactly two parameters:
+
+- `deployment_name`: The logical service name (e.g., "my-service")
+- `build_id`: The code-version component, typically a git commit hash, version number, or timestamp
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 

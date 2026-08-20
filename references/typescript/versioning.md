@@ -148,7 +148,7 @@ After all V1 executions complete, remove the old Workflow function.
 
 Worker Versioning allows multiple Worker versions to run simultaneously, routing Workflows to specific versions without code-level patching. Workflows are pinned to the Worker Deployment Version they started on.
 
-> **Note:** Worker Versioning is currently in Public Preview. The legacy Worker Versioning API (before 2025) will be removed from Temporal Server in March 2026.
+> **Note:** Worker Versioning is currently in Public Preview. The legacy Worker Versioning API is deprecated.
 
 ### Key Concepts
 

@@ -104,7 +104,7 @@ Create a new workflow type (e.g., `OrderWorkflowV2`) instead of patching.
 Manage versions through Worker Deployments. Multiple Worker Deployment Versions can run simultaneously, and each version is identified by a deployment name and Build ID.
 
 > [!IMPORTANT]
-> This is the current Worker Deployment-based versioning model. Do not confuse it with the legacy Build ID-based Worker Versioning APIs, which manage compatibility sets directly and are deprecated.
+> This is the current Worker Deployment-based versioning model. Do not confuse it with the legacy Build ID-based Worker Versioning APIs, which manage compatibility sets directly. Those APIs are deprecated.
 
 ```
 Worker Deployment Version (deployment: order-service, build: abc123)
@@ -121,7 +121,7 @@ Worker Deployment Version (deployment: order-service, build: def456)
 
 **Worker Deployment Version**: A specific snapshot identified by a Worker Deployment name and a Build ID
 
-**Build ID**: The code-version component of a Worker Deployment Version (e.g., a git commit hash), not the legacy compatibility-set API
+**Build ID**: The code-version component of a Worker Deployment Version (e.g., a git commit hash)
 
 **Versioning Behaviors**:
 
