@@ -28,6 +28,7 @@ async function run() {
   const connection = await NativeConnection.connect(config.connectionOptions);
   const worker = await Worker.create({
     connection,
+    namespace: config.namespace,
     taskQueue: 'hello-standalone-activities',
     activities, // register whatever your activity(ies) is/are
   });

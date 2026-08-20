@@ -55,6 +55,7 @@ async function run() {
   const connection = await NativeConnection.connect(config.connectionOptions);
   const worker = await Worker.create({
     connection,
+    namespace: config.namespace,
     workflowsPath: require.resolve('./workflows'), // For production, use workflowBundle instead
     activities,
     taskQueue: 'greeting-queue',
@@ -113,6 +114,7 @@ run().catch(console.error);
 ### Worker Setup
 
 - Load connection settings with `loadClientConnectConfig()` and pass them to `NativeConnection.connect()`
+- Pass `namespace: config.namespace` to `Worker.create()` - `NativeConnection` carries no namespace, and the Worker defaults to `default` without it
 - Use `Worker.create()` with `workflowsPath` (dev) or `workflowBundle` (production) - see `references/typescript/gotchas.md`
 - Import activities directly (not via proxy)
 
