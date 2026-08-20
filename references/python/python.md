@@ -42,6 +42,7 @@ class GreetingWorkflow:
 import asyncio
 import concurrent.futures
 from temporalio.client import Client
+from temporalio.envconfig import ClientConfig
 from temporalio.worker import Worker
 
 # Import the activity and workflow from our other files
@@ -49,9 +50,9 @@ from activities.greet import greet
 from workflows.greeting import GreetingWorkflow
 
 async def main():
-    # Create client connected to server at the given address
-    # This is the default port for `temporal server start-dev`
-    client = await Client.connect("localhost:7233")
+    connect_config = ClientConfig.load_client_connect_config()
+    connect_config.setdefault("target_host", "localhost:7233")
+    client = await Client.connect(**connect_config)
 
     # Run the worker
     with concurrent.futures.ThreadPoolExecutor(max_workers=100) as activity_executor:
@@ -77,14 +78,16 @@ if __name__ == "__main__":
 ```python
 import asyncio
 from temporalio.client import Client
+from temporalio.envconfig import ClientConfig
 import uuid
 
 # Import the workflow from the previous code
 from workflows.greeting import GreetingWorkflow
 
 async def main():
-    # Create client connected to server at the given address
-    client = await Client.connect("localhost:7233")
+    connect_config = ClientConfig.load_client_connect_config()
+    connect_config.setdefault("target_host", "localhost:7233")
+    client = await Client.connect(**connect_config)
 
     # Execute a workflow
     result = await client.execute_workflow(GreetingWorkflow.run, "my name", id=str(uuid.uuid4()), task_queue="my-task-queue")
@@ -119,7 +122,7 @@ See `sync-vs-async.md` for detailed guidance on choosing between sync and async.
 
 ### Worker Setup
 
-- Connect client, create Worker with workflows and activities
+- Load connection settings with `ClientConfig.load_client_connect_config()`, connect the client, and create a Worker with workflows and activities
 - Run the worker
 - Activities can specify custom executor
 

@@ -55,7 +55,7 @@ import { loadClientConnectConfig } from '@temporalio/envconfig';
 
 const config = loadClientConnectConfig();
 const connection = await Connection.connect(config.connectionOptions);
-const client = new Client({ connection });
+const client = new Client({ connection, namespace: config.namespace });
 ```
 
 ### Execute (wait for result)

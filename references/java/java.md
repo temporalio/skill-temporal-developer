@@ -12,6 +12,7 @@ Gradle:
 
 ```groovy
 implementation 'io.temporal:temporal-sdk:1.+'
+implementation 'io.temporal:temporal-envconfig:1.+'
 ```
 
 Maven:
@@ -20,6 +21,11 @@ Maven:
 <dependency>
     <groupId>io.temporal</groupId>
     <artifactId>temporal-sdk</artifactId>
+    <version>[1.0,)</version>
+</dependency>
+<dependency>
+    <groupId>io.temporal</groupId>
+    <artifactId>temporal-envconfig</artifactId>
     <version>[1.0,)</version>
 </dependency>
 ```
@@ -102,18 +108,19 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
 package greetingapp;
 
 import io.temporal.client.WorkflowClient;
+import io.temporal.envconfig.ClientConfigProfile;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
 
 public class GreetingWorker {
 
-    public static void main(String[] args) {
-        // Create gRPC stubs for local dev server (localhost:7233)
-        WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
-
-        // Create client
-        WorkflowClient client = WorkflowClient.newInstance(service);
+    public static void main(String[] args) throws Exception {
+        ClientConfigProfile profile = ClientConfigProfile.load();
+        WorkflowServiceStubs service =
+            WorkflowServiceStubs.newServiceStubs(profile.toWorkflowServiceStubsOptions());
+        WorkflowClient client =
+            WorkflowClient.newInstance(service, profile.toWorkflowClientOptions());
 
         // Create factory and worker
         WorkerFactory factory = WorkerFactory.newInstance(client);
@@ -140,15 +147,19 @@ package greetingapp;
 
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
+import io.temporal.envconfig.ClientConfigProfile;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 
 import java.util.UUID;
 
 public class Starter {
 
-    public static void main(String[] args) {
-        WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
-        WorkflowClient client = WorkflowClient.newInstance(service);
+    public static void main(String[] args) throws Exception {
+        ClientConfigProfile profile = ClientConfigProfile.load();
+        WorkflowServiceStubs service =
+            WorkflowServiceStubs.newServiceStubs(profile.toWorkflowServiceStubsOptions());
+        WorkflowClient client =
+            WorkflowClient.newInstance(service, profile.toWorkflowClientOptions());
 
         GreetingWorkflow workflow = client.newWorkflowStub(
             GreetingWorkflow.class,
@@ -187,6 +198,7 @@ public class Starter {
 
 ### Worker Setup
 
+- Load connection settings with `ClientConfigProfile.load()` and use the profile to configure both service stubs and the client
 - `WorkflowServiceStubs` -- gRPC connection to Temporal Server
 - `WorkflowClient` -- client used by worker to communicate with server
 - `WorkerFactory` -- creates Worker instances

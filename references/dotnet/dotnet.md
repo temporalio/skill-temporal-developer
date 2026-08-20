@@ -55,9 +55,12 @@ public class GreetingWorkflow
 
 ```csharp
 using Temporalio.Client;
+using Temporalio.Common.EnvConfig;
 using Temporalio.Worker;
 
-var client = await TemporalClient.ConnectAsync(new("localhost:7233"));
+var connectOptions = ClientEnvConfig.LoadClientConnectOptions();
+connectOptions.TargetHost ??= "localhost:7233";
+var client = await TemporalClient.ConnectAsync(connectOptions);
 
 using var tokenSource = new CancellationTokenSource();
 Console.CancelKeyPress += (_, eventArgs) =>
@@ -83,8 +86,11 @@ await worker.ExecuteAsync(tokenSource.Token);
 
 ```csharp
 using Temporalio.Client;
+using Temporalio.Common.EnvConfig;
 
-var client = await TemporalClient.ConnectAsync(new("localhost:7233"));
+var connectOptions = ClientEnvConfig.LoadClientConnectOptions();
+connectOptions.TargetHost ??= "localhost:7233";
+var client = await TemporalClient.ConnectAsync(connectOptions);
 
 var result = await client.ExecuteWorkflowAsync(
     (GreetingWorkflow wf) => wf.RunAsync("my name"),
@@ -114,7 +120,7 @@ Console.WriteLine($"Result: {result}");
 
 ### Worker Setup
 
-- Connect client, create `TemporalWorker` with workflows and activities
+- Load connection settings with `ClientEnvConfig.LoadClientConnectOptions()`, connect the client, and create `TemporalWorker` with workflows and activities
 - Use `AddWorkflow<T>()` and `AddAllActivities(instance)` or `AddActivity(method)`
 
 ### Determinism

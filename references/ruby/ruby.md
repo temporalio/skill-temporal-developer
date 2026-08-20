@@ -37,13 +37,15 @@ end
 **worker.rb** - Worker setup (imports activity and workflow, runs indefinitely and processes tasks):
 ```ruby
 require 'temporalio/client'
+require 'temporalio/env_config'
 require 'temporalio/worker'
 require_relative 'say_hello_activity'
 require_relative 'say_hello_workflow'
 
-# Create client connected to server at the given address
-# This is the default port for `temporal server start-dev`
-client = Temporalio::Client.connect('localhost:7233', 'default')
+args, kwargs = Temporalio::EnvConfig::ClientConfig.load_client_connect_options
+args[0] ||= 'localhost:7233'
+args[1] ||= 'default'
+client = Temporalio::Client.connect(*args, **kwargs)
 
 # Create and run the worker
 worker = Temporalio::Worker.new(
@@ -62,11 +64,14 @@ worker.run
 **execute_workflow.rb** - Start a workflow execution:
 ```ruby
 require 'temporalio/client'
+require 'temporalio/env_config'
 require 'securerandom'
 require_relative 'say_hello_workflow'
 
-# Create client connected to server at the given address
-client = Temporalio::Client.connect('localhost:7233', 'default')
+args, kwargs = Temporalio::EnvConfig::ClientConfig.load_client_connect_options
+args[0] ||= 'localhost:7233'
+args[1] ||= 'default'
+client = Temporalio::Client.connect(*args, **kwargs)
 
 # Execute a workflow
 result = client.execute_workflow(
@@ -96,7 +101,7 @@ puts "Result: #{result}"
 - Can access `Temporalio::Activity::Context.current` for heartbeating
 
 ### Worker Setup
-- Connect client with `Temporalio::Client.connect`
+- Load connection settings with `Temporalio::EnvConfig::ClientConfig.load_client_connect_options` and connect with `Temporalio::Client.connect`
 - Create worker with `Temporalio::Worker.new(client:, task_queue:, workflows:, activities:)`
 - Run with `worker.run`
 
