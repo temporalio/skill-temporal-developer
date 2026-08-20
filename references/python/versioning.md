@@ -183,6 +183,9 @@ temporal workflow list --query 'WorkflowType = "PizzaWorkflow" AND ExecutionStat
 
 Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
 
+> [!IMPORTANT]
+> Use the Worker Deployment APIs described below. The older Build ID-based APIs, including `Client.get_worker_build_id_compatibility()` and `Client.update_worker_build_id_compatibility()`, manage legacy compatibility sets and are deprecated; they are not the same as Worker Deployment Versioning.
+
 ### Key Concepts
 
 **Worker Deployment**: A logical service grouping similar Workers together (e.g., "loan-processor"). All versions of your code live under this umbrella.
@@ -192,11 +195,8 @@ Worker Versioning manages versions at the deployment level, allowing multiple Wo
 ### Configuring Workers for Versioning
 
 ```python
-from temporalio.worker import Worker
-from temporalio.worker.deployment_config import (
-    WorkerDeploymentConfig,
-    WorkerDeploymentVersion,
-)
+from temporalio.common import WorkerDeploymentVersion
+from temporalio.worker import Worker, WorkerDeploymentConfig
 
 worker = Worker(
     client,
@@ -217,7 +217,7 @@ worker = Worker(
 
 - `use_worker_versioning`: Enables Worker Versioning
 - `version`: Identifies the Worker Deployment Version (deployment name + build ID)
-- Build ID: Typically a git commit hash, version number, or timestamp
+- `build_id`: The code-version component of a Worker Deployment Version, typically a git commit hash, version number, or timestamp
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 

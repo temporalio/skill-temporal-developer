@@ -8,7 +8,7 @@ Workflow versioning allows safe deployment of code changes without breaking runn
 
 1. **Patching API** - Code-level version branching
 2. **Workflow Type Versioning** - New workflow types for incompatible changes
-3. **Worker Versioning** - Deployment-level control with Build IDs
+3. **Worker Versioning** - Deployment-level routing with Worker Deployment Versions
 
 ## Why Versioning is Needed
 
@@ -101,13 +101,16 @@ Create a new workflow type (e.g., `OrderWorkflowV2`) instead of patching.
 
 ### Concept
 
-Manage versions at deployment level using Build IDs. Multiple worker versions can run simultaneously.
+Manage versions through Worker Deployments. Multiple Worker Deployment Versions can run simultaneously, and each version is identified by a deployment name and Build ID.
+
+> [!IMPORTANT]
+> This is the current Worker Deployment-based versioning model. Do not confuse it with the legacy Build ID-based Worker Versioning APIs, which manage compatibility sets directly and are deprecated.
 
 ```
-Worker v1.0 (Build ID: abc123)
+Worker Deployment Version (deployment: order-service, build: abc123)
   └── Handles workflows started on this version
 
-Worker v2.0 (Build ID: def456)
+Worker Deployment Version (deployment: order-service, build: def456)
   └── Handles new workflows
   └── Can also handle upgraded old workflows
 ```
@@ -116,7 +119,9 @@ Worker v2.0 (Build ID: def456)
 
 **Worker Deployment**: Logical service grouping (e.g., "order-service")
 
-**Build ID**: Specific code version (e.g., git commit hash)
+**Worker Deployment Version**: A specific snapshot identified by a Worker Deployment name and a Build ID
+
+**Build ID**: The code-version component of a Worker Deployment Version (e.g., a git commit hash), not the legacy compatibility-set API
 
 **Versioning Behaviors**:
 

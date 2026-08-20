@@ -152,7 +152,7 @@ Normally, your `__init__` must have no arguments. However, if you add the `@work
 class MyWorkflow:
     @workflow.init
     def __init__(self, initial_value: str) -> None:
-        # This runs only on first execution, not replay
+        # This runs when the Workflow is instantiated, including during replay
         self._value = initial_value
         self._items: list[str] = []
 
