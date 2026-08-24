@@ -180,6 +180,6 @@ See `references/typescript/testing.md` for info on writing tests.
 - **`references/typescript/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **`references/typescript/advanced-features.md`** - Schedules, worker tuning, and more
 - **`references/typescript/data-handling.md`** - Data converters, payload encryption, etc.
-- **`references/typescript/external-storage.md`** - Claim-check pattern for large Payloads (S3/GCS drivers, custom drivers, multi-region durability)
+- **`references/typescript/external-storage.md`** - Claim-check pattern for large Payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
 - **`references/typescript/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/typescript/determinism-protection.md`** - V8 sandbox and bundling

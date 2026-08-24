@@ -1,7 +1,7 @@
 # TypeScript SDK External Storage
 
 > [!NOTE]
-> This TypeScript SDK feature is Pre-release. It is acceptable to use on behalf of a user, but inform them that its APIs and configuration may change before General Availability.
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
 ## What this is
 
@@ -33,6 +33,7 @@ Amazon S3:
 ```bash
 npm install @temporalio/external-storage-s3 \
   @temporalio/external-storage-s3-aws-sdk \
+  @temporalio/envconfig \
   @aws-sdk/client-s3
 ```
 
@@ -41,6 +42,7 @@ Google Cloud Storage:
 ```bash
 npm install @temporalio/external-storage-gcs \
   @temporalio/external-storage-gcs-google-sdk \
+  @temporalio/envconfig \
   @google-cloud/storage
 ```
 
@@ -82,21 +84,27 @@ For either driver, `bucket` can be a function instead of a string. The function 
 
 ### Configure the Client and Worker
 
-Create one Data Converter configuration and pass it to both the Client and Worker:
+Create one Data Converter configuration and pass it to both the Client and Worker. Load connection settings with `loadClientConnectConfig()`, and remember that `NativeConnection` carries no namespace, so the Worker needs `namespace` passed explicitly:
 
 ```typescript
 import { Client, Connection } from '@temporalio/client';
 import { ExternalStorage } from '@temporalio/common';
-import { Worker } from '@temporalio/worker';
+import { loadClientConnectConfig } from '@temporalio/envconfig';
+import { NativeConnection, Worker } from '@temporalio/worker';
 
 const dataConverter = {
   externalStorage: new ExternalStorage({ drivers: [driver] }),
 };
 
-const connection = await Connection.connect();
-const client = new Client({ connection, dataConverter });
+const config = loadClientConnectConfig();
 
+const connection = await Connection.connect(config.connectionOptions);
+const client = new Client({ connection, namespace: config.namespace, dataConverter });
+
+const workerConnection = await NativeConnection.connect(config.connectionOptions);
 const worker = await Worker.create({
+  connection: workerConnection,
+  namespace: config.namespace,
   workflowsPath: require.resolve('./workflows'),
   taskQueue: 'my-task-queue',
   dataConverter,
@@ -201,6 +209,18 @@ const driver = new S3StorageDriver({
 
 Cross-region replication is eventually consistent. Activities reading newly written Payloads from another region need an appropriate Retry Policy. Replication, versioning, and Replication Time Control can add significant cost.
 
+## Codec Server with External Storage
+
+When Workers and Clients use External Storage, Event History contains reference tokens — not payload data. A plain codec server that only implements `/encode` and `/decode` leaves the Web UI and CLI showing raw reference tokens.
+
+The TypeScript SDK does not ship a codec-server handler, so implement the routes yourself (e.g. with Express), wiring in your storage drivers, your pre-storage codecs (the Payload Codecs your Workers use), and any post-storage codecs (applied by a proxy after external storage):
+
+- **`/download`** — retrieves payload data from external storage and decodes it through the Payload Codec. The Web UI calls this when a user clicks to view the full payload behind a reference.
+- **`/decode`** — decodes encoded payloads and, by default, retrieves storage references inline. Support `?preserveStorageRefs=true` to return storage references as-is without retrieval; the Web UI uses it to render history without downloading every blob.
+- **`/encode`** — applies the Payload Codec, then uploads payloads exceeding the threshold and replaces them with reference tokens.
+
+**Don't point a Worker's remote codec at the storage-aware handler** — it runs the full encode-store-encode and decode-retrieve-decode pipeline. Serve remote codecs from a separate non-storage endpoint, configured with the same codecs.
+
 ## Lifecycle and failure handling
 
 Temporal does **not** automatically delete Payloads from the external store. Configure a bucket lifecycle policy with:
@@ -218,9 +238,9 @@ The SDK does not retry a failed `store()` or `retrieve()` call within the same T
 ## Anti-patterns
 
 - **Don't change a driver's `name` after Payloads have been stored.** The name is embedded in references; changing it breaks retrieval.
-- **Don't use `payloadSizeThreshold: 1` to mean "externalize all".** TypeScript uses `0` for that purpose.
 - **Don't register duplicate driver names.** Give each instance a unique `name` or `driverName`.
 - **Don't register multiple drivers without a `driverSelector`.** Construction fails when more than one driver is registered without one.
 - **Don't omit External Storage configuration from a Client or Worker that may retrieve offloaded data.** It cannot resolve the reference without the matching driver.
 - **Don't assume the 2 MB Temporal limit is the built-in driver's maximum.** The S3 and GCS drivers default `maxPayloadSize` to 50 MiB.
+- **Don't point a Worker's remote codec at a storage-aware codec-server handler.** Serve remote codecs from a separate non-storage endpoint.
 - **Don't omit a lifecycle policy.** Payloads are otherwise retained indefinitely, and failed requests can leave orphaned objects.

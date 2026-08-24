@@ -5,7 +5,7 @@
 
 ## What this is
 
-External Storage uses the **claim check pattern**: it offloads each Payload to an external store (e.g. Amazon S3), records a small reference token (the "claim check") in Event History, and uses that token to retrieve the Payload when needed. The SDK handles storage and retrieval transparently.
+External Storage uses the **claim check pattern**: it offloads each Payload to an external store (e.g. Amazon S3 or Google Cloud Storage), records a small reference token (the "claim check") in Event History, and uses that token to retrieve the Payload when needed. The SDK handles storage and retrieval transparently.
 
 ## When to use it
 
@@ -22,14 +22,13 @@ Consequences:
 
 - If a Payload Codec encrypts data, the bytes are already encrypted **before** upload to your store.
 - The Temporal UI shows the reference token, not the data; the SDK transparently retrieves the payload before handing it to your Workflow or Client.
+- Every Client and Worker that might read an offloaded payload needs the same External Storage configuration.
 
-## Concurrency
+## Setup with a built-in driver
 
-The SDK uploads and downloads payloads **concurrently** within a single Workflow Task — multiple offloaded payloads in one Task are stored/retrieved in parallel, not sequentially. This is automatic; no configuration required.
+The Go SDK ships drivers for Amazon S3 and Google Cloud Storage. Only the driver setup differs between the two; everything after that is identical.
 
-## Setup with the built-in S3 driver
-
-Install dependencies:
+Amazon S3:
 
 ```bash
 go get go.temporal.io/sdk/contrib/aws/s3driver \
@@ -38,17 +37,22 @@ go get go.temporal.io/sdk/contrib/aws/s3driver \
        github.com/aws/aws-sdk-go-v2/service/s3
 ```
 
-Create the driver and Client:
+Google Cloud Storage:
+
+```bash
+go get go.temporal.io/sdk/contrib/gcp/gcsdriver \
+       go.temporal.io/sdk/contrib/gcp/gcsdriver/gcssdk \
+       cloud.google.com/go/storage
+```
+
+### Amazon S3 driver
 
 ```go
 import (
     "github.com/aws/aws-sdk-go-v2/config"
     "github.com/aws/aws-sdk-go-v2/service/s3"
-    "go.temporal.io/sdk/client"
     "go.temporal.io/sdk/contrib/aws/s3driver"
     "go.temporal.io/sdk/contrib/aws/s3driver/awssdkv2"
-    "go.temporal.io/sdk/converter"
-    "go.temporal.io/sdk/worker"
 )
 
 cfg, err := config.LoadDefaultConfig(context.Background(),
@@ -65,13 +69,53 @@ driver, err := s3driver.NewDriver(s3driver.Options{
 if err != nil {
     log.Fatalf("create S3 driver: %v", err)
 }
+```
 
-c, err := client.Dial(client.Options{
-    HostPort: "localhost:7233",
-    ExternalStorage: converter.ExternalStorage{
-        Drivers: []converter.StorageDriver{driver},
-    },
+The AWS SDK reads standard credentials from the environment (env vars, IAM role, or AWS config file).
+
+### Google Cloud Storage driver
+
+```go
+import (
+    "cloud.google.com/go/storage"
+    "go.temporal.io/sdk/contrib/gcp/gcsdriver"
+    "go.temporal.io/sdk/contrib/gcp/gcsdriver/gcssdk"
+)
+
+gcsClient, err := storage.NewClient(context.Background())
+if err != nil {
+    log.Fatalf("create GCS client: %v", err)
+}
+
+driver, err := gcsdriver.NewDriver(gcsdriver.Options{
+    Client: gcssdk.NewClient(gcsClient),
+    Bucket: gcsdriver.StaticBucket("my-temporal-payloads"),
 })
+if err != nil {
+    log.Fatalf("create GCS driver: %v", err)
+}
+```
+
+The Google Cloud SDK reads Application Default Credentials.
+
+For either driver, pass a `BucketFunc` as `Bucket` instead of `StaticBucket` to route payloads at runtime. The function receives the store context and the payload and returns a bucket name.
+
+### Configure the Client and Worker
+
+```go
+import (
+    "go.temporal.io/sdk/client"
+    "go.temporal.io/sdk/contrib/envconfig"
+    "go.temporal.io/sdk/converter"
+    "go.temporal.io/sdk/worker"
+)
+
+opts := envconfig.MustLoadDefaultClientOptions()
+opts.ExternalStorage = converter.ExternalStorage{
+    Drivers: []converter.StorageDriver{driver},
+}
+
+c, err := client.Dial(opts)
 if err != nil {
     log.Fatalf("connect to Temporal: %v", err)
 }
@@ -80,23 +124,34 @@ defer c.Close()
 w := worker.New(c, "my-task-queue", worker.Options{})
 ```
 
-The S3 driver uses standard AWS credentials from the environment (env vars, IAM role, or AWS config file).
+A Worker inherits External Storage from the Client it is created with. When your Workers run in their own process, repeat this setup there — a Client or Worker without the matching driver cannot resolve a reference.
 
 Workflows and Activities running on the Worker use the driver automatically — no changes to business logic.
+
+## Built-in driver behavior
+
+Both the S3 and GCS drivers:
+
+- Upload and download payloads **concurrently**. Multiple offloaded payloads in a single Workflow Task are stored or retrieved in parallel, not sequentially.
+- Address objects by a SHA-256 hash of the contents, scoped by Namespace, Workflow ID, and Run ID, and verify that hash on retrieval. One Run passing the same payload to several Activities uploads it once; a different Run, Workflow, or Namespace stores its own copy, so storage scales with the number of Runs rather than with how often a Run passes a payload around.
+- Reject any single payload larger than `MaxPayloadSize`, which defaults to **50 MiB**. `PayloadSizeThreshold` does not raise this ceiling — set `MaxPayloadSize` for the largest payload the application must support, and size the backing store to match.
+- Include diagnostic metadata, such as the AWS region, in storage errors.
 
 ## Payload size threshold
 
 - Default: **256 KiB**.
 - Set `PayloadSizeThreshold: 1` to externalize **all** payloads regardless of size.
 - `PayloadSizeThreshold: 0` is **interpreted as the default (256 KiB)** — it does **not** mean "externalize everything".
+- The size compared against the threshold is that of the serialized Payload, including its metadata, not just your data.
 
 ```go
-c, err := client.Dial(client.Options{
-    ExternalStorage: converter.ExternalStorage{
-        Drivers:              []converter.StorageDriver{driver},
-        PayloadSizeThreshold: 1,
-    },
-})
+opts := envconfig.MustLoadDefaultClientOptions()
+opts.ExternalStorage = converter.ExternalStorage{
+    Drivers:              []converter.StorageDriver{driver},
+    PayloadSizeThreshold: 1,
+}
+
+c, err := client.Dial(opts)
 ```
 
 ## Multiple drivers and migration
@@ -104,6 +159,7 @@ c, err := client.Dial(client.Options{
 When you register more than one driver, you **must** supply a `DriverSelector` implementing `StorageDriverSelector`. The selector chooses which driver stores each payload. Unselected drivers remain available for **retrieval** — this is how you migrate between storage backends without losing access to existing claims.
 
 - Return `nil` from the selector to keep a specific payload inline in Event History.
+- Every registered driver must have a distinct `Name()`; duplicates are rejected when the Client or Worker is constructed. `s3driver` defaults its name to `"aws.s3driver"` and `gcsdriver` to `"gcp.gcsdriver"`, so registering two drivers of the same kind requires setting `DriverName` on at least one.
 
 ```go
 type PreferredSelector struct {
@@ -125,18 +181,22 @@ func MultipleDriversSetup(preferredDriver, legacyDriver converter.StorageDriver)
 }
 ```
 
+Useful routing patterns include driver migration, hot/cold storage tiers, per-tenant storage, and selecting S3 or GCS based on the runtime environment.
+
 ## Custom storage driver
 
 Implement `converter.StorageDriver` with **four** methods:
 
 - `Name() string` — unique identifier for **this driver instance**, stored in the claim reference so the SDK can route retrieval. Renaming after payloads are stored **breaks retrieval**.
-- `Type() string` — identifier for the driver **implementation**, same across all instances regardless of configuration (e.g. `"aws.s3driver"`, `"local-disk"`).
-- `Store(ctx, payloads) ([]StorageDriverClaim, error)` — upload each Payload protobuf and return one claim per payload. A claim is a `map[string]string` the driver uses to locate the payload later.
-- `Retrieve(ctx, claims) ([]*commonpb.Payload, error)` — download bytes using claim data and reconstruct each Payload.
+- `Type() string` — identifier for the driver **implementation**, same across all instances regardless of configuration (e.g. `"aws.s3driver"`, `"local-disk"`). It is reported in Worker heartbeats.
+- `Store(ctx, payloads) ([]StorageDriverClaim, error)` — upload each Payload protobuf and return one claim per payload, in the same order. A claim is a `map[string]string` the driver uses to locate the payload later.
+- `Retrieve(ctx, claims) ([]*commonpb.Payload, error)` — download bytes using claim data and reconstruct each Payload, one per claim, in the same order.
 
 Inside `Store()`, marshal each payload with `proto.Marshal(payload)`; in `Retrieve()`, reconstruct with `proto.Unmarshal(data, payload)`. The application data has already been serialized by the Payload Converter and Payload Codec before it reaches the driver.
 
-`ctx.Target` provides identity information. Type-switch over `StorageDriverWorkflowInfo` and `StorageDriverActivityInfo` to access the namespace / Workflow ID / Activity ID. `StorageDriverActivityInfo` is only used for standalone (non-workflow-bound) Activities; Activities started by a Workflow get `StorageDriverWorkflowInfo`.
+`ctx.Context` carries the context of the operation that triggered the driver call — pass it to your storage calls so cancellation and deadlines propagate, and so sibling operations stop after the first failure.
+
+`ctx.Target` provides identity information. Type-switch over `StorageDriverWorkflowInfo` and `StorageDriverActivityInfo` to access the namespace / Workflow ID / Activity ID, and use it to scope storage keys. `StorageDriverActivityInfo` is only used for standalone (non-workflow-bound) Activities; Activities started by a Workflow get `StorageDriverWorkflowInfo`.
 
 Worked example — local-disk driver (development/testing only):
 
@@ -210,7 +270,22 @@ func (d *LocalDiskStorageDriver) Retrieve(
 }
 ```
 
-You can package a custom driver as a [plugin](/develop/plugins-guide) for reuse across services.
+You can package a custom driver as a [plugin](https://docs.temporal.io/develop/plugins-guide) for reuse across services.
+
+## Multi-region durability with Amazon S3
+
+For regional-failure tolerance, configure S3 Cross-Region Replication (CRR) and an S3 Multi-Region Access Point (MRAP), then pass the MRAP ARN as the bucket:
+
+```go
+driver, err := s3driver.NewDriver(s3driver.Options{
+    Client: awssdkv2.NewClient(s3.NewFromConfig(cfg)),
+    Bucket: s3driver.StaticBucket("arn:aws:s3::123456789012:accesspoint/mfzwi23gnjvgw.mrap"),
+})
+```
+
+The AWS SDK for Go v2 uses SigV4A signing automatically when the bucket value is an MRAP ARN, so no additional client configuration is required.
+
+Cross-region replication is eventually consistent. Activities reading newly written Payloads from another region need an appropriate Retry Policy. Replication, versioning, and Replication Time Control can add significant cost.
 
 ## Codec Server with External Storage
 
@@ -226,7 +301,7 @@ When configured with storage drivers, the handler exposes:
 
 **Don't use `NewPayloadHTTPHandler` as a remote Data Converter or remote codec target for your Workers** — it runs the full encode-store-encode and decode-retrieve-decode pipeline. For remote codecs use `NewPayloadCodecHTTPHandler` separately. If you need both, run both handlers, configured with the same codecs.
 
-## Lifecycle management
+## Lifecycle and failure handling
 
 Temporal does **not** auto-delete payloads from your store. Configure a TTL on your bucket:
 
@@ -238,10 +313,15 @@ Example: Run Timeout 14 days + Namespace retention 30 days → set TTL to at lea
 
 For Workflows with no finite Run Timeout, there is no safe finite TTL. Use Continue-as-New so the new run uploads fresh payloads and the old run's payloads only need to survive its retention period.
 
+The SDK does not retry a failed `Store` or `Retrieve` call within the same Task attempt. The failure fails the current Workflow Task or Activity Task attempt; Temporal then retries the Task as a whole, and the new attempt retries the storage operation along with it. For Activities, the Retry Policy controls the timing. Storage operations should therefore be idempotent — content-addressable keys are one way to get that.
+
 ## Anti-patterns
 
 - **Don't change `Name()` after payloads have been stored.** The name is embedded in the claim reference; renaming breaks retrieval of existing claims.
 - **Don't use `PayloadSizeThreshold: 0` to mean "externalize all".** `0` is interpreted as the default (256 KiB). Use `PayloadSizeThreshold: 1`.
 - **Don't register multiple drivers without a `DriverSelector`.** The selector is required when there are multiple drivers.
+- **Don't register duplicate driver names.** Two same-kind drivers share a default name; set `DriverName` on at least one.
+- **Don't omit External Storage configuration from a Client or Worker that may retrieve offloaded data.** It cannot resolve the reference without the matching driver.
+- **Don't assume the 2 MB Temporal limit is the driver's maximum.** The S3 and GCS drivers reject payloads above `MaxPayloadSize`, which defaults to 50 MiB.
 - **Don't point a Worker's remote codec at `NewPayloadHTTPHandler`.** Use `NewPayloadCodecHTTPHandler` for remote codec endpoints.
 - **Don't omit a TTL on the bucket.** Payloads are orphaned otherwise; orphaned objects can also remain if a request fails after upload.

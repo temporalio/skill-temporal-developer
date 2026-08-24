@@ -250,6 +250,6 @@ See `references/go/testing.md` for info on writing tests.
 - **`references/go/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **`references/go/advanced-features.md`** - Schedules, worker tuning, and more
 - **`references/go/data-handling.md`** - Data converters, payload codecs, encryption
-- **`references/go/external-storage.md`** - Claim-check pattern for large payloads (S3 driver, custom drivers, codec-server handling)
+- **`references/go/external-storage.md`** - Claim-check pattern for large payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
 - **`references/go/versioning.md`** - Patching API (`workflow.GetVersion`), Worker Versioning
 - **`references/go/determinism-protection.md`** - Information on **`workflowcheck`** tool to help statically check for determinism issues.

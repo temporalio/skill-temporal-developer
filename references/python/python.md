@@ -179,7 +179,7 @@ See `references/python/testing.md` for info on writing tests.
 - **`references/python/sync-vs-async.md`** - Sync vs async activities, event loop blocking, executor configuration
 - **`references/python/advanced-features.md`** - Schedules, worker tuning, and more
 - **`references/python/data-handling.md`** - Data converters, Pydantic, payload encryption
-- **`references/python/external-storage.md`** - Claim-check pattern for large payloads (S3 driver, custom drivers, codec-server handling)
+- **`references/python/external-storage.md`** - Claim-check pattern for large payloads (S3 driver, custom drivers, codec-server handling, multi-region durability)
 - **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
 - **`references/python/ai-patterns.md`** - LLM integration, Pydantic data converter, AI workflow patterns
