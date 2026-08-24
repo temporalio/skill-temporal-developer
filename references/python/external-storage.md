@@ -32,7 +32,7 @@ The Python SDK ships an Amazon S3 driver (there is no built-in GCS driver — us
 python -m pip install "temporalio[aioboto3]"
 ```
 
-Create the driver, attach it to a `DataConverter`, and pass the converter to both Client and Worker:
+Create the driver, attach it to a `DataConverter`, and pass the converter to `Client.connect`. A Worker inherits the Data Converter from the Client it is created with — `Worker` takes no `data_converter` argument of its own:
 
 ```python
 import asyncio
@@ -146,6 +146,8 @@ Inside `store()`, serialize each payload with `payload.SerializeToString()`; in 
 
 `context.target` provides identity information (namespace, Workflow ID, or Activity ID). Check the target type with `isinstance(target, StorageDriverWorkflowInfo)`; the Workflow info exposes `target.namespace` and `target.id`. Use this to scope storage keys per Workflow, but hash or encode identifiers before using them as path segments because identifiers can contain path separators or traversal sequences. Within that scope, content-addressable keys (such as a SHA-256 hash of the payload bytes) deduplicate identical payloads and make retries idempotent.
 
+Treat claim data in `retrieve()` as untrusted input. A driver that resolves a filesystem path, object key, or URL straight out of the claim will follow whatever a hand-crafted reference payload puts there, so re-check that the resolved location stays inside the store the driver owns.
+
 Worked example — local-disk driver (development/testing only):
 
 ```python
@@ -170,6 +172,14 @@ def safe_path_segment(value: str) -> str:
 class LocalDiskStorageDriver(StorageDriver):
     def __init__(self, store_dir: str = "/tmp/temporal-payload-store") -> None:
         self._store_dir = store_dir
+
+    def _resolve_path(self, claim_path: str) -> str:
+        """Reject claim data that points outside the store directory."""
+        root = os.path.realpath(self._store_dir)
+        resolved = os.path.realpath(claim_path)
+        if resolved != root and not resolved.startswith(root + os.sep):
+            raise ValueError(f"claim path {claim_path!r} escapes the store directory")
+        return resolved
 
     def name(self) -> str:
         return "local-disk"
@@ -211,7 +221,7 @@ class LocalDiskStorageDriver(StorageDriver):
     ) -> list[Payload]:
         payloads = []
         for claim in claims:
-            file_path = claim.claim_data["path"]
+            file_path = self._resolve_path(claim.claim_data["path"])
             with open(file_path, "rb") as f:
                 raw = f.read()
             payload = Payload()

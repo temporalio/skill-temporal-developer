@@ -33,6 +33,7 @@ Amazon S3:
 ```bash
 go get go.temporal.io/sdk/contrib/aws/s3driver \
        go.temporal.io/sdk/contrib/aws/s3driver/awssdkv2 \
+       go.temporal.io/sdk/contrib/envconfig \
        github.com/aws/aws-sdk-go-v2/config \
        github.com/aws/aws-sdk-go-v2/service/s3
 ```
@@ -42,6 +43,7 @@ Google Cloud Storage:
 ```bash
 go get go.temporal.io/sdk/contrib/gcp/gcsdriver \
        go.temporal.io/sdk/contrib/gcp/gcsdriver/gcssdk \
+       go.temporal.io/sdk/contrib/envconfig \
        cloud.google.com/go/storage
 ```
 
@@ -49,6 +51,9 @@ go get go.temporal.io/sdk/contrib/gcp/gcsdriver \
 
 ```go
 import (
+    "context"
+    "log"
+
     "github.com/aws/aws-sdk-go-v2/config"
     "github.com/aws/aws-sdk-go-v2/service/s3"
     "go.temporal.io/sdk/contrib/aws/s3driver"
@@ -77,6 +82,9 @@ The AWS SDK reads standard credentials from the environment (env vars, IAM role,
 
 ```go
 import (
+    "context"
+    "log"
+
     "cloud.google.com/go/storage"
     "go.temporal.io/sdk/contrib/gcp/gcsdriver"
     "go.temporal.io/sdk/contrib/gcp/gcsdriver/gcssdk"
@@ -104,6 +112,8 @@ For either driver, pass a `BucketFunc` as `Bucket` instead of `StaticBucket` to 
 
 ```go
 import (
+    "log"
+
     "go.temporal.io/sdk/client"
     "go.temporal.io/sdk/contrib/envconfig"
     "go.temporal.io/sdk/converter"
@@ -162,6 +172,12 @@ When you register more than one driver, you **must** supply a `DriverSelector` i
 - Every registered driver must have a distinct `Name()`; duplicates are rejected when the Client or Worker is constructed. `s3driver` defaults its name to `"aws.s3driver"` and `gcsdriver` to `"gcp.gcsdriver"`, so registering two drivers of the same kind requires setting `DriverName` on at least one.
 
 ```go
+import (
+    commonpb "go.temporal.io/api/common/v1"
+
+    "go.temporal.io/sdk/converter"
+)
+
 type PreferredSelector struct {
     preferred converter.StorageDriver
 }
@@ -198,9 +214,25 @@ Inside `Store()`, marshal each payload with `proto.Marshal(payload)`; in `Retrie
 
 `ctx.Target` provides identity information. Type-switch over `StorageDriverWorkflowInfo` and `StorageDriverActivityInfo` to access the namespace / Workflow ID / Activity ID, and use it to scope storage keys. Hash or encode identifiers before using them as path segments because identifiers can contain path separators or traversal sequences. `StorageDriverActivityInfo` is only used for standalone (non-workflow-bound) Activities; Activities started by a Workflow get `StorageDriverWorkflowInfo`.
 
+Validate claim data in `Retrieve()` as untrusted input. A driver that resolves a filesystem path, object key, or URL straight out of the claim will follow whatever a hand-crafted reference payload puts there, so re-check that the resolved location stays inside the store the driver owns.
+
 Worked example — local-disk driver (development/testing only):
 
 ```go
+import (
+    "crypto/sha256"
+    "encoding/hex"
+    "fmt"
+    "os"
+    "path/filepath"
+    "strings"
+
+    commonpb "go.temporal.io/api/common/v1"
+    "google.golang.org/protobuf/proto"
+
+    "go.temporal.io/sdk/converter"
+)
+
 type LocalDiskStorageDriver struct {
     storeDir string
 }
@@ -212,6 +244,22 @@ func safePathSegment(value string) string {
 
 func NewLocalDiskStorageDriver(storeDir string) converter.StorageDriver {
     return &LocalDiskStorageDriver{storeDir: storeDir}
+}
+
+// resolvePath rejects claim data that points outside the store directory.
+func (d *LocalDiskStorageDriver) resolvePath(claimPath string) (string, error) {
+    root, err := filepath.Abs(d.storeDir)
+    if err != nil {
+        return "", fmt.Errorf("resolve store directory: %w", err)
+    }
+    resolved, err := filepath.Abs(claimPath)
+    if err != nil {
+        return "", fmt.Errorf("resolve claim path: %w", err)
+    }
+    if resolved != root && !strings.HasPrefix(resolved, root+string(os.PathSeparator)) {
+        return "", fmt.Errorf("claim path %q escapes the store directory", claimPath)
+    }
+    return resolved, nil
 }
 
 func (d *LocalDiskStorageDriver) Name() string { return "my-local-disk" }
@@ -269,7 +317,10 @@ func (d *LocalDiskStorageDriver) Retrieve(
 ) ([]*commonpb.Payload, error) {
     payloads := make([]*commonpb.Payload, len(claims))
     for i, claim := range claims {
-        filePath := claim.ClaimData["path"]
+        filePath, err := d.resolvePath(claim.ClaimData["path"])
+        if err != nil {
+            return nil, err
+        }
         data, err := os.ReadFile(filePath)
         if err != nil {
             return nil, fmt.Errorf("read payload: %w", err)
