@@ -196,13 +196,18 @@ Inside `Store()`, marshal each payload with `proto.Marshal(payload)`; in `Retrie
 
 `ctx.Context` carries the context of the operation that triggered the driver call — pass it to your storage calls so cancellation and deadlines propagate, and so sibling operations stop after the first failure.
 
-`ctx.Target` provides identity information. Type-switch over `StorageDriverWorkflowInfo` and `StorageDriverActivityInfo` to access the namespace / Workflow ID / Activity ID, and use it to scope storage keys. `StorageDriverActivityInfo` is only used for standalone (non-workflow-bound) Activities; Activities started by a Workflow get `StorageDriverWorkflowInfo`.
+`ctx.Target` provides identity information. Type-switch over `StorageDriverWorkflowInfo` and `StorageDriverActivityInfo` to access the namespace / Workflow ID / Activity ID, and use it to scope storage keys. Hash or encode identifiers before using them as path segments because identifiers can contain path separators or traversal sequences. `StorageDriverActivityInfo` is only used for standalone (non-workflow-bound) Activities; Activities started by a Workflow get `StorageDriverWorkflowInfo`.
 
 Worked example — local-disk driver (development/testing only):
 
 ```go
 type LocalDiskStorageDriver struct {
     storeDir string
+}
+
+func safePathSegment(value string) string {
+    sum := sha256.Sum256([]byte(value))
+    return hex.EncodeToString(sum[:])
 }
 
 func NewLocalDiskStorageDriver(storeDir string) converter.StorageDriver {
@@ -220,11 +225,19 @@ func (d *LocalDiskStorageDriver) Store(
     switch info := ctx.Target.(type) {
     case converter.StorageDriverWorkflowInfo:
         if info.WorkflowID != "" {
-            dir = filepath.Join(d.storeDir, info.Namespace, info.WorkflowID)
+            dir = filepath.Join(
+                d.storeDir,
+                safePathSegment(info.Namespace),
+                safePathSegment(info.WorkflowID),
+            )
         }
     case converter.StorageDriverActivityInfo:
         if info.ActivityID != "" {
-            dir = filepath.Join(d.storeDir, info.Namespace, info.ActivityID)
+            dir = filepath.Join(
+                d.storeDir,
+                safePathSegment(info.Namespace),
+                safePathSegment(info.ActivityID),
+            )
         }
     }
     if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -233,12 +246,13 @@ func (d *LocalDiskStorageDriver) Store(
 
     claims := make([]converter.StorageDriverClaim, len(payloads))
     for i, payload := range payloads {
-        key := uuid.NewString() + ".bin"
-        filePath := filepath.Join(dir, key)
         data, err := proto.Marshal(payload)
         if err != nil {
             return nil, fmt.Errorf("marshal payload: %w", err)
         }
+        sum := sha256.Sum256(data)
+        key := hex.EncodeToString(sum[:]) + ".bin"
+        filePath := filepath.Join(dir, key)
         if err := os.WriteFile(filePath, data, 0o644); err != nil {
             return nil, fmt.Errorf("write payload: %w", err)
         }

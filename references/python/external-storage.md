@@ -144,13 +144,13 @@ Extend `StorageDriver` and implement **three** methods:
 
 Inside `store()`, serialize each payload with `payload.SerializeToString()`; in `retrieve()`, reconstruct with `payload.ParseFromString(data)`. The application data has already been serialized by the Payload Converter and Payload Codec before reaching the driver.
 
-`context.target` provides identity information (namespace, Workflow ID, or Activity ID). Check the target type with `isinstance(target, StorageDriverWorkflowInfo)`; the Workflow info exposes `target.namespace` and `target.id`. Use this to scope storage keys per Workflow. Within that scope, content-addressable keys (such as a SHA-256 hash of the payload bytes) deduplicate identical payloads and make retries idempotent.
+`context.target` provides identity information (namespace, Workflow ID, or Activity ID). Check the target type with `isinstance(target, StorageDriverWorkflowInfo)`; the Workflow info exposes `target.namespace` and `target.id`. Use this to scope storage keys per Workflow, but hash or encode identifiers before using them as path segments because identifiers can contain path separators or traversal sequences. Within that scope, content-addressable keys (such as a SHA-256 hash of the payload bytes) deduplicate identical payloads and make retries idempotent.
 
 Worked example — local-disk driver (development/testing only):
 
 ```python
+import hashlib
 import os
-import uuid
 from typing import Sequence
 
 from temporalio.api.common.v1 import Payload
@@ -161,6 +161,10 @@ from temporalio.converter import (
     StorageDriverStoreContext,
     StorageDriverWorkflowInfo,
 )
+
+
+def safe_path_segment(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 class LocalDiskStorageDriver(StorageDriver):
@@ -183,15 +187,20 @@ class LocalDiskStorageDriver(StorageDriver):
         prefix = self._store_dir
         target = context.target
         if isinstance(target, StorageDriverWorkflowInfo) and target.id:
-            prefix = os.path.join(self._store_dir, target.namespace, target.id)
+            prefix = os.path.join(
+                self._store_dir,
+                safe_path_segment(target.namespace),
+                safe_path_segment(target.id),
+            )
             os.makedirs(prefix, exist_ok=True)
 
         claims = []
         for payload in payloads:
-            key = f"{uuid.uuid4()}.bin"
+            data = payload.SerializeToString()
+            key = f"{hashlib.sha256(data).hexdigest()}.bin"
             file_path = os.path.join(prefix, key)
             with open(file_path, "wb") as f:
-                f.write(payload.SerializeToString())
+                f.write(data)
             claims.append(StorageDriverClaim(claim_data={"path": file_path}))
         return claims
 
