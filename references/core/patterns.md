@@ -368,6 +368,8 @@ This ensures that on replay, already-completed steps are skipped.
 - Max 4MB per gRPC message
 - Max 50MB for workflow history (aim for < 10MB)
 
+**Check for SDK support first**: the Go, Python, and TypeScript SDKs have built-in External Storage that applies the claim-check pattern for you — Payloads over a size threshold are offloaded to S3 or GCS and replaced in Event History with a small reference, with no changes to Workflow or Activity code. Prefer it where it exists; see `references/{your_language}/external-storage.md`, if available. The rest of this section applies when you need explicit control over which data is offloaded, or when your SDK has no built-in support.
+
 **Key Principle**: Large data should never flow through workflow history. Activities read and write large data directly, passing only small references through the workflow.
 
 **Wrong Approach**:

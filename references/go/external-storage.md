@@ -366,6 +366,8 @@ When configured with storage drivers, the handler exposes:
 
 **Don't use `NewPayloadHTTPHandler` as a remote Data Converter or remote codec target for your Workers** — it runs the full encode-store-encode and decode-retrieve-decode pipeline. For remote codecs use `NewPayloadCodecHTTPHandler` separately. If you need both, run both handlers, configured with the same codecs.
 
+The [Go External Storage sample](https://github.com/temporalio/samples-go/tree/main/external-storage) is a working end-to-end setup to copy from: a Worker with an S3 driver behind a zlib Payload Codec, a Codec Server built on `NewPayloadHTTPHandler` (`codec-server/main.go`), and a mock S3 service so it runs locally without an AWS account.
+
 ## Lifecycle and failure handling
 
 Temporal does **not** auto-delete payloads from your store. Configure a TTL on your bucket:

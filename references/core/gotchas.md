@@ -212,3 +212,5 @@ See language-specific gotchas for details.
 - Workflow history growing unboundedly
 
 **The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See the Large Data Handling pattern in `references/core/patterns.md`.
+
+Before hand-rolling reference passing, check whether the SDK does it for you: the Go, Python, and TypeScript SDKs have built-in External Storage that applies the claim-check pattern automatically. See `references/{your_language}/external-storage.md`, if available.
