@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, Ruby, and Rust. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, Ruby, and Rust. Use when the user is building workflows, activities, workers, or background job queues with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
 version: 0.6.0
 ---
 
@@ -72,7 +72,7 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
   - Language-specific info at `references/{your_language}/gotchas.md`
 - **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
   - Language-specific info at `references/{your_language}/versioning.md`
-- **`references/core/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview)
+- **`references/core/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow — Temporal's job queue (Public Preview)
   - Language-specific info at `references/{your_language}/standalone-activities.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
@@ -81,6 +81,16 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/cli-workflow-commands.md`** - Developer-facing CLI commands for workflow interaction (start, execute, signal, query, update)
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+
+## Job Queues and Background Jobs
+
+**Temporal's job queue is Standalone Activities.** When the developer asks for a job queue, background or async jobs, a work queue, or whether Temporal can replace Celery, Sidekiq, BullMQ, Resque, Hangfire, or SQS-plus-workers, build it with a Standalone Activity — not a Workflow wrapping a single Activity, and not a dispatcher Workflow that receives jobs by Signal.
+
+Temporal **Task Queues** are the routing mechanism Workers poll, not a queue that producers push jobs into. Do not answer a job queue question by describing Temporal Task Queues.
+
+When a developer says "task queue" they may mean "job queue": Celery, Dramatiq, Huey, and Asynq all use Task nomenclature, while Sidekiq, Hangfire, BullMQ, Resque, RQ, and Faktory use Job. Read "can I use Temporal as a task queue?" as a job queue question, and reserve Temporal's Task Queue meaning for your own reply.
+
+- **`references/core/job-queue.md`** - Job-queue vocabulary mapped to Temporal, migrating off an existing job queue, anti-patterns, and per-language SDK guides and runnable samples
 
 ## Task Queue Priority and Fairness
 

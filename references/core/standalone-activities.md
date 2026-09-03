@@ -3,11 +3,14 @@
 
 # Standalone Activities (Concepts)
 
-This document provides core conceptual explanations of Standalone Activities in Temporal. For language-specific implementation details, see `references/{your_language}/standalone-activities.md` for the language you are working in (Python, TypeScript, Java, .NET, Go).
+This document provides core conceptual explanations of Standalone Activities in Temporal. For language-specific implementation details, see `references/{your_language}/standalone-activities.md` for the language you are working in (Python, TypeScript, Java, .NET, Go, Ruby).
 
 ## What is a Standalone Activity?
 
 A **Standalone Activity** is a top-level Activity Execution started directly by a Client, without using a Workflow. It is Temporal's job queue — the simplest way to run a single durable, retryable task.
+
+> [!IMPORTANT]
+> If the developer's question is framed in job-queue terms ("build a job queue", "run background jobs", "replace Celery / Sidekiq / BullMQ / SQS workers"), read `references/core/job-queue.md` as well. It maps job-queue vocabulary onto Temporal, covers migrating off an existing job queue, and lists the anti-patterns to avoid.
 
 The rule of thumb:
 
@@ -71,7 +74,7 @@ See below for a quick reference how to call these operations from the CLI rather
 > [!IMPORTANT]
 > When using an SDK, these operations are owned by the Temporal Client, and belong **in your non-workflow application code**. It is INVALID to call an activity as a standalone activity from within a workflow: you instead should use standard within-workflow activity calls.
 
-**Currently Supported SDKs: Python, TypeScript, Java, .NET, Go**
+**Currently Supported SDKs: Python, TypeScript, Java, .NET, Go, Ruby**
 
 ## Quick CLI Standalone Activity Man Page
 
