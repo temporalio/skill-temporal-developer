@@ -60,11 +60,11 @@ Not every "job queue" request is a single job. Route these away from Standalone 
 | Chained jobs, DAGs, Celery canvas / chords, "when job A finishes run B and C" | A **Workflow**. That is orchestration, which is what Workflows are for. |
 | Fan-out with a join, or a batch with a completion callback | A **Workflow** that starts the Activities in parallel and awaits them. |
 | Compensation / rollback when a later step fails | A **Workflow** using the saga pattern — see `references/core/patterns.md`. |
-| Recurring or periodic jobs (Celery beat, `sidekiq-cron`, a crontab) | A **Temporal Schedule**, which starts a thin Workflow that calls the one Activity. Scheduled Standalone Activities are coming in a future release. |
+| Recurring or periodic jobs (Celery beat, `sidekiq-cron`, a crontab) | A **Temporal Schedule**, which starts a thin Workflow that calls the one Activity. |
 | A job that waits for human approval or an external event | A **Workflow** with a Signal or Update handler. |
 | Long-lived per-entity state (a per-user or per-order actor) | The **entity Workflow** pattern — see `references/core/patterns.md`. |
 
-A one-shot delayed job ("run this in 10 minutes") uses a start delay on the Standalone Activity itself — `start_delay` on the start request, or `--start-delay` on `temporal activity start`. It requires a recent Temporal Server; if the option is missing, update to the latest version. Temporal accepts long delays at scale, where job frameworks like Celery limit both.
+A one-shot delayed job ("run this in 10 minutes") uses a start delay on the Standalone Activity itself — `start_delay` on the start request, or `--start-delay` on `temporal activity start`. Temporal accepts long delays at scale, where job frameworks like Celery limit both.
 
 Rule of thumb: **one unit of work → Standalone Activity, delayed or not; more than one step, or waiting on an external event → Workflow.**
 
@@ -106,7 +106,7 @@ A job queue built on Standalone Activities has three pieces, and they belong in 
 - **The Worker** — registers the Activity and polls the Task Queue. It does not know or care whether the Activity will be invoked standalone or from a Workflow.
 - **The producer** — application code, an HTTP handler, or a CLI entry point that calls the Client.
 
-A Workflow that needs a job to outlive it can start a Standalone Activity from inside a regular in-Workflow Activity, using the SDK Client there. Workflow code cannot start one directly today; that is planned for a future release.
+A Workflow that needs a job to outlive it can start a Standalone Activity from inside a regular in-Workflow Activity, using the SDK Client there. Workflow code cannot start one directly.
 
 ## SDK guides and runnable samples
 
