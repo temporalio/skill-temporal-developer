@@ -1,6 +1,3 @@
-> [!NOTE]
-> Standalone Activities are in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
 # Standalone Activities (Concepts)
 
 This document provides core conceptual explanations of Standalone Activities in Temporal. For language-specific implementation details, see `references/{your_language}/standalone-activities.md` for the language you are working in (Python, TypeScript, Java, .NET, Go, Ruby).
@@ -160,4 +157,4 @@ All existing Activity metrics apply to Standalone Activities (scheduled, started
 
 ## Temporal Cloud support
 
-Standalone Activities are available in Temporal Cloud as a Public Preview feature. Because the SDK client config loaders read environment variables and TOML profiles, the same code runs against a local server or Temporal Cloud with no code changes.
+Standalone Activities are available in Temporal Cloud. Because the SDK client config loaders read environment variables and TOML profiles, the same code runs against a local server or Temporal Cloud with no code changes.

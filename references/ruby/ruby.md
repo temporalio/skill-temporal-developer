@@ -149,4 +149,4 @@ See `references/ruby/testing.md` for info on writing tests.
 - **`references/ruby/observability.md`** - Logging, metrics, tracing, Search Attributes
 - **`references/ruby/gotchas.md`** - Ruby-specific mistakes and anti-patterns
 - **`references/ruby/advanced-features.md`** - Schedules, worker tuning, and more
-- **`references/ruby/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
+- **`references/ruby/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at `references/core/standalone-activities.md`.
