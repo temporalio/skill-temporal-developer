@@ -145,10 +145,12 @@ temporal activity terminate --activity-id my-activity-id --reason "no longer nee
 
 All existing Activity metrics apply to Standalone Activities (scheduled, started, completed, failed, timed out, canceled).
 
-## Public Preview limitations
+## Limitations
 
-- Pause, reset, and update options are not supported (scheduled for GA).
-- The `TerminateExisting` conflict policy and `TerminateIfRunning` reuse policy are not yet supported.
+- Pause, reset, and update are supported and ready for production use, but those options are themselves in Public Preview.
+- The `TerminateExisting` conflict policy and `TerminateIfRunning` reuse policy are not supported.
+- A Workflow cannot start a Standalone Activity directly. Use a wrapper Activity that calls the Client.
+- Recurring ("cron") Standalone Activities are not supported. Use a Schedule that starts a Workflow calling the Activity.
 
 ## Temporal CLI support
 
