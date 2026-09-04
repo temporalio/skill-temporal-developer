@@ -255,6 +255,27 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 })
 ```
 
+### Memo encoding: default vs. user `DataConverter`
+
+By default, Memo values are serialized with the **default** Data Converter — even when `client.Options{DataConverter}` is set to a custom converter.
+That means a `CodecDataConverter` you configured to encrypt Workflow inputs/results does **not** apply to Memo fields by default.
+
+Go SDK v1.41.0 added the opt-in SDK flag `SDKFlagMemoUserDCEncode` (numeric ID `7`).
+When enabled, `StartWorkflow`, `SignalWithStartWorkflow`, `ScheduleClient.Create`, `workflow.UpsertMemo`, and `workflow.ExecuteChildWorkflow` route Memo values through the user `DataConverter` from `client.Options`.
+On encode error, the SDK falls back to the default Data Converter; if the default also errors, the **user converter's** error is returned.
+
+The flag is **disabled by default** in `sdkFlagsAllowed` in v1.41.0 through v1.43.0.
+Enable it at process start by setting the env var `TEMPORAL_SDK_FLAG_7=1`.
+There is no public `client.Options` or `worker.Options` field for this — the env var is the only knob.
+
+To encrypt Memos with a `PayloadCodec`, both must be true: (a) the codec is part of the `DataConverter` passed to `client.Dial` (e.g., via `converter.NewCodecDataConverter`), and (b) `TEMPORAL_SDK_FLAG_7=1` is set on every client process and worker process that writes Memos.
+
+Scope notes:
+
+- The flag affects Memo encoding only; Search Attributes use a separate typed-value path.
+- For in-Workflow calls (`UpsertMemo`, `ExecuteChildWorkflow`), the flag is gated through `TryUse`, so the decision is recorded in history and replay stays deterministic.
+- Memos remain "non-indexed metadata" with no type safety and eventual consistency — enabling the flag does not change those properties.
+
 ## Best Practices
 
 1. Use structs with exported fields for inputs and outputs
@@ -262,3 +283,4 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 3. Keep payloads small -- see `references/core/gotchas.md` for limits
 4. Use `PayloadCodec` for encryption; never store sensitive data unencrypted
 5. Configure the same data converter on both client and worker
+6. Don't put sensitive data in a Memo unless every process that writes memos sets `TEMPORAL_SDK_FLAG_7=1` **and** the client's `DataConverter` includes the encrypting `PayloadCodec` — otherwise memos bypass the codec
