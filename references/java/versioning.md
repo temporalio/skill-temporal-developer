@@ -69,7 +69,7 @@ public class OrderWorkflowImpl implements OrderWorkflow {
 
 **Step 2: Remove Old Code Path**
 
-Once all pre-patch Workflow Executions have completed, remove the old branch and set `minSupported` to `1`:
+After all pre-patch Workflow Executions have left retention, remove the old branch and set `minSupported` to `1`:
 
 ```java
 public class OrderWorkflowImpl implements OrderWorkflow {
@@ -85,7 +85,7 @@ public class OrderWorkflowImpl implements OrderWorkflow {
 
 **Step 3: Remove the Patch**
 
-After all workflows with the patch marker have completed, remove the `getVersion` call entirely:
+In a later deployment, after all executions with older versions have left retention, you may remove the first `getVersion` call entirely. Once removed, permanently retire that change ID; a future change at the same location must use a new ID starting from `Workflow.DEFAULT_VERSION`:
 
 ```java
 public class OrderWorkflowImpl implements OrderWorkflow {
@@ -99,7 +99,7 @@ public class OrderWorkflowImpl implements OrderWorkflow {
 
 ### Recording TemporalChangeVersion Search Attribute
 
-Unlike the Python and TypeScript SDKs, the Java SDK does **not** automatically record the `TemporalChangeVersion` search attribute. You must manually upsert it:
+Java `getVersion` records a history marker, but `TemporalChangeVersion` visibility requires either the Java SDK 1.30+ `enableUpsertVersionSearchAttributes` option or a manual upsert. The following example uses a manual upsert:
 
 ```java
 import io.temporal.workflow.Workflow;
@@ -114,9 +114,12 @@ public class OrderWorkflowImpl implements OrderWorkflow {
     public String run(Order order) {
         int version = Workflow.getVersion("add-fraud-check", Workflow.DEFAULT_VERSION, 1);
 
-        // Manually record for query filtering
-        Workflow.upsertTypedSearchAttributes(
-            TEMPORAL_CHANGE_VERSION.valueSet(List.of("add-fraud-check-1")));
+        // Pre-patch histories return DEFAULT_VERSION and have no version marker.
+        if (version != Workflow.DEFAULT_VERSION) {
+            Workflow.upsertTypedSearchAttributes(
+                TEMPORAL_CHANGE_VERSION.valueSet(
+                    List.of("add-fraud-check-" + version)));
+        }
 
         if (version >= 1) {
             activities.checkFraud(order);
@@ -126,12 +129,14 @@ public class OrderWorkflowImpl implements OrderWorkflow {
 }
 ```
 
-Query with:
+When retiring a recorded integer version, query its exact `changeID-version` value across open and closed executions still in retention:
 
 ```bash
 temporal workflow list --query \
-  'TemporalChangeVersion = "add-fraud-check-1" AND ExecutionStatus = "Running"'
+  'WorkflowType = "OrderWorkflow" AND TemporalChangeVersion = "add-fraud-check-1"'
 ```
+
+`Workflow.DEFAULT_VERSION` is marker absence, not version `0`. If this is the only version marker, find the simple pre-marker population with `TemporalChangeVersion IS NULL`. For multiple or optional version sites, inspect all retained executions of the Workflow Type and classify the exact marker set and Event History. A zero running count identifies no immediate live blocker, but it does not prove that older histories have left retention. Replay selected histories to test compatibility; sampled replay does not prove the retained population is empty.
 
 ## Workflow Type Versioning
 
@@ -318,7 +323,7 @@ if (Workflow.getInfo().isTargetWorkerDeploymentVersionChanged()) {
 1. **Check for open executions** before removing old code paths
 2. **Use descriptive change IDs** that explain the change (e.g., `"add-fraud-check"` not `"patch-1"`)
 3. **Deploy patches incrementally**: patch, remove old path, remove `getVersion`
-4. **Manually upsert `TemporalChangeVersion`** search attribute when using `getVersion` if you need query filtering
+4. **Enable automatic `TemporalChangeVersion` upserts on Java 1.30+** when query filtering is needed; otherwise upsert the returned non-default version manually
 5. **Use PINNED for short workflows** to simplify version management
 6. **Use AUTO_UPGRADE with patching** for long-running workflows that need updates
 7. **Generate Build IDs from code** (git hash) to ensure changes produce new versions

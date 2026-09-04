@@ -41,18 +41,20 @@ else:
 
 **Phase 1: Patch In**
 
-- Add both old and new code paths
-- New workflows take new path, old workflows take old path
+- Add both old and new code paths.
+- New executions take the new path; histories that predate the patch replay the old path.
 
 **Phase 2: Deprecate**
 
-- After all old workflows complete, remove old code
-- Keep deprecation marker for history compatibility
+- Wait until executions that can return the retired version have left retention before removing that branch or raising the minimum supported version.
+- Keep the Workflow's deprecation/version marker at the same deterministic location for history compatibility.
 
 **Phase 3: Remove**
 
-- After all deprecated workflows complete
-- Remove patch entirely, only new code remains
+- Removing the final marker is a separate operation with patching-API-specific rules beyond branch retirement.
+- Retire the patch/change identifier permanently when the patching API requires it; do not reuse an identifier whose first marker call was removed.
+
+See the language-specific versioning reference for exact marker, visibility, retention, and replay rules.
 
 ### When to Use
 
@@ -197,7 +199,7 @@ For long-running Workflows that cannot use Continue-as-New (e.g., compliance aud
 
 ## Best Practices
 
-1. **Check for open executions** before removing old code
+1. **Wait for affected executions to leave retention** before removing old code
 2. **Use descriptive patch IDs** (e.g., "add-fraud-check" not "patch-1")
 3. **Deploy incrementally**: patch → deprecate → remove
 4. **Test replay compatibility** before deploying changes
@@ -205,16 +207,11 @@ For long-running Workflows that cannot use Continue-as-New (e.g., compliance aud
 
 ## Finding Workflows by Version
 
+Different patching APIs encode `TemporalChangeVersion` values differently. A pre-patch execution has no marker for that patch, but marker absence can also mean an optional patch site has not executed. Follow the language-specific guide to query and classify the old-version population rather than guessing a marker value.
+
+Worker Deployment versions use a separate Search Attribute:
+
 ```bash
-# Find workflows with specific patch
-temporal workflow list --query \
-  'WorkflowType = "OrderWorkflow" AND TemporalChangeVersion = "add-fraud-check"'
-
-# Find pre-patch workflows
-temporal workflow list --query \
-  'WorkflowType = "OrderWorkflow" AND TemporalChangeVersion IS NULL'
-
-# Find workflows on specific worker version
 temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0"'
 ```
@@ -222,6 +219,8 @@ temporal workflow list --query \
 ## Common Mistakes
 
 1. **Removing old code too early** - Breaks replaying workflows
-2. **Not testing with replay** - Catches issues before production
-3. **Patching non-Command changes** - Unnecessary complexity
-4. **Forgetting to deprecate** - Accumulates dead code
+2. **Treating branch removal and final marker removal as identical changes** - Both can have retention gates, while final marker removal can also retire the identifier permanently
+3. **Treating marker absence as proof of an old branch** - Optional patch sites and other markers make absence ambiguous
+4. **Not testing with replay** - Replay catches compatibility failures before production
+5. **Patching non-Command changes** - Unnecessary complexity
+6. **Forgetting to deprecate** - Accumulates dead code
