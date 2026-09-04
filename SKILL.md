@@ -1,14 +1,6 @@
 ---
 name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript,
-  Go, Java, .NET, Ruby, and Rust. Use when the user is building workflows, activities,
-  or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck
-  workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal
-  Cloud, or working with durable execution concepts like signals, queries, heartbeats,
-  versioning, continue-as-new, child workflows, or saga patterns. Also use when the
-  user mentions "run a Temporal workflow from the CLI", "start a dev server", "run
-  temporal server start-dev", "temporal workflow start", "temporal workflow execute",
-  "temporal workflow signal", "temporal workflow query", "temporal workflow update".
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, Ruby, and Rust. Use when the user is building workflows, activities, or workers with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
 version: 0.6.1
 ---
 
