@@ -136,10 +136,9 @@ async def test_replay():
 
     # From JSON file
     await replayer.replay_workflow(
-        WorkflowHistory.from_json(workflow_id=str(uuid.uuid4()), history_json)
+        WorkflowHistory.from_json(str(uuid.uuid4()), history_json)
     )
 ```
-
 
 ## Activity Testing
 

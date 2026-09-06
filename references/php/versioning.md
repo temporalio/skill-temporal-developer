@@ -1,228 +1,57 @@
 # PHP SDK Versioning
 
-For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
+See [core versioning](../core/versioning.md) for strategy. Sources: [PHP versioning guide](https://docs.temporal.io/develop/php/workflows/versioning), [SDK deployment options](https://github.com/temporalio/sdk-php/blob/v2.18/src/Worker/WorkerDeploymentOptions.php).
 
-## Patching API
+## Patching workflow commands
 
-### The getVersion() Function
-
-PHP uses `Workflow::getVersion()` (not `patched()`) to check whether a Workflow should run new or old code:
+PHP uses `yield Workflow::getVersion()`, not another SDK's `patched()`:
 
 ```php
-use Temporal\Workflow;
-
-class OrderWorkflow implements OrderWorkflowInterface
-{
-    public function run(array $order): \Generator
-    {
-        $version = yield Workflow::getVersion('add-fraud-check', Workflow::DEFAULT_VERSION, 1);
-
-        if ($version === 1) {
-            // New code path
-            yield $this->activity->checkFraud($order);
-        }
-        // else: DEFAULT_VERSION — old code path (for replay of pre-patch executions)
-
-        return yield $this->activity->processPayment($order);
-    }
-}
-```
-
-**How it works:**
-- `getVersion(changeId, minSupported, maxSupported)` records a marker in the Workflow history
-- For new executions: returns `maxSupported` (e.g., `1`)
-- For replay of pre-patch history: returns `Workflow::DEFAULT_VERSION` (value: `-1`)
-- `DEFAULT_VERSION` represents executions that predate the patch
-
-**PHP-specific:** `getVersion()` is a coroutine — always `yield` it.
-
-### Three-Step Patching Process
-
-Patching is a three-step process for safely deploying changes.
-
-**Warning:** Failing to follow this process will result in non-determinism errors for in-flight Workflows.
-
-**Step 1: Patch in New Code**
-
-Add the version check with both old and new code paths:
-
-```php
-public function run(array $order): \Generator
-{
-    $version = yield Workflow::getVersion('add-fraud-check', Workflow::DEFAULT_VERSION, 1);
-
-    if ($version === 1) {
-        // New: Run fraud check before payment
-        yield $this->activity->checkFraud($order);
-    }
-    // DEFAULT_VERSION: skip fraud check (original behavior)
-
-    return yield $this->activity->processPayment($order);
-}
-```
-
-**Step 2: Deprecate the Patch**
-
-Once all pre-patch Workflow Executions have completed, remove the old branch. Keep the `getVersion()` call with `minSupported = maxSupported = 1`:
-
-```php
-public function run(array $order): \Generator
-{
-    // minSupported = 1: will throw on replay of pre-patch history (safe — those are all done)
-    yield Workflow::getVersion('add-fraud-check', 1, 1);
-
-    // Only new code remains
-    yield $this->activity->checkFraud($order);
-
-    return yield $this->activity->processPayment($order);
-}
-```
-
-**Step 3: Remove the Version Call**
-
-After all Workflows that passed through Step 2 have completed, remove the `getVersion()` call entirely:
-
-```php
-public function run(array $order): \Generator
-{
-    yield $this->activity->checkFraud($order);
-
-    return yield $this->activity->processPayment($order);
-}
-```
-
-### Query Filters for Finding Workflows by Version
-
-Use List Filters to find Workflows with specific patch versions:
-
-```bash
-# Find running Workflows with a specific patch
-temporal workflow list --query \
-  'WorkflowType = "OrderWorkflow" AND ExecutionStatus = "Running" AND TemporalChangeVersion = "add-fraud-check"'
-
-# Find running Workflows without any patch (pre-patch versions)
-temporal workflow list --query \
-  'WorkflowType = "OrderWorkflow" AND ExecutionStatus = "Running" AND TemporalChangeVersion IS NULL'
-```
-
-## Workflow Type Versioning
-
-For incompatible changes, create a new Workflow type instead of patching:
-
-```php
-// Original interface
-#[WorkflowInterface]
-interface PizzaWorkflowInterface
-{
-    #[WorkflowMethod(name: 'PizzaWorkflow')]
-    public function run(array $order): \Generator;
-}
-
-// New interface for incompatible changes
-#[WorkflowInterface]
-interface PizzaWorkflowV2Interface
-{
-    #[WorkflowMethod(name: 'PizzaWorkflowV2')]
-    public function run(array $order): \Generator;
-}
-```
-
-Register both with the Worker:
-
-```php
-$worker = $factory->newWorker('pizza-task-queue');
-$worker->registerWorkflowTypes(PizzaWorkflow::class);
-$worker->registerWorkflowTypes(PizzaWorkflowV2::class);
-```
-
-Start new executions using the new type:
-
-```php
-$workflow = $client->newWorkflowStub(
-    PizzaWorkflowV2Interface::class,
-    WorkflowOptions::new()->withTaskQueue('pizza-task-queue')
+$version = yield \Temporal\Workflow::getVersion(
+    'notification-channel',
+    \Temporal\Workflow::DEFAULT_VERSION,
+    2,
 );
-$result = $workflow->run($order);
+if ($version === 1) {
+    yield $activities->sendSms($orderId);
+} elseif ($version === 2) {
+    yield $activities->sendPush($orderId);
+}
+// DEFAULT_VERSION preserves the original history with neither notification.
 ```
 
-Check for open executions before removing the old type:
+A new execution records the maximum supported version; an execution replaying a history from before the marker uses `DEFAULT_VERSION` (-1). Keep each historical branch needed by retained executions. Adding a new `sideEffect()`, UUID generation, timer or Activity elsewhere in the workflow can still break replay even if the notification itself is versioned. Review the entire command sequence.
 
-```bash
-temporal workflow list --query 'WorkflowType = "PizzaWorkflow" AND ExecutionStatus = "Running"'
-```
+Once old versions are no longer needed, remove their branches but retain a `getVersion()` call with narrowed supported bounds. Remove the marker only after verifying the SDK's removal rules and every history you still need to replay/reset. “No open workflows” alone does not cover retained closed histories, reset points or rollback needs. Use actual visibility/history evidence and replay fixtures, not an assumed deployment date.
 
-## Worker Versioning
+When querying `TemporalChangeVersion`, inspect the emitted values; the value includes change ID **and version**, such as `notification-channel-2`, not just `notification-channel`. Absence alone is not a reliable classification of every old code path. Preserve a unique change ID for each logical patch.
 
-Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
+## New Workflow Types
 
-### Key Concepts
+For a substantially incompatible contract, register a new name (for example `OrderV2`), route new starts to it and keep the old implementation available for existing executions. Rename PHP classes independently from registered type names only when their attributes preserve the contract. Check routing on every worker polling the affected Task Queue.
 
-**Worker Deployment**: A logical service grouping similar Workers together (e.g., "order-service"). All versions of your code live under this umbrella.
+## Worker Deployment Versioning
 
-**Worker Deployment Version**: A specific snapshot of your code identified by a deployment name and Build ID (e.g., "order-service:v1.0.0" or "order-service:abc123").
-
-### Configuring Workers for Versioning
-
-> **Note:** Worker Versioning is currently in Public Preview. The legacy Worker Versioning API (before 2025) will be removed from Temporal Server in March 2026.
+Verify SDK, RoadRunner and server compatibility together. The deployment types below exist in SDK 2.16+ and were experimental in 2.16. Do not infer feature maturity or server support from class existence. Avoid copying historical preview/removal dates as current facts.
 
 ```php
-$factory = WorkerFactory::create();
+use Temporal\Common\Versioning\VersioningBehavior;
+use Temporal\Common\Versioning\WorkerDeploymentVersion;
+use Temporal\Worker\WorkerDeploymentOptions;
+use Temporal\Worker\WorkerOptions;
 
-$worker = $factory->newWorker(
-    taskQueue: 'order-service',
-    deploymentOptions: WorkerDeploymentOptions::new()
-        ->withDeploymentName('order-service')
-        ->withBuildId('v1.0.0')  // git commit hash or semver
-        ->withUseWorkerVersioning(true)
+$options = WorkerOptions::new()->withDeploymentOptions(
+    WorkerDeploymentOptions::new()
+        ->withUseVersioning(true)
+        ->withVersion(WorkerDeploymentVersion::new('orders', 'build-abc123'))
+        ->withDefaultVersioningBehavior(VersioningBehavior::Pinned),
 );
-
-$worker->registerWorkflowTypes(OrderWorkflow::class);
-$worker->registerActivity(OrderActivity::class);
-
-$factory->run();
+$worker = $factory->newWorker('orders', $options);
 ```
 
-**Configuration parameters:**
-- `withUseWorkerVersioning`: Enables Worker Versioning
-- `withDeploymentName`: Logical name for your service (consistent across versions)
-- `withBuildId`: Unique identifier for this build (git hash, semver, etc.)
+Deployment options belong inside `WorkerOptions`; `newWorker()` has no `deploymentOptions:` argument. The canonical version string is `deploymentName.buildId`, not `deploymentName:buildId`.
 
-### PINNED vs AUTO_UPGRADE Behaviors
+- `Pinned` keeps a workflow on its assigned deployment version. Retain capacity/code for that version until it is safe to retire. Moving a pinned workflow deliberately still requires compatibility review.
+- `AutoUpgrade` allows movement to the current deployment version; incompatible command changes still require patching.
 
-**When to use PINNED:**
-- Short-running workflows (minutes to hours)
-- Consistency is critical (e.g., financial transactions)
-- You want to eliminate version compatibility complexity
-- Building new applications and want simplest development experience
-
-**When to use AUTO_UPGRADE:**
-- Long-running workflows (weeks or months)
-- Workflows need to benefit from bug fixes during execution
-- Migrating from traditional rolling deployments
-- You are already using patching APIs for version transitions
-
-**Important:** AUTO_UPGRADE workflows still need patching to handle version transitions safely since they can move between Worker versions.
-
-Use the Temporal CLI to set the current version:
-
-```bash
-temporal worker deployment set-current-version \
-  --deployment-name order-service \
-  --build-id v1.0.0
-```
-
-### Querying Workflows by Worker Version
-
-```bash
-# Find workflows on a specific Worker version
-temporal workflow list --query \
-  'TemporalWorkerDeploymentVersion = "order-service:v1.0.0" AND ExecutionStatus = "Running"'
-```
-
-## Best Practices
-
-1. **Check for open executions** before removing old code paths
-2. **Use descriptive change IDs** that explain the change (e.g., `add-fraud-check` not `patch-1`)
-3. **Deploy incrementally**: patch in, deprecate (remove old branch), remove version call
-4. **Use `yield` on `getVersion()`** — it is a coroutine and must be awaited
-5. **Use List Filters** to verify no running Workflows before removing version support
+Use the installed CLI's `temporal worker deployment --help` and subcommand help before performing a rollout. Setting the current deployment version affects routing; it is not a local code-only operation. Verify drained executions, visibility, replay and rollback requirements before removing workers or historical branches.

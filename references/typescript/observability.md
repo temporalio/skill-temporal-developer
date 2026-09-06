@@ -2,7 +2,9 @@
 
 ## Overview
 
-The TypeScript SDK provides replay-aware logging, metrics, and integrations for production observability.
+The TypeScript SDK provides replay-aware logging, metrics, and distributed tracing (OpenTelemetry) for production observability.
+
+These pillars are complementary: **logging** (below) captures discrete events, **metrics** capture aggregate worker health, **tracing** stitches a single request across Client/Workflow/Activity/Nexus boundaries, and **Search Attributes** make executions queryable.
 
 ## Replay-Aware Logging
 
@@ -100,6 +102,14 @@ Runtime.install({
 });
 ```
 
+## Distributed Tracing (OpenTelemetry)
+
+See `references/typescript/integrations/opentelemetry.md`.
+
+## Search Attributes (Visibility)
+
+See the Search Attributes section of `references/typescript/data-handling.md`
+
 ## Best Practices
 
 1. Use `log` from `@temporalio/workflow` for production observability. For temporary print debugging, `console.log()` is fine—it's direct and immediate, whereas `log` goes through sinks which may lose messages on workflow errors
@@ -107,3 +117,4 @@ Runtime.install({
 3. Configure Winston or similar for production log aggregation
 4. Monitor Prometheus metrics for worker health
 5. Use Event History for debugging workflow issues
+6. Use the `OpenTelemetryPlugin` for distributed tracing across Client/Workflow/Activity/Nexus boundaries.

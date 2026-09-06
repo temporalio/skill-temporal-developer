@@ -1,48 +1,20 @@
 # PHP SDK Determinism
 
-## Overview
+PHP has no workflow determinism sandbox. Replay reconstructs state by matching commands against recorded history; it cannot prove that every PHP computation is pure. See [core replay concepts](../core/determinism.md).
 
-The PHP SDK does NOT have a sandbox like Python or TypeScript. There is no automatic enforcement of determinism — the developer must be disciplined. The SDK provides runtime command-ordering checks only.
+| In workflow code | Use instead |
+| --- | --- |
+| DB/ORM, HTTP, files, external services | Activities |
+| `sleep()` / `usleep()` | `yield Workflow::timer(...)` |
+| Wall-clock `time()`, `microtime()`, `Carbon::now()` | `Workflow::now()` |
+| Random UUID generation | `yield Workflow::uuid()` (check newer UUID APIs against the SDK) |
+| Small random/computed external value | `yield Workflow::sideEffect(fn() => random_int(...))` |
+| Mutable globals, environment-dependent branching | Explicit input or Activity-provided recorded data |
 
-## Why Determinism Matters: History Replay
+`sideEffect()` records a returned value. Do not put a payment, notification, arbitrary DB write or a change to workflow fields in its callback; replay skips that callback. Use its yielded result. `Workflow::now()` is synchronous, while UUID, timer, sideEffect, getVersion and Continue-As-New APIs return promises. Predicates passed to `Workflow::await()`/`awaitWithTimeout()` must re-evaluate state, not capture a boolean already evaluated once.
 
-Temporal provides durable execution through **History Replay**. When a Worker needs to restore workflow state (after a crash, cache eviction, or to continue after a long timer), it re-executes the workflow code from the beginning, which requires the workflow code to be **deterministic**.
+A method containing `yield` must return a generator-compatible PHP type, regardless of the final serialized result. Waiting on an Activity does not block a PHP thread for its entire duration, but a blocking call inside workflow code stalls the worker's event loop and can exceed Workflow Task timeouts.
 
-See `references/core/determinism.md` for the full explanation.
+Changes to command sequence require [versioning](versioning.md). Replay checks do not compare every ordinary variable, Activity input or timer duration; replay testing is compatibility evidence for the supplied histories, not a universal side-effect detector. Pair [recorded-history replay](testing.md) with code review and outcome tests. Use `Workflow::getLogger()` for replay-aware logging.
 
-## SDK Protection / Runtime Checking
-
-The PHP SDK performs runtime checks that detect adding, removing, or reordering calls to:
-
-- `ExecuteActivity()`
-- `ExecuteChildWorkflow()`
-- `NewTimer()`
-- `RequestCancelWorkflow()`
-- `SideEffect()`
-- `SignalExternalWorkflow()`
-- `Sleep()`
-
-**This is NOT a thorough check** — it does not verify arguments or timer durations. Non-determinism that doesn't reorder commands will go undetected. Use replay testing to catch subtler issues.
-
-## Forbidden Operations
-
-These must NOT be used in workflow code:
-
-- No direct I/O: `fopen()`, `file_get_contents()`, `curl_*`, PDO, etc.
-- No `sleep()` — use `yield Workflow::timer(new \DateInterval('PT10S'))`
-- No `time()`, `date()`, `microtime()` — use `Workflow::now()`
-- No `rand()`, `random_int()`, `uniqid()` — use `yield Workflow::sideEffect()`
-- No blocking SPL functions
-- No mutable global state
-
-## Testing Replay Compatibility
-
-Use the `WorkflowReplayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/php/testing.md`.
-
-## Best Practices
-
-1. Use `Workflow::now()` for all time and date operations
-2. Use `yield Workflow::sideEffect()` for any non-deterministic values
-3. Delegate all I/O to activities
-4. Test with `WorkflowReplayer` to catch non-determinism
-5. Use `Workflow::getLogger()` instead of `error_log()` for replay-safe logging
+Source: [PHP Workflow facade](https://github.com/temporalio/sdk-php/blob/v2.18/src/Workflow.php).

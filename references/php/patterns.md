@@ -1,5 +1,7 @@
 # PHP SDK Patterns
 
+Sources: [SDK workflow APIs](https://github.com/temporalio/sdk-php/blob/v2.18/src/Workflow.php), [official samples](https://github.com/temporalio/samples-php/tree/bb3e9d3d1dee9f035359bea68fa7cd7c6e3153d4/app/src), and [reviewed course lessons](sources.md). Examples are independent fragments; supply imports and application contracts from the surrounding project.
+
 ## Signals
 
 ```php
@@ -185,7 +187,7 @@ class ParentWorkflow
                 ProcessOrderWorkflow::class,
                 ChildWorkflowOptions::new()
                     ->withWorkflowId('order-' . $order->id)
-                    ->withParentClosePolicy(ParentClosePolicy::POLICY_ABANDON)
+                    ->withParentClosePolicy(\Temporal\Workflow\ParentClosePolicy::Abandon)
             )->run($order);
             $results[] = $result;
         }
@@ -216,19 +218,21 @@ class CoordinatorWorkflow
         // Get stub for external workflow
         $handle = Workflow::newExternalWorkflowStub(
             TargetWorkflow::class,
-            $targetWorkflowId
+            new \Temporal\Workflow\WorkflowExecution($targetWorkflowId)
         );
 
         // Signal the external workflow
         yield $handle->dataReady($dataPayload);
 
         // Or cancel it
-        yield $handle->cancel();
+        yield Workflow::newUntypedExternalWorkflowStub(new \Temporal\Workflow\WorkflowExecution($targetWorkflowId))->cancel();
     }
 }
 ```
 
 ## Parallel Execution
+
+Use this only for a small, already bounded input. For many items or independent multi-step chains, read [bounded batch processing](batch-processing.md). `Workflow::async()` gives cooperative workflow concurrency; RoadRunner Activity processes provide execution capacity. Awaiting already-started promises in submission order does not serialize the Activities, but it delays publication of later results.
 
 ```php
 use Temporal\Workflow;
@@ -280,6 +284,8 @@ class LongRunningWorkflow
 
             // Continue with fresh history before hitting limits
             if (Workflow::getInfo()->shouldContinueAsNew) {
+                yield Workflow::await(fn() => Workflow::allHandlersFinished());
+                // Include pending messages and the cursor in $state.
                 return yield Workflow::continueAsNew(
                     'LongRunningWorkflow',
                     [$state]
@@ -292,48 +298,57 @@ class LongRunningWorkflow
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent — they may be retried (as with ALL activities).
+`Temporal\Workflow\Saga` keeps compensation callbacks and defaults to reverse registration order. `setParallelCompensation(true)` is suitable only for independent compensations. `setContinueWithError(true)` attempts later sequential compensations after a failure and reports collected failures. These are business choices, not universal defaults.
+
+Choose Activity cancellation semantics before using the example. The default `TryCancel` returns cancellation to the workflow immediately, so compensation may race the still-running operation. For operations that cooperate through heartbeats, a configured stub can wait for cancellation completion:
 
 ```php
-#[WorkflowInterface]
-class OrderSagaWorkflow
-{
-    #[WorkflowMethod]
-    public function run(Order $order): \Generator
-    {
-        $compensations = [];
-        $activities = Workflow::newActivityStub(
-            OrderActivities::class,
-            ActivityOptions::new()->withStartToCloseTimeout(CarbonInterval::minutes(5))
-        );
+use Temporal\Activity\ActivityCancellationType;
+use Temporal\Activity\ActivityOptions;
 
-        try {
-            // Note: save the compensation BEFORE running the activity,
-            // because the activity could succeed but fail to report (timeout, crash, etc.).
-            // The compensation must handle both reserved and unreserved states.
-            $compensations[] = fn() => yield $activities->releaseInventoryIfReserved($order);
-            yield $activities->reserveInventory($order);
+$options = ActivityOptions::new()
+    ->withStartToCloseTimeout(60)
+    ->withScheduleToCloseTimeout(300)
+    ->withHeartbeatTimeout(10)
+    ->withCancellationType(ActivityCancellationType::WaitCancellationCompleted);
+```
 
-            $compensations[] = fn() => yield $activities->refundPaymentIfCharged($order);
-            yield $activities->chargePayment($order);
+Pass these options to the Activity stub. Waiting can be slow if the Activity ignores cancellation; bound external I/O and heartbeat regularly. A timeout or acknowledgement does not prove an external payment cannot settle later. Use a stable operation ID plus cancellation intent/fencing or reconciliation at the side-effect boundary. In particular, `refundIfCharged()` must not treat “no charge yet” as proof that no future charge is possible. See [SDK cancellation modes](https://github.com/temporalio/sdk-php/blob/v2.18/src/Activity/ActivityCancellationType.php).
 
-            yield $activities->shipOrder($order);
+```php
+use Temporal\Workflow\Saga;
 
-            return 'Order completed';
-        } catch (\Throwable $e) {
-            Workflow::getLogger()->error('Order failed, running compensations', ['error' => $e->getMessage()]);
-            foreach (array_reverse($compensations) as $compensate) {
-                try {
-                    yield $compensate();
-                } catch (\Throwable $compErr) {
-                    Workflow::getLogger()->error('Compensation failed', ['error' => $compErr->getMessage()]);
-                }
-            }
-            throw $e;
-        }
-    }
+// Inside a generator workflow; $activities is a configured Activity stub.
+$saga = new Saga();
+try {
+    // Register first: reserve may succeed even if its response is lost.
+    // releaseIfReserved must tolerate both absence and repeated compensation.
+    $saga->addCompensation(fn() => yield $activities->releaseIfReserved($orderId));
+    yield $activities->reserve($orderId);
+
+    $saga->addCompensation(fn() => yield $activities->refundIfCharged($orderId));
+    yield $activities->charge($orderId);
+} catch (\Throwable $failure) {
+    yield $saga->compensate();
+    throw $failure;
 }
 ```
+
+The SDK's `Saga::compensate()` creates detached cancellation scopes internally, so the call above is usable after cancellation. If compensation fails, decide how to retain/report both the original and cleanup failures. Returning a cancellation DTO or swallowing `CanceledFailure` completes the workflow normally; rethrow when the workflow must remain Cancelled.
+
+For handwritten cleanup, a plain `finally` does not make its scope immune to cancellation:
+
+```php
+try {
+    yield $activities->doWork($resourceId);
+} finally {
+    yield Workflow::asyncDetached(function () use ($activities, $resourceId) {
+        yield $activities->releaseIfAcquired($resourceId);
+    });
+}
+```
+
+Detached means independent of parent cancellation, not an independently durable process. Await cleanup before completing. Termination and execution timeouts do not provide the same cleanup opportunity as cooperative cancellation.
 
 ## Wait Condition with Timeout
 
@@ -368,9 +383,11 @@ class ApprovalWorkflow
 
 ## Waiting for All Handlers to Finish
 
-Signal and update handlers should generally be non-async (avoid running activities from them). Otherwise, the workflow may complete before handlers finish their execution. However, making handlers non-async sometimes requires workarounds that add complexity.
+Signal and Update handlers may yield Activities; validators and Queries must not. Async handlers interleave at yield points, so guard shared state and use a workflow-safe lock when a state transition must stay atomic. Initialize handler-visible state before it can be read. Do not finish the main workflow while a handler is still running.
 
-When async handlers are necessary, use `Workflow::await(Workflow::allHandlersFinished())` at the end of your workflow (or before continue-as-new) to prevent completion until all pending handlers complete.
+Use a shared `Temporal\Workflow\Mutex` instance per workflow and `yield Workflow::runLocked($this->mutex, function () { /* yielding state transition */ })` for handlers that must serialize. Create the mutex before handlers can run; a new mutex per call cannot coordinate them. `runLocked()` releases it in `finally`. Do not use blocking OS/DB locks in workflow code or hold the mutex while waiting for a handler that needs that same mutex.
+
+When async handlers are necessary, use `Workflow::await(fn() => Workflow::allHandlersFinished())` at the end of your workflow (or before continue-as-new) to prevent completion until all pending handlers complete.
 
 ```php
 #[WorkflowInterface]
@@ -382,7 +399,7 @@ class HandlerAwareWorkflow
         // ... main workflow logic ...
 
         // Before exiting, wait for all handlers to finish
-        yield Workflow::await(Workflow::allHandlersFinished());
+        yield Workflow::await(fn() => Workflow::allHandlersFinished());
         return 'done';
     }
 }
@@ -403,7 +420,7 @@ class HandlerAwareWorkflow
 use Temporal\Activity;
 use Temporal\Activity\ActivityInterface;
 use Temporal\Activity\ActivityMethod;
-use Temporal\Exception\Failure\CanceledFailure;
+use Temporal\Exception\Client\ActivityCanceledException;
 
 #[ActivityInterface]
 class FileProcessingActivities
@@ -416,18 +433,25 @@ class FileProcessingActivities
             ? Activity::getHeartbeatDetails('int')
             : 0;
 
-        $lines = file($filePath);
+        // Stream inside the Activity; do not materialize the entire file.
+        $lines = new \SplFileObject($filePath);
+        $lines->seek($startLine);
 
         try {
-            for ($i = $startLine; $i < count($lines); $i++) {
-                $this->processLine($lines[$i]);
+            while (!$lines->eof()) {
+                $i = $lines->key();
+                $line = $lines->fgets();
+                if ($line === '') {
+                    break;
+                }
+                $this->processLine($line);
 
                 // Heartbeat with progress
-                // If cancelled, heartbeat() throws CanceledFailure
+                // If cancelled, heartbeat() throws ActivityCanceledException
                 Activity::heartbeat($i + 1);
             }
             return 'completed';
-        } catch (CanceledFailure $e) {
+        } catch (ActivityCanceledException $e) {
             // Perform cleanup on cancellation
             $this->cleanup();
             throw $e;
@@ -453,7 +477,7 @@ class TimerWorkflow
 
 ## Local Activities
 
-**Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.
+**Purpose**: Reduce scheduling latency for short operations executed by the workflow worker infrastructure without a server Activity Task Queue round trip. Completed results are recorded in history, but a local Activity may be re-executed before that record is persisted. Use idempotency; local Activities lack normal heartbeat/routing semantics and can delay Workflow Tasks. Prefer normal Activities unless measured latency justifies the tradeoff.
 
 ```php
 #[WorkflowInterface]
@@ -472,3 +496,37 @@ class LocalActivityWorkflow
     }
 }
 ```
+
+## Safe signal buffering
+
+Snapshot and remove only the batch being processed **before** yielding. Clearing the whole shared buffer after an Activity can discard Signals received during the wait:
+
+```php
+$batch = $this->pendingOffers;
+$this->pendingOffers = [];
+yield $activities->persistOffers($batch);
+// New signals are now in pendingOffers and remain available for the next batch.
+```
+
+On terminal persistence failure, explicitly fail or requeue that batch; do not silently discard it. Bound the buffer and define an overload/admission policy. Before Continue-As-New, wait for handlers, preserve all pending state in the next input, and `return yield Workflow::continueAsNew(...)` from the main method. `allHandlersFinished()` does not mean the application buffer is empty. Start the next run with the same Workflow ID and new Run ID; caller protocols must tolerate the transition.
+
+## Client-side Updates
+
+A typed running stub can call an attributed Update and wait for its result. For accepted-but-not-completed processing:
+
+```php
+use Temporal\Client\Update\LifecycleStage;
+use Temporal\Client\Update\UpdateOptions;
+
+$stub = $client->newUntypedRunningWorkflowStub($workflowId);
+$handle = $stub->startUpdate(
+    UpdateOptions::new('updateAddress', LifecycleStage::StageAccepted)
+        ->withUpdateId($requestId)
+        ->withResultType(OrderResult::class),
+    $newAddress,
+);
+// Persist handle identity if another request/process will fetch the result.
+$result = $handle->getResult(timeout: 5);
+```
+
+The request ID identifies one logical mutation. Reuse it for retries of that mutation; use another ID for another address change. Store Workflow ID, Run ID and Update ID when later retrieval must target the accepting run. Acceptance follows validation; it does not mean the Activity or state change finished. A client result timeout does not cancel the Update. Test validator rejection (`WorkflowUpdateException`), completion and handler-draining behavior.

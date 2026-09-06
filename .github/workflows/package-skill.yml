@@ -1,0 +1,30 @@
+# ABOUTME: Packages this skill and syncs it to the plugin repos on version bumps.
+# ABOUTME: All logic lives in the shared reusable workflow at temporalio/skill-ci; this is just the caller.
+# ABOUTME: Release two ways: (1) run this manually and pick a bump, or (2) edit SKILL.md's version and push.
+# ABOUTME: Secrets SKILL_T_DEV_APP_ID / SKILL_T_DEV_KEY / RELEASE_SSH_KEY are inherited (see skill-ci README).
+
+name: Package and Sync Skill
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump for a one-click release"
+        type: choice
+        required: true
+        default: patch
+        options: [patch, minor, major]
+
+jobs:
+  package-and-sync:
+    uses: temporalio/skill-ci/.github/workflows/package-and-sync.yml@v1
+    permissions:
+      contents: write
+    secrets: inherit
+    with:
+      # On workflow_dispatch this is the chosen bump; empty on push events.
+      bump: ${{ inputs.bump }}
+      # Override the whitelist only if this skill has extra paths to include:
+      # includes: "SKILL.md agents references scripts"
