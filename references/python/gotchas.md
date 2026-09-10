@@ -1,6 +1,6 @@
 # Python Gotchas
 
-Python-specific mistakes and anti-patterns. See also [Common Gotchas](references/core/gotchas.md) for language-agnostic concepts.
+Python-specific mistakes and anti-patterns. See also [Common Gotchas](../core/gotchas.md) for language-agnostic concepts.
 
 ## File Organization
 
