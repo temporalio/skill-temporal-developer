@@ -67,7 +67,7 @@ end
 
 **Step 2: Deprecate the Patch**
 
-Once all pre-patch Workflow Executions have completed, remove the old code and use `deprecate_patch()`:
+After all pre-patch Workflow Executions have left retention, remove the old code and use `deprecate_patch()`:
 
 ```ruby
 class OrderWorkflow < Temporalio::Workflow::Definition
@@ -92,7 +92,7 @@ end
 
 **Step 3: Remove the Patch**
 
-After all workflows with the deprecated patch marker have completed, remove the `deprecate_patch()` call entirely:
+In a later deployment, after the deprecation rollout is complete and the pre-patch Workflow Executions have left retention, remove the `deprecate_patch()` call entirely. A deprecated marker is intentionally safe to omit during replay, so marker-bearing executions do not require another retention wait:
 
 ```ruby
 class OrderWorkflow < Temporalio::Workflow::Definition
@@ -119,10 +119,12 @@ end
 temporal workflow list --query \
   'WorkflowType = "OrderWorkflow" AND ExecutionStatus = "Running" AND TemporalChangeVersion = "add-fraud-check"'
 
-# Find running workflows without any patch (pre-patch versions)
+# Find retained workflows without any patch marker (simple pre-patch case)
 temporal workflow list --query \
-  'WorkflowType = "OrderWorkflow" AND ExecutionStatus = "Running" AND TemporalChangeVersion IS NULL'
+  'WorkflowType = "OrderWorkflow" AND TemporalChangeVersion IS NULL'
 ```
+
+`TemporalChangeVersion IS NULL` is reliable only when no other patch marker could make the attribute non-null. For multiple or optional patch sites, inspect all retained executions of the Workflow Type and classify the exact marker set and Event History. A zero running count identifies no immediate live blocker, but it does not prove that pre-patch histories have left retention. Replay selected histories to test compatibility; sampled replay does not prove the retained population is empty.
 
 ## Workflow Type Versioning
 

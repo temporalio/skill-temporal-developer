@@ -63,7 +63,7 @@ export async function shippingConfirmation(): Promise<void> {
 
 #### Step 2: Deprecate the Patch
 
-Once all Workflows using the old code have completed, deprecate the patch:
+After all Workflows using the old code have left retention, deprecate the patch:
 
 ```typescript
 import { deprecatePatch } from '@temporalio/workflow';
@@ -79,7 +79,7 @@ The `deprecatePatch()` function records a marker that does not fail replay when 
 
 #### Step 3: Remove the Patch
 
-After all Workflows using `deprecatePatch` have completed, remove it entirely:
+In a later deployment, after the deprecation rollout is complete and the pre-patch Workflows have left retention, remove `deprecatePatch` entirely. A deprecated marker is intentionally safe to omit during replay, so marker-bearing executions do not require another retention wait:
 
 ```typescript
 export async function shippingConfirmation(): Promise<void> {
@@ -96,9 +96,11 @@ Use List Filters to find Workflows by version:
 # Find running Workflows with a specific patch
 WorkflowType = "shippingConfirmation" AND ExecutionStatus = "Running" AND TemporalChangeVersion = "changedNotificationType"
 
-# Find running Workflows without the patch (started before patching)
-WorkflowType = "shippingConfirmation" AND ExecutionStatus = "Running" AND TemporalChangeVersion IS NULL
+# Find retained Workflows without any patch marker (simple pre-patch case)
+WorkflowType = "shippingConfirmation" AND TemporalChangeVersion IS NULL
 ```
+
+`TemporalChangeVersion IS NULL` is reliable only when no other patch marker could make the attribute non-null. For multiple or optional patch sites, inspect all retained executions of the Workflow Type and classify the exact marker set and Event History. A zero running count identifies no immediate live blocker, but it does not prove that pre-patch histories have left retention. Replay selected histories to test compatibility; sampled replay does not prove the retained population is empty.
 
 ## Workflow Type Versioning
 
