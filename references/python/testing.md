@@ -154,6 +154,45 @@ async def test_activity():
     assert result == "expected"
 ```
 
+### Customize Activity Info
+
+`ActivityEnvironment()` populates `env.info` with a default `temporalio.activity.Info` on construction, so activity code that calls `activity.info()` works out of the box. When your test needs specific values (e.g. asserting on `info.activity_id`, exercising `attempt`-aware retry logic, or simulating a Standalone Activity), build a new `Info` from the helper:
+
+- `ActivityEnvironment.default_info()` is a `@staticmethod` taking no arguments. It returns a fresh `temporalio.activity.Info` populated with sentinel test values: `activity_id="test"`, `task_queue="test"`, `workflow_id="test"`, `workflow_run_id="test-run"`, `workflow_type="test"`, `namespace="default"`, `workflow_namespace="default"`, `attempt=1`, `start_to_close_timeout=timedelta(seconds=1)`, `schedule_to_close_timeout=timedelta(seconds=1)`, `activity_run_id=None`, `retry_policy=None`, `heartbeat_timeout=None`.
+- Customize by passing the result through `dataclasses.replace`, then assigning to `env.info` **before** calling `env.run`:
+
+```python
+import dataclasses
+from temporalio.testing import ActivityEnvironment
+
+env = ActivityEnvironment()
+env.info = dataclasses.replace(
+    ActivityEnvironment.default_info(),
+    activity_id="order-1234",
+    attempt=3,
+)
+await env.run(my_activity, "arg")
+```
+
+For Standalone Activities ([see `references/python/standalone-activities.md`](standalone-activities.md)), the `activity_run_id` field on `Info` is `None` for Workflow-orchestrated Activities; set it to a string and clear the `workflow_*` fields (each is `Optional[str]`) to test Standalone-flavoured code paths:
+
+```python
+env.info = dataclasses.replace(
+    ActivityEnvironment.default_info(),
+    activity_run_id="standalone-run-id",
+    workflow_id=None,
+    workflow_run_id=None,
+    workflow_type=None,
+    workflow_namespace=None,
+)
+```
+
+Common mistakes:
+
+- Calling `default_info()` as a module-level function (e.g. `activity.default_info()`); it lives on `temporalio.testing.ActivityEnvironment` as a static method.
+- Passing fields directly to `default_info(...)`; it accepts no arguments. Use `dataclasses.replace` on the returned `Info`.
+- Mutating `env.info` after `env.run` has started — the activity has already captured the context.
+
 ## Best Practices
 
 1. Use the `WorkflowEnvironment.start_local` environment for most testing
