@@ -37,6 +37,21 @@ WorkflowClient client = WorkflowClient.newInstance(
 );
 ```
 
+## Jackson 3 (opt-in)
+
+The Java SDK's default JSON path runs through Jackson 2's `JacksonJsonPayloadConverter`.  A separate Jackson 3 payload-conversion path is available as an opt-in, selected via a new startup API.
+
+**Wire compatibility.** Payloads written by the Jackson 3 path remain readable by Jackson 2 converters on the other side of the wire, and vice versa — a worker on Jackson 3 can interoperate with a client still on Jackson 2 without re-encoding history.
+
+**Opt-in call site.** Switch to the Jackson 3 path by calling the Jackson 3 opt-in startup API  when constructing your `DefaultDataConverter`, then install the converter on `WorkflowClientOptions` the same way as today.  Customising the underlying `ObjectMapper` (modules, serialisation features) is still how you tune behaviour — Jackson 3's `ObjectMapper` lives in a different package and is constructed through a builder, so the surrounding Jackson 2 idiom in the section above does not transfer verbatim.
+
+**When to opt in:**
+
+- **Opt in** when the surrounding codebase has already standardised on Jackson 3, or a downstream library you depend on requires it.
+- **Stay on the default Jackson 2 path** otherwise — there is no behavioural gain to switching in an app that has no Jackson 3 requirement.
+
+The existing `## Jackson Integration` section above still describes the Jackson 2 path; this opt-in does not change it.
+
 ## Custom Data Converter
 
 Implement `PayloadConverter` for custom serialization:
