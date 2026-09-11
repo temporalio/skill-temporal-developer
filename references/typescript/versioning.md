@@ -178,6 +178,38 @@ const worker = await Worker.create({
 - `useWorkerVersioning`: Enables Worker Versioning
 - `version.deploymentName`: Logical name for your service (consistent across versions)
 - `version.buildId`: Unique identifier for this build
+- `defaultVersioningBehavior` *(optional)*: per-Worker default if a Workflow type has no `versioningBehavior` annotation. If unset, every Workflow type must declare its own behavior.
+
+### Build ID reporting without enabling Worker Versioning
+
+The TypeScript `workerDeploymentOptions` shape lets you supply a `version` (with `deploymentName` and `buildId`) without setting `useWorkerVersioning: true` and without `defaultVersioningBehavior`. In that configuration, the Worker still reports its Build ID and deployment name to the Temporal Server when it polls — so the Worker Deployment Version becomes visible in describe output — but the Worker does **not** participate in Worker Versioning routing or Workflow pinning.
+
+```typescript
+const worker = await Worker.create({
+  workflowsPath: require.resolve('./workflows'),
+  taskQueue: 'my-queue',
+  workerDeploymentOptions: {
+    version: {
+      deploymentName: 'order-service',
+      buildId: '1.0.0',
+    },
+    // useWorkerVersioning omitted: no pinning, no routing.
+    // defaultVersioningBehavior omitted: no per-Worker default required.
+  },
+});
+```
+
+**When to use this configuration:**
+
+- You want the Worker's Build ID and deployment name to appear in Temporal Server visibility (e.g., `temporal worker deployment describe-version`) without committing to versioned routing yet.
+- You are staging a rollout toward full Worker Versioning and want to first verify Build IDs surface correctly.
+
+**When NOT to use this configuration:**
+
+- You need Workflow Pinning or Auto-Upgrade behavior — that requires `useWorkerVersioning: true`.
+- You are running on Serverless Workers — Worker Deployment Versioning is always enabled, and each Workflow must declare a versioning behavior.
+
+**Do not use the legacy top-level `buildId` / `useVersioning` fields.** Those are the deprecated pre-2025 Worker Versioning API and will be removed from Temporal Server in March 2026; use `workerDeploymentOptions` instead.
 
 ### Deployment Workflow
 
