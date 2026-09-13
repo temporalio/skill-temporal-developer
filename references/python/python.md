@@ -23,6 +23,7 @@ def greet(name: str) -> str:
 ```python
 from datetime import timedelta
 from temporalio import workflow
+from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
     from activities.greet import greet
@@ -32,9 +33,14 @@ class GreetingWorkflow:
     @workflow.run
     async def run(self, name: str) -> str:
         return await workflow.execute_activity(
-            greet, name, start_to_close_timeout=timedelta(seconds=30)
+            greet,
+            name,
+            start_to_close_timeout=timedelta(seconds=30),
+            retry_policy=RetryPolicy(maximum_attempts=3),
         )
 ```
+
+Note the import paths: `workflow` (decorators, `execute_activity`, `logger`, etc.) lives in `temporalio.workflow`, but configuration types like `RetryPolicy` live in `temporalio.common` — not on the `workflow` module. The same applies to `SearchAttributeKey`, `VersioningBehavior`, and similar types.
 
 **worker.py** - Worker setup (registers activity and workflow, runs indefinitely and processes tasks):
 
