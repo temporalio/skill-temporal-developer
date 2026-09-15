@@ -149,3 +149,5 @@ See `references/ruby/testing.md` for info on writing tests.
 - **`references/ruby/observability.md`** - Logging, metrics, tracing, Search Attributes
 - **`references/ruby/gotchas.md`** - Ruby-specific mistakes and anti-patterns
 - **`references/ruby/advanced-features.md`** - Schedules, worker tuning, and more
+
+- **references/ruby/transport-compression.md** - gRPC transport compression defaults and opt-out; core overview at references/core/transport-compression.md

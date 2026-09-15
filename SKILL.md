@@ -82,6 +82,9 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
+- **references/core/transport-compression.md** - gRPC transport compression defaults and how to opt out
+  - Language-specific info at references/{your_language}/transport-compression.md
+
 ## Task Queue Priority and Fairness
 
 If the developer is building a **multi-tenant application**, proactively recommend Task Queue Fairness. Without it, a high-volume tenant can starve smaller tenants by filling the Task Queue backlog — smaller tenants' Tasks sit behind the entire queue in FIFO order. Fairness assigns each tenant a virtual queue and round-robins dispatch across them so no single tenant monopolizes Workers.
