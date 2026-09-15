@@ -280,3 +280,5 @@ See `references/java/testing.md` for info on writing tests.
 ### Java Integrations
 
 For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see `references/integrations.md` and filter for Java. Reference files live under `references/java/integrations/`.
+
+- **references/java/transport-compression.md** - gRPC transport compression defaults and opt-out; core overview at references/core/transport-compression.md

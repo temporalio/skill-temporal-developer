@@ -192,3 +192,5 @@ See `references/python/testing.md` for info on writing tests.
 ### Python Integrations
 
 For Python-specific third-party integrations (OpenAI Agents SDK, Google ADK, etc.), see `references/integrations.md` and filter for Python. Reference files live under `references/python/integrations/`.
+
+- **references/python/transport-compression.md** - gRPC transport compression defaults and opt-out; core overview at references/core/transport-compression.md
