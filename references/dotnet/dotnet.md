@@ -210,6 +210,7 @@ See `references/dotnet/testing.md` for info on writing tests.
 - **`references/dotnet/observability.md`** — Logging, metrics, tracing
 - **`references/dotnet/testing.md`** — WorkflowEnvironment, time-skipping, activity mocking
 - **`references/dotnet/advanced-features.md`** — Schedules, worker tuning, dependency injection
+- **`references/dotnet/local-activity-marker-inputs.md`** — Record Local Activity inputs in the Local Activity marker (`LocalActivityOptions.IncludeArgumentsInMarker`).
 - **`references/dotnet/data-handling.md`** — Data converters, payload encryption, etc.
 - **`references/dotnet/versioning.md`** — Patching API, workflow type versioning, Worker Versioning
 - **`references/dotnet/standalone-activities.md`** — Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
