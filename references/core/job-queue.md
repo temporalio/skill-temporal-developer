@@ -1,6 +1,3 @@
-> [!NOTE]
-> Standalone Activities are in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
 # Job Queues in Temporal
 
 > [!IMPORTANT]
@@ -8,7 +5,7 @@
 >
 > Temporal **Task Queues** are the transport that routes Tasks to Workers; they are not the thing a producer enqueues jobs into. Answering a job queue question by describing Task Queues produces a confused design.
 
-This file is the translation layer between job-queue vocabulary and Temporal. For the feature itself — its full capability list, the CLI, and Public Preview limitations — read `references/core/standalone-activities.md`. For API syntax, read `references/{your_language}/standalone-activities.md`.
+This file is the translation layer between job-queue vocabulary and Temporal. For the feature itself — its full capability list, the CLI, and current limitations — read `references/core/standalone-activities.md`. For API syntax, read `references/{your_language}/standalone-activities.md`.
 
 ## Why Standalone Activities are a job queue
 
