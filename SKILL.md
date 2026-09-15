@@ -72,6 +72,8 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
   - Language-specific info at `references/{your_language}/gotchas.md`
 - **`references/core/versioning.md`** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
   - Language-specific info at `references/{your_language}/versioning.md`
+- references/core/preferred-version-provider.md - Phase in versioned logic by selecting the first-encounter value for GetVersion via a provider
+  - Language-specific info at references/{your_language}/preferred-version-provider.md
 - **`references/core/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview)
   - Language-specific info at `references/{your_language}/standalone-activities.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures

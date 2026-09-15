@@ -1,0 +1,55 @@
+# Preferred Version Provider (Concept)
+
+Use a preferred version provider to phase in versioned logic for a newly encountered GetVersion change ID. It only affects the first encounter; the chosen value is recorded and used on replay.
+
+Read references/core/versioning.md first, then references/{your_language}/versioning.md.
+
+When to use:
+- Gradual enablement by tenant or percentage.
+- Per-execution policy for which branch becomes recorded.
+
+How it works:
+- First call without a marker: provider chooses a value in [min,max] and the SDK records it.
+- Replay returns the recorded value; provider is not consulted.
+
+Rollout playbook:
+1. Add a GetVersion guard with min = DefaultVersion and max = 1 (or next integer).
+2. Configure a provider mapping each execution to min or max for first encounters. VERIFY API surface.
+3. Start with a small slice; grow over time.
+4. Monitor using TemporalChangeVersion; Java requires manual upsert.
+5. Lock min = max when migration completes and remove old branch.
+%s\n
+# Preferred Version Provider (Go)
+
+Phase in a new workflow.GetVersion branch by supplying a preferred version for first encounters per execution policy.
+See references/core/preferred-version-provider.md.
+
+Recap:
+- New executions return max and record a marker.
+- Replay with a marker returns the recorded value.
+- Replay without a marker returns DefaultVersion.
+
+Provider hook:
+A provider supplies the value on first encounter and the SDK records it. VERIFY API surface.
+Workflow code continues to call workflow.GetVersion and branch on the int.
+%s\n
+# Preferred Version Provider (Java)
+
+Phase in a Workflow.getVersion branch by supplying a preferred version for first encounters per execution policy.
+See references/core/preferred-version-provider.md.
+
+Recap:
+- New executions return maxSupported and record a marker.
+- Replay with a marker returns the recorded value.
+- Replay without a marker returns DEFAULT_VERSION (-1).
+
+Provider hook:
+A provider supplies the value on first encounter and the SDK records it. VERIFY API surface.
+Workflow code continues to call Workflow.getVersion and branch on the int.
+
+Observability:
+Upsert TemporalChangeVersion yourself to filter running rollouts. See references/java/versioning.md.
+-la
+references/core/preferred-version-provider.md
+references/go/preferred-version-provider.md
+references/java/preferred-version-provider.md}
