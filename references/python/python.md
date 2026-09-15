@@ -172,6 +172,7 @@ See `references/python/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+- **`references/python/standalone-activities-renames.md`** - Standalone Activities API renames; see `references/core/standalone-activities-renames.md` for context.
 
 - **`references/python/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/python/determinism.md`** - Sandbox behavior, safe alternatives, pass-through pattern, history replay

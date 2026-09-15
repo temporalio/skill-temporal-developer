@@ -265,6 +265,7 @@ See `references/java/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+- **`references/java/standalone-activities-renames.md`** - Standalone Activities API renames; see `references/core/standalone-activities-renames.md` for context.
 
 - **`references/java/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/java/determinism.md`** - Determinism rules and safe alternatives for Java
