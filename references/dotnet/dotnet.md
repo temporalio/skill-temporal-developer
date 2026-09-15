@@ -202,6 +202,7 @@ See `references/dotnet/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+- **`references/dotnet/standalone-activities-renames.md`** - Standalone Activities API renames; see `references/core/standalone-activities-renames.md` for context.
 
 - **`references/dotnet/patterns.md`** — Signals, queries, child workflows, saga pattern, etc.
 - **`references/dotnet/determinism.md`** — Essentials of determinism in .NET

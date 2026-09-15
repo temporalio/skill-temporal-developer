@@ -139,6 +139,7 @@ See `references/ruby/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+- **`references/ruby/standalone-activities-renames.md`** - Standalone Activities API renames; see `references/core/standalone-activities-renames.md` for context.
 - **`references/ruby/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/ruby/determinism.md`** - Durable Fiber Scheduler behavior, safe alternatives, history replay
 - **`references/ruby/determinism-protection.md`** - Illegal Call Tracing via TracePoint, forbidden operations, runtime detection

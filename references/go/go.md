@@ -243,6 +243,7 @@ See `references/go/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+- **`references/go/standalone-activities-renames.md`** - Standalone Activities API renames; see `references/core/standalone-activities-renames.md` for context.
 
 - **`references/go/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/go/determinism.md`** - Determinism rules, workflowcheck tool, safe alternatives
