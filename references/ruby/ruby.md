@@ -143,6 +143,7 @@ See `references/ruby/testing.md` for info on writing tests.
 - **`references/ruby/determinism.md`** - Durable Fiber Scheduler behavior, safe alternatives, history replay
 - **`references/ruby/determinism-protection.md`** - Illegal Call Tracing via TracePoint, forbidden operations, runtime detection
 - **`references/ruby/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
+- **`references/ruby/patch-activation-callback.md`** - Control first non-replay `Temporalio::Workflow.patched` activation; concept at `references/core/patch-activation-callback.md`.
 - **`references/ruby/testing.md`** - Test environments, time-skipping, activity mocking
 - **`references/ruby/error-handling.md`** - ApplicationError, retry policies, non-retryable errors, idempotency
 - **`references/ruby/data-handling.md`** - Data converters, payload encryption
