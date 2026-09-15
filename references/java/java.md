@@ -280,3 +280,6 @@ See `references/java/testing.md` for info on writing tests.
 ### Java Integrations
 
 For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see `references/integrations.md` and filter for Java. Reference files live under `references/java/integrations/`.
+
+### Additional Reference
+- references/java/continue-as-new-backoff.md — Continue-As-New backoff (start delay); see core page for semantics.

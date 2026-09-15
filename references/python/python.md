@@ -192,3 +192,6 @@ See `references/python/testing.md` for info on writing tests.
 ### Python Integrations
 
 For Python-specific third-party integrations (OpenAI Agents SDK, Google ADK, etc.), see `references/integrations.md` and filter for Python. Reference files live under `references/python/integrations/`.
+
+### Additional Reference
+- references/python/continue-as-new-backoff.md — Continue-As-New backoff (start delay); see core page for semantics.

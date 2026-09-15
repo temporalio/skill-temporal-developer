@@ -149,3 +149,6 @@ See `references/ruby/testing.md` for info on writing tests.
 - **`references/ruby/observability.md`** - Logging, metrics, tracing, Search Attributes
 - **`references/ruby/gotchas.md`** - Ruby-specific mistakes and anti-patterns
 - **`references/ruby/advanced-features.md`** - Schedules, worker tuning, and more
+
+### Additional Reference
+- references/ruby/continue-as-new-backoff.md — Continue-As-New backoff (start delay); see core page for semantics.
