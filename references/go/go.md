@@ -256,3 +256,6 @@ See `references/go/testing.md` for info on writing tests.
 - **`references/go/versioning.md`** - Patching API (`workflow.GetVersion`), Worker Versioning
 - **`references/go/determinism-protection.md`** - Information on **`workflowcheck`** tool to help statically check for determinism issues.
 - **`references/go/standalone-activities.md`** - Standalone Activities (Public Preview): run an Activity directly from a Client without a Workflow; see also `references/core/standalone-activities.md` for cross-SDK concepts.
+
+### Additional Reference
+- references/go/continue-as-new-backoff.md — Continue-As-New backoff (start delay); see core page for semantics.

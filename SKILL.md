@@ -104,3 +104,7 @@ For Temporal plugins and integrations with third-party frameworks and SDKs (Spri
 ### Reporting Issues in This Skill
 
 If you (the AI) find this skill's explanations are unclear, misleading, or missing important information—or if Temporal concepts are proving unexpectedly difficult to work with—draft a GitHub issue body describing the problem encountered and what would have helped, then ask the user to file it at https://github.com/temporalio/skill-temporal-developer/issues/new. Do not file the issue autonomously.
+
+## Primary References (additions)
+- **references/core/continue-as-new-backoff.md** - Continue-As-New backoff (start delay) for next run
+  - Language-specific info at references/{your_language}/continue-as-new-backoff.md

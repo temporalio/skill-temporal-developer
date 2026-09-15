@@ -194,3 +194,6 @@ See `references/typescript/testing.md` for info on writing tests.
 - **`references/typescript/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/typescript/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
 - **`references/typescript/determinism-protection.md`** - V8 sandbox and bundling
+
+### Additional Reference
+- references/typescript/continue-as-new-backoff.md — Continue-As-New backoff (start delay); see core page for semantics.
