@@ -81,6 +81,8 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
 - **`references/core/cli-workflow-commands.md`** - Developer-facing CLI commands for workflow interaction (start, execute, signal, query, update)
 - **`references/core/ai-patterns.md`** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+ - **`references/core/signal-with-start.md`** - Signal-With-Start: starts a Workflow if needed and sends it a Signal in one operation (atomic lazy-init)
+   - Language-specific info at `references/{your_language}/signal-with-start.md`
 
 ## Task Queue Priority and Fairness
 

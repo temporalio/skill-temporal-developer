@@ -188,6 +188,7 @@ See `references/python/testing.md` for info on writing tests.
 - **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
 - **`references/python/ai-patterns.md`** - LLM integration, Pydantic data converter, AI workflow patterns
 - **`references/python/workflow-streams.md`** - Public-Preview `temporalio.contrib.workflow_streams` library: durable, offset-addressed event channel for streaming progress to subscribers.
+- **`references/python/signal-with-start.md`** - Signal-With-Start in Python (see concept page at `references/core/signal-with-start.md`).
 
 ### Python Integrations
 
