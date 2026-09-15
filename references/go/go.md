@@ -255,4 +255,4 @@ See `references/go/testing.md` for info on writing tests.
 - **`references/go/external-storage.md`** - Claim-check pattern for large payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
 - **`references/go/versioning.md`** - Patching API (`workflow.GetVersion`), Worker Versioning
 - **`references/go/determinism-protection.md`** - Information on **`workflowcheck`** tool to help statically check for determinism issues.
-- **`references/go/standalone-activities.md`** - Standalone Activities (Public Preview): run an Activity directly from a Client without a Workflow; see also `references/core/standalone-activities.md` for cross-SDK concepts.
+- **`references/go/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow; see also `references/core/standalone-activities.md` for cross-SDK concepts.

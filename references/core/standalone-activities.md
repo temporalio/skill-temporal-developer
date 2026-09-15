@@ -1,13 +1,13 @@
-> [!NOTE]
-> Standalone Activities are in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
 # Standalone Activities (Concepts)
 
-This document provides core conceptual explanations of Standalone Activities in Temporal. For language-specific implementation details, see `references/{your_language}/standalone-activities.md` for the language you are working in (Python, TypeScript, Java, .NET, Go).
+This document provides core conceptual explanations of Standalone Activities in Temporal. For language-specific implementation details, see `references/{your_language}/standalone-activities.md` for the language you are working in (Python, TypeScript, Java, .NET, Go, Ruby).
 
 ## What is a Standalone Activity?
 
 A **Standalone Activity** is a top-level Activity Execution started directly by a Client, without using a Workflow. It is Temporal's job queue — the simplest way to run a single durable, retryable task.
+
+> [!IMPORTANT]
+> If the developer's question is framed in job-queue terms ("build a job queue", "run background jobs", "replace Celery / Sidekiq / BullMQ / SQS workers"), read `references/core/job-queue.md` as well. It maps job-queue vocabulary onto Temporal, covers migrating off an existing job queue, and lists the anti-patterns to avoid.
 
 The rule of thumb:
 
@@ -71,7 +71,7 @@ See below for a quick reference how to call these operations from the CLI rather
 > [!IMPORTANT]
 > When using an SDK, these operations are owned by the Temporal Client, and belong **in your non-workflow application code**. It is INVALID to call an activity as a standalone activity from within a workflow: you instead should use standard within-workflow activity calls.
 
-**Currently Supported SDKs: Python, TypeScript, Java, .NET, Go**
+**Currently Supported SDKs: Python, TypeScript, Java, .NET, Go, Ruby**
 
 ## Quick CLI Standalone Activity Man Page
 
@@ -145,10 +145,12 @@ temporal activity terminate --activity-id my-activity-id --reason "no longer nee
 
 All existing Activity metrics apply to Standalone Activities (scheduled, started, completed, failed, timed out, canceled).
 
-## Public Preview limitations
+## Limitations
 
-- Pause, reset, and update options are not supported (scheduled for GA).
-- The `TerminateExisting` conflict policy and `TerminateIfRunning` reuse policy are not yet supported.
+- Pause, reset, and update are supported and ready for production use, but those options are themselves in Public Preview.
+- The `TerminateExisting` conflict policy and `TerminateIfRunning` reuse policy are not supported.
+- A Workflow cannot start a Standalone Activity directly. Use a wrapper Activity that calls the Client.
+- Recurring ("cron") Standalone Activities are not supported. Use a Schedule that starts a Workflow calling the Activity.
 
 ## Temporal CLI support
 
@@ -157,4 +159,4 @@ All existing Activity metrics apply to Standalone Activities (scheduled, started
 
 ## Temporal Cloud support
 
-Standalone Activities are available in Temporal Cloud as a Public Preview feature. Because the SDK client config loaders read environment variables and TOML profiles, the same code runs against a local server or Temporal Cloud with no code changes.
+Standalone Activities are available in Temporal Cloud. Because the SDK client config loaders read environment variables and TOML profiles, the same code runs against a local server or Temporal Cloud with no code changes.
