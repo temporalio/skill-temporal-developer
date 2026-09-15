@@ -214,3 +214,4 @@ See `references/dotnet/testing.md` for info on writing tests.
 - **`references/dotnet/versioning.md`** — Patching API, workflow type versioning, Worker Versioning
 - **`references/dotnet/standalone-activities.md`** — Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
 - **`references/dotnet/determinism-protection.md`** — Runtime task detection, .NET Task determinism rules
+- **`references/dotnet/signal-with-start.md`** — Signal-With-Start in .NET (see concept page at `references/core/signal-with-start.md`).
