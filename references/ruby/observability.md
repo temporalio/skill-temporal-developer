@@ -95,7 +95,7 @@ client.start_workflow(
 Upsert from a Workflow:
 
 ```ruby
-Temporalio::Workflow.upsert_search_attributes({ key => 'new-value' })
+Temporalio::Workflow.upsert_search_attributes(key.value_set('new-value'))
 ```
 
 ### Querying Workflows by Search Attributes
