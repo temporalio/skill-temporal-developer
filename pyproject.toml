@@ -10,7 +10,10 @@ dev = [
 ]
 
 [tool.rumdl]
-enable = ["MD051", "MD057"]
+enable = [
+    "MD051", # Link fragments should reference valid headings
+    "MD057", # Relative links should point to existing files
+]
 
 [tool.uv]
 package = false
