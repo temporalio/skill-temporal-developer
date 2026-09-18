@@ -276,6 +276,7 @@ See `references/java/testing.md` for info on writing tests.
 - **`references/java/data-handling.md`** - Data converters, Jackson, payload encryption
 - **`references/java/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/java/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at `references/core/standalone-activities.md`.
+- **`references/java/priority-fairness.md`** - Task Queue Priority and Fairness SDK options and examples. Concept overview at `references/core/priority-fairness.md`.
 
 ### Java Integrations
 

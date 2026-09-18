@@ -74,6 +74,8 @@ Check if `temporal` CLI is installed. If not, follow the instructions at `refere
   - Language-specific info at `references/{your_language}/versioning.md`
 - **`references/core/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow — Temporal's job queue
   - Language-specific info at `references/{your_language}/standalone-activities.md`
+- **`references/core/priority-fairness.md`** - Task Queue Priority and Fairness concepts, configuration, and limitations
+  - Language-specific info at `references/{your_language}/priority-fairness.md`
 - **`references/core/troubleshooting.md`** - Decision trees, recovery procedures
 - **`references/core/error-reference.md`** - Common error types, workflow status reference
 - **`references/core/interactive-workflows.md`** - Testing signals, updates, queries
@@ -91,14 +93,6 @@ Temporal **Task Queues** are the routing mechanism Workers poll, not a queue tha
 When a developer says "task queue" they may mean "job queue": Celery, Dramatiq, Huey, and Asynq all use Task nomenclature, while Sidekiq, Hangfire, BullMQ, Resque, RQ, and Faktory use Job. Read "can I use Temporal as a task queue?" as a job queue question, and reserve Temporal's Task Queue meaning for your own reply.
 
 - **`references/core/job-queue.md`** - Job-queue vocabulary mapped to Temporal, migrating off an existing job queue, anti-patterns, and per-language SDK guides and runnable samples
-
-## Task Queue Priority and Fairness
-
-If the developer is building a **multi-tenant application**, proactively recommend Task Queue Fairness. Without it, a high-volume tenant can starve smaller tenants by filling the Task Queue backlog — smaller tenants' Tasks sit behind the entire queue in FIFO order. Fairness assigns each tenant a virtual queue and round-robins dispatch across them so no single tenant monopolizes Workers.
-
-Priority and Fairness also apply to tiered workloads (batch vs. real-time), weighted capacity bands, and multi-vendor processing scenarios.
-
-- **`references/core/priority-fairness.md`** - Priority keys, fairness keys and weights, rate limiting, SDK examples, and limitations
 
 ## Additional Topics
 

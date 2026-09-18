@@ -256,3 +256,4 @@ See `references/go/testing.md` for info on writing tests.
 - **`references/go/versioning.md`** - Patching API (`workflow.GetVersion`), Worker Versioning
 - **`references/go/determinism-protection.md`** - Information on **`workflowcheck`** tool to help statically check for determinism issues.
 - **`references/go/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow; see also `references/core/standalone-activities.md` for cross-SDK concepts.
+- **`references/go/priority-fairness.md`** - Task Queue Priority and Fairness SDK options and examples; see also `references/core/priority-fairness.md` for cross-SDK concepts.
