@@ -104,54 +104,6 @@ var client = await TemporalClient.ConnectAsync(new("localhost:7233")
 });
 ```
 
-## Search Attributes
-
-Custom searchable fields for workflow visibility. These can be set at workflow start:
-
-```csharp
-using Temporalio.Common;
-
-var handle = await client.StartWorkflowAsync(
-    (OrderWorkflow wf) => wf.RunAsync(order),
-    new(id: $"order-{order.Id}", taskQueue: "orders")
-    {
-        TypedSearchAttributes = new SearchAttributeCollection.Builder()
-            .Set(SearchAttributeKey.CreateKeyword("OrderId"), order.Id)
-            .Set(SearchAttributeKey.CreateKeyword("OrderStatus"), "pending")
-            .Set(SearchAttributeKey.CreateFloat("OrderTotal"), order.Total)
-            .Build(),
-    });
-```
-
-Or upserted during workflow execution:
-
-```csharp
-[Workflow]
-public class OrderWorkflow
-{
-    [WorkflowRun]
-    public async Task<string> RunAsync(Order order)
-    {
-        // ... process order ...
-
-        // Update search attribute
-        Workflow.UpsertTypedSearchAttributes(
-            SearchAttributeKey.CreateKeyword("OrderStatus").ValueSet("completed"));
-        return "done";
-    }
-}
-```
-
-### Querying Workflows by Search Attributes
-
-```csharp
-await foreach (var wf in client.ListWorkflowsAsync(
-    "OrderStatus = \"processing\" OR OrderStatus = \"pending\""))
-{
-    Console.WriteLine($"Workflow {wf.Id} is still processing");
-}
-```
-
 ## Workflow Memo
 
 Store arbitrary metadata with workflows (not searchable).

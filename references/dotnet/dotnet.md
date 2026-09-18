@@ -207,7 +207,7 @@ See `references/dotnet/testing.md` for info on writing tests.
 - **`references/dotnet/determinism.md`** — Essentials of determinism in .NET
 - **`references/dotnet/gotchas.md`** — .NET-specific mistakes and anti-patterns
 - **`references/dotnet/error-handling.md`** — ApplicationFailureException, retry policies, non-retryable errors
-- **`references/dotnet/observability.md`** — Logging, metrics, tracing
+- **`references/dotnet/observability.md`** — Logging, metrics, tracing, Search Attributes
 - **`references/dotnet/testing.md`** — WorkflowEnvironment, time-skipping, activity mocking
 - **`references/dotnet/advanced-features.md`** — Schedules, worker tuning, dependency injection
 - **`references/dotnet/data-handling.md`** — Data converters, payload encryption, etc.

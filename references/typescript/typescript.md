@@ -186,7 +186,7 @@ See `references/typescript/testing.md` for info on writing tests.
 - **`references/typescript/determinism.md`** - Essentials of determinism in TypeScript
 - **`references/typescript/gotchas.md`** - TypeScript-specific mistakes and anti-patterns
 - **`references/typescript/error-handling.md`** - ApplicationFailure, retry policies, non-retryable errors
-- **`references/typescript/observability.md`** - Logging, metrics, tracing
+- **`references/typescript/observability.md`** - Logging, metrics, tracing, Search Attributes
 - **`references/typescript/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **`references/typescript/advanced-features.md`** - Schedules, worker tuning, and more
 - **`references/typescript/data-handling.md`** - Data converters, payload encryption, etc.

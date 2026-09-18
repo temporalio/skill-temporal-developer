@@ -102,7 +102,67 @@ See `references/python/integrations/opentelemetry.md`.
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/python/data-handling.md`
+Custom searchable fields for workflow visibility. These can be created at workflow start:
+
+```python
+from temporalio.common import (
+    SearchAttributeKey,
+    SearchAttributePair,
+    TypedSearchAttributes,
+)
+from datetime import datetime
+from datetime import timezone
+
+ORDER_ID = SearchAttributeKey.for_keyword("OrderId")
+ORDER_STATUS = SearchAttributeKey.for_keyword("OrderStatus")
+ORDER_TOTAL = SearchAttributeKey.for_float("OrderTotal")
+CREATED_AT = SearchAttributeKey.for_datetime("CreatedAt")
+
+# At workflow start
+handle = await client.start_workflow(
+    OrderWorkflow.run,
+    order,
+    id=f"order-{order.id}",
+    task_queue="orders",
+    search_attributes=TypedSearchAttributes([
+        SearchAttributePair(ORDER_ID, order.id),
+        SearchAttributePair(ORDER_STATUS, "pending"),
+        SearchAttributePair(ORDER_TOTAL, order.total),
+        SearchAttributePair(CREATED_AT, datetime.now(timezone.utc)),
+    ]),
+)
+```
+
+Or upserted during workflow execution:
+
+```python
+from temporalio import workflow
+from temporalio.common import SearchAttributeKey, SearchAttributePair, TypedSearchAttributes
+
+ORDER_STATUS = SearchAttributeKey.for_keyword("OrderStatus")
+
+@workflow.defn
+class OrderWorkflow:
+    @workflow.run
+    async def run(self, order: Order) -> str:
+        # ... process order ...
+
+        # Update search attribute
+        workflow.upsert_search_attributes(TypedSearchAttributes([
+            SearchAttributePair(ORDER_STATUS, "completed"),
+        ]))
+        return "done"
+```
+
+### Querying Workflows by Search Attributes
+
+```python
+# List workflows using search attributes
+async for workflow in client.list_workflows(
+    'OrderStatus = "processing" OR OrderStatus = "pending"'
+):
+    print(f"Workflow {workflow.id} is still processing")
+```
 
 ## Best Practices
 

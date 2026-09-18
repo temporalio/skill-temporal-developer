@@ -118,41 +118,6 @@ converter = Temporalio::Converters::DataConverter.new(
 )
 ```
 
-## Search Attributes
-
-Define a search attribute key:
-
-```ruby
-key = Temporalio::SearchAttributes::Key.new(
-  'CustomerId',
-  Temporalio::SearchAttributes::IndexedValueType::KEYWORD
-)
-```
-
-Set at workflow start:
-
-```ruby
-client.start_workflow(
-  MyWorkflow,
-  'arg',
-  id: 'wf-1',
-  task_queue: 'my-queue',
-  search_attributes: Temporalio::SearchAttributes.new({ key => 'customer-123' })
-)
-```
-
-Upsert from a workflow:
-
-```ruby
-Temporalio::Workflow.upsert_search_attributes({ key => 'new-value' })
-```
-
-### Querying Workflows by Search Attributes
-
-```ruby
-client.list_workflows("CustomerId = 'customer-123'")
-```
-
 ## Workflow Memo
 
 Set at workflow start:
