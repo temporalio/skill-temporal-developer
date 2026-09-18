@@ -90,6 +90,9 @@ client.start_workflow(
   task_queue: 'my-queue',
   search_attributes: Temporalio::SearchAttributes.new({ key => 'customer-123' })
 )
+```
+
+Upsert from a Workflow:
 
 ```ruby
 Temporalio::Workflow.upsert_search_attributes({ key => 'new-value' })
