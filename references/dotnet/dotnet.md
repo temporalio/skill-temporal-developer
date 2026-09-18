@@ -213,4 +213,5 @@ See `references/dotnet/testing.md` for info on writing tests.
 - **`references/dotnet/data-handling.md`** — Data converters, payload encryption, etc.
 - **`references/dotnet/versioning.md`** — Patching API, workflow type versioning, Worker Versioning
 - **`references/dotnet/standalone-activities.md`** — Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at `references/core/standalone-activities.md`.
+- **`references/dotnet/priority-fairness.md`** — Task Queue Priority and Fairness SDK options and examples. Concept overview at `references/core/priority-fairness.md`.
 - **`references/dotnet/determinism-protection.md`** — Runtime task detection, .NET Task determinism rules

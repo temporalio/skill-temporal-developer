@@ -174,6 +174,8 @@ my_temporal_app/
 2. **Mixing Worker and Workflow concerns** - Runtime setup, clients, secrets, environment config, and external logging sinks belong outside Workflow code.
 3. **Assuming APIs are stable** - The Rust SDK is Public Preview, so check official docs, docs.rs, and SDK examples before naming exact APIs.
 
-## Rust-Specific References Status
+## Rust-Specific References
 
-Rust-specific local reference files do not exist yet. For deeper Rust SDK details, use the official Rust SDK docs, docs.rs, and [`sdk-rust` examples](https://github.com/temporalio/sdk-rust/tree/main/crates/sdk/examples). For SDK-neutral Temporal concepts, use the core references under `references/core/`.
+- **`references/rust/priority-fairness.md`** - Task Queue Priority and Fairness SDK options and examples. Concept overview at `references/core/priority-fairness.md`.
+
+For other Rust SDK details, use the official Rust SDK docs, docs.rs, and [`sdk-rust` examples](https://github.com/temporalio/sdk-rust/tree/main/crates/sdk/examples). For SDK-neutral Temporal concepts, use the core references under `references/core/`.

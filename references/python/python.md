@@ -185,6 +185,7 @@ See `references/python/testing.md` for info on writing tests.
 - **`references/python/external-storage.md`** - Claim-check pattern for large payloads (S3 driver, custom drivers, codec-server handling, multi-region durability)
 - **`references/python/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
 - **`references/python/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at `references/core/standalone-activities.md`.
+- **`references/python/priority-fairness.md`** - Task Queue Priority and Fairness SDK options and examples. Concept overview at `references/core/priority-fairness.md`.
 - **`references/python/determinism-protection.md`** - Python sandbox specifics, forbidden operations, pass-through imports
 - **`references/python/ai-patterns.md`** - LLM integration, Pydantic data converter, AI workflow patterns
 - **`references/python/workflow-streams.md`** - Public-Preview `temporalio.contrib.workflow_streams` library: durable, offset-addressed event channel for streaming progress to subscribers.
