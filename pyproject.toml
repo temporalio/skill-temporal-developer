@@ -5,11 +5,14 @@ requires-python = ">=3.14,<3.15"
 
 [dependency-groups]
 dev = [
-    "mdformat==1.0.0",
-    "mdformat-frontmatter==2.1.2",
-    "mdformat-gfm==1.0.0",
-    "mdformat-gfm-alerts==2.1.0",
+    "rumdl==0.2.73",
     "skills-ref",
+]
+
+[tool.rumdl]
+enable = [
+    "MD051", # Link fragments should reference valid headings
+    "MD057", # Relative links should point to existing files
 ]
 
 [tool.uv]

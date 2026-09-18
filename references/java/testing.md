@@ -179,7 +179,7 @@ For activities that use `Activity.getExecutionContext()` or heartbeating, use `T
 1. Use `TestWorkflowExtension` with JUnit 5 for concise test setup
 2. Always use `withSettings().withoutAnnotations()` when mocking activity interfaces with Mockito
 3. Mock external dependencies in activities, not in workflows
-4. Test replay compatibility when changing workflow code (see `references/java/determinism.md`)
+4. Test replay compatibility when changing workflow code (see [Java determinism rules](determinism.md))
 5. Test signal/query handlers explicitly
 6. Use unique task queues per test to avoid conflicts (handled automatically by `TestWorkflowExtension`)
 

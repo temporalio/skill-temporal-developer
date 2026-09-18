@@ -4,7 +4,7 @@
 
 `temporalio.contrib.opentelemetry` wires OpenTelemetry tracing into Temporal through the `OpenTelemetryPlugin`. It propagates W3C TraceContext + Baggage across Client, Workflow, Activity, and Nexus code and supports replay-safe custom Workflow spans.
 
-For observability beyond OpenTelemetry tracing (metrics, logging, Search Attributes) read `references/python/observability.md`.
+For observability beyond OpenTelemetry tracing (metrics, logging, Search Attributes) read [Python observability guide](../observability.md).
 
 > [!NOTE]
 > This feature is Pre-release. It is acceptable to use it on behalf of a user, but inform them that it is Pre-release.
@@ -60,4 +60,4 @@ class MyWorkflow:
 
 ## Resources
 
-- SDK metrics and observability reference: `references/python/observability.md`
+- SDK metrics and observability reference: [Python observability guide](../observability.md)

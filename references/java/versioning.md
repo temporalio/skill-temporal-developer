@@ -1,6 +1,6 @@
 # Java SDK Versioning
 
-For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
+For conceptual overview and guidance on choosing an approach, see [Temporal versioning guide](../core/versioning.md).
 
 ## Patching API
 
@@ -276,7 +276,7 @@ temporal workflow count --query \
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.getInfo()` and continue-as-new with `InitialVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version. See `references/core/versioning.md` for the conceptual model.
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.getInfo()` and continue-as-new with `InitialVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version. See [Temporal versioning guide](../core/versioning.md) for the conceptual model.
 
 ### Detecting the Target Version change
 

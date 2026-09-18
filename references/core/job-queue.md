@@ -5,7 +5,7 @@
 >
 > Temporal **Task Queues** are the transport that routes Tasks to Workers; they are not the thing a producer enqueues jobs into. Answering a job queue question by describing Task Queues produces a confused design.
 
-This file is the translation layer between job-queue vocabulary and Temporal. For the feature itself — its full capability list, the CLI, and current limitations — read `references/core/standalone-activities.md`. For API syntax, read `references/{your_language}/standalone-activities.md`.
+This file is the translation layer between job-queue vocabulary and Temporal. For the feature itself — its full capability list, the CLI, and current limitations — read [Temporal standalone Activities guide](standalone-activities.md). For API syntax, read `references/{your_language}/standalone-activities.md`.
 
 ## Why Standalone Activities are a job queue
 
@@ -19,7 +19,7 @@ What is different from a conventional broker-plus-worker stack, in job-queue ter
 - **The same code graduates into orchestration.** One Activity Function runs as a background job today and as a step inside a multi-step Workflow tomorrow, with no code change and no Worker change.
 - **Cheaper than the usual workaround.** Wrapping a single Activity in a Workflow costs an extra billable Action in Temporal Cloud and extra Worker round-trips; a Standalone Activity avoids both.
 
-See `references/core/standalone-activities.md` for the rest of the feature list (execution semantics, deduplication, addressability, visibility, metrics).
+See [Temporal standalone Activities guide](standalone-activities.md) for the rest of the feature list (execution semantics, deduplication, addressability, visibility, metrics).
 
 ## Vocabulary mapping
 
@@ -39,8 +39,8 @@ See `references/core/standalone-activities.md` for the rest of the feature list 
 | Job timeout | Start-To-Close and/or Schedule-To-Close timeout (at least one is required) |
 | Long job keepalive / progress reporting | Activity Heartbeats, with heartbeat details for checkpointing |
 | Cancel a job | `cancel` (cooperative, surfaced on the next heartbeat) or `terminate` (forceful) |
-| Priority queues | Priority keys — free, Public Preview. See `references/core/priority-fairness.md` |
-| Per-tenant fairness / avoiding noisy neighbors (usually not supported) | Fairness keys and weights — Public Preview, and a paid feature in Temporal Cloud. See `references/core/priority-fairness.md` |
+| Priority queues | Priority keys — free, Public Preview. See [Temporal Task Queue priority and fairness guide](priority-fairness.md) |
+| Per-tenant fairness / avoiding noisy neighbors (usually not supported) | Fairness keys and weights — Public Preview, and a paid feature in Temporal Cloud. See [Temporal Task Queue priority and fairness guide](priority-fairness.md) |
 | Delayed job (`countdown`, `enqueue_in`, `perform_in`) | A start delay on the Standalone Activity itself — no Workflow needed |
 | Dashboard (Flower, Sidekiq Web, Bull Board) | Temporal Web UI, `temporal activity list` (with Search Attribute support) / `describe`, and the list/count client APIs |
 | Job metrics | Standard Activity metrics: scheduled, started, completed, failed, timed out, canceled |
@@ -56,10 +56,10 @@ Not every "job queue" request is a single job. Route these away from Standalone 
 | -- | -- |
 | Chained jobs, DAGs, Celery canvas / chords, "when job A finishes run B and C" | A **Workflow**. That is orchestration, which is what Workflows are for. |
 | Fan-out with a join, or a batch with a completion callback | A **Workflow** that starts the Activities in parallel and awaits them. |
-| Compensation / rollback when a later step fails | A **Workflow** using the saga pattern — see `references/core/patterns.md`. |
+| Compensation / rollback when a later step fails | A **Workflow** using the saga pattern — see [Temporal workflow patterns](patterns.md). |
 | Recurring or periodic jobs (Celery beat, `sidekiq-cron`, a crontab) | A **Temporal Schedule**, which starts a thin Workflow that calls the one Activity. |
 | A job that waits for human approval or an external event | A **Workflow** with a Signal or Update handler. |
-| Long-lived per-entity state (a per-user or per-order actor) | The **entity Workflow** pattern — see `references/core/patterns.md`. |
+| Long-lived per-entity state (a per-user or per-order actor) | The **entity Workflow** pattern — see [Temporal workflow patterns](patterns.md). |
 
 A one-shot delayed job ("run this in 10 minutes") uses a start delay on the Standalone Activity itself — `start_delay` on the start request, or `--start-delay` on `temporal activity start`. Temporal accepts long delays at scale, where job frameworks like Celery limit both.
 
@@ -90,7 +90,7 @@ Anti-patterns to avoid when building a job queue on Temporal:
 
 1. **A Workflow per job that runs exactly one Activity.** It costs an extra billable Action and extra Worker round-trips for no orchestration benefit. Prefer a Standalone Activity, including for delayed jobs, which take a start delay directly. Recurring jobs on a Schedule are the exception, since Schedules start Workflows.
 2. **A long-lived "queue manager" Workflow** that accepts jobs by Signal and dispatches them. It reinvents a queue the Server already provides, grows unbounded Event History, forces continue-as-new, and reintroduces head-of-line blocking.
-3. **An Activity that polls Redis/SQS/a database table for work** and then dispatches it. Once on Temporal, the producer should enqueue Standalone Activities directly. (Polling an external system you do not control is a different, legitimate pattern — see `references/core/patterns.md`.)
+3. **An Activity that polls Redis/SQS/a database table for work** and then dispatches it. Once on Temporal, the producer should enqueue Standalone Activities directly. (Polling an external system you do not control is a different, legitimate pattern — see [Temporal workflow patterns](patterns.md).)
 4. **Hand-rolled retry loops inside the Activity.** Configure a Retry Policy instead; a `for attempt in range(3)` inside an Activity hides failures from visibility and metrics.
 5. **A side table tracking job status.** Status, attempt count, last error, and result are already queryable. Add a table only where job state has to be joined against business data.
 6. **A random UUID as the Activity ID by default.** A business identifier such as `send-welcome-email:user-42` makes jobs addressable and deduplicated for free. A UUID is the fallback for when no meaningful identifier exists.

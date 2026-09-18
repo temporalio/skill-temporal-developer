@@ -1,6 +1,6 @@
 # Task Queue Priority and Fairness in TypeScript
 
-Read `references/core/priority-fairness.md` first for the cross-SDK behavior, configuration, and limitations.
+Read [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md) first for the cross-SDK behavior, configuration, and limitations.
 
 TypeScript supplies Priority and Fairness metadata through the `priority` option. Its fields inherit independently. Omit `fairnessKey` and `fairnessWeight` for Priority-only use, or omit `priorityKey` for Fairness at the default Priority.
 

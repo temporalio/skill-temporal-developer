@@ -71,7 +71,7 @@ Set the default runtime **before** creating any clients or workers.
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/ruby/data-handling.md`
+See the Search Attributes section of [Ruby data handling guide](data-handling.md)
 
 ## Best Practices
 

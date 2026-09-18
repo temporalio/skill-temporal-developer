@@ -282,7 +282,7 @@ public String run() {
 ## Best Practices
 
 1. Use Jackson `ObjectMapper` customization for complex serialization needs
-2. Keep payloads small — see `references/core/gotchas.md` for limits
+2. Keep payloads small — see [Temporal common pitfalls](../core/gotchas.md) for limits
 3. Encrypt sensitive data with `PayloadCodec` and `CodecDataConverter`
 4. Use POJOs or Protobuf messages for workflow/activity parameters
 5. Use `Workflow.randomUUID()`, `Workflow.newRandom()`, and `Workflow.currentTimeMillis()` for deterministic values

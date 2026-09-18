@@ -98,7 +98,7 @@ Alternatively, use `Temporalio.Extensions.DiagnosticSource` to bridge metrics to
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/dotnet/data-handling.md`
+See the Search Attributes section of [.NET data handling guide](data-handling.md)
 
 ## Best Practices
 
