@@ -133,7 +133,7 @@ handle = await client.start_workflow(
 )
 ```
 
-Or upserted during workflow execution:
+Or upserted during Workflow execution:
 
 ```python
 from temporalio import workflow
