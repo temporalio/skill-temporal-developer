@@ -207,7 +207,7 @@ See [.NET testing guide](testing.md) for info on writing tests.
 - **[.NET determinism rules](determinism.md)** — Essentials of determinism in .NET
 - **[.NET common pitfalls](gotchas.md)** — .NET-specific mistakes and anti-patterns
 - **[.NET error handling guide](error-handling.md)** — ApplicationFailureException, retry policies, non-retryable errors
-- **[.NET observability guide](observability.md)** — Logging, metrics, tracing
+- **[.NET observability guide](observability.md)** — Logging, metrics, tracing, Search Attributes
 - **[.NET testing guide](testing.md)** — WorkflowEnvironment, time-skipping, activity mocking
 - **[.NET advanced features guide](advanced-features.md)** — Schedules, worker tuning, dependency injection
 - **[.NET data handling guide](data-handling.md)** — Data converters, payload encryption, etc.

@@ -148,77 +148,6 @@ const dataConverter: DataConverter = {
 };
 ```
 
-## Search Attributes
-
-Custom searchable fields for workflow visibility.
-
-### Setting Search Attributes at Start
-
-```typescript
-import { Client } from '@temporalio/client';
-
-const client = new Client();
-
-await client.workflow.start('orderWorkflow', {
-  taskQueue: 'orders',
-  workflowId: `order-${orderId}`,
-  args: [order],
-  searchAttributes: {
-    OrderId: [orderId],
-    CustomerType: ['premium'],
-    OrderTotal: [99.99],
-    CreatedAt: [new Date()],
-  },
-});
-```
-
-### Upserting Search Attributes from Workflow
-
-```typescript
-import { upsertSearchAttributes, workflowInfo } from '@temporalio/workflow';
-
-export async function orderWorkflow(order: Order): Promise<string> {
-  // Update status as workflow progresses
-  upsertSearchAttributes({
-    OrderStatus: ['processing'],
-  });
-
-  await processOrder(order);
-
-  upsertSearchAttributes({
-    OrderStatus: ['completed'],
-  });
-
-  return 'done';
-}
-```
-
-### Reading Search Attributes
-
-```typescript
-import { workflowInfo } from '@temporalio/workflow';
-
-export async function orderWorkflow(): Promise<void> {
-  const info = workflowInfo();
-  const searchAttrs = info.searchAttributes;
-  const orderId = searchAttrs?.OrderId?.[0];
-  // ...
-}
-```
-
-### Querying Workflows by Search Attributes
-
-```typescript
-const client = new Client();
-
-// List workflows using search attributes
-for await (const workflow of client.workflow.list({
-  query: 'OrderStatus = "processing" AND CustomerType = "premium"',
-})) {
-  console.log(`Workflow ${workflow.workflowId} is still processing`);
-}
-```
-
 ## Workflow Memo
 
 Store arbitrary metadata with workflows (not searchable).
@@ -248,7 +177,6 @@ export async function orderWorkflow(): Promise<void> {
 ## Best Practices
 
 1. Keep payloads small—see [Temporal common pitfalls](../core/gotchas.md) for limits
-2. Use search attributes for business-level visibility and filtering
-3. Encrypt sensitive data with PayloadCodec
-4. Use memo for non-searchable metadata
-5. Configure the same data converter on both client and worker
+2. Encrypt sensitive data with PayloadCodec
+3. Use memo for non-searchable metadata
+4. Configure the same data converter on both client and worker

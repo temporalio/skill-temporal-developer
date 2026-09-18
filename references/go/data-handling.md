@@ -193,45 +193,6 @@ c, err := client.Dial(client.Options{
 })
 ```
 
-## Search Attributes
-
-Set at workflow start:
-
-```go
-handle, err := c.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
-    ID:        "order-123",
-    TaskQueue: "orders",
-    SearchAttributes: map[string]interface{}{
-        "OrderStatus": "pending",
-        "CustomerId":  "cust-456",
-    },
-}, OrderWorkflow, input)
-```
-
-Upsert from within a workflow:
-
-```go
-err := workflow.UpsertSearchAttributes(ctx, map[string]interface{}{
-    "OrderStatus": "completed",
-})
-```
-
-Typed search attributes (v1.26.0+, preferred):
-
-```go
-var OrderStatusKey = temporal.NewSearchAttributeKeyKeyword("OrderStatus")
-
-err := workflow.UpsertTypedSearchAttributes(ctx, OrderStatusKey.ValueSet("completed"))
-```
-
-Query workflows by search attributes:
-
-```go
-resp, err := c.ListWorkflow(ctx, &workflowservice.ListWorkflowExecutionsRequest{
-    Query: `OrderStatus = "pending" AND CustomerId = "cust-456"`,
-})
-```
-
 ## Workflow Memo
 
 Set in start options:

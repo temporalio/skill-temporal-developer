@@ -186,7 +186,7 @@ See [TypeScript testing guide](testing.md) for info on writing tests.
 - **[TypeScript determinism rules](determinism.md)** - Essentials of determinism in TypeScript
 - **[TypeScript common pitfalls](gotchas.md)** - TypeScript-specific mistakes and anti-patterns
 - **[TypeScript error handling guide](error-handling.md)** - ApplicationFailure, retry policies, non-retryable errors
-- **[TypeScript observability guide](observability.md)** - Logging, metrics, tracing
+- **[TypeScript observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
 - **[TypeScript testing guide](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **[TypeScript advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
 - **[TypeScript data handling guide](data-handling.md)** - Data converters, payload encryption, etc.
