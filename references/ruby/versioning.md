@@ -1,6 +1,6 @@
 # Ruby SDK Versioning
 
-For conceptual overview, see `references/core/versioning.md`.
+For conceptual overview, see [references/core/versioning.md](../core/versioning.md).
 
 ## Patching API
 

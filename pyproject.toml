@@ -5,12 +5,16 @@ requires-python = ">=3.14,<3.15"
 
 [dependency-groups]
 dev = [
-    "mdformat==1.0.0",
-    "mdformat-frontmatter==2.1.2",
-    "mdformat-gfm==1.0.0",
-    "mdformat-gfm-alerts==2.1.0",
+    "rumdl==0.2.73",
     "skills-ref",
 ]
+
+[tool.rumdl]
+enable = ["MD051", "MD057"]
+
+[tool.rumdl.per-file-ignores]
+"README.md" = ["MD051", "MD057"]
+"CONTRIBUTING.md" = ["MD051", "MD057"]
 
 [tool.uv]
 package = false

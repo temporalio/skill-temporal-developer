@@ -7,7 +7,7 @@
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For Python AI patterns (Pydantic data converter, disabling client-side LLM retries, generic LLM Activity shape) read `references/python/ai-patterns.md`. For conceptual LLM patterns shared across SDKs read `references/core/ai-patterns.md`. Python sandbox theory lives in `references/python/determinism-protection.md` — this integration handles the sandbox restrictions for `@traceable` for you, so do not restate sandbox rules here.
+For Python AI patterns (Pydantic data converter, disabling client-side LLM retries, generic LLM Activity shape) read [references/python/ai-patterns.md](../ai-patterns.md). For conceptual LLM patterns shared across SDKs read [references/core/ai-patterns.md](../../core/ai-patterns.md). Python sandbox theory lives in [references/python/determinism-protection.md](../determinism-protection.md) — this integration handles the sandbox restrictions for `@traceable` for you, so do not restate sandbox rules here.
 
 ## Install
 
@@ -230,4 +230,4 @@ my_step
 
 ## Additional Resources
 
-- `references/python/integrations/langgraph.md` - LangGraph + Temporal plugin - enables running LangGraph agents as durable Temporal workflows.
+- [references/python/integrations/langgraph.md](langgraph.md) - LangGraph + Temporal plugin - enables running LangGraph agents as durable Temporal workflows.

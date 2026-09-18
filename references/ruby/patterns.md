@@ -402,4 +402,4 @@ end
 
 ## Using ActiveModel
 
-See `references/ruby/data-handling.md`.
+See [references/ruby/data-handling.md](data-handling.md).

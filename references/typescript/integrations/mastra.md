@@ -9,7 +9,7 @@ Mastra appears on the Temporal TypeScript integrations page as the "Mastra | Age
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview. The upstream `@mastra/temporal` package is also flagged as "experimental and not ready for production use"; the API may change between releases.
 
-For Temporal TypeScript SDK fundamentals (Worker, Workflow, Activity, Task Queue, replay), see `references/typescript/typescript.md` and `references/typescript/determinism.md`.
+For Temporal TypeScript SDK fundamentals (Worker, Workflow, Activity, Task Queue, replay), see [references/typescript/typescript.md](../typescript.md) and [references/typescript/determinism.md](../determinism.md).
 
 ## Install
 
@@ -191,7 +191,7 @@ The Temporal UI is available at `http://localhost:8080`.
 
 The upstream Mastra Temporal guide covers `createWorkflow` and `createStep` only. Mastra Agents, Tools, Memory, RAG, evals, and Mastra Studio are **not** documented as participating in this Temporal integration.
 
-For language-agnostic AI/LLM orchestration patterns (centralized retries, tool placement, multi-agent), see `references/core/ai-patterns.md`.
+For language-agnostic AI/LLM orchestration patterns (centralized retries, tool placement, multi-agent), see [references/core/ai-patterns.md](../../core/ai-patterns.md).
 
 ## Resources
 

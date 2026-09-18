@@ -104,11 +104,11 @@ Runtime.install({
 
 ## Distributed Tracing (OpenTelemetry)
 
-See `references/typescript/integrations/opentelemetry.md`.
+See [references/typescript/integrations/opentelemetry.md](integrations/opentelemetry.md).
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/typescript/data-handling.md`
+See the Search Attributes section of [references/typescript/data-handling.md](data-handling.md)
 
 ## Best Practices
 

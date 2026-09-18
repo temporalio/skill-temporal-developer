@@ -170,7 +170,7 @@ Key SDK metrics:
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/go/data-handling.md`
+See the Search Attributes section of [references/go/data-handling.md](data-handling.md)
 
 ## Best Practices
 

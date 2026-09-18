@@ -8,7 +8,7 @@ The Temporal TypeScript SDK provides a modern Promise based approach to building
 
 ## Understanding Replay
 
-Temporal workflows are durable through history replay. For details on how this works, see `references/core/determinism.md`.
+Temporal workflows are durable through history replay. For details on how this works, see [references/core/determinism.md](../core/determinism.md).
 
 ## Quick Start
 
@@ -115,7 +115,7 @@ run().catch(console.error);
 
 - Load connection settings with `loadClientConnectConfig()` and pass them to `NativeConnection.connect()`
 - Pass `namespace: config.namespace` to `Worker.create()` - `NativeConnection` carries no namespace, and the Worker defaults to `default` without it
-- Use `Worker.create()` with `workflowsPath` (dev) or `workflowBundle` (production) - see `references/typescript/gotchas.md`
+- Use `Worker.create()` with `workflowsPath` (dev) or `workflowBundle` (production) - see [references/typescript/gotchas.md](gotchas.md)
 - Import activities directly (not via proxy)
 
 ## File Organization Best Practice
@@ -160,7 +160,7 @@ The TypeScript SDK runs workflows in an isolated V8 sandbox.
 - `condition()` for waiting
 - Standard JavaScript operations
 
-See `references/typescript/determinism.md` for detailed rules.
+See [references/typescript/determinism.md](determinism.md) for detailed rules.
 
 ## Common Pitfalls
 
@@ -169,29 +169,29 @@ See `references/typescript/determinism.md` for detailed rules.
 3. **Direct I/O in workflows** - Use activities for external calls
 4. **Missing `proxyActivities`** - Required to call activities from workflows
 5. **Forgetting to bundle workflows** - Worker needs `workflowsPath` or `workflowBundle`
-6. **Using workflowsPath in production** - Use `workflowBundle` for production (see `references/typescript/gotchas.md`)
+6. **Using workflowsPath in production** - Use `workflowBundle` for production (see [references/typescript/gotchas.md](gotchas.md))
 7. **Forgetting to heartbeat** - Long-running activities need `heartbeat()` calls
 8. **Logging in workflows** - For observability, use `import { log } from '@temporalio/workflow'` (routes through sinks). For temporary print debugging, `console.log()` is fine—it's direct and immediate, whereas `log` may lose messages on workflow errors.
 9. **Forgetting to wait on activity calls** - Activity calls return Promises; you must eventually await them (directly or via `Promise.all()` for parallel execution)
 
 ## Writing Tests
 
-See `references/typescript/testing.md` for info on writing tests.
+See [references/typescript/testing.md](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
 
-- **`references/typescript/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
-- **`references/typescript/determinism.md`** - Essentials of determinism in TypeScript
-- **`references/typescript/gotchas.md`** - TypeScript-specific mistakes and anti-patterns
-- **`references/typescript/error-handling.md`** - ApplicationFailure, retry policies, non-retryable errors
-- **`references/typescript/observability.md`** - Logging, metrics, tracing
-- **`references/typescript/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
-- **`references/typescript/advanced-features.md`** - Schedules, worker tuning, and more
-- **`references/typescript/data-handling.md`** - Data converters, payload encryption, etc.
-- **`references/typescript/external-storage.md`** - Claim-check pattern for large Payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
-- **`references/typescript/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
-- **`references/typescript/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at `references/core/standalone-activities.md`.
-- **`references/typescript/priority-fairness.md`** - Task Queue Priority and Fairness SDK options and examples. Concept overview at `references/core/priority-fairness.md`.
-- **`references/typescript/determinism-protection.md`** - V8 sandbox and bundling
+- **[references/typescript/patterns.md](patterns.md)** - Signals, queries, child workflows, saga pattern, etc.
+- **[references/typescript/determinism.md](determinism.md)** - Essentials of determinism in TypeScript
+- **[references/typescript/gotchas.md](gotchas.md)** - TypeScript-specific mistakes and anti-patterns
+- **[references/typescript/error-handling.md](error-handling.md)** - ApplicationFailure, retry policies, non-retryable errors
+- **[references/typescript/observability.md](observability.md)** - Logging, metrics, tracing
+- **[references/typescript/testing.md](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
+- **[references/typescript/advanced-features.md](advanced-features.md)** - Schedules, worker tuning, and more
+- **[references/typescript/data-handling.md](data-handling.md)** - Data converters, payload encryption, etc.
+- **[references/typescript/external-storage.md](external-storage.md)** - Claim-check pattern for large Payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
+- **[references/typescript/versioning.md](versioning.md)** - Patching API, workflow type versioning, Worker Versioning
+- **[references/typescript/standalone-activities.md](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [references/core/standalone-activities.md](../core/standalone-activities.md).
+- **[references/typescript/priority-fairness.md](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples. Concept overview at [references/core/priority-fairness.md](../core/priority-fairness.md).
+- **[references/typescript/determinism-protection.md](determinism-protection.md)** - V8 sandbox and bundling

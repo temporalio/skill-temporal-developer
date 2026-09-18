@@ -395,4 +395,4 @@ class MyWorkflow:
 
 ## Using Pydantic Models
 
-See `references/python/data-handling.md`.
+See [references/python/data-handling.md](data-handling.md).

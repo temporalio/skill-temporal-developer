@@ -1,6 +1,6 @@
 # Task Queue Priority and Fairness in Go
 
-Read `references/core/priority-fairness.md` first for the cross-SDK behavior, configuration, and limitations.
+Read [references/core/priority-fairness.md](../core/priority-fairness.md) first for the cross-SDK behavior, configuration, and limitations.
 
 Go represents Priority and Fairness metadata with `temporal.Priority`. Zero-value fields inherit independently. Set only `PriorityKey` for Priority-only use, or only the Fairness fields to use the default Priority.
 

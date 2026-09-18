@@ -98,11 +98,11 @@ Runtime.set_default(runtime, error_if_already_set=True)
 
 ## Distributed Tracing (OpenTelemetry)
 
-See `references/python/integrations/opentelemetry.md`.
+See [references/python/integrations/opentelemetry.md](integrations/opentelemetry.md).
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/python/data-handling.md`
+See the Search Attributes section of [references/python/data-handling.md](data-handling.md)
 
 ## Best Practices
 

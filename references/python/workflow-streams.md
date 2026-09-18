@@ -398,5 +398,5 @@ A subscriber whose offset falls below the new base after `truncate()` is silentl
 
 - [Workflow Streams samples (samples-python)](https://github.com/temporalio/samples-python/tree/main/workflow_streams) — basic publish/subscribe, reconnecting subscribers, external publishers, bounded logs.
 - [`temporalio.contrib.workflow_streams` API reference](https://python.temporal.io/temporalio.contrib.workflow_streams.html).
-- `references/python/patterns.md` — Signals/Queries/Updates primitives this builds on.
-- `references/python/ai-patterns.md` — LLM patterns.
+- [references/python/patterns.md](patterns.md) — Signals/Queries/Updates primitives this builds on.
+- [references/python/ai-patterns.md](ai-patterns.md) — LLM patterns.

@@ -132,4 +132,4 @@ WorkflowServiceStubs service = WorkflowServiceStubs.newServiceStubs(
 1. Use `Workflow.getLogger()` in workflows, standard SLF4J loggers in activities
 2. Do not use `System.out.println()` in workflows — it produces duplicate output on replay
 3. Configure Micrometer metrics for production monitoring
-4. Use Search Attributes for business-level visibility — see `references/java/data-handling.md`
+4. Use Search Attributes for business-level visibility — see [references/java/data-handling.md](data-handling.md)

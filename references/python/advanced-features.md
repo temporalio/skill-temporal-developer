@@ -79,7 +79,7 @@ async def complete_approval(request_id: str, approved: bool):
 
 ## Sandbox Customization
 
-The Python SDK runs workflows in a sandbox to help you ensure determinism. You can customize sandbox restrictions when needed. See `references/python/determinism-protection.md`
+The Python SDK runs workflows in a sandbox to help you ensure determinism. You can customize sandbox restrictions when needed. See [references/python/determinism-protection.md](determinism-protection.md)
 
 ## Gevent Compatibility Warning
 

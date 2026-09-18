@@ -38,7 +38,7 @@ This document provides a general overview of conceptual-level gotchas in Tempora
   - Temporal random number generation
 - Put all other side effects in Activities
 
-See `references/core/determinism.md` for more info.
+See [references/core/determinism.md](determinism.md) for more info.
 
 ## Multiple Workers with Different Code
 
@@ -58,7 +58,7 @@ See `references/core/determinism.md` for more info.
 
 **Note:** Workflows started with old code continue running after you change the code, which can then induce the above issues. During development (NOT production), you may want to terminate stale workflows (`temporal workflow terminate --workflow-id <id>`).
 
-See `references/core/versioning.md` for more info.
+See [references/core/versioning.md](versioning.md) for more info.
 
 ## Failing Activities Too Quickly
 
@@ -199,7 +199,7 @@ See language-specific gotchas for details.
 
 ### Dev Server Is In-Memory and Not for Production
 
-The dev server loses all state on restart (use `--db-filename` to persist) and runs everything in a single process. See `dev-management.md` for the full flag table and persistence guidance. Even with persistence enabled, the dev server should NEVER be used for production deployments.
+The dev server loses all state on restart (use `--db-filename` to persist) and runs everything in a single process. See [dev-management.md](dev-management.md) for the full flag table and persistence guidance. Even with persistence enabled, the dev server should NEVER be used for production deployments.
 
 ### `workflow update` Is a Command Group, Not a Single Command
 
@@ -234,6 +234,6 @@ When resetting a workflow with `temporal workflow reset`, `--reapply-type` contr
 - gRPC message size exceeded errors
 - Workflow history growing unboundedly
 
-**The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See the Large Data Handling pattern in `references/core/patterns.md`.
+**The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See the Large Data Handling pattern in [references/core/patterns.md](patterns.md).
 
 Before hand-rolling reference passing, check whether the SDK does it for you: the Go, Python, and TypeScript SDKs have built-in External Storage that applies the claim-check pattern automatically. See `references/{your_language}/external-storage.md`, if available.

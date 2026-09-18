@@ -39,31 +39,9 @@ Codex:
 mkdir -p ~/.agents/skills && git clone https://github.com/temporalio/skill-temporal-developer ~/.agents/skills/temporal-developer
 ```
 
-## Development
+## Contributing
 
-Manually clone the skill repo following the instructions above, then install the development tools and their pinned dependencies:
-
-```shell
-uv sync
-```
-
-Format all Markdown files:
-
-```shell
-uv run mdformat .
-```
-
-Check formatting without changing files:
-
-```shell
-uv run mdformat --check .
-```
-
-Validate the skill metadata and structure:
-
-```shell
-uv run --frozen skills-ref validate "$PWD"
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and validation instructions.
 
 ## Currently Supported Temporal SDK Languages
 

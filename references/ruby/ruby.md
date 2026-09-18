@@ -114,7 +114,7 @@ puts "Result: #{result}"
 
 ### Determinism
 
-**Workflow code must be deterministic!** The Ruby SDK uses a Durable Fiber Scheduler and Illegal Call Tracing (via Ruby's `TracePoint`) to detect non-deterministic operations at runtime. All sources of non-determinism should either use Temporal-provided alternatives or be defined in Activities. Read `references/core/determinism.md` and `references/ruby/determinism.md` to understand more.
+**Workflow code must be deterministic!** The Ruby SDK uses a Durable Fiber Scheduler and Illegal Call Tracing (via Ruby's `TracePoint`) to detect non-deterministic operations at runtime. All sources of non-determinism should either use Temporal-provided alternatives or be defined in Activities. Read [references/core/determinism.md](../core/determinism.md) and [references/ruby/determinism.md](determinism.md) to understand more.
 
 ## File Organization Best Practice
 
@@ -141,21 +141,21 @@ my_temporal_app/
 
 ## Writing Tests
 
-See `references/ruby/testing.md` for info on writing tests.
+See [references/ruby/testing.md](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
 
-- **`references/ruby/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
-- **`references/ruby/determinism.md`** - Durable Fiber Scheduler behavior, safe alternatives, history replay
-- **`references/ruby/determinism-protection.md`** - Illegal Call Tracing via TracePoint, forbidden operations, runtime detection
-- **`references/ruby/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
-- **`references/ruby/testing.md`** - Test environments, time-skipping, activity mocking
-- **`references/ruby/error-handling.md`** - ApplicationError, retry policies, non-retryable errors, idempotency
-- **`references/ruby/data-handling.md`** - Data converters, payload encryption
-- **`references/ruby/observability.md`** - Logging, metrics, tracing, Search Attributes
-- **`references/ruby/gotchas.md`** - Ruby-specific mistakes and anti-patterns
-- **`references/ruby/advanced-features.md`** - Schedules, worker tuning, and more
-- **`references/ruby/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at `references/core/standalone-activities.md`.
-- **`references/ruby/priority-fairness.md`** - Task Queue Priority and Fairness SDK options and examples. Concept overview at `references/core/priority-fairness.md`.
+- **[references/ruby/patterns.md](patterns.md)** - Signals, queries, child workflows, saga pattern, etc.
+- **[references/ruby/determinism.md](determinism.md)** - Durable Fiber Scheduler behavior, safe alternatives, history replay
+- **[references/ruby/determinism-protection.md](determinism-protection.md)** - Illegal Call Tracing via TracePoint, forbidden operations, runtime detection
+- **[references/ruby/versioning.md](versioning.md)** - Patching API, workflow type versioning, Worker Versioning
+- **[references/ruby/testing.md](testing.md)** - Test environments, time-skipping, activity mocking
+- **[references/ruby/error-handling.md](error-handling.md)** - ApplicationError, retry policies, non-retryable errors, idempotency
+- **[references/ruby/data-handling.md](data-handling.md)** - Data converters, payload encryption
+- **[references/ruby/observability.md](observability.md)** - Logging, metrics, tracing, Search Attributes
+- **[references/ruby/gotchas.md](gotchas.md)** - Ruby-specific mistakes and anti-patterns
+- **[references/ruby/advanced-features.md](advanced-features.md)** - Schedules, worker tuning, and more
+- **[references/ruby/standalone-activities.md](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [references/core/standalone-activities.md](../core/standalone-activities.md).
+- **[references/ruby/priority-fairness.md](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples. Concept overview at [references/core/priority-fairness.md](../core/priority-fairness.md).

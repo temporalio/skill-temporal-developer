@@ -1,6 +1,6 @@
 # Task Queue Priority and Fairness in Ruby
 
-Read `references/core/priority-fairness.md` first for the cross-SDK behavior, configuration, and limitations.
+Read [references/core/priority-fairness.md](../core/priority-fairness.md) first for the cross-SDK behavior, configuration, and limitations.
 
 Ruby represents Priority and Fairness metadata with `Temporalio::Priority`. Constructor keywords are optional and inherit independently. Set only `priority_key` for Priority-only use, or only the Fairness values to use the default Priority.
 

@@ -1,6 +1,6 @@
 # Task Queue Priority and Fairness in Python
 
-Read `references/core/priority-fairness.md` first for the cross-SDK behavior, configuration, and limitations.
+Read [references/core/priority-fairness.md](../core/priority-fairness.md) first for the cross-SDK behavior, configuration, and limitations.
 
 Python represents Priority and Fairness metadata with `temporalio.common.Priority`. The three fields are optional and inherit independently. Omit `fairness_key` and `fairness_weight` for Priority-only use, or omit `priority_key` for Fairness at the default Priority.
 
