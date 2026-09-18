@@ -110,8 +110,8 @@ var handle = await client.StartWorkflowAsync(
         TypedSearchAttributes = new SearchAttributeCollection.Builder()
             .Set(SearchAttributeKey.CreateKeyword("OrderId"), order.Id)
             .Set(SearchAttributeKey.CreateKeyword("OrderStatus"), "pending")
-            .Set(SearchAttributeKey.CreateFloat("OrderTotal"), order.Total)
-            .Build(),
+            .Set(SearchAttributeKey.CreateDouble("OrderTotal"), order.Total)
+            .ToSearchAttributeCollection(),
     });
 ```
 

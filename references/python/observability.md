@@ -137,7 +137,7 @@ Or upserted during Workflow execution:
 
 ```python
 from temporalio import workflow
-from temporalio.common import SearchAttributeKey, SearchAttributePair, TypedSearchAttributes
+from temporalio.common import SearchAttributeKey
 
 ORDER_STATUS = SearchAttributeKey.for_keyword("OrderStatus")
 
@@ -148,9 +148,9 @@ class OrderWorkflow:
         # ... process order ...
 
         # Update search attribute
-        workflow.upsert_search_attributes(TypedSearchAttributes([
-            SearchAttributePair(ORDER_STATUS, "completed"),
-        ]))
+        workflow.upsert_search_attributes([
+            ORDER_STATUS.value_set("completed"),
+        ])
         return "done"
 ```
 
