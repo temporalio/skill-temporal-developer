@@ -31,7 +31,7 @@ temporal workflow start \
 Required flags: `--type`, `--task-queue`. Optional `--workflow-id` -- the Service generates a UUID if omitted.
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--type` | Yes | Workflow Type name. |
 | `--task-queue`, `-t` | Yes | Workflow Task queue. |
 | `--workflow-id`, `-w` | No | Workflow ID. Service generates a UUID if omitted. |
@@ -86,7 +86,7 @@ temporal workflow signal \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes (or `--query`) | Workflow ID. |
 | `--name` | Yes | Signal name. |
 | `--input`, `-i` | No | Input value (JSON). Repeatable. |
@@ -107,7 +107,7 @@ temporal workflow query \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--name` | Yes | Query Type/Name. |
 | `--input`, `-i` | No | Input value (JSON). Repeatable. |
@@ -132,7 +132,7 @@ temporal workflow update start \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--name` | Yes | Handler method name. |
 | `--wait-for-stage` | Yes | Update stage to wait for. The **only** accepted value is `accepted`. Required to allow a future CLI version to choose a default. |
@@ -154,7 +154,7 @@ temporal workflow update execute \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--name` | Yes | Handler method name. |
 | `--input`, `-i` | No | Input value (JSON). Repeatable. |
@@ -174,7 +174,7 @@ temporal workflow update result \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--update-id` | Yes | Update ID. Must be unique per Workflow Execution. |
 | `--run-id`, `-r` | No | Run ID. |
@@ -191,7 +191,7 @@ temporal workflow update describe \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--update-id` | Yes | Update ID. Must be unique per Workflow Execution. |
 | `--run-id`, `-r` | No | Run ID. |
@@ -214,7 +214,7 @@ temporal workflow signal-with-start \
 Takes `--signal-name` (required), `--signal-input`, plus all start-time flags from `workflow start`.
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--signal-name` | Yes | Signal name. |
 | `--signal-input` | No | Signal input value (JSON). Repeatable. |
 | `--type` | Yes | Workflow Type name. |
@@ -234,7 +234,7 @@ temporal workflow result \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--run-id`, `-r` | No | Run ID. |
 
@@ -249,7 +249,7 @@ temporal workflow metadata \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--run-id`, `-r` | No | Run ID. |
 | `--reject-condition` | No | Reject queries based on Workflow state. Accepted values: `not_open`, `not_completed_cleanly`. |

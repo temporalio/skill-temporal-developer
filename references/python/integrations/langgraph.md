@@ -197,7 +197,7 @@ g = graph("my-graph").compile()
 await g.ainvoke({...}, context=Context(user_id="alice"))
 ```
 
-The `context` object must be serializable by the configured Temporal payload converter, since it crosses the Activity boundary.  If your context uses Pydantic models, configure `pydantic_data_converter` — see `references/python/ai-patterns.md`.
+The `context` object must be serializable by the configured Temporal payload converter, since it crosses the Activity boundary. If your context uses Pydantic models, configure `pydantic_data_converter` — see `references/python/ai-patterns.md`.
 
 ## Tracing
 

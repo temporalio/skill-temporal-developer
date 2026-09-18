@@ -7,6 +7,7 @@ The Temporal Ruby SDK provides testing utilities compatible with any Ruby test f
 ## Workflow Test Environment
 
 The core pattern:
+
 1. Start a test `WorkflowEnvironment` with `start_local`
 2. Create a Worker in that environment with your Workflows and Activities registered
 3. Execute the Workflow using the environment's client

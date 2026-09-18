@@ -468,7 +468,7 @@ Activity calls heartbeat()
 ## Choosing Between Patterns
 
 | Need | Pattern |
-|------|---------|
+| -- | -- |
 | Send data, don't need response | Signal |
 | Read state, no modification | Query |
 | Modify state, need response | Update |

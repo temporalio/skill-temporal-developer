@@ -27,7 +27,7 @@ Replay (Recovery):
 Every workflow operation generates a Command that becomes an Event, here are some examples:
 
 | Workflow Code | Command Generated | Event Stored |
-|--------------|-------------------|--------------|
+| -- | -- | -- |
 | Execute activity | `ScheduleActivityTask` | `ActivityTaskScheduled` |
 | Sleep/timer | `StartTimer` | `TimerStarted` |
 | Child workflow | `StartChildWorkflowExecution` | `ChildWorkflowExecutionStarted` |

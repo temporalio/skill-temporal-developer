@@ -211,7 +211,7 @@ For long-running Pinned Workflows that use Continue-as-New, detect a new Target 
 
 ### Detecting the Target Version change
 
-`workflowInfo().targetWorkerDeploymentVersionChanged` is `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment.  The flag is refreshed after each Workflow Task completes.
+`workflowInfo().targetWorkerDeploymentVersionChanged` is `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment. The flag is refreshed after each Workflow Task completes.
 
 Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
 

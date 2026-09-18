@@ -22,7 +22,7 @@ The following are forbidden inside workflow code but are appropriate to use in a
 ## Safe Builtin Alternatives to Common Non Deterministic Things
 
 | Forbidden | Safe Alternative |
-|-----------|------------------|
+| -- | -- |
 | `datetime.now()` | `workflow.now()` |
 | `datetime.utcnow()` | `workflow.now()` |
 | `random.random()` | `rng = workflow.random() ; rng.randint(1, 100)` |

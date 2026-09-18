@@ -177,7 +177,7 @@ Workflow status = FAILED?
 ### Timeout Types
 
 | Timeout | Scope | What It Limits |
-|---------|-------|----------------|
+| -- | -- | -- |
 | `WorkflowExecutionTimeout` | Entire workflow | Total time including retries and continue-as-new |
 | `WorkflowRunTimeout` | Single run | Time for one run (before continue-as-new) |
 | `ScheduleToCloseTimeout` | Activity | Total time including retries |
@@ -308,7 +308,7 @@ temporal workflow reset --workflow-id <id> --event-id <event-id>
 ## Quick Reference: Status → Action
 
 | Status | First Check | Common Fix |
-|--------|-------------|------------|
+| -- | -- | -- |
 | RUNNING (stuck) | Worker running? | Start/restart worker |
 | FAILED | Error message | Fix bug, handle error |
 | TIMED_OUT | Which timeout? | Increase timeout or optimize |

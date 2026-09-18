@@ -17,7 +17,7 @@ The dev server is for local development only, not production.
 ### `temporal server start-dev` flags
 
 | Flag | Default | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--db-filename`, `-f` | in-memory | Persistent SQLite file. Without it, state is in-memory and lost on exit. |
 | `--namespace`, `-n` | `default` only | Namespaces to create at launch. Repeatable. The `default` namespace is always created. |
 | `--search-attribute` | — | Register search attributes as `KEY=TYPE` pairs. TYPE is one of: `Text`, `Keyword`, `Int`, `Double`, `Bool`, `Datetime`, `KeywordList`. Repeatable. |

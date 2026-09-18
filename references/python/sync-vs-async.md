@@ -67,7 +67,7 @@ async def my_async_activity(name: str) -> str:
 ## HTTP Libraries: A Critical Choice
 
 | Library | Type | Safe in Async Activity? |
-|---------|------|------------------------|
+| -- | -- | -- |
 | `requests` | Blocking | No - blocks event loop |
 | `urllib3` | Blocking | No - blocks event loop |
 | `aiohttp` | Async | Yes |
@@ -227,7 +227,7 @@ async def main():
 ## Summary
 
 | Aspect | Sync Activities | Async Activities |
-|--------|-----------------|------------------|
+| -- | -- | -- |
 | Default choice | Yes | Only when certain |
 | Blocking calls | Safe (runs in thread pool) | Dangerous (blocks event loop) |
 | HTTP library | `requests`, `httpx` | `aiohttp`, `httpx` (async) |

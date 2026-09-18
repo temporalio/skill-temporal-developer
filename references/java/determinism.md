@@ -31,7 +31,7 @@ The following are forbidden inside workflow code but are appropriate to use in a
 ## Safe Builtin Alternatives
 
 | Forbidden | Safe Alternative |
-|-----------|------------------|
+| -- | -- |
 | `Thread.sleep(millis)` | `Workflow.sleep(Duration.ofMillis(millis))` |
 | `UUID.randomUUID()` | `Workflow.randomUUID()` |
 | `Math.random()` | `Workflow.newRandom().nextInt()` |

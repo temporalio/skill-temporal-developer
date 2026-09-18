@@ -62,6 +62,7 @@ The CLI and every SDK exposes the same conceptual operations against a Standalon
 **Choosing an Activity ID.** Every Standalone Activity call requires an **Activity ID**, which uniquely identifies that one call. It is the key you use later to get the result, describe, cancel, or terminate the Activity, and it is what conflict/reuse policies dedupe against. Use a **business-logic identifier** that uniquely identifies the call — for example `send-welcome-email:user-42`, `sync-invoice:INV-2026-001`, or `process-webhook:<event-id>`. This makes Activities addressable and naturally deduplicated by your domain. Only if you genuinely have no meaningful business-level identifier should you generate a **UUID** to use as the Activity ID.
 
 Visibility operations are available as well:
+
 - **List** — enumerate Standalone Activity Executions matching a query. Only Standalone Activities are returned; Activities running inside Workflows are not included.
 - **Count** — return the total number of executions matching a query (running, completed, failed, etc. — not the number of queued tasks).
 - **Describe** — via the handle or CLI.

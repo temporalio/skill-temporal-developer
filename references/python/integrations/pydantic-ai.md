@@ -39,7 +39,7 @@ Module-scope construction lets the Worker discover and register every generated 
 ### `TemporalDurability` configuration
 
 | Parameter | Purpose |
-|---|---|
+| -- | -- |
 | `models` | Additional model instances keyed by stable IDs for runtime model switching. |
 | `event_stream_handler` | Handles live model events inside model-request Activities and tool events in event-handler Activities. |
 | `event_stream_topic` | Publishes events to a Temporal Workflow Stream topic for an external consumer. |

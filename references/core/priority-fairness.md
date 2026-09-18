@@ -60,11 +60,11 @@ A fairness weight (float, default 1.0) controls how often a key's Tasks are disp
 
 Example with three tiers:
 
-| Fairness Key   | Weight | Share of Dispatches |
-|----------------|--------|---------------------|
-| premium-tier   | 5.0    | 50%                 |
-| basic-tier     | 3.0    | 30%                 |
-| free-tier      | 2.0    | 20%                 |
+| Fairness Key | Weight | Share of Dispatches |
+| -- | -- | -- |
+| premium-tier | 5.0 | 50% |
+| basic-tier | 3.0 | 30% |
+| free-tier | 2.0 | 20% |
 
 Tasks without a fairness key are grouped under an implicit empty-string key with weight 1.0. Adoption is incremental: unkeyed Tasks participate in weighted dispatch alongside keyed Tasks.
 
