@@ -163,7 +163,7 @@ public class MyWorkflow
 ## Best Practices
 
 1. Use records or classes with `System.Text.Json` support for input/output
-2. Keep payloads small — see `references/core/gotchas.md` for limits
+2. Keep payloads small — see [Temporal common pitfalls](../core/gotchas.md) for limits
 3. Encrypt sensitive data with `IPayloadCodec`
 4. Use `Workflow.NewGuid()` and `Workflow.Random` for deterministic values
 5. Use camelCase converter if interoperating with other SDKs

@@ -162,7 +162,7 @@ class MyWorkflow:
 ## Best Practices
 
 1. Use Pydantic for input/output validation
-2. Keep payloads small—see `references/core/gotchas.md` for limits
+2. Keep payloads small—see [Temporal common pitfalls](../core/gotchas.md) for limits
 3. Encrypt sensitive data with PayloadCodec
 4. Use dataclasses for simple data structures
 5. Use `workflow.uuid4()` and `workflow.random()` for deterministic values

@@ -184,7 +184,7 @@ go install go.temporal.io/sdk/contrib/tools/workflowcheck@latest
 workflowcheck ./...
 ```
 
-Read `references/core/determinism.md` and `references/go/determinism.md` to understand more.
+Read [Temporal determinism rules](../core/determinism.md) and [Go determinism rules](determinism.md) to understand more.
 
 ## File Organization Best Practice
 
@@ -238,22 +238,22 @@ w.RegisterActivity(activities)
 
 ## Writing Tests
 
-See `references/go/testing.md` for info on writing tests.
+See [Go testing guide](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
 
-- **`references/go/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
-- **`references/go/determinism.md`** - Determinism rules, workflowcheck tool, safe alternatives
-- **`references/go/gotchas.md`** - Go-specific mistakes and anti-patterns
-- **`references/go/error-handling.md`** - ApplicationError, retry policies, non-retryable errors
-- **`references/go/observability.md`** - Logging, metrics, tracing, Search Attributes
-- **`references/go/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
-- **`references/go/advanced-features.md`** - Schedules, worker tuning, and more
-- **`references/go/data-handling.md`** - Data converters, payload codecs, encryption
-- **`references/go/external-storage.md`** - Claim-check pattern for large payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
-- **`references/go/versioning.md`** - Patching API (`workflow.GetVersion`), Worker Versioning
-- **`references/go/determinism-protection.md`** - Information on **`workflowcheck`** tool to help statically check for determinism issues.
-- **`references/go/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow; see also `references/core/standalone-activities.md` for cross-SDK concepts.
-- **`references/go/priority-fairness.md`** - Task Queue Priority and Fairness SDK options and examples; see also `references/core/priority-fairness.md` for cross-SDK concepts.
+- **[Go workflow patterns](patterns.md)** - Signals, queries, child workflows, saga pattern, etc.
+- **[Go determinism rules](determinism.md)** - Determinism rules, workflowcheck tool, safe alternatives
+- **[Go common pitfalls](gotchas.md)** - Go-specific mistakes and anti-patterns
+- **[Go error handling guide](error-handling.md)** - ApplicationError, retry policies, non-retryable errors
+- **[Go observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
+- **[Go testing guide](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
+- **[Go advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
+- **[Go data handling guide](data-handling.md)** - Data converters, payload codecs, encryption
+- **[Go external storage guide](external-storage.md)** - Claim-check pattern for large payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
+- **[Go versioning guide](versioning.md)** - Patching API (`workflow.GetVersion`), Worker Versioning
+- **[Go determinism protection guide](determinism-protection.md)** - Information on **`workflowcheck`** tool to help statically check for determinism issues.
+- **[Go standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow; see also [Temporal standalone Activities guide](../core/standalone-activities.md) for cross-SDK concepts.
+- **[Go Task Queue priority and fairness guide](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples; see also [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md) for cross-SDK concepts.

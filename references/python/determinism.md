@@ -31,7 +31,7 @@ The following are forbidden inside workflow code but are appropriate to use in a
 
 ## Testing Replay Compatibility
 
-Use the `Replayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/python/testing.md`.
+Use the `Replayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of [Python testing guide](testing.md).
 
 ## Sandbox Behavior
 
@@ -41,7 +41,7 @@ The sandbox:
 - Restricts non-deterministic library calls via proxy objects
 - Passes through standard library with restrictions
 
-See more info at `references/python/determinism-protection.md`
+See more info at [Python determinism protection guide](determinism-protection.md)
 
 ## Best Practices
 

@@ -9,7 +9,7 @@ The integration is built on the Java SDK Plugin system and ships as the `io.temp
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For general Temporal AI/LLM patterns (retries, rate limits, timeouts, multi-agent orchestration) see `references/core/ai-patterns.md`. For Spring Boot autoconfigure mechanics (worker lifecycle, `@WorkflowImpl`, `@ActivityImpl`, auto-discovery) see `references/java/integrations/spring-boot.md`.
+For general Temporal AI/LLM patterns (retries, rate limits, timeouts, multi-agent orchestration) see [Temporal AI integration patterns](../../core/ai-patterns.md). For Spring Boot autoconfigure mechanics (worker lifecycle, `@WorkflowImpl`, `@ActivityImpl`, auto-discovery) see [Spring Boot Java integration guide](spring-boot.md).
 
 ## Prerequisites
 
@@ -147,7 +147,7 @@ public class StringTools {
 }
 ```
 
-Determinism still applies: plain tools execute on the workflow thread, so they must follow the same rules as workflow code (no I/O, no system clock, no random sources). See `references/java/determinism.md` and `references/core/determinism.md`.
+Determinism still applies: plain tools execute on the workflow thread, so they must follow the same rules as workflow code (no I/O, no system clock, no random sources). See [Java determinism rules](../determinism.md) and [Temporal determinism rules](../../core/determinism.md).
 
 ## Activity options and retry behavior
 
@@ -242,6 +242,6 @@ new McpPlugin();
 
 ## Resources
 
-- `references/java/integrations/spring-boot.md` — required companion module; covers `WorkflowClient` injection, worker lifecycle, auto-discovery, testing.
-- `references/core/ai-patterns.md` — language-agnostic AI/LLM patterns (Activities wrap LLM calls, retry centralization, multi-agent orchestration).
-- `references/java/determinism.md` and `references/core/determinism.md` — replay rules that plain tools and `@SideEffectTool` tools must respect.
+- [Spring Boot Java integration guide](spring-boot.md) — required companion module; covers `WorkflowClient` injection, worker lifecycle, auto-discovery, testing.
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — language-agnostic AI/LLM patterns (Activities wrap LLM calls, retry centralization, multi-agent orchestration).
+- [Java determinism rules](../determinism.md) and [Temporal determinism rules](../../core/determinism.md) — replay rules that plain tools and `@SideEffectTool` tools must respect.

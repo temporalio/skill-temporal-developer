@@ -26,7 +26,7 @@ export async function myWorkflow(): Promise<string> {
 
 The Temporal workflow sandbox will use the same random seed when replaying a workflow, so the above code will **deterministically** generate pseudo-random numbers. For UUIDs, use `uuid4()` from `@temporalio/workflow` which also uses the seeded PRNG.
 
-See `references/typescript/determinism-protection.md` for more information about the sandbox.
+See [TypeScript determinism protection guide](determinism-protection.md) for more information about the sandbox.
 
 ## Forbidden Operations in Workflows
 
@@ -42,7 +42,7 @@ Most non-determinism and side effects, such as the above, should be wrapped in A
 
 ## Testing Replay Compatibility
 
-Use `Worker.runReplayHistory()` to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/typescript/testing.md`.
+Use `Worker.runReplayHistory()` to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of [TypeScript testing guide](testing.md).
 
 ## Best Practices
 

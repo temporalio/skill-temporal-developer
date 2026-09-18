@@ -170,7 +170,7 @@ public class MyWorkflowImpl implements MyWorkflow {
 }
 ```
 
-To allow other exception types to fail the workflow instead of causing infinite task retries, see `references/java/advanced-features.md` for configuring `setFailWorkflowExceptionTypes()`.
+To allow other exception types to fail the workflow instead of causing infinite task retries, see [Java advanced features guide](advanced-features.md) for configuring `setFailWorkflowExceptionTypes()`.
 
 Use checked exceptions with `Workflow.wrap()` to rethrow them as unchecked:
 
@@ -189,5 +189,5 @@ try {
 3. Configure appropriate retry policies
 4. Log errors before re-raising
 5. Catch `ActivityFailure` (not `ApplicationFailure`) for activity failures in workflows
-6. Design code to be idempotent for safe retries (see more at `references/core/patterns.md`)
+6. Design code to be idempotent for safe retries (see more at [Temporal workflow patterns](../core/patterns.md))
 7. Use `ApplicationFailure.newFailure()` to fail workflows — other exceptions cause infinite task retries

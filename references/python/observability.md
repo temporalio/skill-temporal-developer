@@ -98,7 +98,7 @@ Runtime.set_default(runtime, error_if_already_set=True)
 
 ## Distributed Tracing (OpenTelemetry)
 
-See `references/python/integrations/opentelemetry.md`.
+See [OpenTelemetry Python integration guide](integrations/opentelemetry.md).
 
 ## Search Attributes (Visibility)
 
