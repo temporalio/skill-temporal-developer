@@ -11,7 +11,7 @@ The remainder of this document describes general principles to follow when build
 ## Why Temporal for AI?
 
 | Challenge | Temporal Solution |
-|-----------|-------------------|
+| -- | -- |
 | LLM API timeouts | Automatic retries with backoff |
 | Rate limiting | Activity retry policies handle 429s |
 | Long-running agents | Durable state survives crashes |
@@ -107,7 +107,7 @@ Deep Research Example:
 ## Approximate Timeout Recommendations
 
 | Operation Type | Recommended Timeout |
-|----------------|---------------------|
+| -- | -- |
 | Simple LLM calls (GPT-4, Claude-3) | 30 seconds |
 | Reasoning models (o1, o3, extended thinking) | 300 seconds (5 min) |
 | Web searches | 300 seconds (5 min) |

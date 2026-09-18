@@ -169,7 +169,7 @@ In addition, since a `@function_tool` runs in the workflow, they can also call T
 ### Picking between the two
 
 | Tool body does… | Use |
-|---|---|
+| -- | -- |
 | Network call, file I/O, DB access | Activity + `activity_as_tool` |
 | Mutates agent state read by other tools | `@function_tool` |
 | Pure computation, deterministic | Either; `@function_tool` is lighter |
@@ -432,7 +432,7 @@ with plugin.tracing_context():
 The README's compatibility matrix, condensed:
 
 | Area | Supported | Not supported |
-|---|---|---|
+| -- | -- | -- |
 | Model providers | OpenAI, LiteLLM | — |
 | Model response | `Runner.run`; `Runner.run_streamed` (experimental) | — |
 | Tools | `FunctionTool`, `WebSearchTool`, `FileSearchTool`, `HostedMCPTool`, `ImageGenerationTool`, `CodeInterpreterTool` | `LocalShellTool`, `ComputerTool` |
@@ -446,7 +446,7 @@ The README's compatibility matrix, condensed:
 Tool context propagation:
 
 | Path | Receives context | Can update context |
-|---|---|---|
+| -- | -- | -- |
 | Activity tool (`activity_as_tool`) | Yes (copy) | **No** |
 | Function tool (`@function_tool`) | Yes | Yes |
 

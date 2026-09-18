@@ -24,7 +24,7 @@ See `references/core/standalone-activities.md` for the rest of the feature list 
 ## Vocabulary mapping
 
 | Job queue concept | Temporal equivalent |
-|---|---|
+| -- | -- |
 | A job / a task | A Standalone Activity Execution |
 | Job handler (`@app.task`, `perform`, a processor function) | An ordinary Activity Definition — nothing job-specific about it |
 | Enqueue a job | Client `start` (returns a handle) or `execute` (start and await the result) |
@@ -53,7 +53,7 @@ On head-of-line blocking: a slow job occupies one Worker slot rather than stalli
 Not every "job queue" request is a single job. Route these away from Standalone Activities:
 
 | Ask | Use instead |
-|---|---|
+| -- | -- |
 | Chained jobs, DAGs, Celery canvas / chords, "when job A finishes run B and C" | A **Workflow**. That is orchestration, which is what Workflows are for. |
 | Fan-out with a join, or a batch with a completion callback | A **Workflow** that starts the Activities in parallel and awaits them. |
 | Compensation / rollback when a later step fails | A **Workflow** using the saga pattern — see `references/core/patterns.md`. |
@@ -108,7 +108,7 @@ A Workflow that needs a job to outlive it can start a Standalone Activity from i
 ## SDK guides and runnable samples
 
 | Language | SDK guide | Runnable sample |
-|---|---|---|
+| -- | -- | -- |
 | Go | https://docs.temporal.io/develop/go/activities/standalone-activities | https://github.com/temporalio/samples-go/tree/main/standalone-activity/helloworld |
 | Python | https://docs.temporal.io/develop/python/activities/standalone-activities | https://github.com/temporalio/samples-python/tree/main/hello_standalone_activity |
 | TypeScript | https://docs.temporal.io/develop/typescript/activities/standalone-activities | https://github.com/temporalio/samples-typescript/tree/main/standalone-activity |

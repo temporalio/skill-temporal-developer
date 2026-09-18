@@ -27,7 +27,7 @@ Do not use any of the following in workflow code (they are appropriate to use in
 ## Safe Builtin Alternatives
 
 | Instead of | Use |
-|---|---|
+| -- | -- |
 | `go func() { ... }()` | `workflow.Go(ctx, func(ctx workflow.Context) { ... })` |
 | `chan T` | `workflow.NewChannel(ctx)` / `workflow.NewBufferedChannel(ctx, size)` |
 | `select { ... }` | `workflow.NewSelector(ctx)` |

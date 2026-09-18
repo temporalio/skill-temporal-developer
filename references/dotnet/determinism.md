@@ -28,7 +28,7 @@ Most non-determinism and side effects should be wrapped in Activities.
 ## Safe Builtin Alternatives
 
 | Forbidden | Safe Alternative |
-|-----------|------------------|
+| -- | -- |
 | `DateTime.Now` / `DateTime.UtcNow` | `Workflow.UtcNow` |
 | `Random` | `Workflow.Random` |
 | `Guid.NewGuid()` | `Workflow.NewGuid()` |

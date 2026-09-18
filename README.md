@@ -31,6 +31,26 @@ If you prefer to install the skill directly without the plugin wrapper:
 
 Appropriately adjust the installation directory based on your coding agent.
 
+## Development
+
+Install the Markdown formatter and its pinned dependencies:
+
+```shell
+uv sync
+```
+
+Format all Markdown files:
+
+```shell
+uv run mdformat .
+```
+
+Check formatting without changing files:
+
+```shell
+uv run mdformat --check .
+```
+
 ## Currently Supported Temporal SDK Languages
 
 - [x] Python ✅

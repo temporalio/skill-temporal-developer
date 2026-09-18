@@ -1,0 +1,9 @@
+wrap = "keep"
+number = true
+end_of_line = "lf"
+validate = true
+extensions = ["gfm", "gfm_alerts", "frontmatter"]
+exclude = [".venv/**"]
+
+[plugin.tables]
+compact_tables = true

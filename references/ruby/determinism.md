@@ -36,7 +36,7 @@ The following are forbidden inside workflow code by default:
 ## Safe Builtin Alternatives to Common Non Deterministic Things
 
 | Forbidden | Safe Alternative |
-|-----------|------------------|
+| -- | -- |
 | `Kernel.sleep(n)` | `Temporalio::Workflow.sleep(n)` |
 | `Time.now` | `Temporalio::Workflow.now` |
 | `Random.rand` / `SecureRandom` | `Temporalio::Workflow.random.rand(100)` |

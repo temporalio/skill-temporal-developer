@@ -52,7 +52,7 @@ await worker.run()
 Constructor is keyword-only.
 
 | Parameter | Type | Default | Purpose |
-|---|---|---|---|
+| -- | -- | -- | -- |
 | `client` | `langsmith.Client \| None` | `None` (auto-created) | LangSmith client; auto-created if not supplied. |
 | `project_name` | `str \| None` | `None` | LangSmith project name traces are written to. |
 | `add_temporal_runs` | `bool` | `False` | When `True`, adds Temporal operation nodes (StartWorkflow, RunWorkflow, StartActivity, RunActivity) to the trace tree. |
@@ -64,7 +64,7 @@ Constructor is keyword-only.
 ## Where `@traceable` works
 
 | Location | Works? | Notes |
-|---|---|---|
+| -- | -- | -- |
 | Inside Workflow methods | Yes | Traces called from inside `@workflow.run`, `@workflow.signal`, etc.; sync and async methods. |
 | Inside Activity methods | Yes | Traces called from inside `@activity.defn`; sync and async methods. |
 | On `@activity.defn` functions | Yes | Stack `@traceable` on top of `@activity.defn` (decorator order matters). Fires on every retry. |

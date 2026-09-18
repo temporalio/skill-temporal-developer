@@ -9,6 +9,7 @@ The Temporal Ruby SDK (`temporalio` gem) provides a class-based approach to buil
 **Add Dependency on Temporal:** Add `temporalio` to your Gemfile or install directly with `gem install temporalio`.
 
 **say_hello_activity.rb** - Activity definition:
+
 ```ruby
 require 'temporalio/activity'
 
@@ -20,6 +21,7 @@ end
 ```
 
 **say_hello_workflow.rb** - Workflow definition:
+
 ```ruby
 require 'temporalio/workflow'
 
@@ -35,6 +37,7 @@ end
 ```
 
 **worker.rb** - Worker setup (imports activity and workflow, runs indefinitely and processes tasks):
+
 ```ruby
 require 'temporalio/client'
 require 'temporalio/env_config'
@@ -62,6 +65,7 @@ worker.run
 **Start the worker:** Start `ruby worker.rb` in the background.
 
 **execute_workflow.rb** - Start a workflow execution:
+
 ```ruby
 require 'temporalio/client'
 require 'temporalio/env_config'
@@ -89,18 +93,21 @@ puts "Result: #{result}"
 ## Key Concepts
 
 ### Workflow Definition
+
 - Subclass `Temporalio::Workflow::Definition`
 - Define `def execute(args)` as the entry point
 - Use `Temporalio::Workflow.execute_activity` to call activities
 - Define signals, queries, and updates via class-level DSL methods
 
 ### Activity Definition
+
 - Subclass `Temporalio::Activity::Definition`
 - Define `def execute(args)` as the entry point
 - Activities contain all non-deterministic and side-effectful code
 - Can access `Temporalio::Activity::Context.current` for heartbeating
 
 ### Worker Setup
+
 - Load connection settings with `Temporalio::EnvConfig::ClientConfig.load_client_connect_options` and connect with `Temporalio::Client.connect`
 - Create worker with `Temporalio::Worker.new(client:, task_queue:, workflows:, activities:)`
 - Run with `worker.run`
@@ -139,6 +146,7 @@ See `references/ruby/testing.md` for info on writing tests.
 ## Additional Resources
 
 ### Reference Files
+
 - **`references/ruby/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
 - **`references/ruby/determinism.md`** - Durable Fiber Scheduler behavior, safe alternatives, history replay
 - **`references/ruby/determinism-protection.md`** - Illegal Call Tracing via TracePoint, forbidden operations, runtime detection
