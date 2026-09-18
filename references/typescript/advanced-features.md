@@ -132,10 +132,10 @@ const worker = await Worker.create({
 
 **Constraints:**
 
-- \*\*`preloadModules` is only beneficial when `reuseV8Context` is enabled (default `true`). \*\* If `reuseV8Context` is disabled, leave the list empty.
-- \*\*Module top-level code runs once, before any workflow activator exists. \*\* Only preload modules whose initialization is safe to execute that early.
-- \*\*Preloading a module that internally stores per-workflow state will leak context across workflows and cause non-deterministic behavior. \*\* Remove such modules from `preloadModules`.
-- \*\*A module listed in both `preloadModules` and `ignoreModules` fails the bundle with `Cannot preload modules that are also ignored: '<module>'`. \*\* Remove the module from one of the two lists.
+- **`preloadModules` is only beneficial when `reuseV8Context` is enabled (default `true`).** If `reuseV8Context` is disabled, leave the list empty.
+- **Module top-level code runs once, before any workflow activator exists.** Only preload modules whose initialization is safe to execute that early.
+- **Preloading a module that internally stores per-workflow state will leak context across workflows and cause non-deterministic behavior.** Remove such modules from `preloadModules`.
+- **A module listed in both `preloadModules` and `ignoreModules` fails the bundle with `Cannot preload modules that are also ignored: '<module>'`.** Remove the module from one of the two lists.
 
 ## Sinks
 
