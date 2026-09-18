@@ -102,7 +102,7 @@ See `references/python/integrations/opentelemetry.md`.
 
 ## Search Attributes (Visibility)
 
-Custom searchable fields for workflow visibility. These can be created at workflow start:
+Custom searchable fields for workflow visibility. These can be created at Workflow start:
 
 ```python
 from temporalio.common import (
