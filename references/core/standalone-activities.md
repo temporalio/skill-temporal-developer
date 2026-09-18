@@ -7,7 +7,7 @@ This document provides core conceptual explanations of Standalone Activities in 
 A **Standalone Activity** is a top-level Activity Execution started directly by a Client, without using a Workflow. It is Temporal's job queue — the simplest way to run a single durable, retryable task.
 
 > [!IMPORTANT]
-> If the developer's question is framed in job-queue terms ("build a job queue", "run background jobs", "replace Celery / Sidekiq / BullMQ / SQS workers"), read [references/core/job-queue.md](job-queue.md) as well. It maps job-queue vocabulary onto Temporal, covers migrating off an existing job queue, and lists the anti-patterns to avoid.
+> If the developer's question is framed in job-queue terms ("build a job queue", "run background jobs", "replace Celery / Sidekiq / BullMQ / SQS workers"), read [Temporal job queue guide](job-queue.md) as well. It maps job-queue vocabulary onto Temporal, covers migrating off an existing job queue, and lists the anti-patterns to avoid.
 
 The rule of thumb:
 
@@ -155,7 +155,7 @@ All existing Activity metrics apply to Standalone Activities (scheduled, started
 
 ## Temporal CLI support
 
-- Requires **Temporal CLI v1.7.0+** and **Temporal Server v1.31.0+**. See [references/core/install_cli.md](install_cli.md) if you need to update the CLI.
+- Requires **Temporal CLI v1.7.0+** and **Temporal Server v1.31.0+**. See [Temporal CLI installation guide](install_cli.md) if you need to update the CLI.
 - The Temporal Dev Server (`temporal server start-dev`) has Standalone Activities enabled by default.
 
 ## Temporal Cloud support

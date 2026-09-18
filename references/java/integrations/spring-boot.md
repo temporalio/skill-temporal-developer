@@ -253,7 +253,7 @@ spring.temporal.start-workers=false
 
 ## Testing Strategies
 
-See [references/java/testing.md](../testing.md) for full details on both approaches.
+See [Java testing guide](../testing.md) for full details on both approaches.
 
 **Spring integration tests** — uses an embedded Temporal test server wired into the Spring context:
 

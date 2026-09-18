@@ -7,11 +7,11 @@
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For Python AI patterns (Pydantic data converter, disabling client-side LLM retries, generic LLM Activity shape) read [references/python/ai-patterns.md](../ai-patterns.md). For conceptual LLM patterns shared across SDKs read [references/core/ai-patterns.md](../../core/ai-patterns.md).
+For Python AI patterns (Pydantic data converter, disabling client-side LLM retries, generic LLM Activity shape) read [Python AI integration patterns](../ai-patterns.md). For conceptual LLM patterns shared across SDKs read [Temporal AI integration patterns](../../core/ai-patterns.md).
 
 ## Prerequisites
 
-- An existing Temporal Python development environment as described in [references/python/python.md](../python.md).
+- An existing Temporal Python development environment as described in [Python SDK guide](../python.md).
 
 ## Install
 
@@ -192,6 +192,6 @@ except Exception as e:
 
 ## Additional Resources
 
-- [references/python/ai-patterns.md](../ai-patterns.md) — Python LLM patterns (Pydantic, retry discipline, generic LLM Activity shape).
-- [references/core/ai-patterns.md](../../core/ai-patterns.md) — Conceptual LLM patterns shared across SDKs.
+- [Python AI integration patterns](../ai-patterns.md) — Python LLM patterns (Pydantic, retry discipline, generic LLM Activity shape).
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — Conceptual LLM patterns shared across SDKs.
 - [Deep research sample](https://github.com/braintrustdata/braintrust-cookbook/blob/main/examples/TemporalDeepResearch/TemporalDeepResearch.mdx) — end-to-end agent showing `BraintrustPlugin`, `wrap_openai`, `start_span`, and `load_prompt`.

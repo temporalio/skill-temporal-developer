@@ -247,7 +247,7 @@ export async function orderWorkflow(): Promise<void> {
 
 ## Best Practices
 
-1. Keep payloads small—see [references/core/gotchas.md](../core/gotchas.md) for limits
+1. Keep payloads small—see [Temporal common pitfalls](../core/gotchas.md) for limits
 2. Use search attributes for business-level visibility and filtering
 3. Encrypt sensitive data with PayloadCodec
 4. Use memo for non-searchable metadata

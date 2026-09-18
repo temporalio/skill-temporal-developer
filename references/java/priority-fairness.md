@@ -1,6 +1,6 @@
 # Task Queue Priority and Fairness in Java
 
-Read [references/core/priority-fairness.md](../core/priority-fairness.md) first for the cross-SDK behavior, configuration, and limitations.
+Read [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md) first for the cross-SDK behavior, configuration, and limitations.
 
 Java represents Priority and Fairness metadata with `io.temporal.common.Priority`. Unset fields inherit independently. Set only the Priority key for Priority-only use, or only the Fairness fields to use the default Priority.
 

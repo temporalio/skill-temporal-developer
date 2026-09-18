@@ -41,46 +41,46 @@ Temporal achieves durability through **history replay**:
 | Sleep/timer | `StartTimer` | `TimerStarted` |
 | Child workflow | `StartChildWorkflowExecution` | `ChildWorkflowExecutionStarted` |
 
-See [references/core/determinism.md](references/core/determinism.md) for detailed explanation.
+See [Temporal determinism rules](references/core/determinism.md) for detailed explanation.
 
 ## Getting Started
 
 ### Ensure Temporal CLI is installed
 
-Check if `temporal` CLI is installed. If not, follow the instructions at [references/core/install_cli.md](references/core/install_cli.md) to install it for your platform.
+Check if `temporal` CLI is installed. If not, follow the instructions at [Temporal CLI installation guide](references/core/install_cli.md) to install it for your platform.
 
 ### Read All Relevant References
 
 1. First, read the getting started guide for the language you are working in:
-   - Python -> read [references/python/python.md](references/python/python.md)
-   - TypeScript -> read [references/typescript/typescript.md](references/typescript/typescript.md)
-   - Go -> read [references/go/go.md](references/go/go.md)
-   - Java -> read [references/java/java.md](references/java/java.md)
-   - .NET (C#) -> read [references/dotnet/dotnet.md](references/dotnet/dotnet.md)
-   - Ruby -> read [references/ruby/ruby.md](references/ruby/ruby.md)
-   - Rust -> read [references/rust/rust.md](references/rust/rust.md) (in Public Preview)
+   - Python -> read [Python SDK guide](references/python/python.md)
+   - TypeScript -> read [TypeScript SDK guide](references/typescript/typescript.md)
+   - Go -> read [Go SDK guide](references/go/go.md)
+   - Java -> read [Java SDK guide](references/java/java.md)
+   - .NET (C#) -> read [.NET SDK guide](references/dotnet/dotnet.md)
+   - Ruby -> read [Ruby SDK guide](references/ruby/ruby.md)
+   - Rust -> read [Rust SDK guide](references/rust/rust.md) (in Public Preview)
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
 ## Primary References
 
-- **[references/core/determinism.md](references/core/determinism.md)** - Why determinism matters, replay mechanics, basic concepts of activities
+- **[Temporal determinism rules](references/core/determinism.md)** - Why determinism matters, replay mechanics, basic concepts of activities
   - Language-specific info at `references/{your_language}/determinism.md`
-- **[references/core/patterns.md](references/core/patterns.md)** - Conceptual patterns (signals, queries, saga)
+- **[Temporal workflow patterns](references/core/patterns.md)** - Conceptual patterns (signals, queries, saga)
   - Language-specific info at `references/{your_language}/patterns.md`
-- **[references/core/gotchas.md](references/core/gotchas.md)** - Anti-patterns and common mistakes
+- **[Temporal common pitfalls](references/core/gotchas.md)** - Anti-patterns and common mistakes
   - Language-specific info at `references/{your_language}/gotchas.md`
-- **[references/core/versioning.md](references/core/versioning.md)** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
+- **[Temporal versioning guide](references/core/versioning.md)** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
   - Language-specific info at `references/{your_language}/versioning.md`
-- **[references/core/standalone-activities.md](references/core/standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow — Temporal's job queue
+- **[Temporal standalone Activities guide](references/core/standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow — Temporal's job queue
   - Language-specific info at `references/{your_language}/standalone-activities.md`
-- **[references/core/priority-fairness.md](references/core/priority-fairness.md)** - Task Queue Priority and Fairness concepts, configuration, and limitations
+- **[Temporal Task Queue priority and fairness guide](references/core/priority-fairness.md)** - Task Queue Priority and Fairness concepts, configuration, and limitations
   - Language-specific info at `references/{your_language}/priority-fairness.md`
-- **[references/core/troubleshooting.md](references/core/troubleshooting.md)** - Decision trees, recovery procedures
-- **[references/core/error-reference.md](references/core/error-reference.md)** - Common error types, workflow status reference
-- **[references/core/interactive-workflows.md](references/core/interactive-workflows.md)** - Testing signals, updates, queries
-- **[references/core/dev-management.md](references/core/dev-management.md)** - Dev cycle & management of server and workers
-- **[references/core/cli-workflow-commands.md](references/core/cli-workflow-commands.md)** - Developer-facing CLI commands for workflow interaction (start, execute, signal, query, update)
-- **[references/core/ai-patterns.md](references/core/ai-patterns.md)** - AI/LLM pattern concepts
+- **[Temporal troubleshooting guide](references/core/troubleshooting.md)** - Decision trees, recovery procedures
+- **[Temporal error reference](references/core/error-reference.md)** - Common error types, workflow status reference
+- **[Temporal interactive workflow guide](references/core/interactive-workflows.md)** - Testing signals, updates, queries
+- **[Temporal development management guide](references/core/dev-management.md)** - Dev cycle & management of server and workers
+- **[Temporal CLI workflow command guide](references/core/cli-workflow-commands.md)** - Developer-facing CLI commands for workflow interaction (start, execute, signal, query, update)
+- **[Temporal AI integration patterns](references/core/ai-patterns.md)** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
 ## Job Queues and Background Jobs
@@ -91,7 +91,7 @@ Temporal **Task Queues** are the routing mechanism Workers poll, not a queue tha
 
 When a developer says "task queue" they may mean "job queue": Celery, Dramatiq, Huey, and Asynq all use Task nomenclature, while Sidekiq, Hangfire, BullMQ, Resque, RQ, and Faktory use Job. Read "can I use Temporal as a task queue?" as a job queue question, and reserve Temporal's Task Queue meaning for your own reply.
 
-- **[references/core/job-queue.md](references/core/job-queue.md)** - Job-queue vocabulary mapped to Temporal, migrating off an existing job queue, anti-patterns, and per-language SDK guides and runnable samples
+- **[Temporal job queue guide](references/core/job-queue.md)** - Job-queue vocabulary mapped to Temporal, migrating off an existing job queue, anti-patterns, and per-language SDK guides and runnable samples
 
 ## Additional Topics
 
@@ -100,7 +100,7 @@ When a developer says "task queue" they may mean "job queue": Celery, Dramatiq, 
 
 ## Third-Party Integrations
 
-For Temporal plugins and integrations with third-party frameworks and SDKs (Spring Boot, Spring AI, OpenAI Agents SDK, Google ADK, etc.), see **[references/integrations.md](references/integrations.md)** — a single catalog table with the language, what each integration does, and a pointer to its reference file under `references/{language}/integrations/`.
+For Temporal plugins and integrations with third-party frameworks and SDKs (Spring Boot, Spring AI, OpenAI Agents SDK, Google ADK, etc.), see **[integrations catalog](references/integrations.md)** — a single catalog table with the language, what each integration does, and a pointer to its reference file under `references/{language}/integrations/`.
 
 ## Feedback
 

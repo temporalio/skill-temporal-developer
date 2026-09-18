@@ -46,7 +46,7 @@ The following are forbidden inside workflow code by default:
 
 ## Testing Replay Compatibility
 
-Use `Temporalio::Worker::WorkflowReplayer` to verify that workflow code is replay-compatible against recorded histories. See [testing.md](testing.md) for details.
+Use `Temporalio::Worker::WorkflowReplayer` to verify that workflow code is replay-compatible against recorded histories. See [testing guide](testing.md) for details.
 
 ```ruby
 replayer = Temporalio::Worker::WorkflowReplayer.new(

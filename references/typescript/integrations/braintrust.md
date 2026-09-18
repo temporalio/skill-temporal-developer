@@ -8,11 +8,11 @@ The Temporal TypeScript documentation lists Braintrust as a supported integratio
 
 > Canonical TypeScript guide: <https://www.braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript>. Treat the Braintrust-hosted page as authoritative for TypeScript-specific API surface; this reference file captures only what is independently verifiable from Temporal's documentation and the canonical guide.
 
-For conceptual LLM patterns shared across SDKs read [references/core/ai-patterns.md](../../core/ai-patterns.md).
+For conceptual LLM patterns shared across SDKs read [Temporal AI integration patterns](../../core/ai-patterns.md).
 
 ## Prerequisites
 
-- An existing Temporal TypeScript development environment as described in [references/typescript/typescript.md](../typescript.md).
+- An existing Temporal TypeScript development environment as described in [TypeScript SDK guide](../typescript.md).
 - Temporal TypeScript SDK 2.1.0 or later.
 - A Braintrust account.
 
@@ -78,4 +78,4 @@ The plugin captures:
 ## Additional Resources
 
 - Canonical TypeScript guide: <https://www.braintrust.dev/docs/integrations/sdk-integrations/temporal#typescript>.
-- [references/core/ai-patterns.md](../../core/ai-patterns.md) — conceptual LLM patterns shared across SDKs.
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — conceptual LLM patterns shared across SDKs.

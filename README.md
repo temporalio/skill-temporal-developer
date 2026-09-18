@@ -41,7 +41,7 @@ mkdir -p ~/.agents/skills && git clone https://github.com/temporalio/skill-tempo
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and validation instructions.
+See the [contribution guide](CONTRIBUTING.md) for development setup and validation instructions.
 
 ## Currently Supported Temporal SDK Languages
 

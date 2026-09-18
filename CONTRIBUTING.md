@@ -2,7 +2,7 @@
 
 ## Development setup
 
-Manually clone the skill repository following the instructions in [README.md](README.md), then install the development tools and their pinned dependencies:
+Manually clone the skill repository following the instructions in the [project README](README.md), then install the development tools and their pinned dependencies:
 
 ```shell
 uv sync

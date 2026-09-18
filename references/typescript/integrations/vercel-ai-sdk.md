@@ -7,11 +7,11 @@
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For cross-SDK AI/LLM patterns (Activities wrapping LLM calls, centralized retries, multi-agent orchestration) see [references/core/ai-patterns.md](../../core/ai-patterns.md). For TypeScript SDK fundamentals (Worker setup, `proxyActivities`, the V8 workflow sandbox) see [references/typescript/typescript.md](../typescript.md) and [references/typescript/determinism.md](../determinism.md) — this file does not restate them.
+For cross-SDK AI/LLM patterns (Activities wrapping LLM calls, centralized retries, multi-agent orchestration) see [Temporal AI integration patterns](../../core/ai-patterns.md). For TypeScript SDK fundamentals (Worker setup, `proxyActivities`, the V8 workflow sandbox) see [TypeScript SDK guide](../typescript.md) and [TypeScript determinism rules](../determinism.md) — this file does not restate them.
 
 ## Prerequisites
 
-- The standard TypeScript SDK setup from [references/typescript/typescript.md](../typescript.md) (Temporal CLI installed, `@temporalio/client`, `@temporalio/worker`, `@temporalio/workflow`, `@temporalio/activity`).
+- The standard TypeScript SDK setup from [TypeScript SDK guide](../typescript.md) (Temporal CLI installed, `@temporalio/client`, `@temporalio/worker`, `@temporalio/workflow`, `@temporalio/activity`).
 - Familiarity with the Vercel AI SDK itself — for AI SDK API details refer to the [Vercel AI SDK documentation](https://ai-sdk.dev/).
 - Provider credentials available to the Worker process. Most AI SDK providers read credentials from environment variables; the client process does **not** need provider credentials.
 
@@ -187,5 +187,5 @@ export async function mcpAgent(prompt: string): Promise<string> {
 
 - [AI SDK by Vercel integration guide](https://docs.temporal.io/develop/typescript/integrations/ai-sdk) — the canonical Temporal doc this reference is grounded in.
 - [Vercel AI SDK documentation](https://ai-sdk.dev/) — upstream AI SDK reference, including the provider list at [`ai-sdk.dev/providers/ai-sdk-providers`](https://ai-sdk.dev/providers/ai-sdk-providers).
-- [references/core/ai-patterns.md](../../core/ai-patterns.md) — cross-SDK AI/LLM patterns.
-- [references/typescript/typescript.md](../typescript.md) — TypeScript SDK fundamentals.
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — cross-SDK AI/LLM patterns.
+- [TypeScript SDK guide](../typescript.md) — TypeScript SDK fundamentals.

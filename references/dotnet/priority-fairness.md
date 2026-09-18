@@ -1,6 +1,6 @@
 # Task Queue Priority and Fairness in .NET
 
-Read [references/core/priority-fairness.md](../core/priority-fairness.md) first for the cross-SDK behavior, configuration, and limitations.
+Read [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md) first for the cross-SDK behavior, configuration, and limitations.
 
 .NET represents Priority and Fairness metadata with `Temporalio.Common.Priority`. Constructor arguments are optional and inherit independently. Set only `priorityKey` for Priority-only use, or only the Fairness values to use the default Priority.
 
