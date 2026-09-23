@@ -39,7 +39,7 @@ WorkflowClient client = WorkflowClient.newInstance(
 
 ### Computed getters
 
-POJOs used as Workflow or Activity parameters are handled by the default `JacksonJsonPayloadConverter` and its `ObjectMapper`. Jackson may serialize a bean getter such as `getTotalPrice()` even when it has no corresponding field or setter. On deserialization, that JSON property can cause an `UnrecognizedPropertyException`, which may surface as a Workflow Task processing failure. Mark computed getters with `@JsonIgnore`.
+POJOs used as Workflow or Activity parameters are handled by the default `JacksonJsonPayloadConverter` and its `ObjectMapper`. Jackson may serialize a bean getter such as `getTotalPrice()` even when it has no corresponding field or setter. If deserialization then fails with an `UnrecognizedPropertyException`, a Workflow parameter can cause a Workflow Task processing failure, while an Activity parameter can cause an Activity Task failure. Mark computed getters with `@JsonIgnore`.
 
 ## Custom Data Converter
 
