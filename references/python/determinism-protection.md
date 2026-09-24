@@ -25,25 +25,52 @@ These operations are forbidden inside workflow code (appropriate in activities) 
 
 ## Pass-Through Pattern
 
-Third-party libraries that aren't sandbox-aware need explicit pass-through:
+The SDK's default restrictions include standard-library, Temporal, and some third-party modules. To see the exact set for the installed SDK version, inspect `SandboxRestrictions.default.passthrough_modules`:
+
+```python
+from temporalio.worker.workflow_sandbox import SandboxRestrictions
+
+print(SandboxRestrictions.default.passthrough_modules)
+```
+
+Other third-party modules that are deterministic and safe to reuse across Workflow runs can be explicitly passed through:
 
 ```python
 from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
-    import pydantic
     from my_module import my_dataclass
 ```
 
 **When to use pass-through:**
 
-- Data classes and models (Pydantic, dataclasses)
+- Application modules containing shared models, when safe to reuse across Workflow runs
 - Serialization libraries
 - Type definitions
 - Any library that doesn't do I/O or non-deterministic operations
 - Performance, as many non-passthrough imports can be slower
 
 **Note:** The imports, even when using `imports_passed_through`, should all be at the top of the file. Runtime imports are an anti-pattern.
+
+To add a module while keeping the SDK's existing passthrough modules, derive the restrictions from `SandboxRestrictions.default`:
+
+```python
+from temporalio.worker import Worker
+from temporalio.worker.workflow_sandbox import (
+    SandboxedWorkflowRunner,
+    SandboxRestrictions,
+)
+
+restrictions = SandboxRestrictions.default.with_passthrough_modules(
+    "my_deterministic_library"
+)
+worker = Worker(
+    ...,
+    workflow_runner=SandboxedWorkflowRunner(restrictions=restrictions),
+)
+```
+
+`with_passthrough_modules()` returns a new restriction set with the named modules added; it keeps the defaults. Avoid constructing a passthrough set from scratch unless you intend to replace the defaults.
 
 ## Importing Activities
 
@@ -201,17 +228,13 @@ my_temporal_app/
 
 ## Common Issues
 
-### Import Errors
+### Import Errors for Third-Party Modules
 
-```
-Error: Cannot import 'pydantic' in sandbox
-```
-
-**Fix**: Use pass-through:
+For a deterministic third-party module that is not in the SDK's default passthrough set, use pass-through:
 
 ```python
 with workflow.unsafe.imports_passed_through():
-    import pydantic
+    import some_deterministic_library
 ```
 
 ### Non-Determinism from Libraries
