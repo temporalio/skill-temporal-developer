@@ -172,6 +172,8 @@ Workflow status = FAILED?
    - Error marked as non-retryable
    - Intentional failure, check business logic
 
+**Note:** A replay nondeterminism error usually fails a Workflow Task, not the Workflow Execution itself. The workflow may remain `RUNNING` while the task is retried. The SDKs let tests opt into failing the Workflow Execution for these errors so incompatibilities surface immediately.
+
 ## Timeout Issues
 
 ### Timeout Types
