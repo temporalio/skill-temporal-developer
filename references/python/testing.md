@@ -118,6 +118,10 @@ async def test_activity_failure_handling():
 
 ## Workflow Replay Testing
 
+For worker integration tests that should replay workflow history on every Workflow Task, configure the worker with `max_cached_workflows=0`. This complements replaying saved histories with `Replayer`.
+
+To make nondeterminism fail the Workflow Execution immediately in a test, pass `workflow_failure_exception_types=[workflow.NondeterminismError]` to `Worker` (with `from temporalio import workflow`).
+
 ```python
 import json
 import pytest
