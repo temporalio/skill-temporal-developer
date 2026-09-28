@@ -111,6 +111,10 @@ run().catch(console.error);
 - Can perform I/O, network calls, etc.
 - Use `heartbeat()` for long operations
 
+### Evolving Inputs and Results
+
+Prefer one serializable object for Workflow and Activity inputs that may grow, and an object result when needed. Make new fields optional or give them defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load connection settings with `loadClientConnectConfig()` and pass them to `NativeConnection.connect()`

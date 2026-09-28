@@ -118,6 +118,10 @@ Console.WriteLine($"Result: {result}");
 - Instance methods support dependency injection
 - Static methods are also supported
 
+### Evolving Inputs and Results
+
+Prefer one serializable record or class for Workflow and Activity inputs that may grow, and a structured result when needed. Make new fields optional or give them defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load connection settings with `ClientEnvConfig.LoadClientConnectOptions()`, connect the client, and create `TemporalWorker` with workflows and activities

@@ -196,6 +196,10 @@ public class Starter {
 - Implementation class can throw any exception
 - Call from workflow via `Workflow.newActivityStub()`
 
+### Evolving Inputs and Results
+
+Prefer one serializable request record or class for Workflow and Activity inputs that may grow, and a response type for results that may grow. Handle missing new fields with compatible defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load connection settings with `ClientConfigProfile.load()` and use the profile to configure both service stubs and the client

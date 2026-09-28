@@ -157,6 +157,10 @@ func main() {
 - Signature: `func (a *Activities) MyActivity(ctx context.Context, input string) (string, error)`
 - Register struct with `w.RegisterActivity(&Activities{})` (registers all exported methods)
 
+### Evolving Inputs and Results
+
+Prefer one serializable `struct` for Workflow and Activity inputs that may grow, and a result `struct` when needed. New fields in old JSON payloads decode to zero values; changing an existing scalar input to a struct requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load file- and environment-based connection settings with `envconfig.MustLoadDefaultClientOptions()`, then pass them to `client.Dial`

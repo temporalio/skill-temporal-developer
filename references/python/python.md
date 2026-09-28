@@ -135,6 +135,10 @@ multiple inputs.
 
 See [sync and async Activity guide](sync-vs-async.md) for detailed guidance on choosing between sync and async.
 
+### Evolving Inputs and Results
+
+Prefer one `dataclass` or Pydantic model for Workflow and Activity inputs that may grow, and a structured result when needed. Give new fields defaults; changing an existing scalar input to a model requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load connection settings with `ClientConfig.load_client_connect_config()`, connect the client, and create a Worker with workflows and activities

@@ -156,6 +156,10 @@ temporal workflow start \
 - Annotate each Activity method with `#[activity]`.
 - Activities can perform I/O, call services, use system time, and do other non-deterministic work.
 
+### Evolving Inputs and Results
+
+Prefer one `serde`-serializable struct for Workflow and Activity inputs that may grow, and a result struct when needed. Give new fields deserialization defaults, such as `#[serde(default)]`; changing an existing scalar input to a struct requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - A Worker registers Workflow and Activity types, then polls one Task Queue.

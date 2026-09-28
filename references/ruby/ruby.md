@@ -108,6 +108,10 @@ puts "Result: #{result}"
 - Activities contain all non-deterministic and side-effectful code
 - Can access `Temporalio::Activity::Context.current` for heartbeating
 
+### Evolving Inputs and Results
+
+Prefer one serializable hash or object for Workflow and Activity inputs that may grow, and a structured result when needed. Handle missing new fields with defaults; changing an existing scalar input to a hash or object requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load connection settings with `Temporalio::EnvConfig::ClientConfig.load_client_connect_options` and connect with `Temporalio::Client.connect`
