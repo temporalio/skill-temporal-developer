@@ -1,6 +1,8 @@
 # Interactive Workflows
 
-Interactive workflows are workflows that use Temporal features such as signals or updates to pause and wait for external input. When testing and debugging these types of workflows you can send them input via the Temporal CLI.
+Use signals and updates to send input to a running Workflow Execution, and queries to inspect its state. To test a workflow that waits for input, start it with `temporal workflow start` so the CLI returns a Workflow ID without waiting for completion. Use that ID with the commands below.
+
+For server and worker setup, see [development server and worker management](dev-management.md). For starting workflows and reading their results, see [CLI workflow commands](cli-workflow-commands.md).
 
 ## Signals
 
@@ -35,15 +37,4 @@ Read-only inspection of workflow state.
 temporal workflow query \
   --workflow-id <id> \
   --name "get_status"
-```
-
-## Typical Steps for Testing Interactive Workflows
-
-```bash
-# 1. Start worker (command is project dependent)
-# 2. Start workflow (command is project dependent) This code should output the workflow ID, if not, modify it to.
-temporal workflow signal --workflow-id <WORKFLOW_ID> --name "signal_name" --input '{"key": "value"}' # 3. Send it interactive events, e.g. a signal. 
-# 4. Wait for workflow to complete (use Temporal CLI to check status)
-# 5. Read workflow result, using the Temporal CLI
-# 6. Cleanup the worker process if needed.
 ```
