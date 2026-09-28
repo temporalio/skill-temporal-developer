@@ -26,9 +26,9 @@ using Temporalio.Activities;
 public class MyActivities
 {
     [Activity]
-    public string Greet(string name)
+    public string Greet(string firstName, string lastName)
     {
-        return $"Hello, {name}!";
+        return $"Hello, {firstName} {lastName}!";
     }
 }
 ```
@@ -42,10 +42,10 @@ using Temporalio.Workflows;
 public class GreetingWorkflow
 {
     [WorkflowRun]
-    public async Task<string> RunAsync(string name)
+    public async Task<string> RunAsync(string firstName, string lastName)
     {
         return await Workflow.ExecuteActivityAsync(
-            (MyActivities a) => a.Greet(name),
+            (MyActivities a) => a.Greet(firstName, lastName),
             new() { StartToCloseTimeout = TimeSpan.FromSeconds(30) });
     }
 }
@@ -93,13 +93,13 @@ connectOptions.TargetHost ??= "localhost:7233";
 var client = await TemporalClient.ConnectAsync(connectOptions);
 
 var result = await client.ExecuteWorkflowAsync(
-    (GreetingWorkflow wf) => wf.RunAsync("my name"),
+    (GreetingWorkflow wf) => wf.RunAsync("Ada", "Lovelace"),
     new(id: $"greeting-{Guid.NewGuid()}", taskQueue: "my-task-queue"));
 
 Console.WriteLine($"Result: {result}");
 ```
 
-**Run the workflow:** Run `dotnet run` in the starter project. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `dotnet run` in the starter project. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 

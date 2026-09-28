@@ -23,8 +23,8 @@ Note: if you are working in production, it is strongly advised to use ~ version 
 **activities.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
 
 ```typescript
-export async function greet(name: string): Promise<string> {
-  return `Hello, ${name}!`;
+export async function greet(firstName: string, lastName: string): Promise<string> {
+  return `Hello, ${firstName} ${lastName}!`;
 }
 ```
 
@@ -38,8 +38,8 @@ const { greet } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',
 });
 
-export async function greetingWorkflow(name: string): Promise<string> {
-  return await greet(name);
+export async function greetingWorkflow(firstName: string, lastName: string): Promise<string> {
+  return await greet(firstName, lastName);
 }
 ```
 
@@ -86,7 +86,7 @@ async function run() {
   const result = await client.workflow.execute(greetingWorkflow, {
     workflowId: uuid(),
     taskQueue: 'greeting-queue',
-    args: ['my name'],
+    args: ['Ada', 'Lovelace'],
   });
 
   console.log(`Result: ${result}`);
@@ -95,7 +95,7 @@ async function run() {
 run().catch(console.error);
 ```
 
-**Run the workflow:** Run `npx ts-node client.ts`. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `npx ts-node client.ts`. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 

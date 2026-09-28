@@ -42,7 +42,7 @@ import io.temporal.activity.ActivityMethod;
 public interface GreetActivities {
 
     @ActivityMethod
-    String greet(String name);
+    String greet(String firstName, String lastName);
 }
 ```
 
@@ -54,8 +54,8 @@ package greetingapp;
 public class GreetActivitiesImpl implements GreetActivities {
 
     @Override
-    public String greet(String name) {
-        return "Hello, " + name + "!";
+    public String greet(String firstName, String lastName) {
+        return "Hello, " + firstName + " " + lastName + "!";
     }
 }
 ```
@@ -72,7 +72,7 @@ import io.temporal.workflow.WorkflowMethod;
 public interface GreetingWorkflow {
 
     @WorkflowMethod
-    String greet(String name);
+    String greet(String firstName, String lastName);
 }
 ```
 
@@ -96,8 +96,8 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
     );
 
     @Override
-    public String greet(String name) {
-        return activities.greet(name);
+    public String greet(String firstName, String lastName) {
+        return activities.greet(firstName, lastName);
     }
 }
 ```
@@ -169,13 +169,13 @@ public class Starter {
                 .build()
         );
 
-        String result = workflow.greet("my name");
+        String result = workflow.greet("Ada", "Lovelace");
         System.out.println("Result: " + result);
     }
 }
 ```
 
-**Run the workflow:** Run `Starter.main()`. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `Starter.main()`. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 

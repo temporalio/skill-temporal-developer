@@ -23,14 +23,14 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
+func GreetingWorkflow(ctx workflow.Context, firstName, lastName string) (string, error) {
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute,
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
 	var result string
-	err := workflow.ExecuteActivity(ctx, "Greet", name).Get(ctx, &result)
+	err := workflow.ExecuteActivity(ctx, "Greet", firstName, lastName).Get(ctx, &result)
 	if err != nil {
 		return "", err
 	}
@@ -50,8 +50,8 @@ import (
 
 type Activities struct{}
 
-func (a *Activities) Greet(ctx context.Context, name string) (string, error) {
-	return fmt.Sprintf("Hello, %s!", name), nil
+func (a *Activities) Greet(ctx context.Context, firstName, lastName string) (string, error) {
+	return fmt.Sprintf("Hello, %s %s!", firstName, lastName), nil
 }
 ```
 
@@ -123,7 +123,7 @@ func main() {
 		TaskQueue: "my-task-queue",
 	}
 
-	we, err := c.ExecuteWorkflow(context.Background(), options, workflows.GreetingWorkflow, "my name")
+	we, err := c.ExecuteWorkflow(context.Background(), options, workflows.GreetingWorkflow, "Ada", "Lovelace")
 	if err != nil {
 		log.Fatalln("Unable to execute workflow", err)
 	}
@@ -138,7 +138,7 @@ func main() {
 }
 ```
 
-**Run the workflow:** Run `go run starter/main.go`. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `go run starter/main.go`. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 

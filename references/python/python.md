@@ -38,6 +38,10 @@ class GreetingWorkflow:
         )
 ```
 
+For `execute_activity()`, you can pass a single input directly as the second
+positional argument or wrap it in `args=[...]`. `args=[...]` is required to pass
+multiple inputs.
+
 **worker.py** - Worker setup (registers activity and workflow, runs indefinitely and processes tasks):
 
 ```python
@@ -105,11 +109,11 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-**Run the workflow:** Run `python starter.py` (or uv run, etc.). Should output: `Result: Hello, Ada Lovelace!`.
+For `execute_workflow()`, you can pass a single input directly as the second
+positional argument or wrap it in `args=[...]`. `args=[...]` is required to pass
+multiple inputs.
 
-For `execute_activity()` and `execute_workflow()`, you can pass a single
-input directly as the second positional argument or wrap it in `args=[...]`.
-`args=[...]` is required to pass multiple inputs.
+**Run the workflow:** Run `python starter.py` (or uv run, etc.). Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 

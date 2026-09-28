@@ -35,8 +35,12 @@ pub struct MyActivities;
 #[activities]
 impl MyActivities {
     #[activity]
-    pub async fn greet(_ctx: ActivityContext, name: String) -> Result<String, ActivityError> {
-        Ok(format!("Hello, {}!", name))
+    pub async fn greet(
+        _ctx: ActivityContext,
+        first_name: String,
+        last_name: String,
+    ) -> Result<String, ActivityError> {
+        Ok(format!("Hello, {} {}!", first_name, last_name))
     }
 }
 ```
@@ -52,24 +56,28 @@ use crate::activities::MyActivities;
 
 #[workflow]
 pub struct GreetingWorkflow {
-    name: String,
+    first_name: String,
+    last_name: String,
 }
 
 #[workflow_methods]
 impl GreetingWorkflow {
     #[init]
-    fn new(_ctx: &WorkflowContextView, name: String) -> Self {
-        Self { name }
+    fn new(_ctx: &WorkflowContextView, first_name: String, last_name: String) -> Self {
+        Self {
+            first_name,
+            last_name,
+        }
     }
 
     #[run]
     pub async fn run(ctx: &mut WorkflowContext<Self>) -> WorkflowResult<String> {
-        let name = ctx.state(|s| s.name.clone());
+        let (first_name, last_name) = ctx.state(|s| (s.first_name.clone(), s.last_name.clone()));
 
         // Execute an activity
         let greeting = ctx.start_activity(
             MyActivities::greet,
-            name,
+            (first_name, last_name),
             ActivityOptions::start_to_close_timeout(Duration::from_secs(30)),
         ).await?;
 
@@ -78,6 +86,10 @@ impl GreetingWorkflow {
     }
 }
 ```
+
+For `ctx.start_activity()` and `client.start_workflow()`, pass a single input
+directly as the input argument. To pass multiple inputs, use a tuple, such as
+`(first_name, last_name)` in the Activity call above.
 
 **src/main.rs** - Worker setup:
 
@@ -126,7 +138,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 temporal workflow start \
   --type GreetingWorkflow \
   --task-queue my-task-queue \
-  --input '"Ziggy"'
+  --input '"Ada"' \
+  --input '"Lovelace"'
 ```
 
 ## Key Concepts
