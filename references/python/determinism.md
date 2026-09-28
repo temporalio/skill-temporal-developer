@@ -48,7 +48,7 @@ See more info at [Python determinism protection guide](determinism-protection.md
 1. Use `workflow.now()` for all time operations
 2. Use `workflow.random()` for random values
 3. Use `workflow.uuid4()` for unique identifiers
-4. Pass through third-party libraries explicitly
+4. Explicitly pass through deterministic third-party modules that are not already in the SDK's default passthrough set: `SandboxRestrictions.default.passthrough_modules`
 5. Test with replay to catch non-determinism
 6. Keep workflows focused on orchestration, delegate I/O to activities
 7. Use `workflow.logger` instead of print() for replay-safe logging
