@@ -2,11 +2,17 @@
 
 ## Overview
 
-The Python SDK uses data converters to serialize/deserialize workflow inputs, outputs, and activity parameters.
+The Python SDK uses a `DataConverter` to move values between the SDK and the Temporal Service. It combines three components:
 
-## Default Data Converter
+- `PayloadConverter` serializes values to and from payload bytes. The default converter handles `None`, `bytes`, Protobuf messages, and JSON-serializable types.
+- `PayloadCodec` transforms payloads, for example to encrypt or compress them.
+- `failure_converter` converts exceptions to and from Temporal `Failure` protobufs.
 
-The default converter handles:
+Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in `failure_converter`.
+
+## Default Payload Converter
+
+The default payload converter handles:
 
 - `None`
 - `bytes` (as binary)
@@ -57,9 +63,9 @@ client = await Client.connect(
 )
 ```
 
-## Custom Data Conversion
+## Custom Payload Conversion
 
-Usually the easiest way to do this is via implementing an EncodingPayloadConverter and CompositePayloadConverter. See:
+Customize serialization by replacing the `PayloadConverter` component while retaining the other `DataConverter` defaults. Usually the easiest way is to implement an `EncodingPayloadConverter` and compose it with a `CompositePayloadConverter`. See:
 
 - https://raw.githubusercontent.com/temporalio/samples-python/refs/heads/main/custom_converter/shared.py
 - https://raw.githubusercontent.com/temporalio/samples-python/refs/heads/main/custom_converter/starter.py
@@ -71,7 +77,8 @@ for an extended example.
 Encrypt sensitive workflow data.
 
 ```python
-from temporalio.converter import PayloadCodec
+import dataclasses
+from temporalio.converter import DataConverter, PayloadCodec
 from temporalio.api.common.v1 import Payload
 from cryptography.fernet import Fernet
 from typing import Sequence
@@ -106,74 +113,11 @@ class EncryptionCodec(PayloadCodec):
 client = await Client.connect(
     "localhost:7233",
     namespace="default",
-    data_converter=DataConverter(
+    data_converter=dataclasses.replace(
+        DataConverter.default,
         payload_codec=EncryptionCodec(encryption_key),
     ),
 )
-```
-
-## Search Attributes
-
-Custom searchable fields for workflow visibility. These can be created at workflow start:
-
-```python
-from temporalio.common import (
-    SearchAttributeKey,
-    SearchAttributePair,
-    TypedSearchAttributes,
-)
-from datetime import datetime
-from datetime import timezone
-
-ORDER_ID = SearchAttributeKey.for_keyword("OrderId")
-ORDER_STATUS = SearchAttributeKey.for_keyword("OrderStatus")
-ORDER_TOTAL = SearchAttributeKey.for_float("OrderTotal")
-CREATED_AT = SearchAttributeKey.for_datetime("CreatedAt")
-
-# At workflow start
-handle = await client.start_workflow(
-    OrderWorkflow.run,
-    order,
-    id=f"order-{order.id}",
-    task_queue="orders",
-    search_attributes=TypedSearchAttributes([
-        SearchAttributePair(ORDER_ID, order.id),
-        SearchAttributePair(ORDER_STATUS, "pending"),
-        SearchAttributePair(ORDER_TOTAL, order.total),
-        SearchAttributePair(CREATED_AT, datetime.now(timezone.utc)),
-    ]),
-)
-```
-
-Or upserted during workflow execution:
-
-```python
-from temporalio import workflow
-from temporalio.common import SearchAttributeKey, SearchAttributePair, TypedSearchAttributes
-
-ORDER_STATUS = SearchAttributeKey.for_keyword("OrderStatus")
-
-@workflow.defn
-class OrderWorkflow:
-    @workflow.run
-    async def run(self, order: Order) -> str:
-        # ... process order ...
-
-        # Update search attribute
-        workflow.upsert_search_attributes(TypedSearchAttributes([
-            SearchAttributePair(ORDER_STATUS, "completed"),
-        ]))
-        return "done"
-```
-
-### Querying Workflows by Search Attributes
-
-```python
-# List workflows using search attributes
-async for workflow in client.list_workflows(
-    'OrderStatus = "processing" OR OrderStatus = "pending"'
-):
-    print(f"Workflow {workflow.id} is still processing")
 ```
 
 ## Workflow Memo
@@ -226,7 +170,7 @@ class MyWorkflow:
 ## Best Practices
 
 1. Use Pydantic for input/output validation
-2. Keep payloads small—see `references/core/gotchas.md` for limits
+2. Keep payloads small—see [Temporal common pitfalls](../core/gotchas.md) for limits
 3. Encrypt sensitive data with PayloadCodec
 4. Use dataclasses for simple data structures
 5. Use `workflow.uuid4()` and `workflow.random()` for deterministic values

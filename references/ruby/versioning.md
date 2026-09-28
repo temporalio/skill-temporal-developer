@@ -1,6 +1,6 @@
 # Ruby SDK Versioning
 
-For conceptual overview, see `references/core/versioning.md`.
+For conceptual overview, see [Temporal versioning guide](../core/versioning.md).
 
 ## Patching API
 
@@ -29,6 +29,7 @@ end
 ```
 
 **How it works:**
+
 - For new executions: `patched()` returns `true` and records a marker in the Workflow history
 - For replay with the marker: `patched()` returns `true` (history includes this patch)
 - For replay without the marker: `patched()` returns `false` (history predates this patch)
@@ -228,6 +229,7 @@ end
 ```
 
 **When to use PINNED:**
+
 - Short-running workflows (minutes to hours)
 - Consistency is critical (e.g., financial transactions)
 - You want to eliminate version compatibility complexity
@@ -252,6 +254,7 @@ end
 ```
 
 **When to use AUTO_UPGRADE:**
+
 - Long-running workflows (weeks or months)
 - Workflows need to benefit from bug fixes during execution
 - Migrating from traditional rolling deployments
@@ -283,6 +286,7 @@ worker = Temporalio::Worker.new(
 **Blue-Green Deployments**
 
 Maintain two environments and switch traffic between them:
+
 1. Deploy new code to idle environment
 2. Run tests and validation
 3. Switch traffic to new environment
@@ -291,6 +295,7 @@ Maintain two environments and switch traffic between them:
 **Rainbow Deployments**
 
 Multiple versions run simultaneously:
+
 - New workflows use latest version
 - Existing workflows complete on their original version
 - Add new versions alongside existing ones

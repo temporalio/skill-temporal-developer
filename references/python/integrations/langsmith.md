@@ -7,7 +7,7 @@
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For Python AI patterns (Pydantic data converter, disabling client-side LLM retries, generic LLM Activity shape) read `references/python/ai-patterns.md`. For conceptual LLM patterns shared across SDKs read `references/core/ai-patterns.md`. Python sandbox theory lives in `references/python/determinism-protection.md` — this integration handles the sandbox restrictions for `@traceable` for you, so do not restate sandbox rules here.
+For Python AI patterns (Pydantic data converter, disabling client-side LLM retries, generic LLM Activity shape) read [Python AI integration patterns](../ai-patterns.md). For conceptual LLM patterns shared across SDKs read [Temporal AI integration patterns](../../core/ai-patterns.md). Python sandbox theory lives in [Python determinism protection guide](../determinism-protection.md) — this integration handles the sandbox restrictions for `@traceable` for you, so do not restate sandbox rules here.
 
 ## Install
 
@@ -52,7 +52,7 @@ await worker.run()
 Constructor is keyword-only.
 
 | Parameter | Type | Default | Purpose |
-|---|---|---|---|
+| -- | -- | -- | -- |
 | `client` | `langsmith.Client \| None` | `None` (auto-created) | LangSmith client; auto-created if not supplied. |
 | `project_name` | `str \| None` | `None` | LangSmith project name traces are written to. |
 | `add_temporal_runs` | `bool` | `False` | When `True`, adds Temporal operation nodes (StartWorkflow, RunWorkflow, StartActivity, RunActivity) to the trace tree. |
@@ -64,7 +64,7 @@ Constructor is keyword-only.
 ## Where `@traceable` works
 
 | Location | Works? | Notes |
-|---|---|---|
+| -- | -- | -- |
 | Inside Workflow methods | Yes | Traces called from inside `@workflow.run`, `@workflow.signal`, etc.; sync and async methods. |
 | Inside Activity methods | Yes | Traces called from inside `@activity.defn`; sync and async methods. |
 | On `@activity.defn` functions | Yes | Stack `@traceable` on top of `@activity.defn` (decorator order matters). Fires on every retry. |
@@ -230,4 +230,4 @@ my_step
 
 ## Additional Resources
 
-- `references/python/integrations/langgraph.md` - LangGraph + Temporal plugin - enables running LangGraph agents as durable Temporal workflows.
+- [LangGraph Python integration guide](langgraph.md) - LangGraph + Temporal plugin - enables running LangGraph agents as durable Temporal workflows.

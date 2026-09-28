@@ -6,7 +6,7 @@
 
 The same agent remains usable outside a Workflow as a normal, non-durable agent. Attaching the capability does not make calls durable by itself: the call to `agent.run()` must execute inside a Temporal Workflow started through a Temporal Client.
 
-This integration comes from Pydantic AI, not `temporalio.contrib`. For general design guidance, also read `references/core/ai-patterns.md` and `references/python/ai-patterns.md`.
+This integration comes from Pydantic AI, not `temporalio.contrib`. For general design guidance, also read [Temporal AI integration patterns](../../core/ai-patterns.md) and [Python AI integration patterns](../ai-patterns.md).
 
 ## Install
 
@@ -39,7 +39,7 @@ Module-scope construction lets the Worker discover and register every generated 
 ### `TemporalDurability` configuration
 
 | Parameter | Purpose |
-|---|---|
+| -- | -- |
 | `models` | Additional model instances keyed by stable IDs for runtime model switching. |
 | `event_stream_handler` | Handles live model events inside model-request Activities and tool events in event-handler Activities. |
 | `event_stream_topic` | Publishes events to a Temporal Workflow Stream topic for an external consumer. |
@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
 ## Resources
 
-- `references/python/ai-patterns.md` — Python AI/LLM patterns, payload conversion, and retry classification.
-- `references/core/ai-patterns.md` — language-agnostic agent and tool-placement patterns.
+- [Python AI integration patterns](../ai-patterns.md) — Python AI/LLM patterns, payload conversion, and retry classification.
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — language-agnostic agent and tool-placement patterns.
 - Upstream guide — [Pydantic AI durable execution with Temporal](https://pydantic.dev/docs/ai/capabilities/durable_execution/temporal/).
 - Upstream API reference — [`pydantic_ai.durable_exec.temporal`](https://pydantic.dev/docs/ai/api/pydantic-ai/durable_exec/).

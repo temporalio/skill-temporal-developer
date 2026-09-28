@@ -9,6 +9,7 @@ The Temporal Ruby SDK (`temporalio` gem) provides a class-based approach to buil
 **Add Dependency on Temporal:** Add `temporalio` to your Gemfile or install directly with `gem install temporalio`.
 
 **say_hello_activity.rb** - Activity definition:
+
 ```ruby
 require 'temporalio/activity'
 
@@ -20,6 +21,7 @@ end
 ```
 
 **say_hello_workflow.rb** - Workflow definition:
+
 ```ruby
 require 'temporalio/workflow'
 
@@ -35,6 +37,7 @@ end
 ```
 
 **worker.rb** - Worker setup (imports activity and workflow, runs indefinitely and processes tasks):
+
 ```ruby
 require 'temporalio/client'
 require 'temporalio/env_config'
@@ -62,6 +65,7 @@ worker.run
 **Start the worker:** Start `ruby worker.rb` in the background.
 
 **execute_workflow.rb** - Start a workflow execution:
+
 ```ruby
 require 'temporalio/client'
 require 'temporalio/env_config'
@@ -89,25 +93,28 @@ puts "Result: #{result}"
 ## Key Concepts
 
 ### Workflow Definition
+
 - Subclass `Temporalio::Workflow::Definition`
 - Define `def execute(args)` as the entry point
 - Use `Temporalio::Workflow.execute_activity` to call activities
 - Define signals, queries, and updates via class-level DSL methods
 
 ### Activity Definition
+
 - Subclass `Temporalio::Activity::Definition`
 - Define `def execute(args)` as the entry point
 - Activities contain all non-deterministic and side-effectful code
 - Can access `Temporalio::Activity::Context.current` for heartbeating
 
 ### Worker Setup
+
 - Load connection settings with `Temporalio::EnvConfig::ClientConfig.load_client_connect_options` and connect with `Temporalio::Client.connect`
 - Create worker with `Temporalio::Worker.new(client:, task_queue:, workflows:, activities:)`
 - Run with `worker.run`
 
 ### Determinism
 
-**Workflow code must be deterministic!** The Ruby SDK uses a Durable Fiber Scheduler and Illegal Call Tracing (via Ruby's `TracePoint`) to detect non-deterministic operations at runtime. All sources of non-determinism should either use Temporal-provided alternatives or be defined in Activities. Read `references/core/determinism.md` and `references/ruby/determinism.md` to understand more.
+**Workflow code must be deterministic!** The Ruby SDK uses a Durable Fiber Scheduler and Illegal Call Tracing (via Ruby's `TracePoint`) to detect non-deterministic operations at runtime. All sources of non-determinism should either use Temporal-provided alternatives or be defined in Activities. Read [Temporal determinism rules](../core/determinism.md) and [Ruby determinism rules](determinism.md) to understand more.
 
 ## File Organization Best Practice
 
@@ -134,18 +141,21 @@ my_temporal_app/
 
 ## Writing Tests
 
-See `references/ruby/testing.md` for info on writing tests.
+See [Ruby testing guide](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
-- **`references/ruby/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
-- **`references/ruby/determinism.md`** - Durable Fiber Scheduler behavior, safe alternatives, history replay
-- **`references/ruby/determinism-protection.md`** - Illegal Call Tracing via TracePoint, forbidden operations, runtime detection
-- **`references/ruby/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
-- **`references/ruby/testing.md`** - Test environments, time-skipping, activity mocking
-- **`references/ruby/error-handling.md`** - ApplicationError, retry policies, non-retryable errors, idempotency
-- **`references/ruby/data-handling.md`** - Data converters, payload encryption
-- **`references/ruby/observability.md`** - Logging, metrics, tracing, Search Attributes
-- **`references/ruby/gotchas.md`** - Ruby-specific mistakes and anti-patterns
-- **`references/ruby/advanced-features.md`** - Schedules, worker tuning, and more
+
+- **[Ruby workflow patterns](patterns.md)** - Signals, queries, child workflows, saga pattern, etc.
+- **[Ruby determinism rules](determinism.md)** - Durable Fiber Scheduler behavior, safe alternatives, history replay
+- **[Ruby determinism protection guide](determinism-protection.md)** - Illegal Call Tracing via TracePoint, forbidden operations, runtime detection
+- **[Ruby versioning guide](versioning.md)** - Patching API, workflow type versioning, Worker Versioning
+- **[Ruby testing guide](testing.md)** - Test environments, time-skipping, activity mocking
+- **[Ruby error handling guide](error-handling.md)** - ApplicationError, retry policies, non-retryable errors, idempotency
+- **[Ruby data handling guide](data-handling.md)** - Data converters, payload encryption
+- **[Ruby observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
+- **[Ruby common pitfalls](gotchas.md)** - Ruby-specific mistakes and anti-patterns
+- **[Ruby advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
+- **[Ruby standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [Temporal standalone Activities guide](../core/standalone-activities.md).
+- **[Ruby Task Queue priority and fairness guide](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples. Concept overview at [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md).

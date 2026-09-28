@@ -7,6 +7,7 @@
 ## Dependency Setup
 
 Maven:
+
 ```xml
 <dependency>
     <groupId>io.temporal</groupId>
@@ -16,6 +17,7 @@ Maven:
 ```
 
 Gradle:
+
 ```groovy
 implementation 'io.temporal:temporal-spring-boot-starter:1.+'
 ```
@@ -25,6 +27,7 @@ The starter transitively includes `temporal-sdk` and the autoconfigure module. Y
 ## Minimal Configuration
 
 `application.properties`:
+
 ```properties
 spring.temporal.connection.target=local
 spring.temporal.start-workers=true
@@ -32,6 +35,7 @@ spring.temporal.workersAutoDiscovery.packages=greetingapp
 ```
 
 `application.yml` equivalent:
+
 ```yaml
 spring:
   temporal:
@@ -47,6 +51,7 @@ spring:
 ```
 
 For self-hosted Temporal, replace `local` with the server address:
+
 ```properties
 spring.temporal.connection.target=temporal.internal:7233
 ```
@@ -56,6 +61,7 @@ spring.temporal.connection.target=temporal.internal:7233
 The key concept: Temporal SDK annotations go on **interfaces**, Spring Boot autoconfigure annotations go on **implementation classes**. This is identical to non-Spring usage at the interface level.
 
 ### Workflow Interface (unchanged from non-Spring)
+
 ```java
 package greetingapp;
 
@@ -70,6 +76,7 @@ public interface GreetingWorkflow {
 ```
 
 ### Workflow Implementation
+
 ```java
 package greetingapp;
 
@@ -101,6 +108,7 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
 ```
 
 ### Activity Interface (unchanged from non-Spring)
+
 ```java
 package greetingapp;
 
@@ -115,6 +123,7 @@ public interface GreetActivities {
 ```
 
 ### Activity Implementation
+
 ```java
 package greetingapp;
 
@@ -157,9 +166,11 @@ The `taskQueues` attribute routes implementations to the right worker when multi
 ### Comparison: Auto-Discovery vs Explicit YAML Registration
 
 Auto-discovery via annotations:
+
 ```properties
 spring.temporal.workersAutoDiscovery.packages=greetingapp
 ```
+
 ```java
 @Component
 @ActivityImpl(taskQueues = "greeting-queue")
@@ -167,6 +178,7 @@ public class GreetActivitiesImpl implements GreetActivities { ... }
 ```
 
 Explicit YAML registration (alternative):
+
 ```yaml
 spring:
   temporal:
@@ -234,19 +246,22 @@ public class GreetingStarter {
 Workers start on `ApplicationReadyEvent` — after the full Spring context is initialized (DB migrations run, all beans wired). This means activity beans are fully ready before any workflow tasks are processed.
 
 To run a client-only app (one that submits workflows but does not execute them):
+
 ```properties
 spring.temporal.start-workers=false
 ```
 
 ## Testing Strategies
 
-See `references/java/testing.md` for full details on both approaches.
+See [Java testing guide](../testing.md) for full details on both approaches.
 
 **Spring integration tests** — uses an embedded Temporal test server wired into the Spring context:
+
 ```properties
 # src/test/resources/application-test.properties
 spring.temporal.test-server.enabled=true
 ```
+
 ```java
 @SpringBootTest
 @ActiveProfiles("test")
@@ -259,6 +274,7 @@ class GreetingIntegrationTest {
 ```
 
 **Unit tests without Spring** — use `TestWorkflowEnvironment` or `TestWorkflowExtension` directly. No Spring context, faster startup, full time-skipping support:
+
 ```java
 @RegisterExtension
 static final TestWorkflowExtension testWorkflow = TestWorkflowExtension.newBuilder()

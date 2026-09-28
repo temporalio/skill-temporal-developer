@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Go SDK provides replay-safe logging via `workflow.GetLogger`, metrics via the Tally library with Prometheus export, and tracing via OpenTelemetry, OpenTracing, or Datadog.
+The Go SDK provides replay-safe logging via `workflow.GetLogger`, metrics via the Tally library with Prometheus export, tracing via OpenTelemetry, OpenTracing, or Datadog, and visibility through Search Attributes.
 
 ## Logging / Replay-Aware Logging
 
@@ -170,7 +170,39 @@ Key SDK metrics:
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/go/data-handling.md`
+Set at workflow start:
+
+```go
+var (
+    OrderStatusKey = temporal.NewSearchAttributeKeyKeyword("OrderStatus")
+    CustomerIDKey  = temporal.NewSearchAttributeKeyKeyword("CustomerId")
+)
+
+handle, err := c.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
+    ID:                  "order-123",
+    TaskQueue:           "orders",
+    TypedSearchAttributes: temporal.NewSearchAttributes(
+        OrderStatusKey.ValueSet("pending"),
+        CustomerIDKey.ValueSet("cust-456"),
+    ),
+}, OrderWorkflow, input)
+```
+
+Upsert from within a workflow:
+
+```go
+var OrderStatusKey = temporal.NewSearchAttributeKeyKeyword("OrderStatus")
+
+err := workflow.UpsertTypedSearchAttributes(ctx, OrderStatusKey.ValueSet("completed"))
+```
+
+Query workflows by search attributes:
+
+```go
+resp, err := c.ListWorkflow(ctx, &workflowservice.ListWorkflowExecutionsRequest{
+    Query: `OrderStatus = "pending" AND CustomerId = "cust-456"`,
+})
+```
 
 ## Best Practices
 

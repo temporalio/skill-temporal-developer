@@ -168,6 +168,10 @@ func (s *UnitTestSuite) Test_WorkflowFailure() {
 
 ## Replay Testing
 
+For worker integration tests that should replay workflow history on every Workflow Task, disable the sticky workflow cache with `worker.SetStickyWorkflowCacheSize(0)` before starting any workers. This is process-wide; use it in an isolated test process. It complements replaying saved histories with `WorkflowReplayer`.
+
+To make detected nondeterminism fail the Workflow Execution immediately in a test, set `WorkflowPanicPolicy: worker.FailWorkflow` in `worker.Options`. This also makes workflow panics fail the execution.
+
 Use `worker.NewWorkflowReplayer()` to verify that code changes do not break determinism. Load history from a JSON file exported via the Temporal CLI or Web UI.
 
 ```go

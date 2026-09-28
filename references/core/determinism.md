@@ -27,7 +27,7 @@ Replay (Recovery):
 Every workflow operation generates a Command that becomes an Event, here are some examples:
 
 | Workflow Code | Command Generated | Event Stored |
-|--------------|-------------------|--------------|
+| -- | -- | -- |
 | Execute activity | `ScheduleActivityTask` | `ActivityTaskScheduled` |
 | Sleep/timer | `StartTimer` | `TimerStarted` |
 | Child workflow | `StartChildWorkflowExecution` | `ChildWorkflowExecutionStarted` |
@@ -122,7 +122,7 @@ If you need to change workflow logic:
 1. Use the **Patching API** to support both old and new code paths
 2. Or terminate old workflows and start new ones with updated code
 
-See `versioning.md` for patching details.
+See [versioning guide](versioning.md) for patching details.
 
 ## Best Practices
 

@@ -14,7 +14,7 @@ The plugin ships in the Temporal Python SDK at `temporalio.contrib.langgraph`.
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For general Temporal Python AI/LLM patterns (Pydantic data converter, LLM Activity design, retry classification, multi-agent orchestration), read `references/python/ai-patterns.md` first; for language-agnostic patterns, read `references/core/ai-patterns.md`.
+For general Temporal Python AI/LLM patterns (Pydantic data converter, LLM Activity design, retry classification, multi-agent orchestration), read [Python AI integration patterns](../ai-patterns.md) first; for language-agnostic patterns, read [Temporal AI integration patterns](../../core/ai-patterns.md).
 
 ## Installation
 
@@ -119,7 +119,7 @@ plugin = LangGraphPlugin(
 
 ## Activity options
 
-For nodes or tasks with `execute_in: "activity"`, you can pass parameters that flow through to [`workflow.execute_activity()`](https://python.temporal.io/temporalio.workflow.html#execute_activity): `start_to_close_timeout`, `retry_policy`, `schedule_to_close_timeout`, `heartbeat_timeout`.
+For nodes or tasks with `execute_in: "activity"`, you can pass parameters that flow through to [`workflow.execute_activity()`](https://python.temporal.io/temporalio.workflow._activities.html#execute_activity): `start_to_close_timeout`, `retry_policy`, `schedule_to_close_timeout`, `heartbeat_timeout`.
 
 ### Graph API — options in node metadata
 
@@ -197,11 +197,11 @@ g = graph("my-graph").compile()
 await g.ainvoke({...}, context=Context(user_id="alice"))
 ```
 
-The `context` object must be serializable by the configured Temporal payload converter, since it crosses the Activity boundary.  If your context uses Pydantic models, configure `pydantic_data_converter` — see `references/python/ai-patterns.md`.
+The `context` object must be serializable by the configured Temporal payload converter, since it crosses the Activity boundary. If your context uses Pydantic models, configure `pydantic_data_converter` — see [Python AI integration patterns](../ai-patterns.md).
 
 ## Tracing
 
-For LangSmith tracing of LangGraph nodes and Temporal Activities together, use the Temporal LangSmith plugin (`references/python/integrations/langsmith.md`).
+For LangSmith tracing of LangGraph nodes and Temporal Activities together, use the Temporal LangSmith plugin ([LangSmith Python integration guide](langsmith.md)).
 
 ## Hard constraints
 
@@ -212,6 +212,6 @@ For LangSmith tracing of LangGraph nodes and Temporal Activities together, use t
 
 ## Resources
 
-- `references/python/ai-patterns.md` — Python AI/LLM patterns (Pydantic data converter, LLM Activity design, retry/error classification).
-- `references/core/ai-patterns.md` — language-agnostic AI/LLM patterns.
-- `references/python/integrations/langsmith.md` - Companion LangSmith plugin.
+- [Python AI integration patterns](../ai-patterns.md) — Python AI/LLM patterns (Pydantic data converter, LLM Activity design, retry/error classification).
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — language-agnostic AI/LLM patterns.
+- [LangSmith Python integration guide](langsmith.md) - Companion LangSmith plugin.

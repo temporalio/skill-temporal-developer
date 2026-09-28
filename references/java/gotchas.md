@@ -15,12 +15,12 @@ Forbidden in workflow code — use the Temporal `Workflow.*` equivalents instead
 - `new Thread` → `Async.function`
 - `synchronized` blocks → unnecessary (workflow code runs under a global lock)
 
-See `references/java/determinism.md` for the full table of forbidden operations, safe alternatives, and detailed examples.
+See [Java determinism rules](determinism.md) for the full table of forbidden operations, safe alternatives, and detailed examples.
 
 ## Wrong Retry Classification
 
 **Example:** Transient networks errors should be retried. Authentication errors should not be.
-See `references/java/error-handling.md` to understand how to classify errors.
+See [Java error handling guide](error-handling.md) to understand how to classify errors.
 
 ## Heartbeating
 
@@ -139,11 +139,11 @@ public void longActivity() {
 
 ### Not Testing Failures
 
-It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see `references/java/testing.md` for more info.
+It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see [Java testing guide](testing.md) for more info.
 
 ### Not Testing Replay
 
-Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code, and should be considered in addition to standard testing. This is especially critical in Java since there is no sandbox. Please see `references/java/testing.md` for more info.
+Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code, and should be considered in addition to standard testing. This is especially critical in Java since there is no sandbox. Please see [Java testing guide](testing.md) for more info.
 
 ## Timers and Sleep
 

@@ -6,7 +6,7 @@ The Temporal Python SDK ships a contrib module that runs [OpenAI Agents SDK](htt
 
 The integration is delivered as a Temporal plugin: `OpenAIAgentsPlugin` from `temporalio.contrib.openai_agents`, registered on both the client and the worker via `plugins=[...]`.
 
-For language-agnostic AI/LLM patterns (centralized retries, multi-agent orchestration, when to put a tool in an Activity vs. the workflow) see `references/core/ai-patterns.md`. For Python-side LLM patterns that apply when **not** using this plugin (Pydantic data converter, generic LLM activity, `max_retries=0` on the raw OpenAI client) see `references/python/ai-patterns.md` — note that the plugin already configures Pydantic serialization for you.
+For language-agnostic AI/LLM patterns (centralized retries, multi-agent orchestration, when to put a tool in an Activity vs. the workflow) see [Temporal AI integration patterns](../../core/ai-patterns.md). For Python-side LLM patterns that apply when **not** using this plugin (Pydantic data converter, generic LLM activity, `max_retries=0` on the raw OpenAI client) see [Python AI integration patterns](../ai-patterns.md) — note that the plugin already configures Pydantic serialization for you.
 
 ## Install
 
@@ -169,7 +169,7 @@ In addition, since a `@function_tool` runs in the workflow, they can also call T
 ### Picking between the two
 
 | Tool body does… | Use |
-|---|---|
+| -- | -- |
 | Network call, file I/O, DB access | Activity + `activity_as_tool` |
 | Mutates agent state read by other tools | `@function_tool` |
 | Pure computation, deterministic | Either; `@function_tool` is lighter |
@@ -432,7 +432,7 @@ with plugin.tracing_context():
 The README's compatibility matrix, condensed:
 
 | Area | Supported | Not supported |
-|---|---|---|
+| -- | -- | -- |
 | Model providers | OpenAI, LiteLLM | — |
 | Model response | `Runner.run`; `Runner.run_streamed` (experimental) | — |
 | Tools | `FunctionTool`, `WebSearchTool`, `FileSearchTool`, `HostedMCPTool`, `ImageGenerationTool`, `CodeInterpreterTool` | `LocalShellTool`, `ComputerTool` |
@@ -446,7 +446,7 @@ The README's compatibility matrix, condensed:
 Tool context propagation:
 
 | Path | Receives context | Can update context |
-|---|---|---|
+| -- | -- | -- |
 | Activity tool (`activity_as_tool`) | Yes (copy) | **No** |
 | Function tool (`@function_tool`) | Yes | Yes |
 
@@ -463,7 +463,7 @@ Tool context propagation:
 
 ## Resources
 
-- `references/core/ai-patterns.md` — language-agnostic agent patterns (when to wrap a tool as an activity, centralized retry, multi-agent orchestration).
-- `references/python/ai-patterns.md` — Python-side LLM patterns for when you are **not** using this plugin (Pydantic data converter, OpenAI client `max_retries=0`).
-- `references/python/determinism.md` and `references/core/determinism.md` — determinism rules that apply to `@function_tool` bodies and any in-workflow agent code.
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — language-agnostic agent patterns (when to wrap a tool as an activity, centralized retry, multi-agent orchestration).
+- [Python AI integration patterns](../ai-patterns.md) — Python-side LLM patterns for when you are **not** using this plugin (Pydantic data converter, OpenAI client `max_retries=0`).
+- [Python determinism rules](../determinism.md) and [Temporal determinism rules](../../core/determinism.md) — determinism rules that apply to `@function_tool` bodies and any in-workflow agent code.
 - Upstream samples — [`temporalio/samples-python/openai_agents`](https://github.com/temporalio/samples-python/tree/main/openai_agents).

@@ -4,13 +4,17 @@
 
 Priority and Fairness control how Tasks are distributed within a Task Queue. Priority determines execution order. Fairness prevents one group of Tasks from starving others. They can be used independently or together.
 
-Both features are in Public Preview. Priority is free. Fairness is a paid feature in Temporal Cloud.
+Priority is enabled by default in Temporal Cloud and self-hosted Temporal. Fairness must be enabled separately and is a paid feature in Temporal Cloud.
+
+This file covers cross-SDK concepts and Task Queue configuration. For SDK-specific APIs and examples, read `references/{your_language}/priority-fairness.md`.
 
 ## Priority
 
 Priority lets you control execution order within a single Task Queue by assigning a priority key (integer 1-5, lower = higher priority). Each priority level acts as a sub-queue. All priority-1 Tasks dispatch before priority-2, and so on. Tasks at the same priority level dispatch in FIFO order.
 
-Default priority is 3. Activities inherit their parent workflow's priority unless explicitly overridden.
+Default priority is 3. Activities and Child Workflows inherit their parent Workflow's priority unless explicitly overridden.
+
+Priority is enforced within each Task Queue partition. Because Tasks are distributed across partitions, ordering across the whole Task Queue is close to Priority order but can deviate when partitions are imbalanced.
 
 ### When to use Priority
 
@@ -27,62 +31,11 @@ temporal workflow start \
   --priority-key 1
 ```
 
-### Go
-
-```go
-workflowOptions := client.StartWorkflowOptions{
-  ID:        "my-workflow-id",
-  TaskQueue: "my-task-queue",
-  Priority:  temporal.Priority{PriorityKey: 1},
-}
-we, err := c.ExecuteWorkflow(context.Background(), workflowOptions, MyWorkflow)
-```
-
-### Java
-
-```java
-WorkflowOptions options = WorkflowOptions.newBuilder()
-  .setTaskQueue("my-task-queue")
-  .setPriority(Priority.newBuilder().setPriorityKey(1).build())
-  .build();
-```
-
-### Python
-
-```python
-await client.start_workflow(
-  MyWorkflow.run,
-  args="hello",
-  id="my-workflow-id",
-  task_queue="my-task-queue",
-  priority=Priority(priority_key=1),
-)
-```
-
-### TypeScript
-
-```ts
-const handle = await startWorkflow(workflows.myWorkflow, {
-  args: [false, 1],
-  priority: { priorityKey: 1 },
-});
-```
-
-### .NET
-
-```csharp
-var handle = await Client.StartWorkflowAsync(
-  (MyWorkflow wf) => wf.RunAsync("hello"),
-  new StartWorkflowOptions(id: "my-workflow-id", taskQueue: "my-task-queue")
-  {
-    Priority = new Priority(1),
-  }
-);
-```
+For SDK examples, see `references/{your_language}/priority-fairness.md`.
 
 ## Fairness
 
-Fairness prevents one group of Tasks from monopolizing Worker capacity. Each fairness key creates a "virtual queue" within the Task Queue. The server uses round-robin dispatch across virtual queues so no single key can block others, even with a much larger backlog.
+Fairness prevents one group of Tasks from monopolizing Worker capacity. Each fairness key creates a "virtual queue" within the Task Queue. The server uses weighted, probabilistic dispatch across virtual queues so no single key can block others, even with a much larger backlog.
 
 ### When to use Fairness
 
@@ -101,27 +54,27 @@ Fairness applies at Task dispatch time and considers each Task as having equal c
 
 ### Fairness keys and weights
 
-A fairness key is a string, typically a tenant ID or workload category. Each unique key creates a virtual queue.
+A fairness key is a string, typically a tenant ID or workload category. Each unique key creates a virtual queue. Fairness keys are limited to 64 bytes.
 
-A fairness weight (float, default 1.0) controls how often a key's Tasks are dispatched relative to others. A key with weight 2.0 dispatches twice as often as keys with weight 1.0.
+A fairness weight (float, default 1.0) controls how often a key's Tasks are dispatched relative to others. A key with weight 2.0 dispatches approximately twice as often as keys with weight 1.0. Weights must be in the range 0.001-1000, and a key should use one consistent weight within a Task Queue.
 
 Example with three tiers:
 
-| Fairness Key   | Weight | Share of Dispatches |
-|----------------|--------|---------------------|
-| premium-tier   | 5.0    | 50%                 |
-| basic-tier     | 3.0    | 30%                 |
-| free-tier      | 2.0    | 20%                 |
+| Fairness Key | Weight | Share of Dispatches |
+| -- | -- | -- |
+| premium-tier | 5.0 | 50% |
+| basic-tier | 3.0 | 30% |
+| free-tier | 2.0 | 20% |
 
-Tasks without a fairness key are grouped under an implicit empty-string key with weight 1.0. Adoption is incremental: unkeyed Tasks participate in round-robin alongside keyed Tasks.
+Tasks without a fairness key are grouped under an implicit empty-string key with weight 1.0. Adoption is incremental: unkeyed Tasks participate in weighted dispatch alongside keyed Tasks.
 
 ### Using Fairness with Priority
 
-When combined, Priority determines which sub-queue Tasks go into (priority 1 before 2, etc.), and Fairness applies within each priority level.
+When combined, Priority determines which sub-queue Tasks go into (priority 1 before 2, etc.), and Fairness applies within each priority level. Tasks sharing both a priority level and fairness key dispatch in FIFO order.
 
 ### SDK examples
 
-#### CLI
+Use the CLI to start a Workflow with both Priority and Fairness:
 
 ```
 temporal workflow start \
@@ -134,166 +87,9 @@ temporal workflow start \
   --fairness-weight 2.0
 ```
 
-#### Go
+For Workflow, Activity, and Child Workflow SDK examples, see `references/{your_language}/priority-fairness.md`.
 
-```go
-workflowOptions := client.StartWorkflowOptions{
-  ID:        "my-workflow-id",
-  TaskQueue: "my-task-queue",
-  Priority: temporal.Priority{
-    PriorityKey:    1,
-    FairnessKey:    "tenant-123",
-    FairnessWeight: 2.0,
-  },
-}
-we, err := c.ExecuteWorkflow(context.Background(), workflowOptions, MyWorkflow)
-```
-
-Activities:
-
-```go
-ao := workflow.ActivityOptions{
-  StartToCloseTimeout: time.Minute,
-  Priority: temporal.Priority{
-    PriorityKey:    1,
-    FairnessKey:    "tenant-123",
-    FairnessWeight: 2.0,
-  },
-}
-ctx := workflow.WithActivityOptions(ctx, ao)
-err := workflow.ExecuteActivity(ctx, MyActivity).Get(ctx, nil)
-```
-
-#### Java
-
-```java
-WorkflowOptions options = WorkflowOptions.newBuilder()
-  .setTaskQueue("my-task-queue")
-  .setPriority(Priority.newBuilder()
-    .setPriorityKey(1)
-    .setFairnessKey("tenant-123")
-    .setFairnessWeight(2.0)
-    .build())
-  .build();
-```
-
-#### Python
-
-```python
-await client.start_workflow(
-  MyWorkflow.run,
-  args="hello",
-  id="my-workflow-id",
-  task_queue="my-task-queue",
-  priority=Priority(priority_key=1, fairness_key="tenant-123", fairness_weight=2.0),
-)
-```
-
-Activities:
-
-```python
-await workflow.execute_activity(
-  say_hello,
-  "hi",
-  priority=Priority(priority_key=1, fairness_key="tenant-123", fairness_weight=2.0),
-  start_to_close_timeout=timedelta(seconds=5),
-)
-```
-
-#### TypeScript
-
-```ts
-const handle = await startWorkflow(workflows.myWorkflow, {
-  args: [false, 1],
-  priority: { priorityKey: 1, fairnessKey: 'tenant-123', fairnessWeight: 2.0 },
-});
-```
-
-#### .NET
-
-```csharp
-var handle = await Client.StartWorkflowAsync(
-  (MyWorkflow wf) => wf.RunAsync("hello"),
-  new StartWorkflowOptions(id: "my-workflow-id", taskQueue: "my-task-queue")
-  {
-    Priority = new Priority(
-      priorityKey: 1,
-      fairnessKey: "tenant-123",
-      fairnessWeight: 2.0
-    )
-  }
-);
-```
-
-#### Child Workflows
-
-Child workflows can set their own priority and fairness, overriding the parent.
-
-Go:
-
-```go
-cwo := workflow.ChildWorkflowOptions{
-  WorkflowID: "child-workflow-id",
-  TaskQueue:  "child-task-queue",
-  Priority: temporal.Priority{
-    PriorityKey:    1,
-    FairnessKey:    "tenant-123",
-    FairnessWeight: 2.0,
-  },
-}
-ctx := workflow.WithChildOptions(ctx, cwo)
-err := workflow.ExecuteChildWorkflow(ctx, MyChildWorkflow).Get(ctx, nil)
-```
-
-Java:
-
-```java
-ChildWorkflowOptions childOptions = ChildWorkflowOptions.newBuilder()
-  .setTaskQueue("child-task-queue")
-  .setWorkflowId("child-workflow-id")
-  .setPriority(Priority.newBuilder()
-    .setPriorityKey(1)
-    .setFairnessKey("tenant-123")
-    .setFairnessWeight(2.0)
-    .build())
-  .build();
-MyChildWorkflow child = Workflow.newChildWorkflowStub(MyChildWorkflow.class, childOptions);
-child.run();
-```
-
-Python:
-
-```python
-await workflow.execute_child_workflow(
-  MyChildWorkflow.run,
-  args="hello child",
-  priority=Priority(priority_key=1, fairness_key="tenant-123", fairness_weight=2.0),
-)
-```
-
-TypeScript:
-
-```ts
-const handle = await startChildWorkflow(workflows.myChildWorkflow, {
-  args: [false, 1],
-  priority: { priorityKey: 1, fairnessKey: 'tenant-123', fairnessWeight: 2.0 },
-});
-```
-
-.NET:
-
-```csharp
-await Workflow.ExecuteChildWorkflowAsync(
-  (MyChildWorkflow wf) => wf.RunAsync("hello child"),
-  new() {
-    Priority = new(
-      priorityKey: 1,
-      fairnessKey: "tenant-123",
-      fairnessWeight: 2.0
-    )
-  }
-);
-```
+Each Priority field is resolved independently. Activities and Child Workflows inherit unset fields from their parent Workflow and can override individual fields. Continue-As-New inherits the current values unless replacements are provided. Task Queue weight overrides take precedence over SDK-supplied `fairness_weight` values.
 
 ### Rate limiting
 
@@ -317,19 +113,26 @@ If both limits are set, the more restrictive one applies.
 
 ### Fairness weight overrides
 
-You can override the weights of up to 1000 keys through the config API. When an override is set for a key, the SDK-supplied weight is ignored. Overrides are per Task Queue and type (workflow vs. activity), so set them for both if needed.
+You can override the weights of up to 1000 keys through the config API. When an override is set for a key, the SDK-supplied weight is ignored. Overrides are per Task Queue and type (Workflow vs. Activity), so set them for both if needed.
+
+```
+temporal task-queue config set \
+    --task-queue my-task-queue \
+    --task-queue-type activity \
+    --namespace my-namespace \
+    --fairness-key-weight premium=5.0 \
+    --fairness-key-weight basic=1.0
+```
+
+Use `key=default` to remove one override or `--fairness-key-weight-clear-all` to remove all overrides for that Task Queue and type.
 
 ### Enabling Fairness
 
-When you start using fairness keys, it switches your active Task Queues to fairness mode. Existing queued Tasks are processed before any new fairness-mode ones.
+When Fairness is enabled with an active backlog, existing queued Tasks are processed before new Fairness-mode Tasks. Disabling Fairness likewise drains the existing Fairness-ordered backlog before returning to Priority and FIFO ordering.
 
-**Temporal Cloud**: automatically enabled when you start using fairness keys.
+**Temporal Cloud**: enable Fairness for the Namespace from its Overview page. Billing applies while Fairness is enabled, even if individual Tasks do not use fairness keys.
 
-**Self-hosted**: set these dynamic config flags to `true`:
-
-- `matching.useNewMatcher`
-- `matching.enableFairness`
-- `matching.enableMigration` (to drain existing backlogs after enabling)
+**Self-hosted**: set the `matching.enableFairness` dynamic configuration setting to `true` for the relevant Namespace, Task Queue, or globally. Priority uses the new matcher by default; setting `matching.useNewMatcher` to `false` disables it for the selected scope.
 
 ### Limitations
 

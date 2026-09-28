@@ -1,0 +1,22 @@
+[project]
+name = "skill-temporal-developer"
+version = "0.0.0"
+requires-python = ">=3.14,<3.15"
+
+[dependency-groups]
+dev = [
+    "rumdl==0.2.73",
+    "skills-ref",
+]
+
+[tool.rumdl]
+enable = [
+    "MD051", # Link fragments should reference valid headings
+    "MD057", # Relative links should point to existing files
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+skills-ref = { git = "https://github.com/agentskills/agentskills.git", rev = "69ef37e9424c0a7ea9dd2293b559e43ec8176379", subdirectory = "skills-ref" }

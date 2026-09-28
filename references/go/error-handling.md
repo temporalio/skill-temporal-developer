@@ -181,4 +181,4 @@ return "", temporal.NewNonRetryableApplicationError(
 3. Set appropriate timeouts; prefer `StartToCloseTimeout` over `ScheduleToCloseTimeout`
 4. Let Temporal handle retries via RetryPolicy rather than implementing retry logic yourself
 5. Use `errors.As` to unwrap and inspect specific error types
-6. Design activities to be idempotent for safe retries (see `references/core/patterns.md`)
+6. Design activities to be idempotent for safe retries (see [Temporal workflow patterns](../core/patterns.md))

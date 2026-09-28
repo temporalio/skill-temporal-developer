@@ -105,7 +105,7 @@ export async function myWorkflow(): Promise<string> {
 
 ## Idempotency
 
-For idempotency patterns (using keys, making activities granular), see `core/patterns.md`.
+For idempotency patterns (using keys, making activities granular), see [Temporal workflow patterns](../core/patterns.md).
 
 ## Best Practices
 

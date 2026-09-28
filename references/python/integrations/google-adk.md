@@ -9,14 +9,14 @@ The integration is built on the Python SDK [Plugin system](https://docs.temporal
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For general Temporal AI/LLM patterns (retries, rate limits, multi-agent orchestration) see `references/core/ai-patterns.md` and `references/python/ai-patterns.md`.
+For general Temporal AI/LLM patterns (retries, rate limits, multi-agent orchestration) see [Temporal AI integration patterns](../../core/ai-patterns.md) and [Python AI integration patterns](../ai-patterns.md).
 
 ## Prerequisites
 
-| Dependency           | Minimum version |
-| -------------------- | --------------- |
-| Temporal Python SDK  | 1.24.0          |
-| Google ADK           | a working `google-adk` install (pulled in by the extra) |
+| Dependency | Minimum version |
+| -- | -- |
+| Temporal Python SDK | 1.24.0 |
+| Google ADK | a working `google-adk` install (pulled in by the extra) |
 
 You also need access to a supported model (e.g. a Gemini API key for `gemini-flash-latest` / `gemini-2.5-pro`) and a running Temporal server — `temporal server start-dev` for local development, self-hosted, or Temporal Cloud.
 
@@ -30,12 +30,12 @@ The extra name is `google-adk` (hyphen). The module path is `temporalio.contrib.
 
 ## Public API
 
-| Symbol                       | Import                                                                  | Purpose                                                                  |
-| ---------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `GoogleAdkPlugin`            | `from temporalio.contrib.google_adk_agents import GoogleAdkPlugin`      | Client/Worker plugin: determinism replacement + Pydantic/ADK passthrough |
-| `TemporalModel`              | `from temporalio.contrib.google_adk_agents import TemporalModel`        | LLM model wrapper that routes model calls through a Temporal Activity   |
-| `activity_tool`              | `from temporalio.contrib.google_adk_agents.workflow import activity_tool` | Wraps a plain `@activity.defn` function as an ADK tool                  |
-| `TemporalMcpToolSet`         | `from temporalio.contrib.google_adk_agents import TemporalMcpToolSet`   | Executes MCP tools as Temporal Activities                                |
+| Symbol | Import | Purpose |
+| -- | -- | -- |
+| `GoogleAdkPlugin` | `from temporalio.contrib.google_adk_agents import GoogleAdkPlugin` | Client/Worker plugin: determinism replacement + Pydantic/ADK passthrough |
+| `TemporalModel` | `from temporalio.contrib.google_adk_agents import TemporalModel` | LLM model wrapper that routes model calls through a Temporal Activity |
+| `activity_tool` | `from temporalio.contrib.google_adk_agents.workflow import activity_tool` | Wraps a plain `@activity.defn` function as an ADK tool |
+| `TemporalMcpToolSet` | `from temporalio.contrib.google_adk_agents import TemporalMcpToolSet` | Executes MCP tools as Temporal Activities |
 | `TemporalMcpToolSetProvider` | `from temporalio.contrib.google_adk_agents import TemporalMcpToolSetProvider` | Factory wired into `GoogleAdkPlugin(toolset_providers=[...])` so MCP activities register with the worker |
 
 ## Configure the plugin on Client and Worker

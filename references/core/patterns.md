@@ -362,7 +362,7 @@ This ensures that on replay, already-completed steps are skipped.
 
 **Purpose**: Handle data that exceeds Temporal's payload limits without polluting workflow history.
 
-**Limits** (see `references/core/gotchas.md` for details):
+**Limits** (see [Temporal common pitfalls](gotchas.md) for details):
 
 - Max 2MB per individual payload
 - Max 4MB per gRPC message
@@ -468,7 +468,7 @@ Activity calls heartbeat()
 ## Choosing Between Patterns
 
 | Need | Pattern |
-|------|---------|
+| -- | -- |
 | Send data, don't need response | Signal |
 | Read state, no modification | Query |
 | Modify state, need response | Update |
@@ -479,3 +479,4 @@ Activity calls heartbeat()
 | Long-lived stateful entity | Entity Workflow |
 | Safe retries/replays | Idempotency |
 | Low-latency short operations | Local Activities |
+| Run a background job (job queue) | Standalone Activity — see [Temporal job queue guide](job-queue.md) |

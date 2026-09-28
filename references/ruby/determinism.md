@@ -36,7 +36,7 @@ The following are forbidden inside workflow code by default:
 ## Safe Builtin Alternatives to Common Non Deterministic Things
 
 | Forbidden | Safe Alternative |
-|-----------|------------------|
+| -- | -- |
 | `Kernel.sleep(n)` | `Temporalio::Workflow.sleep(n)` |
 | `Time.now` | `Temporalio::Workflow.now` |
 | `Random.rand` / `SecureRandom` | `Temporalio::Workflow.random.rand(100)` |
@@ -46,7 +46,7 @@ The following are forbidden inside workflow code by default:
 
 ## Testing Replay Compatibility
 
-Use `Temporalio::Worker::WorkflowReplayer` to verify that workflow code is replay-compatible against recorded histories. See `testing.md` for details.
+Use `Temporalio::Worker::WorkflowReplayer` to verify that workflow code is replay-compatible against recorded histories. See [testing guide](testing.md) for details.
 
 ```ruby
 replayer = Temporalio::Worker::WorkflowReplayer.new(
