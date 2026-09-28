@@ -205,6 +205,12 @@ For long-running Workflows that cannot use Continue-as-New (e.g., compliance aud
 
 ## Finding Workflows by Version
 
+`TemporalChangeVersion` is a Visibility Search Attribute that records version markers emitted by the Workflow's patching or versioning API. A Workflow can have multiple values, and the values accumulate as it passes through version changes. Some SDKs encode those values automatically, and others require an explicit option or a manual upsert.
+
+Use it to find open Workflows whose history has recorded a particular change. A matching value identifies a Workflow that recorded that marker; it does not identify the Workflow's deployment or guarantee that the Workflow is currently executing that code path. `TemporalChangeVersion IS NULL` finds executions with no value upserted, which can include pre-versioning histories and SDKs or code paths that do not populate the attribute.
+
+Use the value format for your SDK, and include `ExecutionStatus = "Running"` when you only want open executions.
+
 ```bash
 # Find workflows with specific patch
 temporal workflow list --query \
