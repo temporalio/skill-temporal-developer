@@ -194,4 +194,5 @@ See [TypeScript testing guide](testing.md) for info on writing tests.
 - **[TypeScript versioning guide](versioning.md)** - Patching API, workflow type versioning, Worker Versioning
 - **[TypeScript standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [Temporal standalone Activities guide](../core/standalone-activities.md).
 - **[TypeScript Task Queue priority and fairness guide](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples. Concept overview at [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md).
+- **[TypeScript Workflow random streams guide](random-streams.md)** - Named deterministic random streams with `getRandomStream`. Concept overview at [Temporal Workflow random streams guide](../core/random-streams.md).
 - **[TypeScript determinism protection guide](determinism-protection.md)** - V8 sandbox and bundling
