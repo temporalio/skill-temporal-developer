@@ -63,6 +63,8 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 
 - **[Temporal determinism rules](references/core/determinism.md)** - Why determinism matters, replay mechanics, basic concepts of activities
   - Language-specific info at `references/{your_language}/determinism.md`
+- **Temporal workflow determinism protection** - SDK safeguards, analyzers, runtime checks, and their limits
+  - Language-specific info at `references/{your_language}/determinism-protection.md`
 - **[Temporal workflow patterns](references/core/patterns.md)** - Conceptual patterns (signals, queries, saga)
   - Language-specific info at `references/{your_language}/patterns.md`
 - **[Temporal common pitfalls](references/core/gotchas.md)** - Anti-patterns and common mistakes
