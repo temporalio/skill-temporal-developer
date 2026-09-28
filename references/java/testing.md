@@ -134,6 +134,10 @@ void testActivityFailure(
 
 ## Workflow Replay Testing
 
+For worker integration tests that should replay workflow history on every Workflow Task, set the workflow cache size to `0` in `WorkerFactoryOptions` with `setWorkflowCacheSize(0)`. This complements replaying saved histories with `WorkflowReplayer`.
+
+To make nondeterminism fail the Workflow Execution immediately in a test, configure the workflow with `WorkflowImplementationOptions.newBuilder().setFailWorkflowExceptionTypes(NonDeterministicException.class).build()` when registering its implementation.
+
 ```java
 import io.temporal.testing.WorkflowReplayer;
 

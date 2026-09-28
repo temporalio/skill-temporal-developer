@@ -134,7 +134,7 @@ See language-specific gotchas for details.
 - Non-determinism errors after deployment
 - Stuck workflows that can't make progress
 
-**The Fix**: Use replay testing against saved histories from production or staging.
+**The Fix**: Use replay testing against saved histories from production or staging. Disable the Workflow cache in Workflow tests when you want each Workflow Task to replay from history.
 
 ## Error Handling Mistakes
 

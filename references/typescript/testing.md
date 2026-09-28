@@ -142,6 +142,10 @@ describe('Failure handling', () => {
 
 ## Replay Testing
 
+For worker integration tests that should replay workflow history on every Workflow Task, configure the worker with `maxCachedWorkflows: 0`. This complements replaying saved histories with `Worker.runReplayHistory`.
+
+To make nondeterminism fail the Workflow Execution immediately in a test, configure the worker with `workflowFailureErrorTypes: { '*': ['NondeterminismError'] }`.
+
 ```typescript
 import { Worker } from '@temporalio/worker';
 import { Client, Connection } from '@temporalio/client';

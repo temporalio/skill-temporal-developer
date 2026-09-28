@@ -179,6 +179,10 @@ end
 
 ## Workflow Replay Testing
 
+For worker integration tests that should replay workflow history on every Workflow Task, configure the worker with `max_cached_workflows: 0`. This complements replaying saved histories with `WorkflowReplayer`.
+
+To make nondeterminism fail the Workflow Execution immediately in a test, pass `workflow_failure_exception_types: [Temporalio::Workflow::NondeterminismError]` to `Worker`.
+
 Use `WorkflowReplayer` to verify that workflow code changes remain compatible with existing histories:
 
 ```ruby
