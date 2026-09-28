@@ -12,7 +12,8 @@ Temporal is a durable execution platform that makes workflows survive failures a
 ## Out of Scope
 
 - **Operational CLI commands** such as batch operations, health queries, Cloud administration, `tcld`, and scripting → use the [temporal-ops skill](https://github.com/temporalio/skill-temporal-ops).
-- **Worker performance tuning, sizing, and capacity planning** → use the [temporal-workertuning skill](https://github.com/temporalio/skill-temporal-workertuning).
+- **Serverless Worker deployment and troubleshooting** → use the [temporal-serverless skill](https://github.com/temporalio/skill-temporal-serverless).
+- **First-time Temporal Cloud setup** including a Namespace, API key, sample app, and first Workflow → use the [temporal-cloud-setup skill](https://github.com/temporalio/codex-temporal-plugin/blob/main/plugins/temporal/skills/temporal-cloud-setup/SKILL.md).
 
 If a task shifts into one of these areas, follow the relevant skill. Local development and developer-facing Workflow CLI commands remain covered here.
 

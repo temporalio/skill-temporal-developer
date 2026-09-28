@@ -93,7 +93,7 @@ temporal workflow signal \
 | `--input`, `-i` | No | Input value (JSON). Repeatable. |
 | `--run-id`, `-r` | No | Pin to a specific run. Only with `--workflow-id`. |
 
-For bulk signaling with `--query` (runs as a batch job), use the [temporal-ops skill](https://github.com/temporalio/skill-temporal-ops).
+For bulk signaling with `--query` (runs as a batch job), use the `temporal-ops` skill.
 
 ## Workflow query
 
@@ -255,7 +255,7 @@ temporal workflow cancel \
 | `--workflow-id`, `-w` | Yes, for a single execution | Workflow ID. |
 | `--run-id`, `-r` | No | Pin cancellation to a specific run; omit to target the current execution. |
 
-Check the namespace and profile as well as the IDs before cancelling. Then use `temporal workflow describe --workflow-id YourWorkflowId --run-id YourRunId --output json` to verify the eventual status. Omit `--run-id` from both commands if it is unknown. For bulk cancellation with `--query`, use the [temporal-ops skill](https://github.com/temporalio/skill-temporal-ops).
+Check the namespace and profile as well as the IDs before cancelling. Then use `temporal workflow describe --workflow-id YourWorkflowId --run-id YourRunId --output json` to verify the eventual status. Omit `--run-id` from both commands if it is unknown. For bulk cancellation with `--query`, use the `temporal-ops` skill.
 
 ## Workflow metadata
 
