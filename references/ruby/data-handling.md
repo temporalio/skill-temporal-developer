@@ -2,11 +2,17 @@
 
 ## Overview
 
-Data converters serialize and deserialize workflow/activity inputs and outputs. The `Temporalio::Converters` module provides the conversion pipeline.
+The Ruby SDK uses a `Temporalio::Converters::DataConverter` to move values between the SDK and the Temporal Service. It combines three components:
 
-## Default Data Converter
+- `PayloadConverter` serializes values to and from payload bytes. The default converter handles `nil`, binary strings, Protobuf messages, and JSON values.
+- `PayloadCodec` transforms payloads, for example to encrypt or compress them.
+- `failure_converter` converts exceptions to and from Temporal `Failure` protobufs.
 
-The default converter handles types in this order:
+Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in a `failure_converter`.
+
+## Default Payload Converter
+
+The default payload converter handles types in this order:
 
 1. `nil` - null payload
 2. Bytes - `String` with `ASCII_8BIT` encoding
@@ -54,6 +60,8 @@ end
 ```
 
 ## Custom Data Conversion
+
+The data converter combines the payload converter, payload codec, and failure converter. Configure each component through the corresponding keyword argument:
 
 ```ruby
 converter = Temporalio::Converters::DataConverter.new(

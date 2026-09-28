@@ -2,11 +2,17 @@
 
 ## Overview
 
-The TypeScript SDK uses data converters to serialize/deserialize workflow inputs, outputs, and activity parameters.
+The TypeScript SDK uses a `DataConverter` to move values between the SDK and the Temporal Service. It combines three components:
 
-## Default Data Converter
+- `PayloadConverter` serializes values to and from payload bytes. The default converter handles `undefined`, `null`, `Uint8Array`, and JSON-serializable types.
+- `PayloadCodec` transforms payloads, for example to encrypt or compress them.
+- `failureConverter` converts exceptions to and from Temporal `Failure` protobufs.
 
-The default converter handles:
+Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in a `failureConverter`.
+
+## Default Payload Converter
+
+The default payload converter handles:
 
 - `undefined` and `null`
 - `Uint8Array` (as binary)
@@ -14,9 +20,9 @@ The default converter handles:
 
 Note: Protobuf support requires using a data converter (`DefaultPayloadConverterWithProtobufs`). See the Protobuf Support section below.
 
-## Custom Data Converter
+## Custom Payload Converter
 
-Create custom converters for special serialization needs.
+Customize serialization by replacing the `PayloadConverter` component in the `DataConverter` configuration. The SDK keeps the default codec and failure converter unless you configure replacements.
 
 ```typescript
 // payload-converter.ts
