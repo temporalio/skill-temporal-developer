@@ -1,178 +1,63 @@
-# Go — Workflow Random Streams
+# Go SDK Workflow Random Streams
 
-## Context
+> [!NOTE]
+> This feature is Experimental. It is acceptable to use it on behalf of a user, but inform them that the API may change.
 
-The Go SDK does not ship a seeded RNG for workflows. Docs recommend using SideEffect or Activities when you need non-deterministic values recorded in history. When you want many random draws but keep determinism, create a userland PRNG seeded from deterministic workflow inputs.
+Requires Go SDK v1.48.0 or later. See `references/core/random-streams.md` for concepts.
 
-## Helper: FNV-1a 32-bit seed and math/rand
+## API
 
-~~~go
-package streams
+`workflow.GetRandomStream(ctx, name)` returns a `workflow.WorkflowRandomStream`. The stream implements both:
 
-import (
-    hash/fnv
-    math/rand
-)
+- `math/rand/v2.Source` (`Uint64`), so `rand.New(stream)` gives a full `*rand.Rand`.
+- `io.Reader`, for random bytes.
 
-// SeedFromStrings derives a 32-bit seed from stable strings, e.g., workflow ID and a stream name.
-func SeedFromStrings(parts ...string) int64 {
-    h := fnv.New32a()
-    for _, p := range parts {
-        _, _ = h.Write([]byte(p))
-        _, _ = h.Write([]byte{/})
-    }
-    return int64(h.Sum32())
-}
+`Read` and `Uint64` may be interleaved on the same stream.
 
-// NewStream returns a rand.Rand backed by its own Source.
-func NewStream(seed int64) *rand.Rand {
-    return rand.New(rand.NewSource(seed))
-}
-~~~
-
-## Derive seeds in a Workflow
-
-~~~go
-import (
-    go.temporal.io/sdk/workflow
-)
-
-type RNG interface {
-    Float64() float64
-    Intn(n int) int
-    Shuffle(n int, swap func(i, j int))
-}
-
-type NamedStreams struct {
-    App   *rand.Rand
-    Lib   *rand.Rand
-}
-
-func MakeStreams(ctx workflow.Context) (*NamedStreams, error) {
-    info := workflow.GetInfo(ctx)
-    // Per-Workflow-ID stream
-    appSeed := SeedFromStrings(info.WorkflowExecution.ID, app-default)
-    // Per-Run-ID stream (changes on retry/reset)
-    libSeed := SeedFromStrings(info.WorkflowExecution.ID, info.WorkflowExecution.RunID, plugin:ranker)
-
-    return &NamedStreams{
-        App: NewStream(appSeed),
-        Lib: NewStream(libSeed),
-    }, nil
-}
-~~~
-
-## Optional: Non-deterministic root via SideEffect
-
-If you need a non-deterministic root (for example, to decorrelate across services), capture it once with SideEffect, then derive named seeds from it.
-
-~~~go
-var root int64
-encoded := workflow.SideEffect(ctx, func(workflow.Context) interface{} {
-    // Any non-deterministic source; UUID or crypto/rand packaged into a value
-    return time.Now().UnixNano() // example only; prefer crypto/rand if available in Activities
-})
-_ = encoded.Get(&root)
-
-seed := SeedFromStrings(strconv.FormatInt(root, 10), info.WorkflowExecution.ID, app-default)
-rng := NewStream(seed)
-~~~
-
-Notes
-- Do not call time.Now() directly in workflows except inside SideEffect; prefer deterministic seeds from workflow identity when possible.
-- Changing the hash or PRNG changes sequences; treat as a compatibility boundary.
-
-## Related
-
-- Concept: references/core/random-streams.md
-- Determinism basics: ../documentation/docs/develop/go/workflows/basics.mdx
-# Go — Workflow Random Streams
-
-## Context
-
-The Go SDK does not ship a seeded RNG for workflows. Docs recommend using SideEffect or Activities when you need non-deterministic values recorded in history. When you want many random draws but keep determinism, create a userland PRNG seeded from deterministic workflow inputs.
-
-## Helper: FNV-1a 32-bit seed and math/rand
-
-```go
-package streams
-
-import (
-    "hash/fnv"
-    "math/rand"
-)
-
-// SeedFromStrings derives a 32-bit seed from stable strings, e.g., workflow ID and a stream name.
-func SeedFromStrings(parts ...string) int64 {
-    h := fnv.New32a()
-    for _, p := range parts {
-        _, _ = h.Write([]byte(p))
-        _, _ = h.Write([]byte{'/'})
-    }
-    return int64(h.Sum32())
-}
-
-// NewStream returns a rand.Rand backed by its own Source.
-func NewStream(seed int64) *rand.Rand {
-    return rand.New(rand.NewSource(seed))
-}
-```
-
-## Derive seeds in a Workflow
+## Random numbers
 
 ```go
 import (
-    "go.temporal.io/sdk/workflow"
+	"math/rand/v2"
+
+	"go.temporal.io/sdk/workflow"
 )
 
-type RNG interface {
-    Float64() float64
-    Intn(n int) int
-    Shuffle(n int, swap func(i, j int))
-}
+func MyWorkflow(ctx workflow.Context, items []string) ([]string, error) {
+	r := rand.New(workflow.GetRandomStream(ctx, "example.com/myapp/shuffle"))
 
-type NamedStreams struct {
-    App   *rand.Rand
-    Lib   *rand.Rand
-}
-
-func MakeStreams(ctx workflow.Context) (*NamedStreams, error) {
-    info := workflow.GetInfo(ctx)
-    // Per-Workflow-ID stream
-    appSeed := SeedFromStrings(info.WorkflowExecution.ID, "app-default")
-    // Per-Run-ID stream (changes on retry/reset)
-    libSeed := SeedFromStrings(info.WorkflowExecution.ID, info.WorkflowExecution.RunID, "plugin:ranker")
-
-    return &NamedStreams{
-        App: NewStream(appSeed),
-        Lib: NewStream(libSeed),
-    }, nil
+	r.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
+	pick := r.IntN(len(items))
+	workflow.GetLogger(ctx).Info("Picked", "item", items[pick])
+	return items, nil
 }
 ```
 
-## Optional: Non-deterministic root via SideEffect
-
-If you need a non-deterministic root (for example, to decorrelate across services), capture it once with SideEffect, then derive named seeds from it.
+## Random bytes and UUIDs
 
 ```go
-var root int64
-encoded := workflow.SideEffect(ctx, func(workflow.Context) interface{} {
-    // Any non-deterministic source; UUID or crypto/rand packaged into a value
-    return time.Now().UnixNano() // example only; prefer crypto/rand if available in Activities
-})
-_ = encoded.Get(&root)
+import (
+	"github.com/google/uuid"
 
-seed := SeedFromStrings(strconv.FormatInt(root, 10), info.WorkflowExecution.ID, "app-default")
-rng := NewStream(seed)
+	"go.temporal.io/sdk/workflow"
+)
+
+stream := workflow.GetRandomStream(ctx, "example.com/myplugin/ids")
+
+buf := make([]byte, 16)
+_, _ = stream.Read(buf)
+
+id, err := uuid.NewRandomFromReader(stream)
 ```
 
-Notes
-- Do not call time.Now() directly in workflows except inside SideEffect; prefer deterministic seeds from workflow identity when possible.
-- Changing the hash or PRNG changes sequences; treat as a compatibility boundary.
+## Behavior
 
-## Related
+- Each Run gets its own seed, so every continue-as-new Run gets an independently seeded sequence.
+- After a reset, the stream replays the same values up to the reset point. After that point it starts a fresh sequence rather than returning the values the abandoned Run drew.
+- Draws are not recorded in history. Do not draw in read-only code such as Query handlers or Update validators. Shared code can check `workflow.IsReadOnly(ctx)`.
 
-- Concept: references/core/random-streams.md
-- Determinism basics: ../documentation/docs/develop/go/workflows/basics.mdx
-- Side Effects: ../documentation/docs/develop/go/workflows/side-effects.mdx
-- Side Effects: ../documentation/docs/develop/go/workflows/side-effects.mdx
+## Instead of
+
+- `math/rand` or `math/rand/v2` top-level functions in Workflow code: these are non-deterministic.
+- `workflow.SideEffect` for random values: each call adds a marker event to history, which bloats Event History. `GetRandomStream` provides the random values without adding any events.
+- A hand-rolled PRNG seeded from `workflow.GetInfo(ctx)`: use `GetRandomStream` instead.

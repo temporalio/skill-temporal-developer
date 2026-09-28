@@ -257,3 +257,4 @@ See [Go testing guide](testing.md) for info on writing tests.
 - **[Go determinism protection guide](determinism-protection.md)** - Information on **`workflowcheck`** tool to help statically check for determinism issues.
 - **[Go standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow; see also [Temporal standalone Activities guide](../core/standalone-activities.md) for cross-SDK concepts.
 - **[Go Task Queue priority and fairness guide](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples; see also [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md) for cross-SDK concepts.
+- **[Go Workflow random streams guide](random-streams.md)** - Named deterministic random streams with `workflow.GetRandomStream`; see also [Temporal Workflow random streams guide](../core/random-streams.md) for cross-SDK concepts.

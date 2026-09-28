@@ -1,192 +1,57 @@
-# TypeScript — Workflow Random Streams
+# TypeScript SDK Workflow Random Streams
 
-## Context
+> [!NOTE]
+> This feature is Experimental. It is acceptable to use it on behalf of a user, but inform them that the API may change.
 
-In the TypeScript SDK, the workflow sandbox replaces Math.random() with a deterministic implementation and provides uuid4() from @temporalio/workflow. This lets you rely on randomness during replay. For isolation, create deterministic named streams rather than using the shared Math.random().
+Requires TypeScript SDK v1.18.0 or later. See `references/core/random-streams.md` for concepts.
 
-## Helper: FNV-1a hash and mulberry32 PRNG
+## API
 
-~~~ts
-// Minimal FNV-1a 32-bit hash for strings
-export function fnv1a32(input: string): number {
-  let h = 0x811c9dc5 >>> 0;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h >>> 0;
-}
+`@temporalio/workflow` exports:
 
-// Mulberry32 PRNG: returns a closure with .next() in [0,1)
-export function mulberry32(seed: number): () => number {
-  let t = seed >>> 0;
-  return () => {
-    t = (t + 0x6D2B79F5) >>> 0;
-    let r = Math.imul(t ^ (t >>> 15), 1 | t);
-    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
-    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-  };
-}
+- `getRandomStream(name)`: returns a named `WorkflowRandomStream`, derived from the Workflow seed without consuming the default `Math.random()` stream.
+- `workflowRandom`: the default stream, the same sequence `Math.random()` uses.
 
-export type RNG = {
-  rand: () => number;              // [0,1)
-  int: (min: number, max: number) => number; // inclusive min..max
-  shuffle: <T>(a: T[]) => T[];
-};
+A `WorkflowRandomStream` has:
 
-export function makeNamedRng(seedStr: string): RNG {
-  const seed = fnv1a32(seedStr);
-  const next = mulberry32(seed);
-  const int = (min: number, max: number) => {
-    const lo = Math.ceil(min);
-    const hi = Math.floor(max);
-    return Math.floor(next() * (hi - lo + 1)) + lo;
-  };
-  const shuffle = <T>(a: T[]) => {
-    const out = a.slice();
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(next() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
-  };
-  return { rand: next, int, shuffle };
-}
-~~~
+| Method | Returns |
+|--------|---------|
+| `random()` | Next number in `[0, 1)`, like `Math.random()` |
+| `uuid4()` | A deterministic UUIDv4 string |
+| `fill(bytes)` | The given `Uint8Array`, filled with random bytes |
+| `with(fn)` | The result of `fn`, with `Math.random()` and `uuid4()` routed through this stream while `fn` runs |
 
-## Derive a deterministic seed string
+## Explicit draws
 
-Use only deterministic inputs available in workflows. For example, combine a stream name with workflow identity:
+Prefer calling the stream's methods directly.
 
-~~~ts
-import { workflowInfo } from '@temporalio/workflow';
+```typescript
+import { getRandomStream } from '@temporalio/workflow';
 
-export function streamKey(name: string, scope: 'workflow'|'run' = 'workflow'): string {
-  const info = workflowInfo();
-  const base = ;
-  return scope === 'run' ?  : ;
-}
-~~~
+const IDS_STREAM = '@example/my-plugin/ids';
 
-## Usage
-
-~~~ts
-import { makeNamedRng, streamKey } from './rng';
-
-export async function MyWorkflow(): Promise<void> {
-  // App-local stream: stable for this Workflow ID across retries
-  const appRng = makeNamedRng(streamKey('app-default', 'workflow'));
-
-  // Library stream: isolate a plugin
-  const pluginRng = makeNamedRng(streamKey('plugin:ranker', 'run'));
-
-  const choice = appRng.int(1, 10);
-  const shuffled = pluginRng.shuffle(['a','b','c','d']);
-  // ...
-}
-~~~
-
-Notes
-- No Node modules are used; code runs in the sandbox.
-- Changing fnv1a32 or mulberry32 changes sequences; version such changes deliberately.
-
-## Related
-
-- Concept: references/core/random-streams.md
-# TypeScript — Workflow Random Streams
-
-## Context
-
-In the TypeScript SDK, the workflow sandbox replaces `Math.random()` with a deterministic implementation and provides `uuid4()` from `@temporalio/workflow`. This lets you rely on randomness during replay. For isolation, create deterministic named streams rather than using the shared `Math.random()`.
-
-## Helper: FNV-1a hash and mulberry32 PRNG
-
-```ts
-// Minimal FNV-1a 32-bit hash for strings
-export function fnv1a32(input: string): number {
-  let h = 0x811c9dc5 >>> 0;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h >>> 0;
-}
-
-// Mulberry32 PRNG: returns a closure with .next() in [0,1)
-export function mulberry32(seed: number): () => number {
-  let t = seed >>> 0;
-  return () => {
-    t = (t + 0x6D2B79F5) >>> 0;
-    let r = Math.imul(t ^ (t >>> 15), 1 | t);
-    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
-    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export type RNG = {
-  rand: () => number;              // [0,1)
-  int: (min: number, max: number) => number; // inclusive min..max
-  shuffle: <T>(a: T[]) => T[];
-};
-
-export function makeNamedRng(seedStr: string): RNG {
-  const seed = fnv1a32(seedStr);
-  const next = mulberry32(seed);
-  const int = (min: number, max: number) => {
-    const lo = Math.ceil(min);
-    const hi = Math.floor(max);
-    return Math.floor(next() * (hi - lo + 1)) + lo;
-  };
-  const shuffle = <T>(a: T[]) => {
-    const out = a.slice();
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(next() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
-  };
-  return { rand: next, int, shuffle };
+export async function myWorkflow(): Promise<string> {
+  const stream = getRandomStream(IDS_STREAM);
+  const id = stream.uuid4();
+  const jitterMs = Math.floor(stream.random() * 1000);
+  const nonce = stream.fill(new Uint8Array(16));
+  return id;
 }
 ```
 
-## Derive a deterministic seed string
+## Scoped override
 
-Use only deterministic inputs available in workflows. For example, combine a stream name with workflow identity:
+Use `with(fn)` when existing code calls `Math.random()` or `uuid4()` and must not consume the Workflow's default stream. The override follows async continuations started by `fn`.
 
-```ts
-import { workflowInfo } from '@temporalio/workflow';
+```typescript
+import { getRandomStream } from '@temporalio/workflow';
 
-export function streamKey(name: string, scope: 'workflow'|'run' = 'workflow'): string {
-  const info = workflowInfo();
-  const base = `${info.workflowId}`;
-  return scope === 'run' ? `${base}/${info.runId}/${name}` : `${base}/${name}`;
-}
+const stream = getRandomStream('@example/my-plugin/sampling');
+const sample = stream.with(() => pickRandomSubset(items)); // pickRandomSubset calls Math.random()
 ```
 
-## Usage
+## Instead of
 
-```ts
-import { makeNamedRng, streamKey } from './rng';
-
-export async function MyWorkflow(): Promise<void> {
-  // App-local stream: stable for this Workflow ID across retries
-  const appRng = makeNamedRng(streamKey('app-default', 'workflow'));
-
-  // Library stream: isolate a plugin
-  const pluginRng = makeNamedRng(streamKey('plugin:ranker', 'run'));
-
-  const choice = appRng.int(1, 10);
-  const shuffled = pluginRng.shuffle(['a','b','c','d']);
-  // ...
-}
-```
-
-Notes
-- No Node modules are used; code runs in the sandbox.
-- Changing `fnv1a32` or `mulberry32` changes sequences; version such changes deliberately.
-
-## Related
-
-- Concept: references/core/random-streams.md
-- Determinism basics: ../documentation/docs/develop/typescript/workflows/basics.mdx
-- Determinism basics: ../documentation/docs/develop/typescript/workflows/basics.mdx
+- `crypto.randomUUID()` or other entropy sources in Workflow code: these are non-deterministic.
+- A hand-rolled PRNG seeded from `workflowInfo()`: use `getRandomStream` instead.
+- Library or plugin code drawing from `Math.random()`: this shifts the application's random values. Give the library its own named stream.
