@@ -193,8 +193,8 @@ On failure at step 3:
 
 **Patterns**:
 
-- `Promise` / `asyncio` - Use traditional concurrency helpers (e.g. wait for all, wait for first, etc)
-- Partial failure handling - Continue with successful results
+- Use the concurrency primitives supported inside the Workflow by the chosen SDK. See the parallel execution examples for [Python](../python/patterns.md#parallel-execution), [TypeScript](../typescript/patterns.md#parallel-execution), [Go](../go/patterns.md#parallel-execution), [Java](../java/patterns.md#parallel-execution), [.NET](../dotnet/patterns.md#parallel-execution), and [Ruby](../ruby/patterns.md#parallel-execution).
+- Decide how to handle a failed operation: fail the Workflow, cancel remaining work, or collect successful results. The choice depends on whether partial results are useful.
 
 ## Entity Workflow Pattern
 
