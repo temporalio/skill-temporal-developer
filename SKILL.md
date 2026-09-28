@@ -77,7 +77,7 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 - **[Temporal error reference](references/core/error-reference.md)** - Common error types, workflow status reference
 - **[Temporal interactive workflow guide](references/core/interactive-workflows.md)** - Testing signals, updates, queries
 - **[Temporal development management guide](references/core/dev-management.md)** - Dev cycle & management of server and workers
-- **[Temporal CLI workflow command guide](references/core/cli-workflow-commands.md)** - Developer-facing CLI commands for workflow interaction (start, execute, signal, query, update)
+- **[Temporal CLI workflow command guide](references/core/cli-workflow-commands.md)** - Developer-facing CLI commands for workflow interaction (start, execute, signal, query, update) and replay history export
 - **[Temporal AI integration patterns](references/core/ai-patterns.md)** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
