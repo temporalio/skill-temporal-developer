@@ -43,23 +43,21 @@ Temporal achieves durability through **history replay**:
 
 See [Temporal determinism rules](references/core/determinism.md) for detailed explanation.
 
-## Getting Started
+## Choose References for the Task
 
-### Ensure Temporal CLI is installed
+Identify the SDK language and the developer's task. Read the relevant core reference in the section below and its language-specific counterpart when available. Load additional references only as the task requires.
 
-Check if `temporal` CLI is installed. If not, follow the instructions at [Temporal CLI installation guide](references/core/install_cli.md) to install it for your platform.
+For a new project, a first implementation, or broad SDK guidance, read the appropriate SDK guide:
 
-### Read All Relevant References
+- Python -> [Python SDK guide](references/python/python.md)
+- TypeScript -> [TypeScript SDK guide](references/typescript/typescript.md)
+- Go -> [Go SDK guide](references/go/go.md)
+- Java -> [Java SDK guide](references/java/java.md)
+- .NET (C#) -> [.NET SDK guide](references/dotnet/dotnet.md)
+- Ruby -> [Ruby SDK guide](references/ruby/ruby.md)
+- Rust -> [Rust SDK guide](references/rust/rust.md) (in Public Preview)
 
-1. First, read the getting started guide for the language you are working in:
-   - Python -> read [Python SDK guide](references/python/python.md)
-   - TypeScript -> read [TypeScript SDK guide](references/typescript/typescript.md)
-   - Go -> read [Go SDK guide](references/go/go.md)
-   - Java -> read [Java SDK guide](references/java/java.md)
-   - .NET (C#) -> read [.NET SDK guide](references/dotnet/dotnet.md)
-   - Ruby -> read [Ruby SDK guide](references/ruby/ruby.md)
-   - Rust -> read [Rust SDK guide](references/rust/rust.md) (in Public Preview)
-2. Second, read appropriate `core` and language-specific references for the task at hand.
+For tasks that use Temporal CLI or start a local dev server, check whether `temporal` is installed before using it. If it is missing, follow the [Temporal CLI installation guide](references/core/install_cli.md).
 
 ## Primary References
 

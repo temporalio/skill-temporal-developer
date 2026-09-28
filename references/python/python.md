@@ -14,8 +14,8 @@ The Temporal Python SDK (`temporalio`) provides a fully async, type-safe approac
 from temporalio import activity
 
 @activity.defn
-def greet(name: str) -> str:
-    return f"Hello, {name}!"
+def greet(first_name: str, last_name: str) -> str:
+    return f"Hello, {first_name} {last_name}!"
 ```
 
 **workflows/greeting.py** - Workflow definition (import activities through sandbox):
@@ -30,9 +30,11 @@ with workflow.unsafe.imports_passed_through():
 @workflow.defn
 class GreetingWorkflow:
     @workflow.run
-    async def run(self, name: str) -> str:
+    async def run(self, first_name: str, last_name: str) -> str:
         return await workflow.execute_activity(
-            greet, name, start_to_close_timeout=timedelta(seconds=30)
+            greet,
+            args=[first_name, last_name],
+            start_to_close_timeout=timedelta(seconds=30),
         )
 ```
 
@@ -90,7 +92,12 @@ async def main():
     client = await Client.connect(**connect_config)
 
     # Execute a workflow
-    result = await client.execute_workflow(GreetingWorkflow.run, "my name", id=str(uuid.uuid4()), task_queue="my-task-queue")
+    result = await client.execute_workflow(
+        GreetingWorkflow.run,
+        args=["Ada", "Lovelace"],
+        id=str(uuid.uuid4()),
+        task_queue="my-task-queue",
+    )
 
     print(f"Result: {result}")
 
@@ -98,7 +105,11 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-**Run the workflow:** Run `python starter.py` (or uv run, etc.). Should output: `Result: Hello, my-name!`.
+**Run the workflow:** Run `python starter.py` (or uv run, etc.). Should output: `Result: Hello, Ada Lovelace!`.
+
+For `execute_activity()` and `execute_workflow()`, you can pass a single
+input directly as the second positional argument or wrap it in `args=[...]`.
+`args=[...]` is required to pass multiple inputs.
 
 ## Key Concepts
 

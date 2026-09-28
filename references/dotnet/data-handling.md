@@ -2,11 +2,17 @@
 
 ## Overview
 
-The .NET SDK uses data converters to serialize/deserialize workflow inputs, outputs, and activity parameters.
+The .NET SDK uses a `DataConverter` to move values between the SDK and the Temporal Service. It combines three components:
 
-## Default Data Converter
+- `PayloadConverter` serializes values to and from payload bytes. The default converter handles `null`, `byte[]`, Protobuf messages, JSON-serializable types, and `IRawValue`.
+- `PayloadCodec` transforms payloads, for example to encrypt or compress them.
+- `FailureConverter` converts exceptions to and from Temporal `Failure` protobufs.
 
-The default converter handles:
+Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in a `FailureConverter`.
+
+## Default Payload Converter
+
+The default payload converter handles:
 
 - `null`
 - `byte[]` (as binary)
