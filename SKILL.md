@@ -35,13 +35,7 @@ Temporal achieves durability through **history replay**:
 
 **If Commands don't match Events = Non-determinism Error = Workflow blocked**
 
-| Workflow Code | Command | Event |
-| -- | -- | -- |
-| Execute activity | `ScheduleActivityTask` | `ActivityTaskScheduled` |
-| Sleep/timer | `StartTimer` | `TimerStarted` |
-| Child workflow | `StartChildWorkflowExecution` | `ChildWorkflowExecutionStarted` |
-
-See [Temporal determinism rules](references/core/determinism.md) for detailed explanation.
+See [Commands and Events](references/core/determinism.md#commands-and-events) for a table showing how Workflow actions are recorded in Event History.
 
 ## Choose References for the Task
 
