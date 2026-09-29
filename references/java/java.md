@@ -30,6 +30,24 @@ Maven:
 </dependency>
 ```
 
+**GreetingInput.java** - Shared input class (the public no-argument constructor and fields support JSON conversion):
+
+```java
+package greetingapp;
+
+public class GreetingInput {
+    public String firstName;
+    public String lastName;
+
+    public GreetingInput() {}
+
+    public GreetingInput(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+}
+```
+
 **GreetActivities.java** - Activity interface:
 
 ```java
@@ -42,7 +60,7 @@ import io.temporal.activity.ActivityMethod;
 public interface GreetActivities {
 
     @ActivityMethod
-    String greet(String firstName, String lastName);
+    String greet(GreetingInput input);
 }
 ```
 
@@ -54,8 +72,8 @@ package greetingapp;
 public class GreetActivitiesImpl implements GreetActivities {
 
     @Override
-    public String greet(String firstName, String lastName) {
-        return "Hello, " + firstName + " " + lastName + "!";
+    public String greet(GreetingInput input) {
+        return "Hello, " + input.firstName + " " + input.lastName + "!";
     }
 }
 ```
@@ -72,7 +90,7 @@ import io.temporal.workflow.WorkflowMethod;
 public interface GreetingWorkflow {
 
     @WorkflowMethod
-    String greet(String firstName, String lastName);
+    String greet(GreetingInput input);
 }
 ```
 
@@ -96,8 +114,8 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
     );
 
     @Override
-    public String greet(String firstName, String lastName) {
-        return activities.greet(firstName, lastName);
+    public String greet(GreetingInput input) {
+        return activities.greet(input);
     }
 }
 ```
@@ -169,7 +187,7 @@ public class Starter {
                 .build()
         );
 
-        String result = workflow.greet("Ada", "Lovelace");
+        String result = workflow.greet(new GreetingInput("Ada", "Lovelace"));
         System.out.println("Result: " + result);
     }
 }
@@ -198,7 +216,7 @@ public class Starter {
 
 ### Evolving Inputs and Results
 
-Prefer one serializable request record or class for Workflow and Activity inputs that may grow, and a response type for results that may grow. Handle missing new fields with compatible defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history.
+Prefer one serializable request record or class for Workflow and Activity inputs that may grow, and a response type for results that may grow. Handle missing new fields with compatible defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history. See Temporal's [Java message-passing guide](https://docs.temporal.io/develop/java/workflows/message-passing#writing-message-handlers) for the same single-class recommendation.
 
 ### Worker Setup
 
@@ -217,6 +235,7 @@ For Spring Boot apps, `temporal-spring-boot-starter` handles all of the above au
 
 ```
 greetingapp/
+├── GreetingInput.java          # Shared input class
 ├── GreetActivities.java        # Activity interface
 ├── GreetActivitiesImpl.java    # Activity implementation
 ├── GreetingWorkflow.java       # Workflow interface

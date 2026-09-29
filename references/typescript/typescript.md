@@ -20,11 +20,22 @@ npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporal
 
 Note: if you are working in production, it is strongly advised to use ~ version constraints, i.e. `npm install ... --save-prefix='~'` if using NPM.
 
+**greeting-input.ts** - Shared input type:
+
+```typescript
+export interface GreetingInput {
+  firstName: string;
+  lastName: string;
+}
+```
+
 **activities.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
 
 ```typescript
-export async function greet(firstName: string, lastName: string): Promise<string> {
-  return `Hello, ${firstName} ${lastName}!`;
+import type { GreetingInput } from './greeting-input';
+
+export async function greet(input: GreetingInput): Promise<string> {
+  return `Hello, ${input.firstName} ${input.lastName}!`;
 }
 ```
 
@@ -33,13 +44,14 @@ export async function greet(firstName: string, lastName: string): Promise<string
 ```typescript
 import { proxyActivities } from '@temporalio/workflow';
 import type * as activities from './activities';
+import type { GreetingInput } from './greeting-input';
 
 const { greet } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',
 });
 
-export async function greetingWorkflow(firstName: string, lastName: string): Promise<string> {
-  return await greet(firstName, lastName);
+export async function greetingWorkflow(input: GreetingInput): Promise<string> {
+  return await greet(input);
 }
 ```
 
@@ -86,7 +98,7 @@ async function run() {
   const result = await client.workflow.execute(greetingWorkflow, {
     workflowId: uuid(),
     taskQueue: 'greeting-queue',
-    args: ['Ada', 'Lovelace'],
+    args: [{ firstName: 'Ada', lastName: 'Lovelace' }],
   });
 
   console.log(`Result: ${result}`);
@@ -128,6 +140,7 @@ Prefer one serializable object for Workflow and Activity inputs that may grow, a
 
 ```
 my_temporal_app/
+├── greeting-input.ts           # Shared input type
 ├── workflows/
 │   └── greeting.ts      # Only Workflow functions
 ├── activities/

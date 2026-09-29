@@ -14,8 +14,8 @@ The Temporal Ruby SDK (`temporalio` gem) provides a class-based approach to buil
 require 'temporalio/activity'
 
 class SayHelloActivity < Temporalio::Activity::Definition
-  def execute(first_name, last_name)
-    "Hello, #{first_name} #{last_name}!"
+  def execute(input)
+    "Hello, #{input.fetch('first_name')} #{input.fetch('last_name')}!"
   end
 end
 ```
@@ -26,11 +26,10 @@ end
 require 'temporalio/workflow'
 
 class SayHelloWorkflow < Temporalio::Workflow::Definition
-  def execute(first_name, last_name)
+  def execute(input)
     Temporalio::Workflow.execute_activity(
       SayHelloActivity,
-      first_name,
-      last_name,
+      input,
       schedule_to_close_timeout: 30
     )
   end
@@ -81,8 +80,7 @@ client = Temporalio::Client.connect(*args, **kwargs)
 # Execute a workflow
 result = client.execute_workflow(
   SayHelloWorkflow,
-  'Ada',
-  'Lovelace',
+  { 'first_name' => 'Ada', 'last_name' => 'Lovelace' },
   id: SecureRandom.uuid,
   task_queue: 'my-task-queue'
 )
