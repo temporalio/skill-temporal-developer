@@ -13,6 +13,7 @@ Developer-facing CLI commands for interacting with workflows during development 
 - [Workflow update](#workflow-update)
 - [Workflow signal-with-start](#workflow-signal-with-start)
 - [Workflow result](#workflow-result)
+- [Workflow cancel](#workflow-cancel)
 - [Workflow metadata](#workflow-metadata)
 
 ## Workflow start
@@ -91,8 +92,6 @@ temporal workflow signal \
 | `--name` | Yes | Signal name. |
 | `--input`, `-i` | No | Input value (JSON). Repeatable. |
 | `--run-id`, `-r` | No | Pin to a specific run. Only with `--workflow-id`. |
-
-For bulk signaling with `--query` (runs as a batch job), see skill-temporal-ops.
 
 ## Workflow query
 
@@ -237,6 +236,24 @@ temporal workflow result \
 | -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--run-id`, `-r` | No | Run ID. |
+
+## Workflow cancel
+
+Request cancellation of a running Workflow Execution. The request allows the Workflow to perform cleanup, so the execution may remain open for a while.
+
+```bash
+temporal workflow cancel \
+    --output json \
+    --workflow-id YourWorkflowId \
+    --run-id YourRunId
+```
+
+| Flag | Required | Purpose |
+| -- | -- | -- |
+| `--workflow-id`, `-w` | Yes, for a single execution | Workflow ID. |
+| `--run-id`, `-r` | No | Pin cancellation to a specific run; omit to target the current execution. |
+
+Check the namespace and profile as well as the IDs before cancelling. Then use `temporal workflow describe --workflow-id YourWorkflowId --run-id YourRunId --output json` to verify the eventual status. Omit `--run-id` from both commands if it is unknown.
 
 ## Workflow metadata
 
