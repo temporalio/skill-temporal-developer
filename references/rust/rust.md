@@ -93,8 +93,13 @@ impl GreetingWorkflow {
 }
 ```
 
-For `ctx.start_activity()` and `client.start_workflow()`, pass a single input
-directly as the input argument. Use a tuple when passing multiple inputs.
+Both `ctx.start_activity()` and `client.start_workflow()` take one Rust input value.
+When an Activity declares multiple parameters, pass a tuple to
+`ctx.start_activity()`; the SDK converts it into separate argument payloads.
+For `client.start_workflow()`, a plain tuple is one composite input serialized
+as a JSON array. To start a Workflow that expects multiple argument payloads,
+declare its input as `temporalio_common::data_converters::MultiArgs2` (or the
+matching arity) and pass that type to `client.start_workflow()`.
 
 **src/main.rs** - Worker setup:
 

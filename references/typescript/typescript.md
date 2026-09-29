@@ -29,22 +29,22 @@ export interface GreetingInput {
 }
 ```
 
-**activities.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
+**activities/greet.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
 
 ```typescript
-import type { GreetingInput } from './greeting-input';
+import type { GreetingInput } from '../greeting-input';
 
 export async function greet(input: GreetingInput): Promise<string> {
   return `Hello, ${input.firstName} ${input.lastName}!`;
 }
 ```
 
-**workflows.ts** - Workflow definition (use type-only imports for activities):
+**workflows/greeting.ts** - Workflow definition (use type-only imports for activities):
 
 ```typescript
 import { proxyActivities } from '@temporalio/workflow';
-import type * as activities from './activities';
-import type { GreetingInput } from './greeting-input';
+import type * as activities from '../activities/greet';
+import type { GreetingInput } from '../greeting-input';
 
 const { greet } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',
@@ -60,7 +60,7 @@ export async function greetingWorkflow(input: GreetingInput): Promise<string> {
 ```typescript
 import { NativeConnection, Worker } from '@temporalio/worker';
 import { loadClientConnectConfig } from '@temporalio/envconfig';
-import * as activities from './activities';
+import * as activities from './activities/greet';
 
 async function run() {
   const config = loadClientConnectConfig();
@@ -68,7 +68,7 @@ async function run() {
   const worker = await Worker.create({
     connection,
     namespace: config.namespace,
-    workflowsPath: require.resolve('./workflows'), // For production, use workflowBundle instead
+    workflowsPath: require.resolve('./workflows/greeting'), // For production, use workflowBundle instead
     activities,
     taskQueue: 'greeting-queue',
   });
@@ -87,7 +87,7 @@ run().catch(console.error);
 ```typescript
 import { Client, Connection } from '@temporalio/client';
 import { loadClientConnectConfig } from '@temporalio/envconfig';
-import { greetingWorkflow } from './workflows';
+import { greetingWorkflow } from './workflows/greeting';
 import { v4 as uuid } from 'uuid';
 
 async function run() {
@@ -142,11 +142,11 @@ Prefer one serializable object for Workflow and Activity inputs that may grow, a
 my_temporal_app/
 ├── greeting-input.ts           # Shared input type
 ├── workflows/
-│   └── greeting.ts      # Only Workflow functions
+│   └── greeting.ts              # Only Workflow functions
 ├── activities/
-│   └── translate.ts     # Only Activity functions
-├── worker.ts            # Worker setup, imports both
-└── client.ts            # Client code to start workflows
+│   └── greet.ts                 # Only Activity functions
+├── worker.ts                    # Worker setup, imports both
+└── client.ts                    # Client code to start workflows
 ```
 
 **In the Workflow file, use type-only imports for activities:**
@@ -154,9 +154,9 @@ my_temporal_app/
 ```typescript
 // workflows/greeting.ts
 import { proxyActivities } from '@temporalio/workflow';
-import type * as activities from '../activities/translate';
+import type * as activities from '../activities/greet';
 
-const { translate } = proxyActivities<typeof activities>({
+const { greet } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',
 });
 ```
