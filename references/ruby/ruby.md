@@ -14,8 +14,8 @@ The Temporal Ruby SDK (`temporalio` gem) provides a class-based approach to buil
 require 'temporalio/activity'
 
 class SayHelloActivity < Temporalio::Activity::Definition
-  def execute(first_name, last_name)
-    "Hello, #{first_name} #{last_name}!"
+  def execute(input)
+    "Hello, #{input.fetch('first_name')} #{input.fetch('last_name')}!"
   end
 end
 ```
@@ -26,11 +26,10 @@ end
 require 'temporalio/workflow'
 
 class SayHelloWorkflow < Temporalio::Workflow::Definition
-  def execute(first_name, last_name)
+  def execute(input)
     Temporalio::Workflow.execute_activity(
       SayHelloActivity,
-      first_name,
-      last_name,
+      input,
       schedule_to_close_timeout: 30
     )
   end
@@ -81,8 +80,7 @@ client = Temporalio::Client.connect(*args, **kwargs)
 # Execute a workflow
 result = client.execute_workflow(
   SayHelloWorkflow,
-  'Ada',
-  'Lovelace',
+  { 'first_name' => 'Ada', 'last_name' => 'Lovelace' },
   id: SecureRandom.uuid,
   task_queue: 'my-task-queue'
 )
@@ -107,6 +105,10 @@ puts "Result: #{result}"
 - Define `def execute(args)` as the entry point
 - Activities contain all non-deterministic and side-effectful code
 - Can access `Temporalio::Activity::Context.current` for heartbeating
+
+### Evolving Inputs and Results
+
+Prefer one serializable hash or object for Workflow and Activity inputs that may grow, and a structured result when needed. Handle missing new fields with defaults; changing an existing scalar input to a hash or object requires a migration because old payloads remain in history.
 
 ### Worker Setup
 

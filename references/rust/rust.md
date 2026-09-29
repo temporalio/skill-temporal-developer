@@ -24,23 +24,32 @@ Rust Workflows are structs with macro-decorated methods. Activities are async me
 
 **Add dependencies:** Follow the [official Rust SDK Quickstart](https://docs.temporal.io/develop/rust/quickstart) for the current `Cargo.toml` dependencies.
 
+**src/greeting_input.rs** - Shared input struct:
+
+```rust
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct GreetingInput {
+    pub first_name: String,
+    pub last_name: String,
+}
+```
+
 **src/activities.rs** - Activity definition:
 
 ```rust
 use temporalio_macros::activities;
 use temporalio_sdk::activities::{ActivityContext, ActivityError};
+use crate::greeting_input::GreetingInput;
 
 pub struct MyActivities;
 
 #[activities]
 impl MyActivities {
     #[activity]
-    pub async fn greet(
-        _ctx: ActivityContext,
-        first_name: String,
-        last_name: String,
-    ) -> Result<String, ActivityError> {
-        Ok(format!("Hello, {} {}!", first_name, last_name))
+    pub async fn greet(_ctx: ActivityContext, input: GreetingInput) -> Result<String, ActivityError> {
+        Ok(format!("Hello, {} {}!", input.first_name, input.last_name))
     }
 }
 ```
@@ -53,31 +62,28 @@ use temporalio_sdk::{ActivityOptions, WorkflowContext, WorkflowContextView, Work
 use std::time::Duration;
 
 use crate::activities::MyActivities;
+use crate::greeting_input::GreetingInput;
 
 #[workflow]
 pub struct GreetingWorkflow {
-    first_name: String,
-    last_name: String,
+    input: GreetingInput,
 }
 
 #[workflow_methods]
 impl GreetingWorkflow {
     #[init]
-    fn new(_ctx: &WorkflowContextView, first_name: String, last_name: String) -> Self {
-        Self {
-            first_name,
-            last_name,
-        }
+    fn new(_ctx: &WorkflowContextView, input: GreetingInput) -> Self {
+        Self { input }
     }
 
     #[run]
     pub async fn run(ctx: &mut WorkflowContext<Self>) -> WorkflowResult<String> {
-        let (first_name, last_name) = ctx.state(|s| (s.first_name.clone(), s.last_name.clone()));
+        let input = ctx.state(|s| s.input.clone());
 
         // Execute an activity
         let greeting = ctx.start_activity(
             MyActivities::greet,
-            (first_name, last_name),
+            input,
             ActivityOptions::start_to_close_timeout(Duration::from_secs(30)),
         ).await?;
 
@@ -88,8 +94,7 @@ impl GreetingWorkflow {
 ```
 
 For `ctx.start_activity()` and `client.start_workflow()`, pass a single input
-directly as the input argument. To pass multiple inputs, use a tuple, such as
-`(first_name, last_name)` in the Activity call above.
+directly as the input argument. Use a tuple when passing multiple inputs.
 
 **src/main.rs** - Worker setup:
 
@@ -101,6 +106,7 @@ use temporalio_sdk_core::{CoreRuntime, RuntimeOptions};
 
 mod workflows;
 mod activities;
+mod greeting_input;
 
 use crate::workflows::GreetingWorkflow;
 use crate::activities::MyActivities;
@@ -138,8 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 temporal workflow start \
   --type GreetingWorkflow \
   --task-queue my-task-queue \
-  --input '"Ada"' \
-  --input '"Lovelace"'
+  --input '{"first_name":"Ada","last_name":"Lovelace"}'
 ```
 
 ## Key Concepts
@@ -155,6 +160,10 @@ temporal workflow start \
 - Put Activity methods in a `#[activities]` impl block.
 - Annotate each Activity method with `#[activity]`.
 - Activities can perform I/O, call services, use system time, and do other non-deterministic work.
+
+### Evolving Inputs and Results
+
+Prefer one `serde`-serializable struct for Workflow and Activity inputs that may grow, and a result struct when needed. Give new fields deserialization defaults, such as `#[serde(default)]`; changing an existing scalar input to a struct requires a migration because old payloads remain in history.
 
 ### Worker Setup
 
@@ -175,6 +184,7 @@ Keep Workflow definitions, Activity implementations, Worker setup, and starter/c
 ```text
 my_temporal_app/
 |-- src/
+|   |-- greeting_input.rs # Shared input struct
 |   |-- activities.rs   # Activity implementations and side effects
 |   |-- workflows.rs    # Workflow definitions and orchestration
 |   `-- main.rs         # Worker process in the Quickstart
