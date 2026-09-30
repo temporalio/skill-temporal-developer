@@ -70,7 +70,7 @@ Rule of thumb: **one unit of work → Standalone Activity, delayed or not; more 
 The shape of the port is the same regardless of source system:
 
 1. **Handler → Activity Definition.** The body of the job handler becomes the body of an Activity. Drop the framework decorator and use the SDK's Activity decorator/annotation. Keep the handler's own retry/idempotency logic only where it is genuinely business logic; delete hand-rolled retry loops.
-2. **Worker process → Temporal Worker.** One Worker process registers the Activities and polls a Task Queue. Concurrency knobs move from the framework's worker flags to Worker options — see `references/{your_language}/advanced-features.md`, and the `temporal-workertuning` skill for sizing.
+2. **Worker process → Temporal Worker.** One Worker process registers the Activities and polls a Task Queue. Concurrency knobs move from the framework's worker flags to Worker options — see `references/{your_language}/advanced-features.md`.
 3. **`delay()` / `perform_async` / `queue.add()` → Client `start` or `execute`.** This is the only real call-site change. It happens in producer code, which must be non-Workflow application code.
 4. **Retry/timeout config → Retry Policy and Activity timeouts** on the start options, not on the handler. Remember the attempts-vs-retries off-by-one.
 5. **Job ID → Activity ID.** Reuse whatever idempotency key already exists. If there was none, derive one from the business entity.

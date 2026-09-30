@@ -288,7 +288,7 @@ Worker won't start?
 ## Useful Commands
 
 ```bash
-# Check Temporal server
+# Start a local development server
 temporal server start-dev
 
 # List workflows

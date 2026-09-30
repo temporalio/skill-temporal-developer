@@ -80,20 +80,6 @@ In Temporal, activities are the primary mechanism for making non-deterministic c
 
 For a few simple cases, like timestamps, random values, UUIDs, etc. the Temporal SDK in your language may provide durable variants that are simple to use. See `references/{your_language}/determinism.md` for the language you are working in for more info.
 
-## SDK Protection Mechanisms
-
-Each Temporal SDK language provides a different level of protection against non-determinism:
-
-- Python: The Python SDK runs workflows in a sandbox that intercepts and aborts non-deterministic calls early at runtime.
-- TypeScript: The TypeScript SDK runs workflows in an isolated V8 sandbox, intercepting many common sources of non-determinism and replacing them automatically with deterministic variants.
-- Java: The Java SDK has no sandbox. Determinism is enforced by developer conventions — the SDK provides `Workflow.*` APIs as safe alternatives (e.g., `Workflow.sleep()` instead of `Thread.sleep()`), and non-determinism is only detected at replay time via `NonDeterministicException`. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time. Cooperative threading under a global lock eliminates the need for synchronization.
-- Go: The Go SDK has no runtime sandbox. Therefore, non-determinism bugs will never be immediately appararent, and are usually only observable during replay. The optional `workflowcheck` static analysis tool can be used to check for many sources of non-determinism at compile time.
-- .NET: The .NET SDK has no sandbox. It uses a custom TaskScheduler and a runtime EventListener to detect invalid task scheduling. Developers must use `Workflow.*` safe alternatives (e.g., Workflow.DelayAsync instead of Task.Delay) and avoid non-deterministic .NET Task APIs.
-- Ruby: The Ruby SDK uses Illegal Call Tracing (via `TracePoint`) to detect forbidden method calls at runtime on the workflow fiber, combined with a Durable Fiber Scheduler that makes fiber operations deterministic.
-- Rust: The Rust SDK has runtime nondeterminism detection for external async wake sources in Workflow code. Keep it enabled, use SDK primitives such as `ctx.timer()` and `temporalio_sdk::workflows::select!`, and still avoid synchronous nondeterminism by convention.
-
-Regardless of which SDK you are using, it is your responsibility to ensure that workflow code does not contain sources of non-determinism. Use SDK-specific tools as well as replay tests for doing so.
-
 ## Detecting Non-Determinism
 
 ### During Execution

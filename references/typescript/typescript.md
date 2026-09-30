@@ -20,26 +20,38 @@ npm install @temporalio/client @temporalio/worker @temporalio/workflow @temporal
 
 Note: if you are working in production, it is strongly advised to use ~ version constraints, i.e. `npm install ... --save-prefix='~'` if using NPM.
 
-**activities.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
+**greeting-input.ts** - Shared input type:
 
 ```typescript
-export async function greet(name: string): Promise<string> {
-  return `Hello, ${name}!`;
+export interface GreetingInput {
+  firstName: string;
+  lastName: string;
 }
 ```
 
-**workflows.ts** - Workflow definition (use type-only imports for activities):
+**activities/greet.ts** - Activity definitions (separate file to distinguish workflow vs activity code):
+
+```typescript
+import type { GreetingInput } from '../greeting-input';
+
+export async function greet(input: GreetingInput): Promise<string> {
+  return `Hello, ${input.firstName} ${input.lastName}!`;
+}
+```
+
+**workflows/greeting.ts** - Workflow definition (use type-only imports for activities):
 
 ```typescript
 import { proxyActivities } from '@temporalio/workflow';
-import type * as activities from './activities';
+import type * as activities from '../activities/greet';
+import type { GreetingInput } from '../greeting-input';
 
 const { greet } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',
 });
 
-export async function greetingWorkflow(name: string): Promise<string> {
-  return await greet(name);
+export async function greetingWorkflow(input: GreetingInput): Promise<string> {
+  return await greet(input);
 }
 ```
 
@@ -48,7 +60,7 @@ export async function greetingWorkflow(name: string): Promise<string> {
 ```typescript
 import { NativeConnection, Worker } from '@temporalio/worker';
 import { loadClientConnectConfig } from '@temporalio/envconfig';
-import * as activities from './activities';
+import * as activities from './activities/greet';
 
 async function run() {
   const config = loadClientConnectConfig();
@@ -56,7 +68,7 @@ async function run() {
   const worker = await Worker.create({
     connection,
     namespace: config.namespace,
-    workflowsPath: require.resolve('./workflows'), // For production, use workflowBundle instead
+    workflowsPath: require.resolve('./workflows/greeting'), // For production, use workflowBundle instead
     activities,
     taskQueue: 'greeting-queue',
   });
@@ -75,7 +87,7 @@ run().catch(console.error);
 ```typescript
 import { Client, Connection } from '@temporalio/client';
 import { loadClientConnectConfig } from '@temporalio/envconfig';
-import { greetingWorkflow } from './workflows';
+import { greetingWorkflow } from './workflows/greeting';
 import { v4 as uuid } from 'uuid';
 
 async function run() {
@@ -86,7 +98,7 @@ async function run() {
   const result = await client.workflow.execute(greetingWorkflow, {
     workflowId: uuid(),
     taskQueue: 'greeting-queue',
-    args: ['my name'],
+    args: [{ firstName: 'Ada', lastName: 'Lovelace' }],
   });
 
   console.log(`Result: ${result}`);
@@ -95,7 +107,7 @@ async function run() {
 run().catch(console.error);
 ```
 
-**Run the workflow:** Run `npx ts-node client.ts`. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `npx ts-node client.ts`. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 
@@ -111,6 +123,10 @@ run().catch(console.error);
 - Can perform I/O, network calls, etc.
 - Use `heartbeat()` for long operations
 
+### Evolving Inputs and Results
+
+Prefer one serializable object for Workflow and Activity inputs that may grow, and an object result when needed. Make new fields optional or give them defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load connection settings with `loadClientConnectConfig()` and pass them to `NativeConnection.connect()`
@@ -124,12 +140,13 @@ run().catch(console.error);
 
 ```
 my_temporal_app/
+├── greeting-input.ts           # Shared input type
 ├── workflows/
-│   └── greeting.ts      # Only Workflow functions
+│   └── greeting.ts              # Only Workflow functions
 ├── activities/
-│   └── translate.ts     # Only Activity functions
-├── worker.ts            # Worker setup, imports both
-└── client.ts            # Client code to start workflows
+│   └── greet.ts                 # Only Activity functions
+├── worker.ts                    # Worker setup, imports both
+└── client.ts                    # Client code to start workflows
 ```
 
 **In the Workflow file, use type-only imports for activities:**
@@ -137,9 +154,9 @@ my_temporal_app/
 ```typescript
 // workflows/greeting.ts
 import { proxyActivities } from '@temporalio/workflow';
-import type * as activities from '../activities/translate';
+import type * as activities from '../activities/greet';
 
-const { translate } = proxyActivities<typeof activities>({
+const { greet } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',
 });
 ```
@@ -194,4 +211,5 @@ See [TypeScript testing guide](testing.md) for info on writing tests.
 - **[TypeScript versioning guide](versioning.md)** - Patching API, workflow type versioning, Worker Versioning
 - **[TypeScript standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [Temporal standalone Activities guide](../core/standalone-activities.md).
 - **[TypeScript Task Queue priority and fairness guide](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples. Concept overview at [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md).
+- **[TypeScript Workflow random streams guide](random-streams.md)** - Named deterministic random streams with `getRandomStream`. Concept overview at [Temporal Workflow random streams guide](../core/random-streams.md).
 - **[TypeScript determinism protection guide](determinism-protection.md)** - V8 sandbox and bundling
