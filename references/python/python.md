@@ -8,14 +8,26 @@ The Temporal Python SDK (`temporalio`) provides a fully async, type-safe approac
 
 **Add Dependency on Temporal:** In the package management system of the Python project you are working on, add a dependency on `temporalio`.
 
+**models/greeting.py** - Shared input model:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class GreetingInput:
+    first_name: str
+    last_name: str
+```
+
 **activities/greet.py** - Activity definitions (separate file for performance):
 
 ```python
 from temporalio import activity
+from models.greeting import GreetingInput
 
 @activity.defn
-def greet(first_name: str, last_name: str) -> str:
-    return f"Hello, {first_name} {last_name}!"
+def greet(input: GreetingInput) -> str:
+    return f"Hello, {input.first_name} {input.last_name}!"
 ```
 
 **workflows/greeting.py** - Workflow definition (import activities through sandbox):
@@ -26,17 +38,21 @@ from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
     from activities.greet import greet
+    from models.greeting import GreetingInput
 
 @workflow.defn
 class GreetingWorkflow:
     @workflow.run
-    async def run(self, first_name: str, last_name: str) -> str:
+    async def run(self, input: GreetingInput) -> str:
         return await workflow.execute_activity(
             greet,
-            args=[first_name, last_name],
+            input,
             start_to_close_timeout=timedelta(seconds=30),
         )
 ```
+
+For `execute_activity()`, pass a single input directly as the second positional
+argument. Use `args=[...]` when passing multiple inputs.
 
 **worker.py** - Worker setup (registers activity and workflow, runs indefinitely and processes tasks):
 
@@ -85,6 +101,7 @@ import uuid
 
 # Import the workflow from the previous code
 from workflows.greeting import GreetingWorkflow
+from models.greeting import GreetingInput
 
 async def main():
     connect_config = ClientConfig.load_client_connect_config()
@@ -94,7 +111,7 @@ async def main():
     # Execute a workflow
     result = await client.execute_workflow(
         GreetingWorkflow.run,
-        args=["Ada", "Lovelace"],
+        GreetingInput(first_name="Ada", last_name="Lovelace"),
         id=str(uuid.uuid4()),
         task_queue="my-task-queue",
     )
@@ -105,11 +122,10 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-**Run the workflow:** Run `python starter.py` (or uv run, etc.). Should output: `Result: Hello, Ada Lovelace!`.
+For `execute_workflow()`, pass a single input directly as the second positional
+argument. Use `args=[...]` when passing multiple inputs.
 
-For `execute_activity()` and `execute_workflow()`, you can pass a single
-input directly as the second positional argument or wrap it in `args=[...]`.
-`args=[...]` is required to pass multiple inputs.
+**Run the workflow:** Run `python starter.py` (or uv run, etc.). Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 
@@ -131,6 +147,10 @@ input directly as the second positional argument or wrap it in `args=[...]`.
 
 See [sync and async Activity guide](sync-vs-async.md) for detailed guidance on choosing between sync and async.
 
+### Evolving Inputs and Results
+
+Prefer one `dataclass` or Pydantic model for Workflow and Activity inputs that may grow, and a structured result when needed. Give new fields defaults; changing an existing scalar input to a model requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load connection settings with `ClientConfig.load_client_connect_config()`, connect the client, and create a Worker with workflows and activities
@@ -147,6 +167,8 @@ See [sync and async Activity guide](sync-vs-async.md) for detailed guidance on c
 
 ```
 my_temporal_app/
+├── models/
+│   └── greeting.py      # Shared input model
 ├── workflows/
 │   └── greeting.py      # Only Workflow classes
 ├── activities/

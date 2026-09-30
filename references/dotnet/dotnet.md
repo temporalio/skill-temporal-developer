@@ -18,6 +18,12 @@ Temporal workflows are durable through history replay. For details on how this w
 dotnet add package Temporalio
 ```
 
+**Models/GreetingInput.cs** - Shared input record:
+
+```csharp
+public record GreetingInput(string FirstName, string LastName);
+```
+
 **Activities.cs** - Activity definitions (separate file for clarity):
 
 ```csharp
@@ -26,9 +32,9 @@ using Temporalio.Activities;
 public class MyActivities
 {
     [Activity]
-    public string Greet(string name)
+    public string Greet(GreetingInput input)
     {
-        return $"Hello, {name}!";
+        return $"Hello, {input.FirstName} {input.LastName}!";
     }
 }
 ```
@@ -42,10 +48,10 @@ using Temporalio.Workflows;
 public class GreetingWorkflow
 {
     [WorkflowRun]
-    public async Task<string> RunAsync(string name)
+    public async Task<string> RunAsync(GreetingInput input)
     {
         return await Workflow.ExecuteActivityAsync(
-            (MyActivities a) => a.Greet(name),
+            (MyActivities a) => a.Greet(input),
             new() { StartToCloseTimeout = TimeSpan.FromSeconds(30) });
     }
 }
@@ -93,13 +99,13 @@ connectOptions.TargetHost ??= "localhost:7233";
 var client = await TemporalClient.ConnectAsync(connectOptions);
 
 var result = await client.ExecuteWorkflowAsync(
-    (GreetingWorkflow wf) => wf.RunAsync("my name"),
+    (GreetingWorkflow wf) => wf.RunAsync(new GreetingInput("Ada", "Lovelace")),
     new(id: $"greeting-{Guid.NewGuid()}", taskQueue: "my-task-queue"));
 
 Console.WriteLine($"Result: {result}");
 ```
 
-**Run the workflow:** Run `dotnet run` in the starter project. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `dotnet run` in the starter project. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 
@@ -117,6 +123,10 @@ Console.WriteLine($"Result: {result}");
 - Can be sync or async
 - Instance methods support dependency injection
 - Static methods are also supported
+
+### Evolving Inputs and Results
+
+Prefer one serializable record or class for Workflow and Activity inputs that may grow, and a structured result when needed. Make new fields optional or give them defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history.
 
 ### Worker Setup
 
@@ -138,7 +148,7 @@ MyTemporalApp/
 ├── Activities/
 │   └── TranslateActivities.cs       # Only Activity classes
 ├── Models/
-│   └── OrderInput.cs                # Shared data models
+│   └── GreetingInput.cs             # Shared input record
 ├── Worker/
 │   └── Program.cs                   # Worker setup
 └── Starter/

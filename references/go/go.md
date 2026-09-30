@@ -12,6 +12,17 @@ The Temporal Go SDK (`go.temporal.io/sdk`) provides a strongly-typed, idiomatic 
 go get go.temporal.io/sdk go.temporal.io/sdk/contrib/envconfig
 ```
 
+**greeting/input.go** - Shared input struct:
+
+```go
+package greeting
+
+type Input struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+```
+
 **workflows/greeting.go** - Workflow definition:
 
 ```go
@@ -20,17 +31,19 @@ package workflows
 import (
 	"time"
 
+	"yourmodule/greeting"
+
 	"go.temporal.io/sdk/workflow"
 )
 
-func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
+func GreetingWorkflow(ctx workflow.Context, input greeting.Input) (string, error) {
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute,
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
 	var result string
-	err := workflow.ExecuteActivity(ctx, "Greet", name).Get(ctx, &result)
+	err := workflow.ExecuteActivity(ctx, "Greet", input).Get(ctx, &result)
 	if err != nil {
 		return "", err
 	}
@@ -46,12 +59,14 @@ package activities
 import (
 	"context"
 	"fmt"
+
+	"yourmodule/greeting"
 )
 
 type Activities struct{}
 
-func (a *Activities) Greet(ctx context.Context, name string) (string, error) {
-	return fmt.Sprintf("Hello, %s!", name), nil
+func (a *Activities) Greet(ctx context.Context, input greeting.Input) (string, error) {
+	return fmt.Sprintf("Hello, %s %s!", input.FirstName, input.LastName), nil
 }
 ```
 
@@ -104,6 +119,7 @@ import (
 	"fmt"
 	"log"
 
+	"yourmodule/greeting"
 	"yourmodule/workflows"
 
 	"github.com/google/uuid"
@@ -123,7 +139,8 @@ func main() {
 		TaskQueue: "my-task-queue",
 	}
 
-	we, err := c.ExecuteWorkflow(context.Background(), options, workflows.GreetingWorkflow, "my name")
+	input := greeting.Input{FirstName: "Ada", LastName: "Lovelace"}
+	we, err := c.ExecuteWorkflow(context.Background(), options, workflows.GreetingWorkflow, input)
 	if err != nil {
 		log.Fatalln("Unable to execute workflow", err)
 	}
@@ -138,7 +155,7 @@ func main() {
 }
 ```
 
-**Run the workflow:** Run `go run starter/main.go`. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `go run starter/main.go`. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 
@@ -156,6 +173,10 @@ func main() {
 - Struct methods are preferred for dependency injection
 - Signature: `func (a *Activities) MyActivity(ctx context.Context, input string) (string, error)`
 - Register struct with `w.RegisterActivity(&Activities{})` (registers all exported methods)
+
+### Evolving Inputs and Results
+
+Prefer one serializable `struct` for Workflow and Activity inputs that may grow, and a result `struct` when needed. New fields in old JSON payloads decode to zero values; changing an existing scalar input to a struct requires a migration because old payloads remain in history.
 
 ### Worker Setup
 
@@ -192,6 +213,8 @@ Read [Temporal determinism rules](../core/determinism.md) and [Go determinism ru
 
 ```
 myapp/
+├── greeting/
+│   └── input.go         # Shared input struct
 ├── workflows/
 │   └── greeting.go      # Only Workflow functions
 ├── activities/
