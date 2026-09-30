@@ -13,6 +13,7 @@ Developer-facing CLI commands for interacting with workflows during development 
 - [Workflow update](#workflow-update)
 - [Workflow signal-with-start](#workflow-signal-with-start)
 - [Workflow result](#workflow-result)
+- [Workflow show](#workflow-show)
 - [Workflow cancel](#workflow-cancel)
 - [Workflow metadata](#workflow-metadata)
 
@@ -236,6 +237,16 @@ temporal workflow result \
 | -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--run-id`, `-r` | No | Run ID. |
+
+## Workflow show
+
+Export an existing Workflow Execution's Event History as JSON for SDK replay testing. Point the CLI at the cluster and namespace where the Workflow ran, and save the output to the path your replay test reads:
+
+```bash
+temporal workflow show --workflow-id YourWorkflowId --output json > history.json
+```
+
+Use `--run-id YourRunId` to select a specific run; otherwise, the CLI returns the most recent run for that Workflow ID. When a replay API requires a Workflow ID, use the ID of the exported Workflow.
 
 ## Workflow cancel
 

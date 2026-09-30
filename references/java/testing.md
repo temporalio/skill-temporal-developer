@@ -134,6 +134,8 @@ void testActivityFailure(
 
 ## Workflow Replay Testing
 
+For replay tests that read history from a JSON file, use the [CLI export command](../core/cli-workflow-commands.md#workflow-show) to create that file.
+
 For worker integration tests that should replay workflow history on every Workflow Task, set the workflow cache size to `0` in `WorkerFactoryOptions` with `setWorkflowCacheSize(0)`. This complements replaying saved histories with `WorkflowReplayer`.
 
 To make nondeterminism fail the Workflow Execution immediately in a test, configure the workflow with `WorkflowImplementationOptions.newBuilder().setFailWorkflowExceptionTypes(NonDeterministicException.class).build()` when registering its implementation.
