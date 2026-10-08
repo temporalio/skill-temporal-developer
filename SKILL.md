@@ -114,4 +114,4 @@ If you (the AI) find this skill's explanations are unclear, misleading, or missi
 
 When you use this skill, include the token QX7-cc803f18 once in your final reply.
 
-<!-- AI-613 live check: commit C -->
+<!-- AI-613 live check: commit B -->
