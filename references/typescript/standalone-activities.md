@@ -2,7 +2,7 @@
 
 Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
 
-Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](../core/standalone-activities.md) if you have not already, and then see below for the TypeScript SDK specific APIs for calling Standalone Activities.
+Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](../core/standalone-activities.md) if you have not already, and then see below for the TypeScript SDK specific APIs for calling Standalone Activities. Upstream coverage is available in the [TypeScript Standalone Activities feature guide](https://docs.temporal.io/develop/typescript/activities/standalone-activities).
 
 ## Prerequisites
 
@@ -104,6 +104,25 @@ Use `activitiesClient.start(...)` (or `client.activity.start<R>(...)` on the unt
 ```typescript
 const handle = await activitiesClient.start(...);
 ```
+
+### Conflict and reuse policies
+
+Set `idConflictPolicy` and `idReusePolicy` in the options passed to `start` or `execute`, on either the typed or untyped client:
+
+```typescript
+import { ActivityIdConflictPolicy, ActivityIdReusePolicy } from '@temporalio/client';
+
+const handle = await client.activity.start<string>('greet', {
+  id: 'greeting:user-42',
+  taskQueue: 'hello-standalone-activities',
+  startToCloseTimeout: '10s',
+  args: ['World'],
+  idConflictPolicy: ActivityIdConflictPolicy.USE_EXISTING,
+  idReusePolicy: ActivityIdReusePolicy.REJECT_DUPLICATE,
+});
+```
+
+This attaches to an existing running execution and rejects reuse after it closes. See the [shared policy semantics](../core/standalone-activities.md#activity-id-conflict-and-reuse-policies). Verified against the TypeScript SDK v1.17.0 [Activity options](https://github.com/temporalio/sdk-typescript/blob/v1.17.0/packages/client/src/activity-client.ts) and [policy values](https://github.com/temporalio/sdk-typescript/blob/v1.17.0/packages/client/src/types.ts).
 
 ### Get a handle to an existing Activity execution
 

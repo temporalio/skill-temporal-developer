@@ -129,6 +129,36 @@ if err != nil {
 log.Println("Activity result:", result)
 ```
 
+### Conflict and reuse policies
+
+Set `ActivityIDConflictPolicy` and `ActivityIDReusePolicy` on `client.StartActivityOptions`. The enum constants come from `go.temporal.io/api/enums/v1`:
+
+```go
+import (
+	"context"
+	"log"
+	"time"
+	enumspb "go.temporal.io/api/enums/v1"
+	"go.temporal.io/sdk/client"
+)
+
+activityOptions := client.StartActivityOptions{
+	ID:                       "greeting:user-42",
+	TaskQueue:                "standalone-activity-helloworld",
+	ScheduleToCloseTimeout:   10 * time.Second,
+	ActivityIDConflictPolicy: enumspb.ACTIVITY_ID_CONFLICT_POLICY_USE_EXISTING,
+	ActivityIDReusePolicy:    enumspb.ACTIVITY_ID_REUSE_POLICY_REJECT_DUPLICATE,
+}
+
+handle, err := c.ExecuteActivity(context.Background(), activityOptions, "Activity", "Temporal")
+if err != nil {
+	log.Fatalln("Unable to execute activity", err)
+}
+log.Println("ActivityID", handle.GetID(), "RunID", handle.GetRunID())
+```
+
+This attaches to an existing running execution and rejects reuse after it closes. See the [shared policy semantics](../core/standalone-activities.md#activity-id-conflict-and-reuse-policies). The Go SDK v1.41.0 [options definition](https://github.com/temporalio/sdk-go/blob/v1.41.0/internal/internal_activity_client.go) confirms the public `client.StartActivityOptions` fields; application code imports `client`, not `internal`.
+
 ### Get a handle to an existing Activity execution
 
 Use `client.GetActivityHandle()` to attach a handle to a previously started Standalone Activity. Both `ActivityID` and `RunID` are required.

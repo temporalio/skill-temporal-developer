@@ -1,5 +1,7 @@
 # Skill Validation Plan — `Standalone Activities`
 
+> Historical plan for the original Public Preview snapshot. TypeScript coverage and SDK policy gaps have since been resolved; see the [current authoring log](AUTHORING_LOG.md) and [validation report](STANDALONE_ACTIVITIES_VALIDATION_REPORT.md).
+
 **Reader:** you are an AI agent. The user has told you to validate the Standalone Activities additions to the Temporal Developer skill using this template. Your job has two phases:
 
 1. **Phase 1 — Fill this plan.** *(Done — this document is already filled.)*

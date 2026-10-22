@@ -113,6 +113,27 @@ Use `client.start_activity(...)` to durably enqueue the Activity and get back a 
 activity_handle = await client.start_activity(...)
 ```
 
+### Conflict and reuse policies
+
+Set `id_conflict_policy` and `id_reuse_policy` on `start_activity` or `execute_activity`, using the Activity enums from `temporalio.common`:
+
+```python
+from datetime import timedelta
+from temporalio.common import ActivityIDConflictPolicy, ActivityIDReusePolicy
+
+activity_handle = await client.start_activity(
+    compose_greeting,
+    args=[ComposeGreetingInput("Hello", "World")],
+    id="greeting:user-42",
+    task_queue="my-standalone-activity-task-queue",
+    start_to_close_timeout=timedelta(seconds=10),
+    id_conflict_policy=ActivityIDConflictPolicy.USE_EXISTING,
+    id_reuse_policy=ActivityIDReusePolicy.REJECT_DUPLICATE,
+)
+```
+
+This attaches to an existing running execution and rejects reuse after it closes. See the [shared policy semantics](../core/standalone-activities.md#activity-id-conflict-and-reuse-policies). Verified against the Python SDK v1.23.0 [Client API](https://github.com/temporalio/sdk-python/blob/1.23.0/temporalio/client.py) and [Activity policy enums](https://github.com/temporalio/sdk-python/blob/1.23.0/temporalio/common.py).
+
 ### Get a handle to an existing Activity execution
 
 Use `client.get_activity_handle(...)` to attach a handle to a previously started Standalone Activity. Omitting `run_id` (or passing `None`) targets the latest run of that Activity ID.

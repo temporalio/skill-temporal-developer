@@ -74,6 +74,19 @@ See below for a quick reference how to call these operations from the CLI rather
 
 **Currently Supported SDKs: Python, TypeScript, Java, .NET, Go, Ruby**
 
+## Activity ID conflict and reuse policies
+
+Policies apply to the Activity ID within a Namespace. The conflict policy handles an existing **running** execution; the reuse policy handles an existing **closed** execution.
+
+| Policy | Values | Default |
+|---|---|---|
+| Conflict | `FAIL` rejects the new start; `USE_EXISTING` returns a handle to the running execution without starting another. | `FAIL` |
+| Reuse | `ALLOW_DUPLICATE` allows another execution; `ALLOW_DUPLICATE_FAILED_ONLY` allows another only after failure, cancellation, termination, or timeout; `REJECT_DUPLICATE` rejects reuse of a closed execution's ID. | `ALLOW_DUPLICATE` |
+
+For duplicate job submissions, combine `USE_EXISTING` with `REJECT_DUPLICATE` and a stable business ID. Repeated starts attach to the same running execution; after it closes, further starts with that ID are rejected while its execution is retained. This does not prevent retries of the Activity itself; make side effects idempotent.
+
+The reuse value is **`REJECT_DUPLICATE`**, singular. SDK spellings differ; see the policy examples in [Python](../python/standalone-activities.md#conflict-and-reuse-policies), [Go](../go/standalone-activities.md#conflict-and-reuse-policies), [Java](../java/standalone-activities.md#conflict-and-reuse-policies), [.NET](../dotnet/standalone-activities.md#conflict-and-reuse-policies), and [TypeScript](../typescript/standalone-activities.md#conflict-and-reuse-policies). The [Activity policy definitions](https://github.com/temporalio/api/blob/main/temporal/api/enums/v1/activity.proto) describe the wire-level values. `TerminateExisting` and `TerminateIfRunning` are not supported Activity policies.
+
 ## Quick CLI Standalone Activity Man Page
 
 Ultimately, any standalone activity invocation code should live in your application code and use the appropriate SDK, but the Temporal CLI is a quick and easy way to test invoking standalone activities during development. All subcommands live under `temporal activity`.
@@ -95,7 +108,7 @@ temporal activity execute \
 
 `--input` takes a JSON value; pass it multiple times for multiple positional arguments. `--input-file` is also a convenient option for larger inputs. The same required flags apply to `start` below.
 
-Reminder: `--activity-id` must be unique across all activity calls, as discussed above.
+Use a stable `--activity-id` for the same logical job and choose conflict/reuse policies as described above.
 
 **Start (do not wait).** Enqueues the Activity and prints the Activity ID and Run ID without blocking:
 

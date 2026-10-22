@@ -109,6 +109,26 @@ Use `client.StartActivityAsync(...)` to durably enqueue the Activity and get bac
 var handle = await client.StartActivityAsync(...);
 ```
 
+### Conflict and reuse policies
+
+Set `IdConflictPolicy` and `IdReusePolicy` on `StartActivityOptions`. The Activity enums are in `Temporalio.Api.Enums.V1`:
+
+```csharp
+using Temporalio.Api.Enums.V1;
+using Temporalio.Client;
+
+var handle = await client.StartActivityAsync(
+    () => MyActivities.ComposeGreetingAsync(new ComposeGreetingInput("Hello", "World")),
+    new("greeting:user-42", "standalone-activity-sample")
+    {
+        ScheduleToCloseTimeout = TimeSpan.FromSeconds(10),
+        IdConflictPolicy = ActivityIdConflictPolicy.UseExisting,
+        IdReusePolicy = ActivityIdReusePolicy.RejectDuplicate,
+    });
+```
+
+This attaches to an existing running execution and rejects reuse after it closes. See the [shared policy semantics](../core/standalone-activities.md#activity-id-conflict-and-reuse-policies). Verified against the .NET SDK v1.12.0 [options and enum imports](https://github.com/temporalio/sdk-dotnet/blob/1.12.0/src/Temporalio/Client/StartActivityOptions.cs).
+
 ### Get a handle to an existing Activity execution
 
 Use `client.GetActivityHandle(...)` to attach a handle to a previously started Standalone Activity. Passing `null` as the run ID (the default) targets the latest run of that Activity ID.

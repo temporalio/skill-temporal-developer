@@ -1,56 +1,29 @@
-# Authoring Log
+# Standalone Activities — Authoring Log
 
-## Standalone Activities feature (added per `STANDALONE_ACTIVITIES_AUTHORING_PLAN.md`)
+## Current scope
 
-Six new reference files plus a surgical `SKILL.md` edit. Each reference file was authored by an isolated subagent that read only the docs paths assigned to it (no cross-reading of sibling reference files).
+The PR extends the existing Standalone Activities guides with a CLI reference and concrete SDK conflict/reuse-policy examples. It preserves the current core and SDK guidance from `main`, including TypeScript and Ruby coverage.
 
-### `references/core/standalone-activities.md`
-- **Docs consulted:** `docs/encyclopedia/activities/standalone-activity.mdx` (primary), `docs/cloud/metrics/openmetrics/metrics-reference.mdx` (line 315, for the no-new-metric-names claim). Supporting files (`activities.mdx`, `activity-execution.mdx`, `job-queue.mdx`) referenced by link only.
-- **Citations:** 26 inline.
-- **VERIFY markers:** 0.
-- Self-checks passed: `TerminateExisting` / `TerminateIfRunning` listed only as unsupported; pause/reset/update-options listed only as unsupported; CLI v1.7.0+ / Server v1.31.0+ stated verbatim; separate ID space; dual-use claim preserved verbatim; no invented metric names; no TypeScript link.
+The original authoring and validation plans describe the earlier Public Preview snapshot. Their assumptions about missing TypeScript documentation and unsupported pause/reset/update operations have been superseded.
 
-### `references/core/standalone-activities-cli.md`
-- **Docs consulted:** `docs/cli/activity.mdx` (full file), `docs/encyclopedia/activities/standalone-activity.mdx` (lines 23, 109–114, 135–138).
-- **Citations:** 50 inline. 323 lines.
-- **VERIFY markers:** 0.
-- All 14 `temporal activity` subcommands have their own H3 headings. Public Preview gaps (`pause`, `reset`, `update-options`) flagged at top and at each subcommand. `unpause` annotated since it only operates on paused Activities, which Standalone Activities cannot enter in Public Preview. Global Flags referenced by line range, not transcribed.
+## Resolved SDK policy gaps
 
-### `references/python/standalone-activities.md`
-- **Docs consulted:** `docs/develop/python/activities/standalone-activities.mdx` only.
-- **Citations:** 30 inline.
-- **VERIFY markers:** 2.
-  1. Server v1.31.0+ requirement is not stated in the Python doc (only CLI v1.7.0+ and Python SDK v1.23.0+ are stated there). The encyclopedia is the source for the server-version pairing.
-  2. The Python doc does not show conflict-policy / reuse-policy kwargs on `start_activity` (`USE_EXISTING`, `REJECT_DUPLICATES`, etc.). Per methodology, no kwargs were invented; policy semantics deferred to `references/core/standalone-activities.md`.
-- Methods/kwargs used: `client.execute_activity`, `client.start_activity`, `client.get_activity_handle`, `activity_handle.result`, `client.list_activities`, `client.count_activities`, `ClientConfig.load_client_connect_config`. Cloud auth limited to mTLS + API key (env-var modes).
+Each example uses a stable Activity ID, attaches to an already-running execution with `USE_EXISTING`, and rejects reuse after closure with `REJECT_DUPLICATE`. The exact enum name is singular; `REJECT_DUPLICATES` was an error in the original gap description.
 
-### `references/go/standalone-activities.md`
-- **Docs consulted:** `docs/develop/go/activities/standalone-activities.mdx` (primary), `docs/encyclopedia/activities/standalone-activity.mdx` (versions + Public Preview limitations only).
-- **Citations:** 33 inline. ~270 lines.
-- **VERIFY markers:** 1. The Go doc does not show the exact field name on `StartActivityOptions` for conflict policy / reuse policy, nor the Go enum constants for `USE_EXISTING` / `REJECT_DUPLICATES`. The encyclopedia lists the policy values but Go-specific binding names need confirmation against the godoc before adding a code snippet.
-- APIs verbatim from the Go doc: `ExecuteActivity`, `GetActivityHandle`, `ListActivities`, `CountActivities`, `StartActivityOptions`, `GetActivityHandleOptions`, `ListActivitiesOptions`, `CountActivitiesOptions`, handle methods `Get`/`GetID`/`GetRunID`.
+| SDK | Policy parameters | Policy values | Verified source |
+|---|---|---|---|
+| Python v1.23.0 | `id_conflict_policy`, `id_reuse_policy` | `ActivityIDConflictPolicy.USE_EXISTING`, `ActivityIDReusePolicy.REJECT_DUPLICATE` | [Client](https://github.com/temporalio/sdk-python/blob/1.23.0/temporalio/client.py), [enums](https://github.com/temporalio/sdk-python/blob/1.23.0/temporalio/common.py) |
+| Go v1.41.0 | `StartActivityOptions.ActivityIDConflictPolicy`, `ActivityIDReusePolicy` | `enumspb.ACTIVITY_ID_CONFLICT_POLICY_USE_EXISTING`, `enumspb.ACTIVITY_ID_REUSE_POLICY_REJECT_DUPLICATE` | [Options](https://github.com/temporalio/sdk-go/blob/v1.41.0/internal/internal_activity_client.go) |
+| Java v1.35.0 | `setIdConflictPolicy`, `setIdReusePolicy` | `ActivityIdConflictPolicy.ACTIVITY_ID_CONFLICT_POLICY_USE_EXISTING`, `ActivityIdReusePolicy.ACTIVITY_ID_REUSE_POLICY_REJECT_DUPLICATE` | [Builder](https://github.com/temporalio/sdk-java/blob/v1.35.0/temporal-sdk/src/main/java/io/temporal/client/StartActivityOptions.java) |
+| .NET v1.12.0 | `StartActivityOptions.IdConflictPolicy`, `IdReusePolicy` | `ActivityIdConflictPolicy.UseExisting`, `ActivityIdReusePolicy.RejectDuplicate` | [Options](https://github.com/temporalio/sdk-dotnet/blob/1.12.0/src/Temporalio/Client/StartActivityOptions.cs), [enums](https://github.com/temporalio/sdk-dotnet/blob/1.12.0/src/Temporalio/Api/Enums/V1/Activity.cs) |
+| TypeScript v1.17.0 | `idConflictPolicy`, `idReusePolicy` | `ActivityIdConflictPolicy.USE_EXISTING`, `ActivityIdReusePolicy.REJECT_DUPLICATE` | [Options](https://github.com/temporalio/sdk-typescript/blob/v1.17.0/packages/client/src/activity-client.ts), [enums](https://github.com/temporalio/sdk-typescript/blob/v1.17.0/packages/client/src/types.ts) |
 
-### `references/java/standalone-activities.md`
-- **Docs consulted:** `docs/develop/java/activities/standalone-activities.mdx` (primary), `docs/encyclopedia/activities/standalone-activity.mdx` (versions + Public Preview limitations only).
-- **Citations:** 33 inline (32 to the Java doc, 4 to the encyclopedia — some overlap).
-- **VERIFY markers:** 1. The Java doc does not show builder methods on `StartActivityOptions` for conflict policy / reuse policy. Policy values documented as concepts; Java setter names not invented.
-- Prereqs documented: Java 8+, Java SDK v1.35.0+, CLI v1.7.0+, Server v1.31.0+. Cloud auth limited to mTLS and API key.
+The [core policy section](references/core/standalone-activities.md#activity-id-conflict-and-reuse-policies) explains running versus closed executions, defaults, supported policies, retention, and Activity retry/idempotency considerations. `TerminateExisting` and `TerminateIfRunning` remain unsupported Activity policies.
 
-### `references/dotnet/standalone-activities.md`
-- **Docs consulted:** `docs/develop/dotnet/activities/standalone-activities.mdx` (primary), `docs/encyclopedia/activities/standalone-activity.mdx` (versions + Public Preview limitations only).
-- **Citations:** 32 inline (28 to the .NET doc, 4 to the encyclopedia).
-- **VERIFY markers:** 1. The .NET doc does not show a code snippet wiring `USE_EXISTING` / `REJECT_DUPLICATES` into `StartActivityOptions`; the specific .NET option property names are not present. Documented the supported policy values (from the encyclopedia) and the unsupported `TerminateExisting` / `TerminateIfRunning` limitation, without inventing .NET property names.
-- APIs verbatim from the .NET doc: `ExecuteActivityAsync`, `StartActivityAsync`, `GetActivityHandle`, `GetResultAsync`, `ListActivitiesAsync`, `CountActivitiesAsync`, `StartActivityOptions`, `[Activity]`, `TemporalWorker`, `TemporalWorkerOptions`, `AddActivity`, `ClientEnvConfig.LoadClientConnectOptions`, `ActivityExecution`. Cloud auth limited to mTLS and API key.
+## Resolved TypeScript coverage gap
 
-### `SKILL.md` edit
-- Added a "Standalone Activities" section just above "Task Queue Priority and Fairness", pointing at the six new reference files and noting that TypeScript SDK coverage is upstream-pending.
-- No other changes to existing sections; skill version field left at `0.3.2` (no user request to bump).
+The [TypeScript reference](references/typescript/standalone-activities.md) covers Worker registration, typed and untyped Client calls, start, handle lookup, result retrieval, list, count, and policies. The [upstream TypeScript feature guide](https://docs.temporal.io/develop/typescript/activities/standalone-activities) is available and linked from the reference. Coverage is no longer upstream-pending.
 
-### Cross-cutting VERIFY summary
+## Validation
 
-The five language/CLI subagents converged on a single shared gap: **the per-language docs do not yet show conflict-policy / reuse-policy parameter wiring** (Python kwargs, Go fields, Java builders, .NET options). The encyclopedia lists the policy values (`USE_EXISTING`, `REJECT_DUPLICATES`; with `TerminateExisting` / `TerminateIfRunning` unsupported in Public Preview). Recommended follow-up: when the SDK docs add policy snippets (or when the API surface is confirmed against the per-language godoc/javadoc/etc.), revisit the four language references and resolve the VERIFY markers.
-
-### Files NOT modified
-
-- `references/typescript/` — intentionally untouched. No upstream Standalone Activities doc exists.
-- `references/python/advanced-features.md`, `references/go/advanced-features.md`, etc. — left as-is. The plan reserved the option to add a one-line cross-link, but the SKILL.md "Standalone Activities" section already provides the discovery path; no edit was needed.
+See the [current validation report](STANDALONE_ACTIVITIES_VALIDATION_REPORT.md) for executed checks and their limits. The original SDK policy gaps and Python server-version sourcing gap are resolved; the core guide states the shared server requirement.

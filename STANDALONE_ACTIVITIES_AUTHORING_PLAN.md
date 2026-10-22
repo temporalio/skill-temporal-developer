@@ -1,5 +1,7 @@
 # Skill Authoring Plan — `temporal-developer: Standalone Activities feature`
 
+> Historical plan for the original Public Preview snapshot. TypeScript coverage and SDK policy gaps have since been resolved; see the [current authoring log](AUTHORING_LOG.md) and [validation report](STANDALONE_ACTIVITIES_VALIDATION_REPORT.md).
+
 **Mode:** greenfield (additive)
 
 **Context:** The `temporal-developer` skill exists at `/Users/don/work/skills/skill-temporal-developer/` and is otherwise complete. This plan adds a new feature — **Standalone Activities** — into the existing skill. Standalone Activities are a Public Preview Temporal feature (CLI v1.7.0+, Server v1.31.0+) that let a Client run a single Activity as a top-level execution without a Workflow — Temporal's "job queue" primitive. The feature is documented in the encyclopedia, the `temporal activity` CLI reference, and four language SDK pages (Python, Go, Java, .NET). TypeScript has no Standalone Activities doc yet, so the skill must not invent TypeScript content. The job is to author new reference files that slot into the existing layout (`references/core/` and `references/{lang}/`) and to extend `SKILL.md` to point at them. Everything else in the skill stays untouched.

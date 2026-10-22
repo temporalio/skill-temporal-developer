@@ -89,6 +89,32 @@ Use `client.start(...)` to durably enqueue the Activity and get back an `Activit
 ActivityHandle<String> handle = client.start(...);
 ```
 
+### Conflict and reuse policies
+
+Set the policies with `StartActivityOptions.Builder.setIdConflictPolicy` and `setIdReusePolicy`. Import the Activity enums from `io.temporal.api.enums.v1`:
+
+```java
+import io.temporal.api.enums.v1.ActivityIdConflictPolicy;
+import io.temporal.api.enums.v1.ActivityIdReusePolicy;
+import io.temporal.client.ActivityHandle;
+import io.temporal.client.StartActivityOptions;
+import java.time.Duration;
+
+StartActivityOptions options =
+    StartActivityOptions.newBuilder()
+        .setId("greeting:user-42")
+        .setTaskQueue(TASK_QUEUE)
+        .setStartToCloseTimeout(Duration.ofSeconds(10))
+        .setIdConflictPolicy(ActivityIdConflictPolicy.ACTIVITY_ID_CONFLICT_POLICY_USE_EXISTING)
+        .setIdReusePolicy(ActivityIdReusePolicy.ACTIVITY_ID_REUSE_POLICY_REJECT_DUPLICATE)
+        .build();
+
+ActivityHandle<String> handle =
+    client.start("ComposeGreeting", String.class, options, "Hello", "World");
+```
+
+This attaches to an existing running execution and rejects reuse after it closes. See the [shared policy semantics](../core/standalone-activities.md#activity-id-conflict-and-reuse-policies). Verified against the Java SDK v1.35.0 [options builder](https://github.com/temporalio/sdk-java/blob/v1.35.0/temporal-sdk/src/main/java/io/temporal/client/StartActivityOptions.java).
+
 ### Get a handle to an existing Activity execution
 
 Use `client.getHandle(...)` to attach a typed handle to a previously started Standalone Activity. Passing `null` as the run ID targets the latest run of that Activity ID.
