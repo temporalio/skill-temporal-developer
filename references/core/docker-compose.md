@@ -88,9 +88,9 @@ By default, workflows and histories are lost when the dev server stops. To persi
 ```yaml
 services:
   temporal:
-    command: server start-dev --ip 0.0.0.0 --db-filename /data/temporal.db
+    command: server start-dev --ip 0.0.0.0 --db-filename /home/temporal/temporal.db
     volumes:
-      - temporal-data:/data
+      - temporal-data:/home/temporal
 
 volumes:
   temporal-data:
