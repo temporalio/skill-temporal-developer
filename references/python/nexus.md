@@ -16,6 +16,7 @@ import nexusrpc
 @dataclass
 class MyInput:
     name: str
+    language: str
 
 
 @dataclass
@@ -33,11 +34,12 @@ class MyNexusService:
 
 Use `@nexusrpc.handler.sync_operation` for operations that return within 10 seconds.
 
+The following snippets show alternative implementations of the synchronous method. Include one in a complete service handler alongside `my_workflow_run_operation`, as shown below.
+
 ```python
 import nexusrpc
 
 
-@nexusrpc.handler.service_handler(service=MyNexusService)
 class MyNexusServiceHandler:
     @nexusrpc.handler.sync_operation
     async def my_sync_operation(
@@ -53,7 +55,6 @@ import nexusrpc
 from temporalio import nexus
 
 
-@nexusrpc.handler.service_handler(service=MyNexusService)
 class MyNexusServiceHandler:
     @nexusrpc.handler.sync_operation
     async def my_sync_operation(
@@ -78,6 +79,12 @@ from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
 
 @nexusrpc.handler.service_handler(service=MyNexusService)
 class MyNexusServiceHandler:
+    @nexusrpc.handler.sync_operation
+    async def my_sync_operation(
+        self, ctx: nexusrpc.handler.StartOperationContext, input: MyInput
+    ) -> MyOutput:
+        return MyOutput(message=f"Hello {input.name} from sync operation!")
+
     @nexus.workflow_run_operation
     async def my_workflow_run_operation(
         self, ctx: nexus.WorkflowRunOperationContext, input: MyInput
@@ -95,19 +102,25 @@ class MyNexusServiceHandler:
 
 ### Mapping Multiple Workflow Arguments
 
-When the underlying workflow takes multiple arguments, map from a single Nexus input:
+When `WorkflowStartedByNexusOperation.run` accepts `name` and `language` as separate arguments instead of a single `MyInput`, use this alternative handler. It implements the same two operations declared by `MyNexusService`:
 
 ```python
 @nexusrpc.handler.service_handler(service=MyNexusService)
 class MyNexusServiceHandler:
+    @nexusrpc.handler.sync_operation
+    async def my_sync_operation(
+        self, ctx: nexusrpc.handler.StartOperationContext, input: MyInput
+    ) -> MyOutput:
+        return MyOutput(message=f"Hello {input.name} from sync operation!")
+
     @nexus.workflow_run_operation
-    async def hello(
-        self, ctx: nexus.WorkflowRunOperationContext, input: HelloInput
-    ) -> nexus.WorkflowHandle[HelloOutput]:
+    async def my_workflow_run_operation(
+        self, ctx: nexus.WorkflowRunOperationContext, input: MyInput
+    ) -> nexus.WorkflowHandle[MyOutput]:
         return await ctx.start_workflow(
-            HelloHandlerWorkflow.run,
+            WorkflowStartedByNexusOperation.run,
             args=[input.name, input.language],
-            id=f"hello-{ctx.request_id}",
+            id=f"my-workflow-{ctx.request_id}",
             id_conflict_policy=WorkflowIDConflictPolicy.USE_EXISTING,
             id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
         )
@@ -174,7 +187,7 @@ with workflow.unsafe.imports_passed_through():
 @workflow.defn
 class CallerWorkflow:
     @workflow.run
-    async def run(self, name: str) -> tuple[MyOutput, MyOutput]:
+    async def run(self, name: str, language: str) -> tuple[MyOutput, MyOutput]:
         nexus_client = workflow.create_nexus_client(
             service=MyNexusService,
             endpoint="my-nexus-endpoint-name",
@@ -183,13 +196,13 @@ class CallerWorkflow:
         # Execute the synchronous operation and wait for its result
         sync_result = await nexus_client.execute_operation(
             MyNexusService.my_sync_operation,
-            MyInput(name),
+            MyInput(name, language),
         )
 
         # Or start the asynchronous operation and await its handle separately
         workflow_handle = await nexus_client.start_operation(
             MyNexusService.my_workflow_run_operation,
-            MyInput(name),
+            MyInput(name, language),
         )
         wf_result = await workflow_handle
 
@@ -229,7 +242,7 @@ from temporalio.exceptions import NexusOperationError
 @workflow.defn
 class CallerWorkflow:
     @workflow.run
-    async def run(self, name: str) -> str:
+    async def run(self, name: str, language: str) -> str:
         nexus_client = workflow.create_nexus_client(
             service=MyNexusService,
             endpoint="my-nexus-endpoint-name",
@@ -237,7 +250,7 @@ class CallerWorkflow:
         try:
             result = await nexus_client.execute_operation(
                 MyNexusService.my_workflow_run_operation,
-                MyInput(name),
+                MyInput(name, language),
             )
             return result.message
         except NexusOperationError as e:
@@ -250,11 +263,17 @@ class CallerWorkflow:
 
 ## Cancellation
 
+After requesting cancellation, await the operation handle so the caller stays alive while the default `WAIT_COMPLETED` behavior waits for the operation to finish. Handle a confirmed cancellation and re-raise other operation failures. An operation can also finish normally if completion races with cancellation.
+
 ```python
+from temporalio import workflow
+from temporalio.exceptions import CancelledError, NexusOperationError
+
+
 @workflow.defn
 class CallerWorkflow:
     @workflow.run
-    async def run(self, name: str) -> str:
+    async def run(self, name: str, language: str) -> str:
         nexus_client = workflow.create_nexus_client(
             service=MyNexusService,
             endpoint="my-nexus-endpoint-name",
@@ -263,11 +282,18 @@ class CallerWorkflow:
         # Start an async operation
         operation_handle = await nexus_client.start_operation(
             MyNexusService.my_workflow_run_operation,
-            MyInput(name),
+            MyInput(name, language),
         )
 
-        # Cancel the operation
+        # Request cancellation and wait for the operation to finish
         operation_handle.cancel()
+        try:
+            result = await operation_handle
+            return result.message
+        except NexusOperationError as e:
+            if isinstance(e.cause, CancelledError):
+                return "Operation canceled"
+            raise
 ```
 
 ### Cancellation Types
@@ -284,7 +310,7 @@ from temporalio.workflow import NexusOperationCancellationType
 
 result = await nexus_client.execute_operation(
     MyNexusService.my_workflow_run_operation,
-    MyInput(name),
+    MyInput(name, language),
     cancellation_type=NexusOperationCancellationType.TRY_CANCEL,
 )
 ```
