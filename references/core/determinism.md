@@ -87,6 +87,8 @@ For a few simple cases, like timestamps, random values, UUIDs, etc. the Temporal
 - `NondeterminismError` raised when Commands don't match Events
 - Workflow becomes blocked until code is fixed
 
+The PHP SDK has no workflow sandbox: replay checks detect command/history mismatches but do not block arbitrary PHP I/O. See [PHP determinism protection](../php/determinism-protection.md) for its safeguards and limits.
+
 ### Testing with Replay
 
 Replay tests verify that workflows follow identical code paths when re-run, by attempting to replay recorded executions. See the replay testing section of `references/{your_language}/testing.md` for information on how to write these tests.

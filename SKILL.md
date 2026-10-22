@@ -1,13 +1,13 @@
 ---
 name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, Ruby, and Rust. Use when the user is building workflows, activities, workers, or background job queues with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, running Temporal with Docker Compose, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, PHP, Ruby, and Rust. Use when the user is building workflows, activities, workers, or background job queues with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, running Temporal with Docker Compose, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
 ---
 
 # Skill: temporal-developer
 
 ## Overview
 
-Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, Java, .NET, Ruby, and Rust.
+Temporal is a durable execution platform that makes workflows survive failures automatically. This skill provides guidance for building Temporal applications in Python, TypeScript, Go, Java, .NET, PHP, Ruby, and Rust.
 
 ## Out of Scope
 
@@ -56,6 +56,7 @@ For a new project, a first implementation, or broad SDK guidance, read the appro
 - Go -> [Go SDK guide](references/go/go.md)
 - Java -> [Java SDK guide](references/java/java.md)
 - .NET (C#) -> [.NET SDK guide](references/dotnet/dotnet.md)
+- PHP -> [PHP SDK guide](references/php/php.md), including RoadRunner operations, Laravel/support integrations, and a reviewed PHP course/source map
 - Ruby -> [Ruby SDK guide](references/ruby/ruby.md)
 - Rust -> [Rust SDK guide](references/rust/rust.md) (in Public Preview)
 
