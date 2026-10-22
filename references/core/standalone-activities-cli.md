@@ -1,6 +1,6 @@
 # Standalone Activities — `temporal activity` CLI Reference
 
-This reference covers the `temporal activity` CLI surface as it pertains to **Standalone Activities** (a [Public Preview](https://docs.temporal.io/evaluate/development-production-features/release-stages#public-preview) feature). It transcribes flag tables verbatim from the auto-generated CLI docs and flags Public Preview gaps.
+This reference covers the `temporal activity` CLI surface as it pertains to **Standalone Activities**. Read the [core concepts and limitations](standalone-activities.md) first. The tables cover common flags; use `temporal activity <subcommand> --help` for the flags supported by your installed CLI.
 
 ## Prerequisites
 
@@ -10,23 +10,19 @@ This reference covers the `temporal activity` CLI surface as it pertains to **St
 
 Verify the installed version with `temporal --version`; it should report v1.7.0 or higher.
 
-## Public Preview limitations (CLI surface)
+## Activity management support
 
-The following `temporal activity` subcommands exist as general activity-management commands but are **not supported for Standalone Activities** in Public Preview:
+Standalone Activities support `start`, `execute`, `result`, `list`, `count`, `describe`, `cancel`, and `terminate`. The `complete` and `fail` commands accept Standalone Activities as well: omit `--workflow-id` to target a Standalone Activity.
 
-- `pause` — Not supported for Standalone Activities. <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 -->
-- `reset` — Not supported for Standalone Activities. <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 -->
-- `update-options` — Not supported for Standalone Activities. <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 -->
+Pause, unpause, reset, and update options are also supported. These management operations remain in Public Preview; see the [current limitations](standalone-activities.md#limitations). Their targeting flags below were checked against Temporal CLI v1.9.1. For a Standalone Activity, pass `--activity-id`, optionally pass `--run-id`, and omit `--workflow-id`.
 
-These subcommands continue to work for Workflow-invoked Activities; only Standalone Activity targeting is gated. Support is scheduled for GA. <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 -->
-
-The subcommands explicitly documented as supported for Standalone Activities are: `start`, `execute`, `result`, `list`, `count`, `describe`, `cancel`, and `terminate`. <!-- docs/encyclopedia/activities/standalone-activity.mdx:135-136 --> The `complete` and `fail` commands accept Standalone Activities as well (they take a Standalone Activity ID when `--workflow-id` is omitted). <!-- docs/cli/activity.mdx:78,81 --> <!-- docs/cli/activity.mdx:176,180 -->
+Batch management with `--query` applies only to Workflow Activities. It does not target Standalone Activities.
 
 ---
 
 ## Subcommands
 
-For shared auth, address, namespace, codec, and TLS flags, see the **Global Flags** reference at the bottom of `/Users/don/work/skills/documentation/docs/cli/activity.mdx` (lines 507–544). <!-- docs/cli/activity.mdx:507 --> They apply to every subcommand below and are not transcribed here.
+For shared auth, address, namespace, codec, and TLS flags, run `temporal options` or see [Global Flags](#global-flags).
 
 ### `cancel`
 
@@ -136,45 +132,28 @@ List Standalone Activities. Use `--query` to filter results. <!-- docs/cli/activ
 
 ### `pause`
 
-> **Not supported for Standalone Activities** in Public Preview. <!-- docs/cli/activity.mdx:204 --> <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 --> Use this only for Workflow-invoked Activities; scheduled for GA.
-
-Pauses an Activity so that it will not run again until unpaused. <!-- docs/cli/activity.mdx:202-211 --> See `unpause` to resume, or `reset` to also restart from the beginning. <!-- docs/cli/activity.mdx:225-226 -->
+Pause future attempts of an Activity. An already-running attempt continues until it completes, fails, or times out. See `unpause` to resume, or `reset` to also restart from the beginning. Pausing does not extend the Schedule-To-Close Timeout.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--activity-id`, `-a` | No | Activity ID to pause. Mutually exclusive with `--activity-type`. |
-| `--activity-type` | No | All activities of this Activity Type will be paused. _(Experimental for Type-targeting.)_ |
+| `--activity-id`, `-a` | Yes | Activity ID to pause. |
 | `--identity` | No | Identity of the user or client submitting the request. |
-| `--run-id`, `-r` | No | Run ID. |
-| `--workflow-id`, `-w` | Yes | Workflow ID. |
-
-<!-- docs/cli/activity.mdx:230-236 -->
+| `--reason` | No | Reason for pausing the Activity. |
+| `--run-id`, `-r` | No | Activity Run ID. If not set, targets the latest run. |
+| `--workflow-id`, `-w` | No | Omit for Standalone Activities. Set only for Workflow Activities. |
 
 ### `reset`
 
-> **Not supported for Standalone Activities** in Public Preview. <!-- docs/cli/activity.mdx:240 --> <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 --> Use this only for Workflow-invoked Activities.
-
-Resets an Activity as if it were first being scheduled — resetting attempts, timeout, and optionally heartbeat details. <!-- docs/cli/activity.mdx:240-244 --> Either `--activity-id`, `--activity-type`, or `--match-all` must be specified. <!-- docs/cli/activity.mdx:280 -->
+Reset an Activity as if it were first being scheduled: the attempt count returns to one and per-attempt timeouts are re-armed. Use `--clear-heartbeat-details` to also clear heartbeat details. A paused Activity is unpaused unless `--keep-paused` is set.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--activity-id`, `-a` | No | Activity ID to reset. Requires `--workflow-id`. Mutually exclusive with `--query`, `--match-all`, `--activity-type`. |
-| `--activity-type` | No | Activities of this Type will be reset. _(Experimental.)_ |
-| `--headers` | No | Temporal workflow headers in `KEY=VALUE`. Repeatable. |
-| `--jitter` | No | Reset within a random window inside this duration. Only with `--query`. |
+| `--activity-id`, `-a` | Yes | Standalone Activity ID to reset. |
+| `--clear-heartbeat-details` | No | Clear the Activity's heartbeat details. |
 | `--keep-paused` | No | If the activity was paused, keep it paused. |
-| `--match-all` | No | Reset every activity. _(Experimental.)_ |
-| `--query`, `-q` | No | SQL-like List Filter for batch reset. _(Experimental.)_ |
-| `--reason` | No | Reason for batch operation. Only with `--query`. |
-| `--reset-attempts` | No | Reset the activity attempts. |
-| `--reset-heartbeats` | No | Reset the Activity's heartbeats. Only works with `--reset-attempts`. |
 | `--restore-original-options` | No | Restore the original options of the activity. |
-| `--rps` | No | Limit batch's requests per second. Only with `--query`. |
-| `--run-id`, `-r` | No | Run ID. Only with `--workflow-id`. |
-| `--workflow-id`, `-w` | No | Workflow ID. Set either `--workflow-id` or `--query`. |
-| `--yes`, `-y` | No | Skip confirmation. Only with `--query`. |
-
-<!-- docs/cli/activity.mdx:292-308 -->
+| `--run-id`, `-r` | No | Activity Run ID. If not set, targets the latest run. |
+| `--workflow-id`, `-w` | No | Omit for Standalone Activities. Set only for Workflow Activities. |
 
 ### `result`
 
@@ -234,62 +213,39 @@ Terminate a Standalone Activity. Activity code cannot see or respond to terminat
 
 ### `unpause`
 
-Re-schedule a previously-paused Activity for execution. **Not supported for Standalone Activities.** <!-- docs/cli/activity.mdx:392-393 --> <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 --> (Public Preview gap is `pause`/`reset`/`update-options`; `unpause` only ever applies to paused Activities, which on Standalone Activities cannot exist in Public Preview.)
+Re-schedule a previously-paused Activity for execution. Omit `--workflow-id` to target a Standalone Activity.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--activity-id`, `-a` | No | Activity ID to unpause. Requires `--workflow-id`. Mutually exclusive with `--query`, `--match-all`, `--activity-type`. |
-| `--activity-type` | No | Activities of this Type will unpause. _(Experimental.)_ |
-| `--headers` | No | Temporal workflow headers in `KEY=VALUE`. Repeatable. |
-| `--jitter` | No | Random start window. Only with `--query`. |
-| `--match-all` | No | Unpause every paused activity. _(Experimental.)_ |
-| `--query`, `-q` | No | SQL-like List Filter for batch unpause. _(Experimental.)_ |
-| `--reason` | No | Reason for batch operation. Only with `--query`. |
-| `--reset-attempts` | No | Reset the activity attempts. |
-| `--reset-heartbeats` | No | Reset heartbeats. Only works with `--reset-attempts`. |
-| `--rps` | No | Limit batch's requests per second. Only with `--query`. |
-| `--run-id`, `-r` | No | Run ID. Only with `--workflow-id`. |
-| `--workflow-id`, `-w` | No | Workflow ID. Set either `--workflow-id` or `--query`. |
-| `--yes`, `-y` | No | Skip confirmation. Only with `--query`. |
-
-<!-- docs/cli/activity.mdx:430-444 -->
+| `--activity-id`, `-a` | Yes | Standalone Activity ID to unpause. |
+| `--run-id`, `-r` | No | Activity Run ID. If not set, targets the latest run. |
+| `--workflow-id`, `-w` | No | Omit for Standalone Activities. Set only for Workflow Activities. |
 
 ### `update-options`
 
-> **Not supported for Standalone Activities** in Public Preview. <!-- docs/cli/activity.mdx:450 --> <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 --> Use this only for Workflow-invoked Activities; scheduled for GA.
-
-Update the options of a running Activity passed in from a Workflow. Updates are incremental. <!-- docs/cli/activity.mdx:448-450 --> Either `--activity-id`, `--activity-type`, or `--match-all` must be specified. <!-- docs/cli/activity.mdx:471 -->
+Update an Activity's options. Updates are incremental, changing only the specified options. Omit `--workflow-id` to target a Standalone Activity.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--activity-id`, `-a` | No | Activity ID. Requires `--workflow-id`. |
-| `--activity-type` | No | Activities of this Type will be updated. _(Experimental.)_ |
-| `--headers` | No | Temporal workflow headers in `KEY=VALUE`. Repeatable. |
+| `--activity-id`, `-a` | Yes | Standalone Activity ID to update. |
 | `--heartbeat-timeout` | No | Maximum time between successful worker heartbeats. |
-| `--match-all` | No | Update every activity. _(Experimental.)_ |
-| `--query`, `-q` | No | SQL-like List Filter for batch update. _(Experimental.)_ |
-| `--reason` | No | Reason for batch operation. Only with `--query`. |
 | `--restore-original-options` | No | Restore the original options of the activity. |
 | `--retry-backoff-coefficient` | No | Must be ≥1. |
 | `--retry-initial-interval` | No | First retry interval. |
 | `--retry-maximum-attempts` | No | `1` disables retries; `0` is unlimited. |
 | `--retry-maximum-interval` | No | Cap between retries. |
-| `--rps` | No | Limit batch's requests per second. Only with `--query`. |
-| `--run-id`, `-r` | No | Run ID. Only with `--workflow-id`. |
+| `--run-id`, `-r` | No | Activity Run ID. If not set, targets the latest run. |
 | `--schedule-to-close-timeout` | No | Total deadline including retries. |
 | `--schedule-to-start-timeout` | No | Queue waiting deadline. |
 | `--start-to-close-timeout` | No | Single-attempt deadline. |
 | `--task-queue` | No | Name of the task queue. |
-| `--workflow-id`, `-w` | No | Workflow ID. Set either `--workflow-id` or `--query`. |
-| `--yes`, `-y` | No | Skip confirmation. Only with `--query`. |
-
-<!-- docs/cli/activity.mdx:486-505 -->
+| `--workflow-id`, `-w` | No | Omit for Standalone Activities. Set only for Workflow Activities. |
 
 ---
 
 ## Global Flags
 
-Shared flags for `--address`, `--api-key`, `--namespace`, `--codec-endpoint`/`--codec-auth`, `--tls*`, `--grpc-meta`, `--identity`, `--output`, etc. live in the `## Global Flags` section of the docs file. See `/Users/don/work/skills/documentation/docs/cli/activity.mdx` lines 507–544. <!-- docs/cli/activity.mdx:507-544 -->
+Run `temporal options` for shared connection, authentication, namespace, codec, TLS, and output options. The [official Activity CLI reference](https://docs.temporal.io/cli/activity) also documents these options.
 
 ---
 

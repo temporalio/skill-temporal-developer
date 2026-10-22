@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides Python-specific implementation details for integrating LLMs with Temporal. For conceptual patterns, see `references/core/ai-patterns.md`.
+This document provides Python-specific implementation details for integrating LLMs with Temporal. For conceptual patterns, see [Temporal AI integration patterns](../core/ai-patterns.md).
 
 ## Pydantic Data Converter Setup
 
@@ -321,6 +321,10 @@ class DurableAgentWorkflow:
         result = await agent.run(task)
         return result.output
 ```
+
+## Streaming LLM Output / Tool Calls / etc. to a UI
+
+For streaming tokens or progress events from an Activity to an outside subscriber (browser, terminal, SSE endpoint), see [Python Workflow Streams guide](workflow-streams.md). Workflow Streams is a `contrib` module that handles batching, dedup, and offset-based consumption built on Signals, Updates, and Queries.
 
 ## Best Practices
 

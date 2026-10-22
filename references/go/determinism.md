@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Go SDK has NO runtime sandbox (unlike Python/TypeScript). Workflows must be deterministic for replay, and determinism is enforced entirely by developer convention and optional static analysis via the `workflowcheck` tool (see `references/go/determinism-protection.md`).
+The Go SDK has NO runtime sandbox (unlike Python/TypeScript). Workflows must be deterministic for replay, and determinism is enforced entirely by developer convention and optional static analysis via the `workflowcheck` tool (see [Go determinism protection guide](determinism-protection.md)).
 
 ## Why Determinism Matters: History Replay
 
-Temporal provides durable execution through **History Replay**. When a Worker restores workflow state, it re-executes workflow code from the beginning. This requires the code to be **deterministic**. See `references/core/determinism.md` for a deep explanation.
+Temporal provides durable execution through **History Replay**. When a Worker restores workflow state, it re-executes workflow code from the beginning. This requires the code to be **deterministic**. See [Temporal determinism rules](../core/determinism.md) for a deep explanation.
 
 ## Forbidden Operations in Workflows
 
@@ -27,7 +27,7 @@ Do not use any of the following in workflow code (they are appropriate to use in
 ## Safe Builtin Alternatives
 
 | Instead of | Use |
-|---|---|
+| -- | -- |
 | `go func() { ... }()` | `workflow.Go(ctx, func(ctx workflow.Context) { ... })` |
 | `chan T` | `workflow.NewChannel(ctx)` / `workflow.NewBufferedChannel(ctx, size)` |
 | `select { ... }` | `workflow.NewSelector(ctx)` |
@@ -39,7 +39,7 @@ Do not use any of the following in workflow code (they are appropriate to use in
 
 ## Testing Replay Compatibility
 
-Use `worker.WorkflowReplayer` to verify code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/go/testing.md`
+Use `worker.WorkflowReplayer` to verify code changes are compatible with existing histories. See the Workflow Replay Testing section of [Go testing guide](testing.md)
 
 ## Best Practices
 

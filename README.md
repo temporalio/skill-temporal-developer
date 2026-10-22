@@ -2,8 +2,6 @@
 
 A comprehensive skill for developers to use when building [Temporal](https://temporal.io/) applications.
 
-> [!WARNING]
-> This Skill is currently in Public Preview, and will continue to evolve and improve.
 > We would love to hear your feedback - positive or negative - over in the [Community Slack](https://t.mp/slack), in the [#topic-ai channel](https://temporalio.slack.com/archives/C0818FQPYKY)
 
 ## Installation
@@ -29,16 +27,29 @@ If you prefer to install the skill directly without the plugin wrapper:
 
 #### Via manually cloning the skill repo
 
-1. `mkdir -p ~/.claude/skills && git clone https://github.com/temporalio/skill-temporal-developer ~/.claude/skills/temporal-developer`
+Claude:
 
-Appropriately adjust the installation directory based on your coding agent.
+```
+mkdir -p ~/.claude/skills && git clone https://github.com/temporalio/skill-temporal-developer ~/.claude/skills/temporal-developer
+```
 
-## Currently Supported Temporal SDK Langages
+Codex:
+
+```
+mkdir -p ~/.agents/skills && git clone https://github.com/temporalio/skill-temporal-developer ~/.agents/skills/temporal-developer
+```
+
+## Contributing
+
+See the [contribution guide](CONTRIBUTING.md) for development setup and validation instructions.
+
+## Currently Supported Temporal SDK Languages
 
 - [x] Python ✅
 - [x] TypeScript ✅
 - [x] Go ✅
 - [x] Java ✅
 - [x] .NET ✅
-- [ ] Ruby 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/41))
+- [x] Rust (Public Preview)
+- [x] Ruby ✅
 - [ ] PHP 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/40))

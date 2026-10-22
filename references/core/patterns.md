@@ -193,8 +193,8 @@ On failure at step 3:
 
 **Patterns**:
 
-- `Promise` / `asyncio` - Use traditional concurrency helpers (e.g. wait for all, wait for first, etc)
-- Partial failure handling - Continue with successful results
+- Use the concurrency primitives supported inside the Workflow by the chosen SDK. See the parallel execution examples for [Python](../python/patterns.md#parallel-execution), [TypeScript](../typescript/patterns.md#parallel-execution), [Go](../go/patterns.md#parallel-execution), [Java](../java/patterns.md#parallel-execution), [.NET](../dotnet/patterns.md#parallel-execution), and [Ruby](../ruby/patterns.md#parallel-execution).
+- Decide how to handle a failed operation: fail the Workflow, cancel remaining work, or collect successful results. The choice depends on whether partial results are useful.
 
 ## Entity Workflow Pattern
 
@@ -362,11 +362,13 @@ This ensures that on replay, already-completed steps are skipped.
 
 **Purpose**: Handle data that exceeds Temporal's payload limits without polluting workflow history.
 
-**Limits** (see `references/core/gotchas.md` for details):
+**Limits** (see [Temporal common pitfalls](gotchas.md) for details):
 
 - Max 2MB per individual payload
 - Max 4MB per gRPC message
 - Max 50MB for workflow history (aim for < 10MB)
+
+**Check for SDK support first**: the Go, Python, and TypeScript SDKs have built-in External Storage that applies the claim-check pattern for you — Payloads over a size threshold are offloaded to S3 or GCS and replaced in Event History with a small reference, with no changes to Workflow or Activity code. Prefer it where it exists; see `references/{your_language}/external-storage.md`, if available. The rest of this section applies when you need explicit control over which data is offloaded, or when your SDK has no built-in support.
 
 **Key Principle**: Large data should never flow through workflow history. Activities read and write large data directly, passing only small references through the workflow.
 
@@ -466,7 +468,7 @@ Activity calls heartbeat()
 ## Choosing Between Patterns
 
 | Need | Pattern |
-|------|---------|
+| -- | -- |
 | Send data, don't need response | Signal |
 | Read state, no modification | Query |
 | Modify state, need response | Update |
@@ -477,3 +479,4 @@ Activity calls heartbeat()
 | Long-lived stateful entity | Entity Workflow |
 | Safe retries/replays | Idempotency |
 | Low-latency short operations | Local Activities |
+| Run a background job (job queue) | Standalone Activity — see [Temporal job queue guide](job-queue.md) |

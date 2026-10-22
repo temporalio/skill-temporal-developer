@@ -38,7 +38,7 @@ This document provides a general overview of conceptual-level gotchas in Tempora
   - Temporal random number generation
 - Put all other side effects in Activities
 
-See `references/core/determinism.md` for more info.
+See [Temporal determinism rules](determinism.md) for more info.
 
 ## Multiple Workers with Different Code
 
@@ -58,7 +58,7 @@ See `references/core/determinism.md` for more info.
 
 **Note:** Workflows started with old code continue running after you change the code, which can then induce the above issues. During development (NOT production), you may want to terminate stale workflows (`temporal workflow terminate --workflow-id <id>`).
 
-See `references/core/versioning.md` for more info.
+See [Temporal versioning guide](versioning.md) for more info.
 
 ## Failing Activities Too Quickly
 
@@ -98,7 +98,7 @@ See `references/core/versioning.md` for more info.
 ### Query vs Signal vs Update
 
 | Operation | Modifies State? | Returns Result? | Can Block? | Use For |
-|-----------|-----------------|-----------------|------------|---------|
+| -- | -- | -- | -- | -- |
 | **Query** | No | Yes | No | Read current state |
 | **Signal** | Yes | No | Yes | Fire-and-forget mutations |
 | **Update** | Yes | Yes | Yes | Mutations needing results |
@@ -134,7 +134,7 @@ See language-specific gotchas for details.
 - Non-determinism errors after deployment
 - Stuck workflows that can't make progress
 
-**The Fix**: Use replay testing against saved histories from production or staging.
+**The Fix**: Use replay testing against saved histories from production or staging. Disable the Workflow cache in Workflow tests when you want each Workflow Task to replay from history.
 
 ## Error Handling Mistakes
 
@@ -195,6 +195,29 @@ See language-specific gotchas for details.
 
 **The Fix**: Heartbeat regularly and check for cancellation. See language-specific gotchas for implementation patterns.
 
+## CLI Gotchas for Developers
+
+### Dev Server Is In-Memory and Not for Production
+
+The dev server loses all state on restart (use `--db-filename` to persist) and runs everything in a single process. See [development management guide](dev-management.md) for the full flag table and persistence guidance. Even with persistence enabled, the dev server should NEVER be used for production deployments.
+
+### `workflow update` Is a Command Group, Not a Single Command
+
+Running `temporal workflow update` alone will not work. Use the correct subcommand:
+
+- `temporal workflow update execute` -- start an update and wait for completion.
+- `temporal workflow update start` -- fire an update and wait for acceptance. Requires `--wait-for-stage accepted`.
+- `temporal workflow update result` -- get the result of a previously started update.
+- `temporal workflow update describe` -- check an update's current status.
+
+### `--wait-for-stage` Only Accepts `accepted`
+
+Despite looking like an enum, the only valid value for `--wait-for-stage` on `temporal workflow update start` is `accepted`. Passing `completed` or other values will fail. The flag is required to allow a future CLI version to choose a default.
+
+### `--reapply-type` Only Accepts `Signal` or `None`
+
+When resetting a workflow with `temporal workflow reset`, `--reapply-type` controls which events get reapplied after the reset point. Only `Signal` and `None` are valid values.
+
 ## Payload Size Limits
 
 **The Problem**: Temporal has built-in limits on payload sizes. Exceeding them causes workflows to fail.
@@ -211,4 +234,6 @@ See language-specific gotchas for details.
 - gRPC message size exceeded errors
 - Workflow history growing unboundedly
 
-**The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See the Large Data Handling pattern in `references/core/patterns.md`.
+**The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See the Large Data Handling pattern in [Temporal workflow patterns](patterns.md).
+
+Before hand-rolling reference passing, check whether the SDK does it for you: the Go, Python, and TypeScript SDKs have built-in External Storage that applies the claim-check pattern automatically. See `references/{your_language}/external-storage.md`, if available.

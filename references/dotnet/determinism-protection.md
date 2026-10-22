@@ -2,7 +2,7 @@
 
 ## Overview
 
-The .NET SDK has no runtime sandbox. Determinism is enforced by **developer convention** and **runtime task detection**. Unlike the Python and TypeScript SDKs, the .NET SDK will not intercept or replace non-deterministic calls at compile time or import time. The SDK does provide a runtime `EventListener` that detects some invalid task scheduling, but catching all non-deterministic code requires following the rules below and testing, in particular replay tests (see `references/dotnet/testing.md`).
+The .NET SDK has no runtime sandbox. Determinism is enforced by **developer convention** and **runtime task detection**. Unlike the Python and TypeScript SDKs, the .NET SDK will not intercept or replace non-deterministic calls at compile time or import time. The SDK does provide a runtime `EventListener` that detects some invalid task scheduling, but catching all non-deterministic code requires following the rules below and testing, in particular replay tests (see [.NET testing guide](testing.md)).
 
 ## Runtime Task Detection
 

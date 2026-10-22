@@ -1,95 +1,165 @@
-# Standalone Activities
+# Standalone Activities (Concepts)
 
-A **Standalone Activity** is a top-level [Activity Execution](../../../documentation/docs/encyclopedia/activities/activity-execution.mdx) started directly by a Temporal Client, without a Workflow wrapping it. <!-- docs/encyclopedia/activities/standalone-activity.mdx:50 -->
+This document provides core conceptual explanations of Standalone Activities in Temporal. For language-specific implementation details, see `references/{your_language}/standalone-activities.md` for the language you are working in (Python, TypeScript, Java, .NET, Go, Ruby).
 
-This reference covers the concept. For language-specific code, see the per-SDK references listed at the bottom. For the `temporal activity` CLI, see `references/core/standalone-activities-cli.md`.
+## What is a Standalone Activity?
 
-## Status and dependencies
+A **Standalone Activity** is a top-level Activity Execution started directly by a Client, without using a Workflow. It is Temporal's job queue — the simplest way to run a single durable, retryable task.
 
-Standalone Activities are a **Public Preview** feature. <!-- docs/encyclopedia/activities/standalone-activity.mdx:21-25 --> They require:
+> [!IMPORTANT]
+> If the developer's question is framed in job-queue terms ("build a job queue", "run background jobs", "replace Celery / Sidekiq / BullMQ / SQS workers"), read [Temporal job queue guide](job-queue.md) as well. It maps job-queue vocabulary onto Temporal, covers migrating off an existing job queue, and lists the anti-patterns to avoid.
 
-- **Temporal CLI v1.7.0 or higher** <!-- docs/encyclopedia/activities/standalone-activity.mdx:114 -->
-- **Temporal Server v1.31.0 or higher** <!-- docs/encyclopedia/activities/standalone-activity.mdx:114 -->
+The rule of thumb:
 
-The Temporal Dev Server has Standalone Activities enabled by default for local testing. <!-- docs/encyclopedia/activities/standalone-activity.mdx:138 -->
+- **Need to orchestrate multiple Activities?** Use a Workflow.
+- **Just need to execute a single Activity?** Use a Standalone Activity.
 
-## When to use a Standalone Activity vs. a Workflow
+The same Activity Function code runs in both modes with no changes — the only difference is how it is invoked. An Activity defined for a Workflow can also be executed standalone, and the Worker that hosts it does not need to know how it will be invoked.
 
-- If you need to **orchestrate multiple Activities**, use a [Workflow](../../../documentation/docs/encyclopedia/activities/activities.mdx). <!-- docs/encyclopedia/activities/standalone-activity.mdx:31-32 -->
-- If you just need to **execute a single Activity**, use a Standalone Activity. <!-- docs/encyclopedia/activities/standalone-activity.mdx:31-32 -->
+Compared to wrapping a single Activity in a Workflow, a Standalone Activity:
 
-Standalone Activities are framed as Temporal's [job queue](../../../documentation/docs/evaluate/development-production-features/job-queue.mdx) — the simplest way to run durable, retryable tasks on Temporal. <!-- docs/encyclopedia/activities/standalone-activity.mdx:34-35 -->
+- Reduces billable actions in Temporal Cloud.
+- Lowers latency for short-lived executions (fewer Worker round-trips).
+- Lives in a separate ID space from Workflows.
 
-Typical use cases include sending an email, processing a webhook, syncing data, or executing a single function reliably with built-in retries and timeouts. <!-- docs/encyclopedia/activities/standalone-activity.mdx:72-74 -->
+### Use cases
 
-## Dual use: same Activity Function, two execution modes
+Standalone Activities fit durable single-job processing where you don't need multi-step orchestration:
 
-You write your Activity Functions the same way for both. **The same Activity Function can be executed as a Standalone Activity and as a Workflow Activity with no code changes.** <!-- docs/encyclopedia/activities/standalone-activity.mdx:56-57 --> No Worker code changes are required to switch between the two modes. <!-- docs/encyclopedia/activities/standalone-activity.mdx:90 -->
+- Sending an email
+- Processing a webhook
+- Syncing data
+- Any single-function task that benefits from built-in retries and timeouts
 
-## Key features
+### Key features
 
-- **Top-level execution** — execute any Temporal Activity as a top-level primitive without the overhead of a Workflow. <!-- docs/encyclopedia/activities/standalone-activity.mdx:77 -->
-- **Async job processing model** — schedule → dispatch → process → result. <!-- docs/encyclopedia/activities/standalone-activity.mdx:78 -->
-- **No head-of-line blocking** — a slow job doesn't block dispatch of other Tasks. <!-- docs/encyclopedia/activities/standalone-activity.mdx:79 -->
-- **Arbitrary-length jobs** — heartbeats provide liveness and progress checkpointing. <!-- docs/encyclopedia/activities/standalone-activity.mdx:80 -->
-- **At-least-once execution by default** with a native retry policy and timeouts. <!-- docs/encyclopedia/activities/standalone-activity.mdx:81 -->
-- **At-most-once execution** if retry max attempts is `1`. <!-- docs/encyclopedia/activities/standalone-activity.mdx:82 -->
-- **Addressable** — get an Activity ID / Run ID and use it to fetch the result, cancel, or terminate the execution. <!-- docs/encyclopedia/activities/standalone-activity.mdx:83 -->
-- **Deduplication** — controlled via conflict and reuse policies (see below). <!-- docs/encyclopedia/activities/standalone-activity.mdx:84 -->
-- **Separate ID space from Workflows** — Standalone Activities are a different kind of top-level execution; their IDs do not collide with, and are not addressable as, Workflow IDs. <!-- docs/encyclopedia/activities/standalone-activity.mdx:85 -->
-- **Priority and fairness** — multi-tenant fairness, weighted priority tiers, and safeguards against starvation of lower-weighted tasks. <!-- docs/encyclopedia/activities/standalone-activity.mdx:86 -->
-- **Visibility** — list Activity Executions and view status, retry count, and last error. <!-- docs/encyclopedia/activities/standalone-activity.mdx:87 -->
-- **Manual completion by ID (or token)** — ignore the Activity return value and wait for external completion. <!-- docs/encyclopedia/activities/standalone-activity.mdx:88 -->
-- **Activity metrics** — including counts for success, failure, timeout, and cancel. <!-- docs/encyclopedia/activities/standalone-activity.mdx:89 -->
+- Execute Activities as a top-level primitive, without Workflow overhead.
+- Native async job lifecycle: **schedule → dispatch → process → result**.
+- Arbitrary-length jobs, with heartbeats for progress tracking.
+- **At-least-once execution by default**, with native retry policy and timeouts.
+- **At-most-once execution** when the retry policy's maximum attempts is 1.
+- Addressable by Activity ID / Run ID for result retrieval, cancellation, and termination.
+- Deduplication via configurable conflict policies.
+- Priority and fairness support.
+- Full visibility — list and count executions.
 
-### Conflict and reuse policies (Public Preview)
+## Using Standalone Activities
 
-Only the values below appear in the upstream documentation for Public Preview:
+### Defining activities
 
-- Conflict policy: `USE_EXISTING` <!-- docs/encyclopedia/activities/standalone-activity.mdx:84 -->
-- Reuse policy: `REJECT_DUPLICATES` <!-- docs/encyclopedia/activities/standalone-activity.mdx:84 -->
+Defining standalone activities is IDENTICAL to defining activities callable from a workflow - there is no distinction AT ALL between the two at activity definition or worker configuration site. Follow language-specific guidance for how to normally define activities and configure workers to run them.
 
-The following are **not** supported in Public Preview:
+### Calling and Interacting with Standalone Activities
 
-- `TerminateExisting` conflict policy <!-- docs/encyclopedia/activities/standalone-activity.mdx:110 -->
-- `TerminateIfRunning` reuse policy <!-- docs/encyclopedia/activities/standalone-activity.mdx:110 -->
+The CLI and every SDK exposes the same conceptual operations against a Standalone Activity (method names differ per language — see the language reference):
 
-Do not assume any other enum values exist for Standalone Activities until they are documented upstream.
+- **Execute** — durably enqueue the Activity, wait for a Worker to run it, and return the result.
+- **Start** — durably enqueue the Activity and return a handle immediately, without waiting.
+- **Get handle** — rebind a handle to a previously started Activity by ID (and optionally Run ID).
+- **Get result** — wait on a handle for completion. `execute` is equivalent to `start` followed by awaiting the handle's result.
+- **Cancel / Terminate** — via the handle or CLI.
 
-## Public Preview limitations
+**Choosing an Activity ID.** Every Standalone Activity call requires an **Activity ID**, which uniquely identifies that one call. It is the key you use later to get the result, describe, cancel, or terminate the Activity, and it is what conflict/reuse policies dedupe against. Use a **business-logic identifier** that uniquely identifies the call — for example `send-welcome-email:user-42`, `sync-invoice:INV-2026-001`, or `process-webhook:<event-id>`. This makes Activities addressable and naturally deduplicated by your domain. Only if you genuinely have no meaningful business-level identifier should you generate a **UUID** to use as the Activity ID.
 
-The Public Preview has the following known limitations: <!-- docs/encyclopedia/activities/standalone-activity.mdx:105-110 -->
+Visibility operations are available as well:
 
-- **Pause, reset, and update options are not supported in Public Preview but are scheduled for GA.** <!-- docs/encyclopedia/activities/standalone-activity.mdx:109 -->
-- **`TerminateExisting` conflict policy / `TerminateIfRunning` reuse policy is not supported yet.** <!-- docs/encyclopedia/activities/standalone-activity.mdx:110 -->
+- **List** — enumerate Standalone Activity Executions matching a query. Only Standalone Activities are returned; Activities running inside Workflows are not included.
+- **Count** — return the total number of executions matching a query (running, completed, failed, etc. — not the number of queued tasks).
+- **Describe** — via the handle or CLI.
+
+See below for a quick reference how to call these operations from the CLI rather than SDKs.
+
+> [!IMPORTANT]
+> When using an SDK, these operations are owned by the Temporal Client, and belong **in your non-workflow application code**. It is INVALID to call an activity as a standalone activity from within a workflow: you instead should use standard within-workflow activity calls.
+
+**Currently Supported SDKs: Python, TypeScript, Java, .NET, Go, Ruby**
+
+## Quick CLI Standalone Activity Man Page
+
+Ultimately, any standalone activity invocation code should live in your application code and use the appropriate SDK, but the Temporal CLI is a quick and easy way to test invoking standalone activities during development. All subcommands live under `temporal activity`.
+
+See the [Standalone Activities CLI reference](standalone-activities-cli.md) for subcommands and flags.
+
+The key operations are:
+
+**Execute (start and wait for the result).** Blocks until the Activity completes and prints the result to stdout. Requires `--activity-id`, `--type`, `--task-queue`, and at least one of `--start-to-close-timeout` / `--schedule-to-close-timeout`:
+
+```bash
+temporal activity execute \
+  --activity-id my-activity-id \
+  --type ComposeGreeting \
+  --task-queue my-task-queue \
+  --start-to-close-timeout 10s \
+  --input '{"some-key": "some-value"}'
+```
+
+`--input` takes a JSON value; pass it multiple times for multiple positional arguments. `--input-file` is also a convenient option for larger inputs. The same required flags apply to `start` below.
+
+Reminder: `--activity-id` must be unique across all activity calls, as discussed above.
+
+**Start (do not wait).** Enqueues the Activity and prints the Activity ID and Run ID without blocking:
+
+```bash
+temporal activity start \
+  --activity-id my-activity-id \
+  --type ComposeGreeting \
+  --task-queue my-task-queue \
+  --start-to-close-timeout 10s \
+  --input '{"some-key": "some-value"}'
+```
+
+Outputs this JSON shape:
+
+```json
+{
+  "activityId": "my-activity-id",
+  "runId": "019e84d3-949a-7a0e-ae78-63b8a0b172bd",
+  "namespace": "default"
+}
+```
+
+**Result (wait for a started Activity).** Waits for completion and prints the result. `--run-id` is optional and defaults to the latest run of that Activity ID:
+
+```bash
+temporal activity result --activity-id my-activity-id
+```
+
+**Describe (current state of one Activity).** Shows status, run state, task queue, timeouts, attempt count, etc.:
+
+```bash
+temporal activity describe --activity-id my-activity-id
+```
+
+**List / Count (visibility across many Activities).** Only Standalone Activity Executions are returned (Activities running inside Workflows are not):
+
+```bash
+temporal activity list
+temporal activity count
+```
+
+**Cancel / Terminate (stop an Activity).** `cancel` requests cooperative cancellation (surfaced to the Activity on its next heartbeat response); `terminate` forcefully ends it (Activity code cannot see or respond to it). Both accept `--reason`:
+
+```bash
+temporal activity cancel    --activity-id my-activity-id --reason "no longer needed"
+temporal activity terminate --activity-id my-activity-id --reason "no longer needed"
+```
 
 ## Observability
 
-All existing [Activity metrics](../../../documentation/docs/cloud/metrics/openmetrics/metrics-reference.mdx) apply to Standalone Activities. This includes counts for scheduled, started, completed, failed, timed out, and canceled activities. <!-- docs/encyclopedia/activities/standalone-activity.mdx:94-96 --> No new Standalone-specific metric names are introduced; query the same Activity metric series you already use for Workflow Activities. <!-- docs/cloud/metrics/openmetrics/metrics-reference.mdx:315 -->
+All existing Activity metrics apply to Standalone Activities (scheduled, started, completed, failed, timed out, canceled).
 
-You can query Standalone Activity Executions using [List Filters](../../../documentation/docs/encyclopedia/visibility.mdx) by type, status, task queue, and other attributes — either through an SDK or via the `temporal activity list` CLI command. <!-- docs/encyclopedia/activities/standalone-activity.mdx:98-99 -->
+## Limitations
 
-`CountActivities` returns the total number of Standalone Activity Executions matching a filter, analogous to counting Workflow Executions. This is the total count of executions (running, completed, failed, etc.) — **not** the number of queued tasks. <!-- docs/encyclopedia/activities/standalone-activity.mdx:101-103 -->
+- Pause, reset, and update are supported and ready for production use, but those options are themselves in Public Preview.
+- The `TerminateExisting` conflict policy and `TerminateIfRunning` reuse policy are not supported.
+- A Workflow cannot start a Standalone Activity directly. Use a wrapper Activity that calls the Client.
+- Recurring ("cron") Standalone Activities are not supported. Use a Schedule that starts a Workflow calling the Activity.
+
+## Temporal CLI support
+
+- Requires **Temporal CLI v1.7.0+** and **Temporal Server v1.31.0+**. See [Temporal CLI installation guide](install_cli.md) if you need to update the CLI.
+- The Temporal Dev Server (`temporal server start-dev`) has Standalone Activities enabled by default.
 
 ## Temporal Cloud support
 
-Standalone Activities in Temporal Cloud are available as a **Public Preview** feature. <!-- docs/encyclopedia/activities/standalone-activity.mdx:140-142 -->
-
-## Billing framing (Temporal Cloud)
-
-Running an Activity as a Standalone Activity results in **fewer Billable Actions** than running the same single Activity inside a Workflow. <!-- docs/encyclopedia/activities/standalone-activity.mdx:52-54 --> If your Activity Execution is short-lived, you may also see lower latency due to fewer Worker round-trips. <!-- docs/encyclopedia/activities/standalone-activity.mdx:52-54 --> Refer to the Temporal Cloud Actions Usage documentation for the authoritative count semantics; do not extrapolate specific numeric ratios.
-
-## Where to go next
-
-Per-language references in this skill:
-
-- `references/python/standalone-activities.md`
-- `references/go/standalone-activities.md`
-- `references/java/standalone-activities.md`
-- `references/dotnet/standalone-activities.md`
-
-CLI reference in this skill:
-
-- `references/core/standalone-activities-cli.md`
-
-> **TypeScript SDK note:** Upstream documentation does not currently include a TypeScript Standalone Activities quickstart or reference. Coverage is upstream-pending; do not assume parity with Python/Go/Java/.NET until the docs land. <!-- docs/encyclopedia/activities/standalone-activity.mdx:63-66 -->
+Standalone Activities are available in Temporal Cloud. Because the SDK client config loaders read environment variables and TOML profiles, the same code runs against a local server or Temporal Cloud with no code changes.

@@ -153,5 +153,5 @@ public class MyWorkflow
 3. Configure appropriate retry policies
 4. Log errors before re-raising
 5. Use `ActivityFailureException` to catch activity failures in workflows
-6. Design code to be idempotent for safe retries (see more at `references/core/patterns.md`)
+6. Design code to be idempotent for safe retries (see more at [Temporal workflow patterns](../core/patterns.md))
 7. Only throw `ApplicationFailureException` from workflows to fail them — other exceptions will retry the workflow task

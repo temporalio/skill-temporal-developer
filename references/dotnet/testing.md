@@ -129,6 +129,12 @@ public async Task TestActivityFailureHandling()
 
 ## Replay Testing
 
+For replay tests that read history from a JSON file, use the [CLI export command](../core/cli-workflow-commands.md#workflow-show) to create that file.
+
+For worker integration tests that should replay workflow history on every Workflow Task, set `TemporalWorkerOptions.MaxCachedWorkflows` to `0`. This complements replaying saved histories with `WorkflowReplayer`.
+
+To make nondeterminism fail the Workflow Execution immediately in a test, include `typeof(WorkflowNondeterminismException)` in `TemporalWorkerOptions.WorkflowFailureExceptionTypes`.
+
 ```csharp
 using Temporalio.Worker;
 

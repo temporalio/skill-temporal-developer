@@ -8,7 +8,7 @@ Workflow versioning allows safe deployment of code changes without breaking runn
 
 1. **Patching API** - Code-level version branching
 2. **Workflow Type Versioning** - New workflow types for incompatible changes
-3. **Worker Versioning** - Deployment-level control with Build IDs
+3. **Worker Versioning** - Deployment-level routing with Worker Deployment Versions
 
 ## Why Versioning is Needed
 
@@ -101,13 +101,16 @@ Create a new workflow type (e.g., `OrderWorkflowV2`) instead of patching.
 
 ### Concept
 
-Manage versions at deployment level using Build IDs. Multiple worker versions can run simultaneously.
+Manage versions through Worker Deployments. Multiple Worker Deployment Versions can run simultaneously, and each version is identified by a deployment name and Build ID.
+
+> [!IMPORTANT]
+> This is the current Worker Deployment-based versioning model. Do not confuse it with the legacy Build ID-based Worker Versioning APIs, which manage compatibility sets directly. Those APIs are deprecated.
 
 ```
-Worker v1.0 (Build ID: abc123)
+Worker Deployment Version (deployment: order-service, build: abc123)
   └── Handles workflows started on this version
 
-Worker v2.0 (Build ID: def456)
+Worker Deployment Version (deployment: order-service, build: def456)
   └── Handles new workflows
   └── Can also handle upgraded old workflows
 ```
@@ -116,7 +119,9 @@ Worker v2.0 (Build ID: def456)
 
 **Worker Deployment**: Logical service grouping (e.g., "order-service")
 
-**Build ID**: Specific code version (e.g., git commit hash)
+**Worker Deployment Version**: A specific snapshot identified by a Worker Deployment name and a Build ID
+
+**Build ID**: The code-version component of a Worker Deployment Version (e.g., a git commit hash)
 
 **Versioning Behaviors**:
 
@@ -136,14 +141,58 @@ Worker v2.0 (Build ID: def456)
 - Workflows need bug fixes during execution
 - Still requires patching for version transitions
 
+## Upgrading on Continue-as-New
+
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+
+Long-running Pinned Workflows that use Continue-as-New can upgrade to newer Worker Deployment Versions at the Continue-as-New boundary without patching.
+
+This pattern is for:
+
+- Entity Workflows that run for months or years
+- Batch processing Workflows that checkpoint with Continue-as-New
+- AI agent Workflows with long sleeps waiting for user input
+
+### How it works
+
+By default, Pinned Workflows stay on their original Worker Deployment Version even when they Continue-as-New. With the upgrade option enabled:
+
+1. Each Workflow run remains pinned to its version (no patching needed during a run).
+2. The Temporal Server tells the Workflow when a new **Target Version** becomes available — that is, when the Workflow's Worker Deployment gets a new Current or Ramping Version that the Workflow would move to next.
+3. When the Workflow performs Continue-as-New with the upgrade option, the new run starts on the Target Version.
+
+### Detection flag
+
+Active Workflows detect a Target Version change by checking a per-Workflow flag exposed on `WorkflowInfo` (called `target_worker_deployment_version_changed` in the docs). The flag is refreshed after each Workflow Task completes; check it from code that runs as part of a Workflow Task (for example, before accepting an Update, starting an Activity, or starting a child Workflow). See the per-language `references/{your_language}/versioning.md` for the SDK-specific call.
+
+### Triggering the new run
+
+When the flag is set, return a Continue-as-New error with the new run's initial Versioning Behavior set to `AutoUpgrade`. This makes the new run start on the Target Version of its Worker Deployment. The Workflow Type itself retains its Pinned annotation; only the *initial* behavior of the *new* run is overridden so it picks up the Target Version. Once the new run is on the new version, the per-Workflow-type annotation continues to apply on subsequent CaN.
+
+### Limitations
+
+- **Lazy moving only — sleeping Workflows do not auto-upgrade.** Send a Signal to wake an idle Workflow so it can check the flag.
+- **Interface compatibility is your responsibility.** When continuing as new to a different version, the previous version's Workflow input must be compatible with the new version's Workflow definition. If incompatible, the new run may fail on its first Workflow Task.
+- **Pinned Workflows only.** Auto-Upgrade Workflows already move to the Target Version at Workflow Task boundaries; this pattern adds nothing for them.
+
+### When to use this pattern
+
+- Workflow Type is Pinned **and**
+- Workflow runs longer than your Worker Deployment Version lifetime **and**
+- Workflow already uses Continue-as-New to bound Event History size.
+
+For long-running Workflows that cannot use Continue-as-New (e.g., compliance audits that need full history), use `AUTO_UPGRADE` with patching instead.
+
 ## Choosing an Approach
 
 | Scenario | Recommended Approach |
-|----------|---------------------|
+| -- | -- |
 | Small change, few running workflows | Patching API |
 | Major rewrite | Workflow Type Versioning |
 | Many short workflows, frequent deploys | Worker Versioning (PINNED) |
-| Long-running workflows needing updates | Worker Versioning (AUTO_UPGRADE) + Patching |
+| Long-running workflows, uses Continue-as-New | Worker Versioning (PINNED) + upgrade on Continue-as-New |
+| Long-running workflows, no Continue-as-New | Worker Versioning (AUTO_UPGRADE) + Patching |
 | Quick fix, can wait for completion | Wait for workflows to complete |
 
 ## Best Practices
@@ -155,6 +204,12 @@ Worker v2.0 (Build ID: def456)
 5. **Monitor old workflow counts** during migration
 
 ## Finding Workflows by Version
+
+`TemporalChangeVersion` is a Visibility Search Attribute that records version markers emitted by the Workflow's patching or versioning API. A Workflow can have multiple values, and the values accumulate as it passes through version changes. Some SDKs encode those values automatically, and others require an explicit option or a manual upsert.
+
+Use it to find open Workflows whose history has recorded a particular change. A matching value identifies a Workflow that recorded that marker; it does not identify the Workflow's deployment or guarantee that the Workflow is currently executing that code path. `TemporalChangeVersion IS NULL` finds executions with no value upserted, which can include pre-versioning histories and SDKs or code paths that do not populate the attribute.
+
+Use the value format for your SDK, and include `ExecutionStatus = "Running"` when you only want open executions.
 
 ```bash
 # Find workflows with specific patch

@@ -172,12 +172,14 @@ Workflow status = FAILED?
    - Error marked as non-retryable
    - Intentional failure, check business logic
 
+**Note:** A replay nondeterminism error usually fails a Workflow Task, not the Workflow Execution itself. The workflow may remain `RUNNING` while the task is retried. The SDKs let tests opt into failing the Workflow Execution for these errors so incompatibilities surface immediately.
+
 ## Timeout Issues
 
 ### Timeout Types
 
 | Timeout | Scope | What It Limits |
-|---------|-------|----------------|
+| -- | -- | -- |
 | `WorkflowExecutionTimeout` | Entire workflow | Total time including retries and continue-as-new |
 | `WorkflowRunTimeout` | Single run | Time for one run (before continue-as-new) |
 | `ScheduleToCloseTimeout` | Activity | Total time including retries |
@@ -286,7 +288,7 @@ Worker won't start?
 ## Useful Commands
 
 ```bash
-# Check Temporal server
+# Start a local development server
 temporal server start-dev
 
 # List workflows
@@ -308,7 +310,7 @@ temporal workflow reset --workflow-id <id> --event-id <event-id>
 ## Quick Reference: Status → Action
 
 | Status | First Check | Common Fix |
-|--------|-------------|------------|
+| -- | -- | -- |
 | RUNNING (stuck) | Worker running? | Start/restart worker |
 | FAILED | Error message | Fix bug, handle error |
 | TIMED_OUT | Which timeout? | Increase timeout or optimize |

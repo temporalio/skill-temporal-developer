@@ -127,9 +127,76 @@ WorkflowServiceStubs service = WorkflowServiceStubs.newServiceStubs(
 - `temporal_activity_execution_latency` — Activity execution time
 - `temporal_workflow_task_replay_latency` — Replay duration
 
+## Search Attributes (Visibility)
+
+Custom searchable fields for workflow visibility.
+
+```java
+import io.temporal.common.SearchAttributeKey;
+import io.temporal.common.SearchAttributes;
+
+// Define typed search attribute keys
+static final SearchAttributeKey<String> ORDER_ID =
+    SearchAttributeKey.forKeyword("OrderId");
+static final SearchAttributeKey<String> ORDER_STATUS =
+    SearchAttributeKey.forKeyword("OrderStatus");
+static final SearchAttributeKey<Double> ORDER_TOTAL =
+    SearchAttributeKey.forDouble("OrderTotal");
+static final SearchAttributeKey<OffsetDateTime> CREATED_AT =
+    SearchAttributeKey.forOffsetDateTime("CreatedAt");
+
+// Set at workflow start
+WorkflowOptions options = WorkflowOptions.newBuilder()
+    .setWorkflowId("order-" + orderId)
+    .setTaskQueue("orders")
+    .setTypedSearchAttributes(
+        SearchAttributes.newBuilder()
+            .set(ORDER_ID, orderId)
+            .set(ORDER_STATUS, "pending")
+            .set(ORDER_TOTAL, 99.99)
+            .set(CREATED_AT, OffsetDateTime.now())
+            .build()
+    )
+    .build();
+```
+
+Upsert during workflow execution:
+
+```java
+@WorkflowInterface
+public interface OrderWorkflow {
+    @WorkflowMethod
+    String run(Order order);
+}
+
+public class OrderWorkflowImpl implements OrderWorkflow {
+    static final SearchAttributeKey<String> ORDER_STATUS =
+        SearchAttributeKey.forKeyword("OrderStatus");
+
+    @Override
+    public String run(Order order) {
+        // ... process order ...
+
+        Workflow.upsertTypedSearchAttributes(
+            ORDER_STATUS.valueSet("completed")
+        );
+        return "done";
+    }
+}
+```
+
+### Querying Workflows by Search Attributes
+
+```java
+ListWorkflowExecutionsRequest request = ListWorkflowExecutionsRequest.newBuilder()
+    .setNamespace("default")
+    .setQuery("OrderStatus = 'processing' OR OrderStatus = 'pending'")
+    .build();
+```
+
 ## Best Practices
 
 1. Use `Workflow.getLogger()` in workflows, standard SLF4J loggers in activities
 2. Do not use `System.out.println()` in workflows — it produces duplicate output on replay
 3. Configure Micrometer metrics for production monitoring
-4. Use Search Attributes for business-level visibility — see `references/java/data-handling.md`
+4. Use Search Attributes for business-level visibility

@@ -37,6 +37,10 @@ WorkflowClient client = WorkflowClient.newInstance(
 );
 ```
 
+### Computed getters
+
+POJOs used as Workflow or Activity parameters are handled by the default `JacksonJsonPayloadConverter` and its `ObjectMapper`. Jackson may serialize a bean getter such as `getTotalPrice()` even when it has no corresponding field or setter. If deserialization then fails with an `UnrecognizedPropertyException`, a Workflow parameter can cause a Workflow Task processing failure, while an Activity parameter can cause an Activity Task failure. Mark computed getters with `@JsonIgnore`.
+
 ## Custom Data Converter
 
 Implement `PayloadConverter` for custom serialization:
@@ -166,73 +170,6 @@ WorkflowClient client = WorkflowClient.newInstance(
 );
 ```
 
-## Search Attributes
-
-Custom searchable fields for workflow visibility.
-
-```java
-import io.temporal.common.SearchAttributeKey;
-import io.temporal.common.SearchAttributes;
-
-// Define typed search attribute keys
-static final SearchAttributeKey<String> ORDER_ID =
-    SearchAttributeKey.forKeyword("OrderId");
-static final SearchAttributeKey<String> ORDER_STATUS =
-    SearchAttributeKey.forKeyword("OrderStatus");
-static final SearchAttributeKey<Double> ORDER_TOTAL =
-    SearchAttributeKey.forDouble("OrderTotal");
-static final SearchAttributeKey<OffsetDateTime> CREATED_AT =
-    SearchAttributeKey.forOffsetDateTime("CreatedAt");
-
-// Set at workflow start
-WorkflowOptions options = WorkflowOptions.newBuilder()
-    .setWorkflowId("order-" + orderId)
-    .setTaskQueue("orders")
-    .setTypedSearchAttributes(
-        SearchAttributes.newBuilder()
-            .set(ORDER_ID, orderId)
-            .set(ORDER_STATUS, "pending")
-            .set(ORDER_TOTAL, 99.99)
-            .set(CREATED_AT, OffsetDateTime.now())
-            .build()
-    )
-    .build();
-```
-
-Upsert during workflow execution:
-
-```java
-@WorkflowInterface
-public interface OrderWorkflow {
-    @WorkflowMethod
-    String run(Order order);
-}
-
-public class OrderWorkflowImpl implements OrderWorkflow {
-    static final SearchAttributeKey<String> ORDER_STATUS =
-        SearchAttributeKey.forKeyword("OrderStatus");
-
-    @Override
-    public String run(Order order) {
-        // ... process order ...
-
-        Workflow.upsertTypedSearchAttributes(
-            ORDER_STATUS.valueSet("completed")
-        );
-        return "done";
-    }
-}
-```
-
-### Querying Workflows by Search Attributes
-
-```java
-ListWorkflowExecutionsRequest request = ListWorkflowExecutionsRequest.newBuilder()
-    .setNamespace("default")
-    .setQuery("OrderStatus = 'processing' OR OrderStatus = 'pending'")
-    .build();
-```
-
 ## Workflow Memo
 
 Store arbitrary metadata with workflows (not searchable).
@@ -282,7 +219,7 @@ public String run() {
 ## Best Practices
 
 1. Use Jackson `ObjectMapper` customization for complex serialization needs
-2. Keep payloads small — see `references/core/gotchas.md` for limits
+2. Keep payloads small — see [Temporal common pitfalls](../core/gotchas.md) for limits
 3. Encrypt sensitive data with `PayloadCodec` and `CodecDataConverter`
 4. Use POJOs or Protobuf messages for workflow/activity parameters
 5. Use `Workflow.randomUUID()`, `Workflow.newRandom()`, and `Workflow.currentTimeMillis()` for deterministic values
