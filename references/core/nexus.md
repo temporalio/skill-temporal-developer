@@ -18,14 +18,7 @@ Temporal Nexus connects Temporal Applications across Namespace boundaries. It pr
 
 A reverse proxy that routes requests from a caller Namespace to a handler Namespace and Task Queue. Endpoints decouple callers from handlers — the caller only knows the endpoint name, not the target namespace or task queue.
 
-```
-Caller Namespace                          Handler Namespace
-┌──────────────┐     Nexus Endpoint     ┌──────────────────┐
-│ Caller       │─────────────────────▶  │ Handler Worker   │
-│ Workflow     │     (reverse proxy)    │ (polls target    │
-│              │◀─────────────────────  │  task queue)     │
-└──────────────┘                        └──────────────────┘
-```
+The caller addresses an endpoint by name. The endpoint routes the request to its configured handler Namespace and Task Queue, where a handler Worker receives it. The result is delivered back to the caller through Temporal.
 
 ### Nexus Service
 
@@ -46,28 +39,11 @@ The registry manages endpoint configuration. It is scoped to an Account in Tempo
 
 ### Operation Lifecycle
 
-```
-Caller Workflow
-    │
-    │  execute_operation() or start_operation()
-    ▼
-Temporal Nexus Machinery
-    │  (schedules operation, manages retries)
-    ▼
-Nexus Endpoint
-    │  (routes to target namespace + task queue)
-    ▼
-Handler Worker
-    │  (polls for Nexus tasks, executes handler)
-    │
-    ├── Sync handler: returns result directly
-    │
-    └── Workflow run handler: starts workflow, Nexus tracks to completion
-```
+A caller Workflow schedules an operation with `execute_operation()` or `start_operation()`. The Temporal Service records the request and routes it through the Nexus Endpoint to a Worker polling the handler's Task Queue. A synchronous handler returns its result during the request. A Workflow Run handler starts a Workflow and returns before it finishes; Temporal later delivers the Workflow's result through a completion callback.
 
 ### Built-in Nexus Machinery
 
-The Nexus Machinery sits between caller and handler. It uses state-machine-based invocation and completion callbacks to provide:
+The Nexus Machinery is the Temporal Service logic that tracks operation progress durably, retries requests after retryable failures, and delivers asynchronous results through completion callbacks. It provides:
 
 - **At-least-once execution** with automatic retries
 - **Circuit breaking** to prevent cascading failures
@@ -76,7 +52,7 @@ The Nexus Machinery sits between caller and handler. It uses state-machine-based
 
 ### Event History
 
-Nexus operations generate events in the caller workflow's history:
+Nexus operations called from a Workflow generate events in the caller workflow's history:
 
 | Operation Type | Events |
 |---------------|--------|
@@ -85,12 +61,7 @@ Nexus operations generate events in the caller workflow's history:
 
 ## Multi-Level Calls
 
-Nexus supports chaining across multiple namespaces:
-
-```
-Namespace A          Namespace B          Namespace C
-Workflow A ──Nexus──▶ Workflow B ──Nexus──▶ Workflow C
-```
+Nexus supports chaining across multiple namespaces: a Workflow in Namespace A calls a Nexus operation handled in Namespace B. That handler starts a Workflow, which can call another Nexus operation handled in Namespace C.
 
 Each hop adds its own retry and fault isolation boundary.
 
@@ -98,11 +69,11 @@ Each hop adds its own retry and fault isolation boundary.
 
 Nexus introduces two handler-side exception types and one caller-side type:
 
-- **Operation Error** — The operation itself failed. Non-retryable by default. Raised in handlers to indicate business-level failure.
-- **Handler Error** — A handler-level error with explicit retryability control. Use for transient infrastructure failures (retryable) or permanent handler issues (non-retryable).
+- **Operation Error** — Raised in handlers to report that the operation failed or was canceled. This is a terminal outcome; Nexus does not retry the operation automatically.
+- **Handler Error** — Raised in handlers to report a request-processing failure, with explicit retryability control. Use for transient infrastructure failures (retryable) or permanent handler issues (non-retryable).
 - **Nexus Operation Error** — Raised in the caller workflow when a Nexus operation fails. Wraps the underlying cause, accessible via the error chain.
 
-Nexus operations share the same general error handling patterns as activities and child workflows — see `references/core/patterns.md` and `references/{your_language}/error-handling.md`.
+Calling Nexus operations lets caller Workflows catch a Nexus Operation Error and inspect its cause, similarly to catching failures from Activities and Child Workflows. The Nexus Machinery automatically retries retryable handler failures until the operation's Schedule-to-Close timeout; those intermediate failures do not immediately fail the caller Workflow. See [Nexus error handling](https://docs.temporal.io/nexus/error-handling), [Workflow error handling patterns](patterns.md), and `references/{your_language}/error-handling.md`.
 
 ## Cancellation
 
@@ -117,8 +88,9 @@ Caller workflows can cancel in-progress Nexus operations. Cancellation types con
 
 ## Infrastructure Setup
 
-Nexus requires:
-1. **Separate namespaces** for caller and handler (or the same namespace for simpler setups)
+For operations called from a Workflow, set up:
+
+1. **Separate namespaces** for independently managed caller and handler applications; they can share a Namespace when a service contract is useful within one Namespace. See [When to Use Nexus](#when-to-use-nexus) to choose between Nexus and Child Workflows.
 2. **A Nexus Endpoint** in the registry, routing to the handler's namespace and task queue
 3. **Handler workers** with Nexus service handlers registered
 4. **Caller workers** with workflows that create Nexus clients
@@ -147,8 +119,8 @@ Nexus requires:
 ## Best Practices
 
 1. **Keep service contracts shared** — Define in a module importable by both caller and handler code
-2. **Use business-meaningful workflow IDs** — In workflow run operations, derive IDs from business data for deduplication safety
+2. **Use business-meaningful workflow IDs** — Keep the ID stable across retries of the same logical request and choose explicit conflict policies for running executions and reuse policies for completed executions so retries cannot start duplicate work
 3. **Match operation type to duration** — Sync for <10s work, workflow run for anything longer
-4. **Co-locate handlers and workflows** — Register Nexus service handlers and their backing workflows on the same worker
+4. **Co-locate handlers and workflows** — Start with both registered on the same Worker: backing Workflows default to the handler's Task Queue, so this ensures a Worker can execute them. To deploy them separately, specify the backing Workflow's Task Queue and run Workers with its Workflow definition registered there.
 5. **Design for at-least-once delivery** — Handlers should be idempotent, just like activities (see idempotency patterns in `references/core/patterns.md`)
-6. **Isolate failure domains** — Nexus provides namespace-level fault isolation; leverage it for independent deployment and scaling
+6. **Isolate failure domains** — Put independently owned services in separate Namespaces, and deploy and scale their handler Workers independently of caller Workers so a handler rollout or capacity change does not require redeploying callers

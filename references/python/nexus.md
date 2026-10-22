@@ -71,9 +71,9 @@ class MyNexusServiceHandler:
 Use `@nexus.workflow_run_operation` to expose a workflow as a Nexus operation. The operation starts the workflow and Nexus tracks it to completion.
 
 ```python
-import uuid
 import nexusrpc
 from temporalio import nexus
+from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
 
 
 @nexusrpc.handler.service_handler(service=MyNexusService)
@@ -85,11 +85,13 @@ class MyNexusServiceHandler:
         return await ctx.start_workflow(
             WorkflowStartedByNexusOperation.run,
             input,
-            id=str(uuid.uuid4()),
+            id=f"my-workflow-{ctx.request_id}",
+            id_conflict_policy=WorkflowIDConflictPolicy.USE_EXISTING,
+            id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
         )
 ```
 
-**Note:** In production, prefer deterministic workflow IDs derived from business data for deduplication safety. `uuid.uuid4()` is shown for simplicity.
+**Note:** `ctx.request_id` stays the same when Nexus retries a start request, so this ID targets the same backing Workflow on every attempt. `USE_EXISTING` attaches to an already-running execution; `REJECT_DUPLICATE` prevents starting a new execution with a completed ID within the Namespace's retention period. To deduplicate separate Nexus calls for the same business work, carry a business identifier in the service contract and derive the Workflow ID from it. Generate a fresh ID only for distinct work, rather than on every handler attempt.
 
 ### Mapping Multiple Workflow Arguments
 
@@ -105,7 +107,9 @@ class MyNexusServiceHandler:
         return await ctx.start_workflow(
             HelloHandlerWorkflow.run,
             args=[input.name, input.language],
-            id=str(uuid.uuid4()),
+            id=f"hello-{ctx.request_id}",
+            id_conflict_policy=WorkflowIDConflictPolicy.USE_EXISTING,
+            id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
         )
 ```
 
@@ -113,12 +117,15 @@ class MyNexusServiceHandler:
 
 Register Nexus service handlers on the handler worker using `nexus_service_handlers`. The caller worker only needs the caller workflow registered normally.
 
+### Handler
+
+The handler team runs this Worker in the target Namespace. Register both operation methods shown above on `MyNexusServiceHandler`.
+
 ```python
 from temporalio.client import Client
 from temporalio.worker import Worker
 
 
-# Handler worker - runs in the target namespace
 async def run_handler_worker():
     client = await Client.connect("localhost:7233", namespace="my-target-namespace")
     worker = Worker(
@@ -128,9 +135,19 @@ async def run_handler_worker():
         nexus_service_handlers=[MyNexusServiceHandler()],
     )
     await worker.run()
+```
+
+Keeping the handler and backing Workflow on this Worker is a convenient default because `ctx.start_workflow()` uses the handler's Task Queue when `task_queue` is omitted. For separate deployments, set `task_queue` explicitly when starting the Workflow and register its definition on a Worker polling that queue in the handler Namespace.
+
+### Caller
+
+The caller team runs its own Worker in the caller Namespace.
+
+```python
+from temporalio.client import Client
+from temporalio.worker import Worker
 
 
-# Caller worker - runs in the caller namespace
 async def run_caller_worker():
     client = await Client.connect("localhost:7233", namespace="my-caller-namespace")
     worker = Worker(
@@ -144,6 +161,8 @@ async def run_caller_worker():
 ## Calling Nexus Operations from a Workflow
 
 Use `workflow.create_nexus_client()` to call operations. Two patterns: `execute_operation` (start and wait) and `start_operation` (start, get handle, await later).
+
+Both patterns work with synchronous and asynchronous operations. This example waits directly for the synchronous result and obtains a handle for the longer-running Workflow operation.
 
 ```python
 from temporalio import workflow
@@ -161,25 +180,25 @@ class CallerWorkflow:
             endpoint="my-nexus-endpoint-name",
         )
 
-        # Execute and wait for result in one call
-        wf_result = await nexus_client.execute_operation(
-            MyNexusService.my_workflow_run_operation,
-            MyInput(name),
-        )
-
-        # Or start and handle separately
-        sync_handle = await nexus_client.start_operation(
+        # Execute the synchronous operation and wait for its result
+        sync_result = await nexus_client.execute_operation(
             MyNexusService.my_sync_operation,
             MyInput(name),
         )
-        sync_result = await sync_handle
+
+        # Or start the asynchronous operation and await its handle separately
+        workflow_handle = await nexus_client.start_operation(
+            MyNexusService.my_workflow_run_operation,
+            MyInput(name),
+        )
+        wf_result = await workflow_handle
 
         return sync_result, wf_result
 ```
 
 ## Error Handling
 
-Nexus introduces three exception types. See also `references/python/error-handling.md`.
+Nexus introduces three exception types. Handlers raise `nexusrpc.OperationError` for terminal operation outcomes or `nexusrpc.HandlerError` for request-processing failures. The Nexus Machinery retries retryable handler failures until the operation's Schedule-to-Close timeout; a caller Workflow receives `NexusOperationError` when the operation ultimately fails. Inspect its cause to distinguish business failures from infrastructure failures. See also the [Python error handling guide](error-handling.md).
 
 ### In Operation Handlers
 
@@ -273,8 +292,8 @@ result = await nexus_client.execute_operation(
 ## Best Practices
 
 1. Keep service contracts in a shared module importable by both caller and handler code
-2. Use business-meaningful workflow IDs in workflow run operations for deduplication safety
+2. Derive Workflow IDs from `ctx.request_id` for retry safety, or from a business identifier to deduplicate separate calls for the same work; choose explicit conflict and reuse policies
 3. Use sync operations only for work that completes within 10 seconds; use workflow run operations for anything longer
-4. Register Nexus service handlers and their backing workflows on the same worker
+4. Start with service handlers and backing Workflows on the same Worker so the default Task Queue has the Workflow registered; set `task_queue` explicitly and register the Workflow on a separate Worker when deploying them independently
 5. Use `execute_operation` when you just need the result; use `start_operation` when you need to cancel or manage the operation handle
-6. For multi-level Nexus calls (Workflow A → Nexus → Workflow B → Nexus → Workflow C), each hop adds its own retry and fault isolation
+6. Deploy independently owned handlers in separate Namespaces with their own Workers, and scale or roll out each handler independently of callers
