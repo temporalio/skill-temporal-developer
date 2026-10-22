@@ -15,8 +15,8 @@ services:
   temporal:
     image: temporalio/temporal
     ports:
-      - "7233:7233"   # gRPC frontend (used by workers and clients)
-      - "8233:8233"   # Dev Server web UI
+      - "127.0.0.1:7233:7233"   # gRPC frontend (used by workers and clients)
+      - "127.0.0.1:8233:8233"   # Dev Server web UI
     command: server start-dev --ip 0.0.0.0
     healthcheck:
       test: ["CMD-SHELL", "temporal operator cluster health"]
@@ -34,6 +34,8 @@ podman compose up -d
 ```
 
 The Temporal Web UI is then available at `http://localhost:8233`.
+
+The published ports are bound to loopback so the unauthenticated development API and Web UI are accessible only from the host. The server still listens on `0.0.0.0` inside the container so other Compose services can connect.
 
 ## Key Ports
 
@@ -53,8 +55,8 @@ services:
   temporal:
     image: temporalio/temporal
     ports:
-      - "7233:7233"
-      - "8233:8233"
+      - "127.0.0.1:7233:7233"
+      - "127.0.0.1:8233:8233"
     command: server start-dev --ip 0.0.0.0
     healthcheck:
       test: ["CMD-SHELL", "temporal operator cluster health"]
@@ -78,6 +80,21 @@ Important points:
 - **`depends_on` with `service_healthy`** ensures the worker does not start until Temporal is ready to accept connections. Without this, the worker will crash-loop on startup.
 - **`restart: on-failure`** lets the worker recover from transient errors.
 - **`TEMPORAL_ADDRESS`** is the standard environment variable used by Temporal SDKs and CLI to locate the Temporal frontend service.
+
+## Persisting Development Data
+
+By default, workflows and histories are lost when the dev server stops. To persist them in SQLite, update the `temporal` service in either example and add the top-level `volumes` declaration:
+
+```yaml
+services:
+  temporal:
+    command: server start-dev --ip 0.0.0.0 --db-filename /data/temporal.db
+    volumes:
+      - temporal-data:/data
+
+volumes:
+  temporal-data:
+```
 
 ## Using Podman Instead of Docker
 
@@ -105,6 +122,5 @@ podman compose ps              # List running services
 
 - **Always use the healthcheck** on the Temporal service and `depends_on: condition: service_healthy` on workers. Without this, workers will fail to connect on startup.
 - **Use `--ip 0.0.0.0`** in the Temporal dev server command so it listens on all interfaces, not just localhost. This is required for other containers to connect.
-- **The `temporalio/temporal` image** bundles the Temporal CLI and runs the dev server. It is meant for development, not production. For production self-hosted deployments, use the `temporalio/auto-setup` image with a real database (PostgreSQL or MySQL).
+- **The `temporalio/temporal` image** bundles the Temporal CLI and runs the dev server. It is meant for development, not production. For production self-hosted deployments, use the maintained `temporalio/server` image and follow the [production deployment documentation](https://docs.temporal.io/self-hosted-guide/deployment) for database configuration and schema management.
 - **Namespace creation**: The dev server creates a `default` namespace automatically. For custom namespaces, use `temporal operator namespace create` after the server is healthy.
-- **Data persistence**: By default the dev server stores data in memory. Data is lost when the container is recreated. To persist data across restarts, mount a volume for the database file or use a dedicated database service.
