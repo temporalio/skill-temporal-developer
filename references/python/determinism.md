@@ -8,7 +8,9 @@ The Python SDK runs workflows in a sandbox that provides automatic protection ag
 
 Temporal provides durable execution through **History Replay**. When a Worker needs to restore workflow state (after a crash, cache eviction, or to continue after a long timer), it re-executes the workflow code from the beginning, which requires the workflow code to be **deterministic**.
 
-## Forbidden Operations
+## Forbidden Operations in Workflows
+
+The following are forbidden inside workflow code but are appropriate to use in activities.
 
 - Direct I/O (network, filesystem)
 - Threading operations
@@ -20,32 +22,33 @@ Temporal provides durable execution through **History Replay**. When a Worker ne
 ## Safe Builtin Alternatives to Common Non Deterministic Things
 
 | Forbidden | Safe Alternative |
-|-----------|------------------|
+| -- | -- |
 | `datetime.now()` | `workflow.now()` |
 | `datetime.utcnow()` | `workflow.now()` |
-| `random.random()` | `rng = workflow.new_random() ; rng.randint(1, 100)` |
+| `random.random()` | `rng = workflow.random() ; rng.randint(1, 100)` |
 | `uuid.uuid4()` | `workflow.uuid4()` |
 | `time.time()` | `workflow.now().timestamp()` |
 
 ## Testing Replay Compatibility
 
-Use the `Replayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/python/testing.md`.
+Use the `Replayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of [Python testing guide](testing.md).
 
 ## Sandbox Behavior
 
 The sandbox:
+
 - Isolates global state via `exec` compilation
 - Restricts non-deterministic library calls via proxy objects
 - Passes through standard library with restrictions
 
-See more info at `references/python/determinism-protection.md`
+See more info at [Python determinism protection guide](determinism-protection.md)
 
 ## Best Practices
 
 1. Use `workflow.now()` for all time operations
 2. Use `workflow.random()` for random values
 3. Use `workflow.uuid4()` for unique identifiers
-4. Pass through third-party libraries explicitly
+4. Explicitly pass through deterministic third-party modules that are not already in the SDK's default passthrough set: `SandboxRestrictions.default.passthrough_modules`
 5. Test with replay to catch non-determinism
 6. Keep workflows focused on orchestration, delegate I/O to activities
 7. Use `workflow.logger` instead of print() for replay-safe logging

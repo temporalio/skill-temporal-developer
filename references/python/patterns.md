@@ -321,14 +321,17 @@ class MyWorkflow:
 ## Activity Heartbeat Details
 
 ### WHY:
+
 - **Support activity cancellation** - Cancellations are delivered via heartbeat; activities that don't heartbeat won't know they've been cancelled
 - **Resume progress after worker failure** - Heartbeat details persist across retries
 
 **Cancellation exceptions:**
+
 - Async activities: `asyncio.CancelledError`
 - Sync threaded activities: `temporalio.exceptions.CancelledError`
 
 ### WHEN:
+
 - **Cancellable activities** - Any activity that should respond to cancellation
 - **Long-running activities** - Track progress for resumability
 - **Checkpointing** - Save progress periodically
@@ -392,4 +395,4 @@ class MyWorkflow:
 
 ## Using Pydantic Models
 
-See `references/python/data-handling.md`.
+See [Python data handling guide](data-handling.md).

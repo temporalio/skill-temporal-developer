@@ -118,6 +118,12 @@ async def test_activity_failure_handling():
 
 ## Workflow Replay Testing
 
+For replay tests that read history from a JSON file, use the [CLI export command](../core/cli-workflow-commands.md#workflow-show) to create that file.
+
+For worker integration tests that should replay workflow history on every Workflow Task, configure the worker with `max_cached_workflows=0`. This complements replaying saved histories with `Replayer`.
+
+To make nondeterminism fail the Workflow Execution immediately in a test, pass `workflow_failure_exception_types=[workflow.NondeterminismError]` to `Worker` (with `from temporalio import workflow`).
+
 ```python
 import json
 import pytest
@@ -136,10 +142,9 @@ async def test_replay():
 
     # From JSON file
     await replayer.replay_workflow(
-        WorkflowHistory.from_json(workflow_id=str(uuid.uuid4()), history_json)
+        WorkflowHistory.from_json(str(uuid.uuid4()), history_json)
     )
 ```
-
 
 ## Activity Testing
 
