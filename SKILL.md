@@ -75,7 +75,7 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
   - Language-specific info at `references/{your_language}/versioning.md`
 - **[Temporal standalone Activities guide](references/core/standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow — Temporal's job queue
   - Language-specific info at `references/{your_language}/standalone-activities.md`
-- **[Temporal standalone Activities CLI reference](references/core/standalone-activities-cli.md)** - Developer-facing `temporal activity` commands for starting and managing Standalone Activities
+- **[Temporal Standalone Activities CLI reference](references/core/standalone-activities-cli.md)** - Developer-facing `temporal activity` commands for starting and managing Standalone Activities
 - **[Temporal Task Queue priority and fairness guide](references/core/priority-fairness.md)** - Task Queue Priority and Fairness concepts, configuration, and limitations
   - Language-specific info at `references/{your_language}/priority-fairness.md`
 - **[Temporal Workflow random streams guide](references/core/random-streams.md)** - SDK-provided named deterministic random streams for Workflow code, plugins, and interceptors
