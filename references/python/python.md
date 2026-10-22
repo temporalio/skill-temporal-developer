@@ -220,6 +220,7 @@ See [Python testing guide](testing.md) for info on writing tests.
 - **[Python standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [Temporal standalone Activities guide](../core/standalone-activities.md).
 - **[Python Task Queue priority and fairness guide](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples. Concept overview at [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md).
 - **[Python determinism protection guide](determinism-protection.md)** - Python sandbox specifics, forbidden operations, pass-through imports
+- **[Python Nexus guide](nexus.md)** - Nexus: cross-namespace service contracts, sync/async operations, endpoints
 - **[Python AI integration patterns](ai-patterns.md)** - LLM integration, Pydantic data converter, AI workflow patterns
 - **[Python Workflow Streams guide](workflow-streams.md)** - Public-Preview `temporalio.contrib.workflow_streams` library: durable, offset-addressed event channel for streaming progress to subscribers.
 

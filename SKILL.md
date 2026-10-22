@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, Ruby, and Rust. Use when the user is building workflows, activities, workers, or background job queues with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, running Temporal with Docker Compose, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, Ruby, and Rust. Use when the user is building workflows, activities, workers, or background job queues with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, running Temporal with Docker Compose, using Nexus operations and endpoints for cross-namespace calls, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update".
 ---
 
 # Skill: temporal-developer
@@ -87,6 +87,9 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 - **[Temporal CLI workflow command guide](references/core/cli-workflow-commands.md)** - Developer-facing CLI commands for workflow interaction (start, execute, signal, query, update, cancel)
 - **[Temporal AI integration patterns](references/core/ai-patterns.md)** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+
+- **[Temporal Nexus guide](references/core/nexus.md)** - Nexus: cross-namespace service contracts, operations, endpoints
+  - Python implementation: [Python Nexus guide](references/python/nexus.md)
 
 ## Job Queues and Background Jobs
 
