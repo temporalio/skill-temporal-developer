@@ -86,6 +86,8 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 - **[Temporal CLI workflow command guide](references/core/cli-workflow-commands.md)** - Developer-facing CLI commands for workflow interaction (start, execute, signal, query, update, cancel)
 - **[Temporal AI integration patterns](references/core/ai-patterns.md)** - AI/LLM pattern concepts
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
+- **`references/core/nexus.md`** - Temporal Nexus: cross-Namespace Operations, Endpoints, timeouts, retries, circuit breaker
+  - Language-specific info at `references/{your_language}/nexus.md`
 
 ## Job Queues and Background Jobs
 
