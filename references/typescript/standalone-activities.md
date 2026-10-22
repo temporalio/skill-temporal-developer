@@ -2,7 +2,7 @@
 
 Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
 
-Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](../core/standalone-activities.md) if you have not already, and then see below for the TypeScript SDK specific APIs for calling Standalone Activities. Upstream coverage is available in the [TypeScript Standalone Activities feature guide](https://docs.temporal.io/develop/typescript/activities/standalone-activities).
+Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](../core/standalone-activities.md) if you have not already, and then see below for the TypeScript SDK specific APIs for calling Standalone Activities.
 
 ## Prerequisites
 
