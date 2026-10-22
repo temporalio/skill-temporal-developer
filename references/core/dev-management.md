@@ -2,7 +2,7 @@
 
 ## Server Management
 
-Workers and workflows need a running Temporal Server. You can develop against a local dev server, a self-hosted cluster, or Temporal Cloud — the choice depends on your setup. If you need a local server, start one with the Temporal CLI:
+Workers and workflows need a running Temporal Server. You can develop against a local dev server, a self-hosted cluster, or Temporal Cloud — the choice depends on your setup. For local development, default to running the dev server directly with the Temporal CLI:
 
 ```bash
 temporal server start-dev # Start this in the background.
@@ -13,6 +13,14 @@ The dev server can be shared across projects and left running as you develop.
 The dev server is in-memory by default -- all workflows, schedules, and history are lost on restart. Use `--db-filename temporal.db` to persist across restarts.
 
 The dev server is for local development only, not production.
+
+Use Docker Compose or Podman Compose when the user requests it or when a container-based setup is needed because:
+
+- You want a reproducible, self-contained dev environment
+- You are running multiple services (workers, frontends) together in containers that connect to Temporal
+- You want to simulate production-like service networking locally
+
+If none of these apply, keep using the CLI dev server directly. For a Compose setup, see the [Docker Compose guide](docker-compose.md). It still runs a dev server and is for local development only.
 
 ### `temporal server start-dev` flags
 
