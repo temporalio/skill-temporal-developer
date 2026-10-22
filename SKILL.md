@@ -92,7 +92,7 @@ Once you've downloaded the file, extract the downloaded archive and add the temp
 1. First, read the getting started guide for the language you are working in:
     - Python -> read `references/python/python.md`
     - TypeScript -> read `references/typescript/typescript.md`
-    - PHP -> read `references/php/php.md`
+    - PHP -> read `references/php/php.md`; it routes to RoadRunner operations, Laravel/support integrations, and a reviewed PHP course/source map
 2. Second, read appropriate `core` and language-specific references for the task at hand.
 
 

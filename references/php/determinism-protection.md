@@ -1,43 +1,17 @@
 # PHP Determinism Protection
 
-## Overview
+The SDK has no sandbox that blocks nondeterministic PHP operations. Laravel's application sandbox isolates framework state; it does not enforce replay determinism. Read [determinism.md](determinism.md) for the rules and [workers.md](workers.md) for persistent process state.
 
-The PHP SDK does NOT have a sandbox. Unlike Python (exec-based sandbox) and TypeScript (V8 isolates), PHP relies entirely on runtime command-ordering checks and developer discipline.
-
-The `WorkflowPanicPolicy` enum controls what happens when non-determinism is detected at runtime:
+`WorkflowPanicPolicy` controls the response to detected workflow panics/nondeterminism:
 
 ```php
 use Temporal\Worker\WorkerOptions;
 use Temporal\Worker\WorkflowPanicPolicy;
 
-// In worker setup
-$worker = $factory->newWorker('task-queue', WorkerOptions::new()
-    ->withWorkflowPanicPolicy(WorkflowPanicPolicy::FailWorkflow)
-);
+$options = WorkerOptions::new()
+    ->withWorkflowPanicPolicy(WorkflowPanicPolicy::BlockWorkflow);
 ```
 
-## Forbidden Operations
+`BlockWorkflow` is the default and allows a corrected deployment to recover the execution. `FailWorkflow` makes it terminal; use it deliberately in disposable tests or where terminal failure is the intended policy. It is not a debugging switch that makes nondeterministic code safe. Validate command compatibility with [replay tests](testing.md).
 
-These operations must NOT be used in workflow code:
-
-- No I/O: `fopen()`, `file_get_contents()`, `curl_*`, PDO, etc.
-- No `sleep()` — use `yield Workflow::timer()`
-- No `time()`, `date()`, `microtime()` — use `Workflow::now()`
-- No `rand()`, `random_int()`, `uniqid()` — use `yield Workflow::sideEffect()`
-- No blocking SPL functions
-- No mutable global variables
-
-## Common Issues
-
-RoadRunner-specific issues to watch for:
-
-- **Worker memory leaks:** PHP workers are long-running processes. Configure `max_jobs` in `.rr.yaml` to restart workers periodically.
-- **Shared state between workflow executions:** Class-level static variables persist across executions in the same worker process. Avoid mutable statics in workflow code.
-- **Long-running PHP processes:** Unlike traditional PHP request/response, RoadRunner workers persist — ensure resources are released properly.
-
-## Best Practices
-
-1. Keep workflow code pure — orchestration only, no side effects
-2. Use activities for all I/O and external calls
-3. Configure `WorkflowPanicPolicy::FailWorkflow` for development to surface non-determinism immediately
-4. Use `WorkflowPanicPolicy::BlockWorkflow` (default) for production to allow investigation without data loss
+Source: [WorkerOptions](https://github.com/temporalio/sdk-php/blob/v2.18/src/Worker/WorkerOptions.php).

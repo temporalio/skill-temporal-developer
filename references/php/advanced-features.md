@@ -1,111 +1,60 @@
 # PHP SDK Advanced Features
 
+See [workers.md](workers.md) for tuning and RoadRunner configuration, and [patterns.md](patterns.md) for messages, child workflows and cancellation.
+
 ## Schedules
 
-Create recurring workflow executions.
+Use Schedules for independently managed recurring starts. Use a durable timer for a wait within one workflow; Continue-As-New preserves a long-lived workflow identity while rotating history. These solve different lifecycle problems.
 
 ```php
-use Temporal\Client\Schedule\Schedule;
+use Temporal\Client\GRPC\ServiceClient;
 use Temporal\Client\Schedule\Action\StartWorkflowAction;
+use Temporal\Client\Schedule\Policy\ScheduleOverlapPolicy;
+use Temporal\Client\Schedule\Policy\SchedulePolicies;
+use Temporal\Client\Schedule\Schedule;
 use Temporal\Client\Schedule\Spec\ScheduleSpec;
-use Temporal\Client\Schedule\Spec\ScheduleIntervalSpec;
+use Temporal\Client\ScheduleClient;
 
+$scheduleClient = ScheduleClient::create(ServiceClient::create('127.0.0.1:7233'));
 $handle = $scheduleClient->createSchedule(
     Schedule::new()
-        ->withAction(StartWorkflowAction::new('DailyReportWorkflow')
+        ->withAction(StartWorkflowAction::new('DailyReport')
             ->withTaskQueue('reports')
-        )
-        ->withSpec(ScheduleSpec::new()
-            ->withIntervals(new ScheduleIntervalSpec(every: new \DateInterval('P1D')))
-        ),
+            ->withInput(['report-account-id']))
+        ->withSpec(ScheduleSpec::new()->withAddedInterval(new \DateInterval('P1D')))
+        ->withPolicies(SchedulePolicies::new()
+            ->withOverlapPolicy(ScheduleOverlapPolicy::Skip)),
     scheduleId: 'daily-report',
 );
-
-// Manage schedules
-$handle->pause();
-$handle->unpause();
-$handle->trigger();  // Run immediately
-$handle->delete();
 ```
 
-## Async Activity Completion
+Use registered Workflow Type names and a converter compatible with the worker. `withAddedInterval()` is the verified API; there is no `ScheduleIntervalSpec`/`withIntervals()` combination in the reviewed SDK. Intervals are epoch/phase based, not necessarily “N days after creation.” For “Monday at 09:00,” use calendar/structured-calendar rules plus an explicit IANA timezone and test DST behavior. Jitter distributes scheduled load; it does not replace rate limits.
 
-For activities that complete asynchronously (e.g., human tasks, external callbacks).
+Choose overlap deliberately: `Skip`, `BufferOne`, `BufferAll`, `CancelOther`, `TerminateOther`, or `AllowAll`. Termination does not run workflow cleanup. Set catchup window and pause-on-failure behavior where required. Handles support pause/unpause, trigger, describe, update, backfill and delete; backfill starts actions and can repeat business side effects. Use stable schedule identity and per-occurrence idempotency, especially for payments. Do not retry the whole scheduled workflow merely to retry one Activity.
+
+Sources: [ScheduleSpec](https://github.com/temporalio/sdk-php/blob/v2.18/src/Client/Schedule/Spec/ScheduleSpec.php), [Schedule client](https://github.com/temporalio/sdk-php/blob/v2.18/src/Client/ScheduleClient.php), [course schedule assessment](sources.md).
+
+## Asynchronous Activity completion
+
+An Activity can hand work to an external process and finish later:
 
 ```php
 use Temporal\Activity;
 
-#[ActivityMethod]
-public function requestApproval(string $requestId): void
-{
-    // Get task token for async completion
-    $taskToken = Activity::getInfo()->taskToken;
-
-    // Store task token for later completion (e.g., in database)
-    $this->storeTaskToken($requestId, $taskToken);
-
-    // Mark this activity as waiting for external completion
-    Activity::doNotCompleteOnReturn();
-}
+// Inside an Activity; persist/correlate securely before handing off.
+$taskToken = Activity::getInfo()->taskToken;
+$this->storeCompletionToken($requestId, $taskToken);
+Activity::doNotCompleteOnReturn();
 ```
 
-Complete the activity from another process:
+From a client process with an explicitly connected `$client`:
 
 ```php
-use Temporal\Client\WorkflowClient;
-
-$client = WorkflowClient::create();
-$taskToken = getStoredTaskToken($requestId);
-
-$completionClient = $client->newActivityCompletionClient();
-$completionClient->complete($taskToken, 'approved');
-
-// Or fail it:
-// $completionClient->completeExceptionally($taskToken, new \Exception('Rejected'));
+$completion = $client->newActivityCompletionClient();
+$completion->completeByToken($taskToken, 'approved');
+// Or: $completion->completeExceptionallyByToken($taskToken, $error);
 ```
 
-**Note:** If the external system can reliably signal back with the result and doesn't need to heartbeat or receive cancellation, consider using **signals** instead.
+`complete()` takes Workflow ID, Run ID, Activity ID and result; token completion uses **`completeByToken()`**. Treat the token as opaque sensitive data; it identifies an Activity attempt. Plan timeout, retry, heartbeat and cancellation behavior for stale/duplicate callbacks. For a human approval that naturally belongs to workflow state, Signal or Update plus a timer is often simpler than holding an Activity open.
 
-## Worker Tuning
-
-Configure worker performance settings.
-
-```php
-use Temporal\Worker\WorkerOptions;
-
-$worker = $factory->newWorker(
-    taskQueue: 'my-queue',
-    options: WorkerOptions::new()
-        ->withMaxConcurrentWorkflowTaskPollers(5)
-        ->withMaxConcurrentActivityTaskPollers(5)
-        ->withMaxConcurrentWorkflowTaskExecutionSize(100)
-        ->withMaxConcurrentActivityExecutionSize(100)
-);
-```
-
-PHP workers run as RoadRunner processes — the number of concurrent activities is also bounded by the number of RoadRunner worker processes configured in `.rr.yaml`.
-
-## RoadRunner Configuration
-
-PHP uses [RoadRunner](https://roadrunner.dev/) as the process supervisor. Configure it in `.rr.yaml`:
-
-```yaml
-version: "3"
-
-temporal:
-  address: "localhost:7233"
-  namespace: "default"
-  activities:
-    num_workers: 10         # Number of PHP processes for activities
-    max_jobs: 100           # Restart worker after N jobs (prevents memory leaks)
-    memory_limit: 128MB     # Restart worker if it exceeds this memory limit
-
-server:
-  command: "php worker.php"
-  relay: "pipes"
-```
-
-Key settings:
-- `num_workers` — controls activity concurrency (set based on available CPU/memory)
-- `max_jobs` — prevents memory leaks by recycling PHP processes after N executions
-- `memory_limit` — safety net for runaway memory usage
+Source: [ActivityCompletionClientInterface](https://github.com/temporalio/sdk-php/blob/v2.18/src/Client/ActivityCompletionClientInterface.php).

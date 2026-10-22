@@ -1,232 +1,82 @@
 # PHP SDK Data Handling
 
-## Overview
+Sources: [SDK converters](https://github.com/temporalio/sdk-php/tree/v2.18/src/DataConverter), [typed Search Attributes](https://github.com/temporalio/sdk-php/blob/v2.18/src/Common/TypedSearchAttributes.php), [Laravel integration](integrations/laravel-temporal.md).
 
-The PHP SDK uses data converters to serialize/deserialize Workflow inputs, outputs, and Activity parameters. JSON is the default format.
+## Contracts and payloads
 
-## Default Data Converter
+The default `DataConverter` tries `NullConverter`, `BinaryConverter`, `ProtoJsonConverter`, `ProtoConverter`, then `JsonConverter`. Use small explicit inputs: business IDs, immutable DTO snapshots, cursors and external result references. Do not serialize service/container objects or rely on a hydrated ORM model to stay current. Loading a lazy relation in a workflow is still DB I/O.
 
-The default converter handles:
-- `null`
-- Scalars (`string`, `int`, `float`, `bool`)
-- Arrays (JSON-serialized)
-- Objects (JSON-serialized via public properties)
-
-**PHP-specific:** Workflow methods are generators. To specify the return type of a Workflow method, use the `#[ReturnType]` attribute on the interface method:
+For a generator workflow, its PHP return declaration describes the coroutine, not the serialized result:
 
 ```php
 use Temporal\Workflow\ReturnType;
+use Temporal\Workflow\WorkflowInterface;
+use Temporal\Workflow\WorkflowMethod;
 
 #[WorkflowInterface]
 interface OrderWorkflowInterface
 {
-    #[WorkflowMethod]
+    #[WorkflowMethod(name: 'Order')]
     #[ReturnType(OrderResult::class)]
     public function run(OrderInput $input): \Generator;
 }
 ```
 
-Without `#[ReturnType]`, the SDK cannot deserialize the result into the correct class.
+`#[ReturnType]` supplies the result type for typed client/child calls; untyped clients can specify a result type explicitly. Use a compatible declared return type for synchronous methods. Test nested DTOs, enums, UUIDs, dates, collections and nullable fields through the actual converter on both sides. Adding a required constructor field can break old payloads; preserve backward-compatible decoding and fixtures.
 
-## Custom Data Conversion
+## Custom conversion and encryption
 
-Implement a custom `PayloadConverter` to handle types the default converter does not support:
+Implement `Temporal\DataConverter\PayloadConverterInterface` when specializing one payload type. Its decode signature is `fromPayload(Payload $payload, Temporal\DataConverter\Type $type)`, not `ReflectionType`. Return `null` from `toPayload()` for unsupported values. Put specialized converters before the catch-all `JsonConverter` and preserve support for other encodings that the application uses.
 
-```php
-use Temporal\DataConverter\PayloadConverter;
-use Temporal\Api\Common\V1\Payload;
-
-class MyCustomConverter implements PayloadConverter
-{
-    public function getEncodingType(): string
-    {
-        return 'json/my-custom';
-    }
-
-    public function toPayload($value): ?Payload
-    {
-        if (!$value instanceof MyCustomType) {
-            return null;  // Return null to let other converters handle it
-        }
-
-        $payload = new Payload();
-        $payload->setMetadata(['encoding' => $this->getEncodingType()]);
-        $payload->setData(json_encode($value->toArray()));
-        return $payload;
-    }
-
-    public function fromPayload(Payload $payload, \ReflectionType $type)
-    {
-        return MyCustomType::fromArray(json_decode($payload->getData(), true));
-    }
-}
-```
-
-Register the custom converter when creating the `WorkflowClient`:
+Register the same converter for the client and worker:
 
 ```php
-use Temporal\DataConverter\DataConverter;
-use Temporal\DataConverter\JsonPayloadConverter;
-use Temporal\DataConverter\NullPayloadConverter;
-
-$dataConverter = new DataConverter(
-    new NullPayloadConverter(),
-    new JsonPayloadConverter(),
-    new MyCustomConverter(),
+$client = \Temporal\Client\WorkflowClient::create(
+    \Temporal\Client\GRPC\ServiceClient::create('127.0.0.1:7233'),
+    converter: $converter,
 );
-
-$client = WorkflowClient::create(
-    ServiceClient::create('localhost:7233'),
-    dataConverter: $dataConverter
-);
+$factory = \Temporal\WorkerFactory::create(converter: $converter);
 ```
 
-## Payload Encryption
+Also align Schedule clients, replay workers, and test invocation caches. The named parameter is `converter`, not `dataConverter`.
 
-Encrypt sensitive Workflow data using a custom `PayloadCodec`:
+Payload encryption/compression needs an implementation compatible with PHP's converter contracts, for example a `DataConverterInterface` decorator around the normal serialization pipeline. Verify encode/decode, encoding metadata, key rotation and old-history replay; use a reviewed encryption library. SDK v2.18 has no `DataConverter::withCodec()` or `Temporal\DataConverter\PayloadCodecInterface`; do not copy those APIs from other SDKs. A codec server is an optional UI/CLI decoding service, not worker-side encryption by itself. Search Attributes remain queryable metadata and must not contain secrets.
 
-```php
-use Temporal\DataConverter\PayloadCodecInterface;
-use Temporal\Api\Common\V1\Payload;
+## Search Attributes and Memo
 
-class EncryptionCodec implements PayloadCodecInterface
-{
-    public function __construct(private string $key) {}
-
-    public function encode(array $payloads): array
-    {
-        return array_map(function (Payload $payload) {
-            $encrypted = $this->encrypt($payload->serializeToString());
-            $result = new Payload();
-            $result->setMetadata(['encoding' => 'binary/encrypted']);
-            $result->setData($encrypted);
-            return $result;
-        }, $payloads);
-    }
-
-    public function decode(array $payloads): array
-    {
-        return array_map(function (Payload $payload) {
-            if (($payload->getMetadata()['encoding'] ?? null) !== 'binary/encrypted') {
-                return $payload;
-            }
-            $decrypted = $this->decrypt($payload->getData());
-            $result = new Payload();
-            $result->mergeFromString($decrypted);
-            return $result;
-        }, $payloads);
-    }
-
-    private function encrypt(string $data): string { /* ... */ }
-    private function decrypt(string $data): string { /* ... */ }
-}
-```
-
-Apply the codec via `DataConverter` on the client:
+Register custom Search Attribute names/types in the target namespace before using them. Set values at workflow start:
 
 ```php
-$dataConverter = DataConverter::createDefault()->withCodec(new EncryptionCodec($encryptionKey));
-
-$client = WorkflowClient::create(
-    ServiceClient::create('localhost:7233'),
-    dataConverter: $dataConverter
-);
-```
-
-## Search Attributes
-
-Custom searchable fields for Workflow visibility.
-
-Define Search Attribute keys and set them at Workflow start:
-
-```php
+use Temporal\Client\WorkflowOptions;
 use Temporal\Common\SearchAttributes\SearchAttributeKey;
 use Temporal\Common\TypedSearchAttributes;
 
-$orderIdKey = SearchAttributeKey::forKeyword('OrderId');
-$orderStatusKey = SearchAttributeKey::forKeyword('OrderStatus');
-
-$workflow = $client->newWorkflowStub(
-    OrderWorkflowInterface::class,
-    WorkflowOptions::new()
-        ->withTaskQueue('orders')
-        ->withTypedSearchAttributes(
-            TypedSearchAttributes::new()
-                ->withSearchAttribute($orderIdKey, $order->id)
-                ->withSearchAttribute($orderStatusKey, 'pending')
-        )
-);
+$options = WorkflowOptions::new()
+    ->withTaskQueue('orders')
+    ->withTypedSearchAttributes(
+        TypedSearchAttributes::empty()
+            ->withValue(SearchAttributeKey::forKeyword('OrderId'), 'order-123')
+            ->withValue(SearchAttributeKey::forKeyword('OrderStatus'), 'pending'),
+    )
+    ->withMemo(['source' => 'checkout']);
 ```
 
-Upsert Search Attributes during Workflow execution:
+Within a workflow:
 
 ```php
-use Temporal\Workflow;
-use Temporal\Common\SearchAttributes\SearchAttributeKey;
+\Temporal\Workflow::upsertTypedSearchAttributes(
+    \Temporal\Common\SearchAttributes\SearchAttributeKey::forKeyword('OrderStatus')
+        ->valueSet('completed'),
+);
+\Temporal\Workflow::upsertMemo(['phase' => 'fulfilled']);
+```
 
-class OrderWorkflow implements OrderWorkflowInterface
-{
-    public function run(array $order): \Generator
-    {
-        // ... process order ...
+These upserts are synchronous SDK calls. Memo is non-indexed metadata; Search Attributes support visibility filtering. Queries read one workflow's current state and require a worker; visibility is indexed and can lag. Use a DB projection for application reporting when appropriate, with Activities updating it idempotently.
 
-        Workflow::upsertTypedSearchAttributes(
-            SearchAttributeKey::forKeyword('OrderStatus')->valueSet('completed')
-        );
-
-        return 'done';
-    }
+```php
+foreach ($client->listWorkflowExecutions('OrderStatus = "pending"') as $info) {
+    echo $info->execution->getID(), PHP_EOL; // Client-side code only.
 }
 ```
 
-### Querying Workflows by Search Attributes
-
-```php
-$executions = $client->listWorkflowExecutions(
-    'OrderStatus = "processing" OR OrderStatus = "pending"'
-);
-
-foreach ($executions as $execution) {
-    echo "Workflow {$execution->getExecution()->getWorkflowId()} is still processing\n";
-}
-```
-
-## Workflow Memo
-
-Store arbitrary metadata with Workflows (not searchable).
-
-```php
-// Set memo at Workflow start
-$workflow = $client->newWorkflowStub(
-    OrderWorkflowInterface::class,
-    WorkflowOptions::new()
-        ->withTaskQueue('orders')
-        ->withMemo([
-            'customer_name' => $order->customerName,
-            'notes' => 'Priority customer',
-        ])
-);
-```
-
-Upsert memo during Workflow execution:
-
-```php
-class OrderWorkflow implements OrderWorkflowInterface
-{
-    public function run(array $order): \Generator
-    {
-        // ... process order ...
-
-        Workflow::upsertMemo(['status' => 'fraud-checked']);
-
-        return yield $this->activity->processPayment($order);
-    }
-}
-```
-
-## Best Practices
-
-1. Use `#[ReturnType]` on Workflow interface methods to enable correct deserialization
-2. Keep payloads small — see `references/core/gotchas.md` for limits
-3. Encrypt sensitive data with a `PayloadCodec`
-4. Use typed Search Attributes for business-level visibility and querying
+Avoid placing customer names/phones/addresses in Memo, Search Attributes or logs merely to make demos convenient. Payload size, retained workflow state and event-history growth are separate budgets; see [bounded batch design](batch-processing.md).
