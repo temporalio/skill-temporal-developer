@@ -132,7 +132,7 @@ w := worker.New(c, "my-task-queue", worker.Options{
 		UseVersioning: true,
 		Version: worker.WorkerDeploymentVersion{
 			DeploymentName: "my-service",
-			BuildId:        "v1.0.0", // or git commit hash
+			BuildID:        "v1.0.0", // or git commit hash
 		},
 		DefaultVersioningBehavior: workflow.VersioningBehaviorPinned,
 	},
@@ -181,7 +181,7 @@ w := worker.New(c, "orders-task-queue", worker.Options{
 		UseVersioning: true,
 		Version: worker.WorkerDeploymentVersion{
 			DeploymentName: "order-service",
-			BuildId:        os.Getenv("BUILD_ID"),
+			BuildID:        os.Getenv("BUILD_ID"),
 		},
 		DefaultVersioningBehavior: workflow.VersioningBehaviorPinned,
 	},

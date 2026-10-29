@@ -192,6 +192,7 @@ Worker Versioning manages versions at the deployment level, allowing multiple Wo
 ### Configuring Workers for Versioning
 
 ```csharp
+using Temporalio.Common;
 using Temporalio.Worker;
 
 var worker = new TemporalWorker(
@@ -199,9 +200,10 @@ var worker = new TemporalWorker(
     new TemporalWorkerOptions("my-task-queue")
     {
         DeploymentOptions = new WorkerDeploymentOptions(
-            DeploymentName: "my-service",
-            BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
-        UseWorkerVersioning = true,
+            new WorkerDeploymentVersion(
+                DeploymentName: "my-service",
+                BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
+            useWorkerVersioning: true),
     }
     .AddWorkflow<MyWorkflow>()
     .AddAllActivities(new MyActivities()));
@@ -209,9 +211,10 @@ var worker = new TemporalWorker(
 
 **Configuration parameters:**
 
-- `UseWorkerVersioning`: Enables Worker Versioning
-- `DeploymentOptions`: Identifies the Worker Deployment Version (deployment name + build ID)
+- `DeploymentOptions`: A `WorkerDeploymentOptions` holding the `Version` (a `WorkerDeploymentVersion` of deployment name + build ID), `UseWorkerVersioning`, and optional `DefaultVersioningBehavior`
 - Build ID: Typically a git commit hash, version number, or timestamp
+
+Do not set `UseWorkerVersioning` or `BuildId` directly on `TemporalWorkerOptions`; those are obsolete legacy Build ID-based options.
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 
@@ -220,6 +223,9 @@ var worker = new TemporalWorker(
 Workflows stay locked to their original Worker version:
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Workflows;
+
 [Workflow(VersioningBehavior = VersioningBehavior.Pinned)]
 public class StableWorkflow { /* ... */ }
 ```
@@ -236,6 +242,9 @@ public class StableWorkflow { /* ... */ }
 Workflows can move to newer versions:
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Workflows;
+
 [Workflow(VersioningBehavior = VersioningBehavior.AutoUpgrade)]
 public class UpgradableWorkflow { /* ... */ }
 ```
@@ -252,17 +261,21 @@ public class UpgradableWorkflow { /* ... */ }
 ### Worker Configuration with Default Behavior
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Worker;
+
 var worker = new TemporalWorker(
     client,
     new TemporalWorkerOptions("my-task-queue")
     {
         DeploymentOptions = new WorkerDeploymentOptions(
-            DeploymentName: "order-service",
-            BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev")
+            new WorkerDeploymentVersion(
+                DeploymentName: "order-service",
+                BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
+            useWorkerVersioning: true)
         {
             DefaultVersioningBehavior = VersioningBehavior.Pinned,
         },
-        UseWorkerVersioning = true,
     }
     .AddWorkflow<OrderWorkflow>()
     .AddAllActivities(new OrderActivities()));
