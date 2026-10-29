@@ -204,20 +204,21 @@ Worker Versioning manages versions at the deployment level. Available since Java
 ### Configuring Workers
 
 ```java
+import io.temporal.common.VersioningBehavior;
+import io.temporal.common.WorkerDeploymentVersion;
 import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerDeploymentOptions;
 import io.temporal.worker.WorkerFactory;
 import io.temporal.worker.WorkerOptions;
-import io.temporal.worker.WorkerDeploymentOptions;
-import io.temporal.worker.WorkerDeploymentVersion;
 
-WorkerDeploymentVersion version = WorkerDeploymentVersion.newBuilder()
-    .setDeploymentName("order-service")
-    .setBuildId("v1.0.0")  // or git commit hash
-    .build();
+WorkerDeploymentVersion version =
+    new WorkerDeploymentVersion("order-service", "v1.0.0");  // or git commit hash
 
 WorkerDeploymentOptions deploymentOptions = WorkerDeploymentOptions.newBuilder()
     .setVersion(version)
-    .setUseWorkerVersioning(true)
+    .setUseVersioning(true)
+    // Optional: behavior for workflows without @WorkflowVersioningBehavior
+    .setDefaultVersioningBehavior(VersioningBehavior.PINNED)
     .build();
 
 WorkerFactory factory = WorkerFactory.newInstance(client);
@@ -234,20 +235,22 @@ factory.start();
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 
-Set the versioning behavior on the workflow definition:
+Set the versioning behavior with the `@WorkflowVersioningBehavior` annotation on the workflow implementation method:
 
 ```java
-import io.temporal.workflow.VersioningBehavior;
-import io.temporal.workflow.Workflow;
+import io.temporal.common.VersioningBehavior;
+import io.temporal.workflow.WorkflowVersioningBehavior;
 
 public class MyWorkflowImpl implements MyWorkflow {
     @Override
+    @WorkflowVersioningBehavior(VersioningBehavior.PINNED)
     public String run(String input) {
-        Workflow.setVersioningBehavior(VersioningBehavior.PINNED);
         // ... workflow logic
     }
 }
 ```
+
+Workflows without the annotation use the Worker's `setDefaultVersioningBehavior`, if set.
 
 **PINNED**: Workflow stays on the Worker version that started it. Use for short-running workflows or when consistency within a single execution is critical. New workflows start on the current version; existing ones stay put.
 
