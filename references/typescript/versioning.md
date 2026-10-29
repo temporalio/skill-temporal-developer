@@ -194,7 +194,7 @@ export async function longRunningWorkflow(): Promise<void> {
 }
 ```
 
-**PINNED**: The Workflow stays on the Worker Deployment Version it started on. **AUTO_UPGRADE**: The Workflow moves to the Current Version on its next Workflow Task, so it still needs patching to handle version transitions safely.
+**PINNED**: The Workflow stays on the Worker Deployment Version it started on. **AUTO_UPGRADE**: The Workflow moves to its Target Version (the Current Version, or the Ramping Version if it's routed to the ramp) on its next Workflow Task, so it still needs patching to handle version transitions safely.
 
 ### Deployment Workflow
 

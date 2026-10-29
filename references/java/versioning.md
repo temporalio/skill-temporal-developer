@@ -254,7 +254,7 @@ Workflows without the annotation use the Worker's `setDefaultVersioningBehavior`
 
 **PINNED**: Workflow stays on the Worker version that started it. Use for short-running workflows or when consistency within a single execution is critical. New workflows start on the current version; existing ones stay put.
 
-**AUTO_UPGRADE**: Workflow moves to the latest Worker version on the next Workflow Task. Use for long-running workflows that need bug fixes or feature updates. Combine with `Workflow.getVersion()` patching to handle version transitions safely.
+**AUTO_UPGRADE**: Workflow moves to its Target Version (the Current Version, or the Ramping Version if it's routed to the ramp) on the next Workflow Task. Use for long-running workflows that need bug fixes or feature updates. Combine with `Workflow.getVersion()` patching to handle version transitions safely.
 
 ### Deployment Strategies
 
