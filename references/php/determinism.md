@@ -1,20 +1,57 @@
 # PHP SDK Determinism
 
-PHP has no workflow determinism sandbox. Replay reconstructs state by matching commands against recorded history; it cannot prove that every PHP computation is pure. See [core replay concepts](../core/determinism.md).
+## Overview
 
-| In workflow code | Use instead |
-| --- | --- |
-| DB/ORM, HTTP, files, external services | Activities |
-| `sleep()` / `usleep()` | `yield Workflow::timer(...)` |
-| Wall-clock `time()`, `microtime()`, `Carbon::now()` | `Workflow::now()` |
-| Random UUID generation | `yield Workflow::uuid()` (check newer UUID APIs against the SDK) |
-| Small random/computed external value | `yield Workflow::sideEffect(fn() => random_int(...))` |
-| Mutable globals, environment-dependent branching | Explicit input or Activity-provided recorded data |
+The PHP SDK has **no sandbox**. Nothing stops Workflow code from calling `time()`, `rand()`, `file_get_contents()` or a database. Determinism is the responsibility of the developer. The SDK gives deterministic replacements, a guard against commands from read-only callbacks, and the `WorkflowReplayer` for replay tests.
 
-`sideEffect()` records a returned value. Do not put a payment, notification, arbitrary DB write or a change to workflow fields in its callback; replay skips that callback. Use its yielded result. `Workflow::now()` is synchronous, while UUID, timer, sideEffect, getVersion and Continue-As-New APIs return promises. Predicates passed to `Workflow::await()`/`awaitWithTimeout()` must re-evaluate state, not capture a boolean already evaluated once.
+## Why Determinism Matters: History Replay
 
-A method containing `yield` must return a generator-compatible PHP type, regardless of the final serialized result. Waiting on an Activity does not block a PHP thread for its entire duration, but a blocking call inside workflow code stalls the worker's event loop and can exceed Workflow Task timeouts.
+Temporal re-executes Workflow code from the beginning on recovery (worker restart, cache eviction, etc.). Commands already recorded in history are matched against replayed commands. If the code produces different commands on replay, the Workflow Task fails with a non-determinism error.
 
-Changes to command sequence require [versioning](versioning.md). Replay checks do not compare every ordinary variable, Activity input or timer duration; replay testing is compatibility evidence for the supplied histories, not a universal side-effect detector. Pair [recorded-history replay](testing.md) with code review and outcome tests. Use `Workflow::getLogger()` for replay-aware logging.
+All Workflow code must therefore be deterministic: the same input and history must produce the same sequence of commands every time.
 
-Source: [PHP Workflow facade](https://github.com/temporalio/sdk-php/blob/v2.18/src/Workflow.php).
+## SDK Protection
+
+- **No call interception.** The SDK does not detect forbidden PHP functions. A non-deterministic call is found only when replay produces a different command.
+- **Read-only callbacks.** Since SDK 2.20, a command from a Query handler, an Update validator, an `await()` condition or a `sideEffect()` callback throws. See [determinism protection](determinism-protection.md).
+- **Panic policy.** `WorkerOptions::withWorkflowPanicPolicy()` selects what happens on a non-determinism error.
+
+## Forbidden Operations in Workflows
+
+- `sleep()`, `usleep()` - block the worker event loop
+- `time()`, `microtime()`, `new \DateTime()`, `Carbon::now()` - wall-clock time
+- `rand()`, `mt_rand()`, `random_int()`, `uniqid()` - non-deterministic values
+- File, network and database I/O, including ORM lazy loading
+- `getenv()`, `$_ENV`, mutable static state - values can change between runs
+- `echo`, `print`, `var_dump()` - STDOUT is the RoadRunner protocol
+
+## Safe Builtin Alternatives to Common Non Deterministic Things
+
+| Forbidden | Safe Alternative |
+| -- | -- |
+| `sleep($n)` | `yield Workflow::timer($n)` |
+| `time()` / `new \DateTime()` | `Workflow::now()` (returns `\DateTimeInterface`) |
+| `random_int(1, 100)` | `yield Workflow::sideEffect(fn() => random_int(1, 100))` |
+| `Uuid::uuid4()` | `yield Workflow::uuid()` / `yield Workflow::uuid4()` |
+| `Uuid::uuid7()` | `yield Workflow::uuid7()` |
+| `$logger->info()` / `echo` | `Workflow::getLogger()->info(...)` |
+| DB query / HTTP call | An Activity |
+
+`Workflow::now()` is synchronous. `timer()`, `sideEffect()`, `uuid()`, `uuid4()` and `uuid7()` return promises: use `yield`.
+
+## Testing Replay Compatibility
+
+Use `Temporal\Testing\Replay\WorkflowReplayer` to replay recorded histories against the current code. See the [testing guide](testing.md#workflow-replay-testing) for details.
+
+```php
+use Temporal\Testing\Replay\WorkflowReplayer;
+
+(new WorkflowReplayer())->replayFromJSON('Order', __DIR__ . '/histories/order.json');
+```
+
+## Best Practices
+
+- Use `Workflow::now()`, `timer()`, `sideEffect()`, `uuid()` and `getLogger()` instead of the PHP equivalents.
+- Delegate all I/O, network calls, and side effects to Activities.
+- Do not branch on environment variables or configuration that can change. Pass them as Workflow input.
+- Run replay tests against saved histories before you deploy Workflow changes.

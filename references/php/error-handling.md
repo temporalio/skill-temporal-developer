@@ -1,64 +1,143 @@
 # PHP SDK Error Handling
 
-Source: [ApplicationFailure](https://github.com/temporalio/sdk-php/blob/v2.18/src/Exception/Failure/ApplicationFailure.php), [ActivityOptions](https://github.com/temporalio/sdk-php/blob/v2.18/src/Activity/ActivityOptions.php), [RetryOptions](https://github.com/temporalio/sdk-php/blob/v2.18/src/Common/RetryOptions.php).
+## Overview
 
-## Failure boundaries
+Application errors use `Temporal\Exception\Failure\ApplicationFailure`. Retry behavior is configured with `Temporal\Common\RetryOptions`. In an Activity, any PHP exception is converted to an `ApplicationFailure`, with the exception class name as its type.
 
-An Activity's ordinary PHP exception is encoded as `ApplicationFailure` (normally using the exception's full class name as its type). The workflow sees an `ActivityFailure` wrapper after retries are exhausted or a terminal failure occurs; inspect its previous exception for `ApplicationFailure`, `TimeoutFailure` or cancellation. The external client normally sees `WorkflowFailedException` for a failed workflow. Do not expect a raw Activity exception at every boundary.
+## Application Errors
 
-Throw `ApplicationFailure` for an intentional workflow/business failure. An ordinary programming error in workflow code normally fails a Workflow Task and can keep retrying/blocking the workflow; catching every `Throwable` and returning success hides defects. Cancellation is not an ordinary item failure: propagate it unless completing with a cancellation business result is deliberate.
+```php
+use Temporal\Exception\Failure\ApplicationFailure;
 
-## Terminal and transient errors
+throw new ApplicationFailure('Payment declined', 'PaymentDeclined', false);
+```
+
+## Non-Retryable Errors
 
 ```php
 use Temporal\DataConverter\EncodedValues;
 use Temporal\Exception\Failure\ApplicationFailure;
 
 throw new ApplicationFailure(
-    message: 'Payment declined',
-    type: 'PaymentDeclined',
+    message: 'Card is expired',
+    type: 'CardExpired',
     nonRetryable: true,
-    details: EncodedValues::fromValues([['reason' => 'insufficient_funds']]),
+    details: EncodedValues::fromValues([['cardId' => $cardId]]),
 );
 ```
 
-`details` accepts `?ValuesInterface`, not a raw array. `fromValues()` takes a list of positional detail values: the outer list above makes `getValue(0)` return the whole reason map. `nextRetryDelay: new \DateInterval('PT30S')` can override the next retry interval where supported by the locked SDK/server. Classify the actual failure: a permanent business refusal differs from a temporary API outage. Do not blanket-classify every authentication failure without understanding credential refresh and recovery.
+`details` takes a `ValuesInterface`, not an array. Each element of the list given to `fromValues()` is one detail.
 
-## Options and timeouts
+Override the next retry interval with `nextRetryDelay`:
+
+```php
+throw new ApplicationFailure(
+    message: 'Rate limited',
+    type: 'RateLimited',
+    nonRetryable: false,
+    nextRetryDelay: new \DateInterval('PT30S'),
+);
+```
+
+## Handling Activity Errors
+
+The Workflow receives an `ActivityFailure` after all retries are done. The original failure is in `getPrevious()`.
+
+```php
+use Temporal\Exception\Failure\ActivityFailure;
+use Temporal\Exception\Failure\ApplicationFailure;
+use Temporal\Exception\Failure\CanceledFailure;
+use Temporal\Workflow;
+
+try {
+    yield $this->activities->charge($orderId);
+} catch (ActivityFailure $e) {
+    // Let cancellation propagate so the workflow is cancelled, not failed.
+    if ($e->getPrevious() instanceof CanceledFailure) {
+        throw $e;
+    }
+
+    Workflow::getLogger()->error('Charge failed', ['error' => $e->getMessage()]);
+    throw new ApplicationFailure('Order failed: charge was not done', 'OrderFailed', true, null, $e);
+}
+```
+
+## Retry Policy Configuration
 
 ```php
 use Temporal\Activity\ActivityOptions;
 use Temporal\Common\RetryOptions;
-use Temporal\Workflow;
 
+$options = ActivityOptions::new()
+    ->withStartToCloseTimeout(30)
+    ->withRetryOptions(
+        RetryOptions::new()
+            ->withMaximumInterval(60)
+            ->withMaximumAttempts(5)
+            ->withNonRetryableExceptions([\InvalidArgumentException::class, 'PaymentDeclined']),
+    );
+```
+
+Only set retry policies when you have a domain-specific reason. Prefer the defaults otherwise.
+
+## Timeout Configuration
+
+```php
 $activities = Workflow::newActivityStub(
-    PaymentActivities::class,
+    PaymentActivityInterface::class,
     ActivityOptions::new()
         ->withStartToCloseTimeout(30)
-        ->withScheduleToCloseTimeout(300)
-        ->withRetryOptions(
-            RetryOptions::new()->withNonRetryableExceptions(['PaymentDeclined'])
-        ),
+        ->withScheduleToCloseTimeout('5 minutes')
+        ->withHeartbeatTimeout(10),
 );
 ```
 
-Set at least Start-To-Close or Schedule-To-Close. Pass options when creating the stub, or use the SDK's supported stub-options mechanism for the installed version; a typed Activity proxy does not expose a generic `withOptions()` method.
+A timeout value is an `int` (seconds), a `\DateInterval`, or a string such as `'5 minutes'`. Set at least Start-To-Close or Schedule-To-Close. Options belong to the stub: create another stub for other options.
 
-| Timeout | Meaning |
-| --- | --- |
-| Start-To-Close | One Activity attempt, after the worker accepts the task |
-| Schedule-To-Close | Total Activity execution budget including queue waits and retries |
-| Schedule-To-Start | Queue wait; generally leave unset unless explicit routing/failover needs it; this timeout is non-retryable |
-| Heartbeat | Maximum heartbeat silence when configured |
+## Workflow Failure
 
-A timeout does not reliably kill an external HTTP call or PHP process. An old attempt can overlap a retry. Bound I/O timeouts and use a stable operation idempotency key across attempts. Heartbeats do not extend other timeouts and may be throttled; checkpoint only completed durable work, expect repeated work since the last persisted checkpoint.
+PHP differs from other SDKs here. The default `ExceptionInterceptor` treats PHP `\Error` (`TypeError`, `Error`, etc.) as a Workflow Task failure, which Temporal retries until the code is fixed. Any `\Exception`, including `ApplicationFailure`, fails the Workflow Execution.
 
-Default Activity retries already exist; add attempt limits/backoff only for a business or operational reason. A workflow retry re-executes a whole run and is not a substitute for per-Activity retries. Stable workflow IDs help deduplicate starts, but do not make a payment, DB write or notification exactly-once. Put deduplication at that side-effect boundary.
+```php
+#[WorkflowMethod]
+public function run(Order $order): \Generator
+{
+    if ($order->items === []) {
+        throw new ApplicationFailure('Order has no items', 'EmptyOrder', true);
+    }
 
-`Activity::heartbeat()` reports cancellation inside PHP Activity code with `Temporal\Exception\Client\ActivityCanceledException`; workflow-side cancellation uses failure types such as `CanceledFailure`. Do not catch only the workflow failure type inside the Activity.
+    return yield $this->activities->process($order);
+}
+```
 
-## Compensation
+To change which exceptions only fail the Workflow Task, give an exception interceptor to the worker:
 
-Use [the Saga and cancellation patterns](patterns.md). Register idempotent compensation before an operation that may succeed without reporting success. The compensation must tolerate both “nothing happened” and “already compensated.” The SDK's `Saga::compensate()` already uses detached cancellation scopes; a handwritten cleanup generator must explicitly use `Workflow::asyncDetached()` when its parent is cancelled. Decide how to report compensation failure; logging it and reporting success is usually misleading.
+```php
+use Temporal\Exception\ExceptionInterceptor;
 
-Cancellation also needs an ordering policy. The default Activity cancellation mode is `TryCancel`: the workflow can enter compensation while the original Activity still runs. A refund that sees no charge yet can miss a later charge. Where appropriate, configure `ActivityCancellationType::WaitCancellationCompleted`, heartbeat delivery and finite timeout budgets, then reconcile uncertain external outcomes. A cancellation-intent/fencing protocol at the payment or reservation boundary must prevent or detect late side effects; detached cleanup and idempotency alone do not establish this ordering.
+$worker = $factory->newWorker(
+    'orders',
+    exceptionInterceptor: new ExceptionInterceptor([\Error::class, \LogicException::class]),
+);
+```
+
+## Activity Cancellation Type
+
+The default `ActivityCancellationType::TryCancel` returns cancellation to the Workflow immediately, while the Activity can still run. For compensation that must wait until the Activity stops, use `WaitCancellationCompleted` with a heartbeat timeout:
+
+```php
+use Temporal\Activity\ActivityCancellationType;
+
+ActivityOptions::new()
+    ->withStartToCloseTimeout(60)
+    ->withHeartbeatTimeout(10)
+    ->withCancellationType(ActivityCancellationType::WaitCancellationCompleted);
+```
+
+## Best Practices
+
+- Use specific error types (`type` argument) for differentiation.
+- Mark permanent failures as `nonRetryable: true`.
+- Set retry policies only when defaults are insufficient.
+- Let `CanceledFailure` propagate unless a cancellation result is intended.
+- Design Activities for idempotency so retries are safe.

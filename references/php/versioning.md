@@ -1,57 +1,282 @@
 # PHP SDK Versioning
 
-See [core versioning](../core/versioning.md) for strategy. Sources: [PHP versioning guide](https://docs.temporal.io/develop/php/workflows/versioning), [SDK deployment options](https://github.com/temporalio/sdk-php/blob/v2.18/src/Worker/WorkerDeploymentOptions.php).
+For conceptual overview, see [Temporal versioning guide](../core/versioning.md).
 
-## Patching workflow commands
+## Patching API
 
-PHP uses `yield Workflow::getVersion()`, not another SDK's `patched()`:
+### The getVersion() Method
+
+PHP uses `Workflow::getVersion()`, like the Go SDK. There is no `patched()` method. `getVersion()` returns a promise:
 
 ```php
-$version = yield \Temporal\Workflow::getVersion(
-    'notification-channel',
-    \Temporal\Workflow::DEFAULT_VERSION,
-    2,
-);
-if ($version === 1) {
-    yield $activities->sendSms($orderId);
-} elseif ($version === 2) {
-    yield $activities->sendPush($orderId);
+$version = yield Workflow::getVersion('change-id', Workflow::DEFAULT_VERSION, 1);
+
+if ($version === Workflow::DEFAULT_VERSION) {
+    // Old code path (for replay of existing workflows)
+    yield $this->activities->prePatchActivity();
+} else {
+    // New code path
+    yield $this->activities->postPatchActivity();
 }
-// DEFAULT_VERSION preserves the original history with neither notification.
 ```
 
-A new execution records the maximum supported version; an execution replaying a history from before the marker uses `DEFAULT_VERSION` (-1). Keep each historical branch needed by retained executions. Adding a new `sideEffect()`, UUID generation, timer or Activity elsewhere in the workflow can still break replay even if the notification itself is versioned. Review the entire command sequence.
+**How it works:**
 
-Once old versions are no longer needed, remove their branches but retain a `getVersion()` call with narrowed supported bounds. Remove the marker only after verifying the SDK's removal rules and every history you still need to replay/reset. “No open workflows” alone does not cover retained closed histories, reset points or rollback needs. Use actual visibility/history evidence and replay fixtures, not an assumed deployment date.
+- For new executions: `getVersion()` returns `maxSupported` and records a marker in the Workflow history
+- For replay with the marker: `getVersion()` returns the version recorded in the marker
+- For replay without the marker: `getVersion()` returns `Workflow::DEFAULT_VERSION` (`-1`)
+- A recorded version outside `[minSupported, maxSupported]` fails the Workflow Task
 
-When querying `TemporalChangeVersion`, inspect the emitted values; the value includes change ID **and version**, such as `notification-channel-2`, not just `notification-channel`. Absence alone is not a reliable classification of every old code path. Preserve a unique change ID for each logical patch.
+### Three-Step Patching Process
 
-## New Workflow Types
+**Warning:** Failing to follow this process correctly will result in non-determinism errors for in-flight workflows.
 
-For a substantially incompatible contract, register a new name (for example `OrderV2`), route new starts to it and keep the old implementation available for existing executions. Rename PHP classes independently from registered type names only when their attributes preserve the contract. Check routing on every worker polling the affected Task Queue.
+**Step 1: Patch in New Code**
 
-## Worker Deployment Versioning
-
-Verify SDK, RoadRunner and server compatibility together. The deployment types below exist in SDK 2.16+ and were experimental in 2.16. Do not infer feature maturity or server support from class existence. Avoid copying historical preview/removal dates as current facts.
+Add the version check with both old and new code paths:
 
 ```php
-use Temporal\Common\Versioning\VersioningBehavior;
+#[WorkflowMethod(name: 'Order')]
+public function run(Order $order): \Generator
+{
+    $version = yield Workflow::getVersion('add-fraud-check', Workflow::DEFAULT_VERSION, 1);
+
+    if ($version === 1) {
+        // New: Run fraud check before payment
+        yield $this->activities->checkFraud($order);
+    }
+
+    // Original payment logic runs for both paths
+    return yield $this->activities->processPayment($order);
+}
+```
+
+**Step 2: Deprecate the Old Path**
+
+Once all pre-patch Workflow Executions have completed, remove the old code. Keep the `getVersion()` call and raise `minSupported`, so that a pre-patch history fails clearly instead of running incorrect code:
+
+```php
+#[WorkflowMethod(name: 'Order')]
+public function run(Order $order): \Generator
+{
+    yield Workflow::getVersion('add-fraud-check', 1, 1);
+
+    yield $this->activities->checkFraud($order);
+
+    return yield $this->activities->processPayment($order);
+}
+```
+
+**Step 3: Remove the Version Check**
+
+After all workflows with the `add-fraud-check` marker have completed, remove the `getVersion()` call:
+
+```php
+#[WorkflowMethod(name: 'Order')]
+public function run(Order $order): \Generator
+{
+    yield $this->activities->checkFraud($order);
+
+    return yield $this->activities->processPayment($order);
+}
+```
+
+### Adding More Versions
+
+To change the same code again, raise `maxSupported` and keep the existing branches:
+
+```php
+$version = yield Workflow::getVersion('notification-channel', Workflow::DEFAULT_VERSION, 2);
+
+match ($version) {
+    Workflow::DEFAULT_VERSION => null,
+    1 => yield $this->activities->sendSms($orderId),
+    2 => yield $this->activities->sendPush($orderId),
+};
+```
+
+### Query Filters for Finding Workflows by Version
+
+`getVersion()` adds `<changeId>-<version>` to the `TemporalChangeVersion` Search Attribute:
+
+```bash
+# Find running workflows with a specific version
+temporal workflow list --query \
+  'WorkflowType = "Order" AND ExecutionStatus = "Running" AND TemporalChangeVersion = "add-fraud-check-1"'
+
+# Find running workflows without any version marker (pre-patch versions)
+temporal workflow list --query \
+  'WorkflowType = "Order" AND ExecutionStatus = "Running" AND TemporalChangeVersion IS NULL'
+```
+
+## Workflow Type Versioning
+
+For incompatible changes, create a new Workflow Type with a new name:
+
+```php
+#[WorkflowInterface]
+interface OrderWorkflowInterface
+{
+    #[WorkflowMethod(name: 'Order')]
+    public function run(Order $order): \Generator;
+}
+
+#[WorkflowInterface]
+interface OrderWorkflowV2Interface
+{
+    #[WorkflowMethod(name: 'OrderV2')]
+    public function run(Order $order): \Generator;
+}
+```
+
+Register both with the Worker:
+
+```php
+$worker->registerWorkflowTypes(OrderWorkflow::class, OrderWorkflowV2::class);
+```
+
+Update client code to start new workflows with the new type:
+
+```php
+// Old workflows continue on Order
+// New workflows use OrderV2
+$workflow = $client->newWorkflowStub(
+    OrderWorkflowV2Interface::class,
+    WorkflowOptions::new()->withTaskQueue('orders'),
+);
+$client->start($workflow, $order);
+```
+
+Check for open executions before removing the old type:
+
+```bash
+temporal workflow list --query 'WorkflowType = "Order" AND ExecutionStatus = "Running"'
+```
+
+## Worker Versioning
+
+Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
+
+### Key Concepts
+
+**Worker Deployment**: A logical service grouping similar Workers together (e.g., "order-processor"). All versions of your code live under this umbrella.
+
+**Worker Deployment Version**: A specific snapshot of your code identified by a deployment name and Build ID (e.g., deployment "order-processor" with Build ID "v1.0" or "abc123").
+
+### Configuring Workers for Versioning
+
+Deployment options are part of `WorkerOptions`:
+
+```php
 use Temporal\Common\Versioning\WorkerDeploymentVersion;
 use Temporal\Worker\WorkerDeploymentOptions;
 use Temporal\Worker\WorkerOptions;
 
-$options = WorkerOptions::new()->withDeploymentOptions(
-    WorkerDeploymentOptions::new()
-        ->withUseVersioning(true)
-        ->withVersion(WorkerDeploymentVersion::new('orders', 'build-abc123'))
-        ->withDefaultVersioningBehavior(VersioningBehavior::Pinned),
+$worker = $factory->newWorker(
+    'my-task-queue',
+    WorkerOptions::new()->withDeploymentOptions(
+        WorkerDeploymentOptions::new()
+            ->withUseVersioning(true)
+            ->withVersion(WorkerDeploymentVersion::new('my-service', 'v1.0.0')),
+    ),
 );
-$worker = $factory->newWorker('orders', $options);
 ```
 
-Deployment options belong inside `WorkerOptions`; `newWorker()` has no `deploymentOptions:` argument. The canonical version string is `deploymentName.buildId`, not `deploymentName:buildId`.
+### PINNED vs AUTO_UPGRADE Behaviors
 
-- `Pinned` keeps a workflow on its assigned deployment version. Retain capacity/code for that version until it is safe to retire. Moving a pinned workflow deliberately still requires compatibility review.
-- `AutoUpgrade` allows movement to the current deployment version; incompatible command changes still require patching.
+**PINNED Behavior**
 
-Use the installed CLI's `temporal worker deployment --help` and subcommand help before performing a rollout. Setting the current deployment version affects routing; it is not a local code-only operation. Verify drained executions, visibility, replay and rollback requirements before removing workers or historical branches.
+Workflows stay locked to their original Worker version. Set it on the Workflow method:
+
+```php
+use Temporal\Common\Versioning\VersioningBehavior;
+use Temporal\Workflow\WorkflowVersioningBehavior;
+
+#[WorkflowInterface]
+interface StableWorkflowInterface
+{
+    #[WorkflowMethod]
+    #[WorkflowVersioningBehavior(VersioningBehavior::Pinned)]
+    public function run(): \Generator;
+}
+```
+
+**When to use PINNED:**
+
+- Short-running workflows (minutes to hours)
+- Consistency is critical (e.g., financial transactions)
+- You want to eliminate version compatibility complexity
+- Building new applications and want simplest development experience
+
+**AUTO_UPGRADE Behavior**
+
+Workflows can move to newer versions:
+
+```php
+#[WorkflowMethod]
+#[WorkflowVersioningBehavior(VersioningBehavior::AutoUpgrade)]
+public function run(): \Generator;
+```
+
+**When to use AUTO_UPGRADE:**
+
+- Long-running workflows (weeks or months)
+- Workflows need to benefit from bug fixes during execution
+- Migrating from traditional rolling deployments
+- You are already using `getVersion()` for version transitions
+
+**Important:** AUTO_UPGRADE workflows still need `getVersion()` to handle version transitions safely since they can move between Worker versions.
+
+### Worker Configuration with Default Behavior
+
+```php
+$worker = $factory->newWorker(
+    'orders-task-queue',
+    WorkerOptions::new()->withDeploymentOptions(
+        WorkerDeploymentOptions::new()
+            ->withUseVersioning(true)
+            ->withVersion(WorkerDeploymentVersion::new('order-service', getenv('BUILD_ID')))
+            ->withDefaultVersioningBehavior(VersioningBehavior::Pinned),
+    ),
+);
+```
+
+### Deployment Strategies
+
+**Blue-Green Deployments**
+
+Maintain two environments and switch traffic between them:
+
+1. Deploy new code to idle environment
+2. Run tests and validation
+3. Switch traffic to new environment
+4. Keep old environment for instant rollback
+
+**Rainbow Deployments**
+
+Multiple versions run simultaneously:
+
+- New workflows use latest version
+- Existing workflows complete on their original version
+- Add new versions alongside existing ones
+- Gradually sunset old versions as workflows complete
+
+This works well with Kubernetes where you manage multiple ReplicaSets running different Worker versions.
+
+### Querying Workflows by Worker Version
+
+```bash
+# Find workflows on a specific Worker version
+temporal workflow list --query \
+  'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
+```
+
+## Best Practices
+
+1. **Check for open executions** before removing old code paths
+2. **Use descriptive change IDs** that explain the change (e.g., "add-fraud-check" not "patch-1")
+3. **Deploy versions incrementally**: add `getVersion()`, raise `minSupported`, remove
+4. **Use PINNED for short workflows** to simplify version management
+5. **Use AUTO_UPGRADE with `getVersion()`** for long-running workflows that need updates
+6. **Generate Build IDs from code** (git hash) to ensure changes produce new versions
+7. **Avoid rolling deployments** for high-availability services with long-running workflows

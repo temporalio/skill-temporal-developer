@@ -56,7 +56,7 @@ For a new project, a first implementation, or broad SDK guidance, read the appro
 - Go -> [Go SDK guide](references/go/go.md)
 - Java -> [Java SDK guide](references/java/java.md)
 - .NET (C#) -> [.NET SDK guide](references/dotnet/dotnet.md)
-- PHP -> [PHP SDK guide](references/php/php.md), including RoadRunner operations, Laravel/support integrations, and a reviewed PHP course/source map
+- PHP -> [PHP SDK guide](references/php/php.md)
 - Ruby -> [Ruby SDK guide](references/ruby/ruby.md)
 - Rust -> [Rust SDK guide](references/rust/rust.md) (in Public Preview)
 
