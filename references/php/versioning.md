@@ -165,7 +165,7 @@ Worker Versioning manages versions at the deployment level, allowing multiple Wo
 
 ### Configuring Workers for Versioning
 
-Deployment options are part of `WorkerOptions`:
+Deployment options are part of `WorkerOptions`. The deployment name must not contain a `.`:
 
 ```php
 use Temporal\Common\Versioning\WorkerDeploymentVersion;
@@ -181,6 +181,8 @@ $worker = $factory->newWorker(
     ),
 );
 ```
+
+With `withUseVersioning(true)`, every registered Workflow needs a versioning behavior: either `#[WorkflowVersioningBehavior]` on its method, or `withDefaultVersioningBehavior()` on the worker. Otherwise the worker does not start.
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 
@@ -235,7 +237,10 @@ $worker = $factory->newWorker(
     WorkerOptions::new()->withDeploymentOptions(
         WorkerDeploymentOptions::new()
             ->withUseVersioning(true)
-            ->withVersion(WorkerDeploymentVersion::new('order-service', getenv('BUILD_ID')))
+            ->withVersion(WorkerDeploymentVersion::new(
+                'order-service',
+                getenv('BUILD_ID') ?: throw new \RuntimeException('BUILD_ID is not set'),
+            ))
             ->withDefaultVersioningBehavior(VersioningBehavior::Pinned),
     ),
 );
@@ -262,6 +267,10 @@ Multiple versions run simultaneously:
 - Gradually sunset old versions as workflows complete
 
 This works well with Kubernetes where you manage multiple ReplicaSets running different Worker versions.
+
+### Upgrading on Continue-as-New
+
+The PHP SDK 2.20 has no option to upgrade a Workflow to a new deployment version on Continue-As-New: `ContinueAsNewOptions` has no versioning setting.
 
 ### Querying Workflows by Worker Version
 

@@ -30,6 +30,15 @@ Workflow::getLogger()->info('Processing order', ['orderId' => $orderId]);
 $this->logger->info('Processing order', ['orderId' => $orderId]);
 ```
 
+### Changed Code Is Not Loaded
+
+RoadRunner keeps the PHP worker processes alive. After a code change, the old code runs until the processes restart:
+
+```bash
+# Restart the PHP worker processes
+./rr reset -c .rr.yaml
+```
+
 ## Generators and Promises
 
 ### Forgetting `yield`
@@ -76,6 +85,8 @@ public function run(string $name): \Generator
 ### Unbounded Fan-Out
 
 ```php
+use Temporal\Promise;
+
 // BAD - 100,000 concurrent Activities in one Workflow run
 $promises = [];
 foreach ($allItemIds as $id) {
@@ -108,7 +119,7 @@ $worker->registerActivity(
 
 ### Shared State in Long-Lived Processes
 
-A RoadRunner worker process runs many Activity tasks. Properties and static variables keep their values between tasks.
+A RoadRunner worker process runs many Activity tasks. For an Activity registered by class name, each task gets a new instance. Static variables, shared container services, and instances that a factory returns from a container keep their values between tasks.
 
 ```php
 // BAD - The tenant of one task leaks into the next task
@@ -134,6 +145,26 @@ final class ReportActivity implements ReportActivityInterface
 ```
 
 Use `registerActivityFinalizer()` to reset application state after each Activity, for example an ORM identity map.
+
+### Local Activity Without `#[LocalActivityInterface]`
+
+```php
+// BAD - A regular Activity is scheduled, LocalActivityOptions are ignored without an error
+#[ActivityInterface(prefix: 'Lookup.')]
+interface LookupActivityInterface
+{
+    #[ActivityMethod]
+    public function quickLookup(string $key): string;
+}
+
+// GOOD - The interface is marked as local
+#[LocalActivityInterface(prefix: 'Lookup.')]
+interface LookupActivityInterface
+{
+    #[ActivityMethod]
+    public function quickLookup(string $key): string;
+}
+```
 
 ## Wrong Retry Classification
 
@@ -206,7 +237,7 @@ public function run(string $resourceId): \Generator
 
 ### Not Handling Activity Cancellation
 
-Cancellation is delivered to an Activity only through a heartbeat. `Activity::heartbeat()` throws `ActivityCanceledException`.
+Cancellation is delivered to an Activity only through a heartbeat. `Activity::heartbeat()` throws an `ActivityCompletionException`: `ActivityCanceledException`, `ActivityPausedException` or `ActivityResetException`.
 
 ```php
 // BAD - The Activity ignores cancellation
@@ -225,7 +256,7 @@ public function sync(array $ids): void
             Activity::heartbeat($id);
             $this->syncOne($id);
         }
-    } catch (ActivityCanceledException $e) {
+    } catch (ActivityCompletionException $e) {
         $this->rollback();
         throw $e;
     }
@@ -237,7 +268,7 @@ public function sync(array $ids): void
 ### Awaiting an Evaluated Boolean
 
 ```php
-// BAD - The condition is evaluated once, before the await
+// BAD - TypeError: await() takes a callable, a promise or a Mutex, not a bool
 yield Workflow::await(Workflow::allHandlersFinished());
 
 // GOOD - A callable is evaluated again after each change

@@ -13,7 +13,7 @@ composer require temporal/sdk
 ./vendor/bin/rr get-binary
 ```
 
-Configure Composer PSR-4 autoloading (`"App\\": "src/"`). The client needs the `grpc` PHP extension. The `protobuf` extension is optional and makes serialization faster.
+Configure Composer PSR-4 autoloading (`"App\\": "src/"`). The SDK requires the `curl` and `json` PHP extensions. The client needs the `grpc` extension. The `protobuf` extension is optional and makes serialization faster.
 
 **src/Activity/GreetingActivityInterface.php** - Activity interface:
 
@@ -199,6 +199,10 @@ echo "Result: {$result}" . PHP_EOL;
 - The registered Activity Type is `prefix` + method name, for example `Greeting.greet`.
 - The implementation is ordinary PHP code. It can do I/O, call services, and block.
 
+### Evolving Inputs and Results
+
+The JSON converter creates DTOs without their constructor. Add a new field as a property with a property default (`public ?string $couponCode = null;`), not as a constructor parameter. See [data handling](data-handling.md#typed-inputs-and-results).
+
 ### Worker Setup
 
 - `WorkerFactory::create()` connects to RoadRunner, not directly to the server. The server address is in `.rr.yaml`.
@@ -229,6 +233,10 @@ my_temporal_app/
 └── starter.php       # Client code that starts workflows
 ```
 
+### Unsupported Features
+
+SDK 2.20 has no Standalone Activities and no Nexus Operations API. For a job queue, start a Workflow that runs one Activity.
+
 ## Common Pitfalls
 
 1. **Running `php worker.php` directly** - RoadRunner must start the worker. Use `rr serve`.
@@ -236,10 +244,10 @@ my_temporal_app/
 3. **Declaring `string` or `void` on a generator method** - PHP rejects it. Use `\Generator` and `#[ReturnType]`.
 4. **Non-deterministic code in workflows** - No sandbox catches `time()`, `rand()`, `sleep()` or a DB query. See [determinism](determinism.md).
 5. **Registering an Activity instance** - `registerActivity()` takes a class name and an optional factory, not an object.
-6. **Incorrect Activity Type names** - The type includes the interface `prefix`. Mocks, schedules and untyped stubs must use the full name.
+6. **Incorrect Activity Type names** - The type includes the interface `prefix`. Mocks and untyped stubs must use the full name.
 7. **Using `echo` or `var_dump()` in a worker** - STDOUT carries the RoadRunner protocol. Use `Workflow::getLogger()` or a PSR-3 logger that writes to STDERR.
 8. **Typing a stub property with the interface only** - `Workflow::newActivityStub()` returns an `ActivityProxy`. Declare the property as `ActivityProxy|MyActivityInterface`, or a `TypeError` blocks the Workflow.
-9. **Shared state in Activity instances** - A worker process runs many Activity tasks. Do not keep request or tenant state in properties or static variables.
+9. **Shared state in a worker process** - A worker process runs many Activity tasks. Static variables and shared container services keep their values between tasks. Do not keep request or tenant state there.
 
 ## Writing Tests
 

@@ -37,7 +37,9 @@ All Workflow code must therefore be deterministic: the same input and history mu
 | `$logger->info()` / `echo` | `Workflow::getLogger()->info(...)` |
 | DB query / HTTP call | An Activity |
 
-`Workflow::now()` is synchronous. `timer()`, `sideEffect()`, `uuid()`, `uuid4()` and `uuid7()` return promises: use `yield`.
+`Workflow::now()`, `allHandlersFinished()` and the Search Attribute and Memo upserts are synchronous: do not `yield` them. `timer()`, `sideEffect()`, `uuid()`, `uuid4()`, `uuid7()`, `getVersion()` and `continueAsNew()` return promises: use `yield`.
+
+Replay does not run the `sideEffect()` callback: it uses the recorded value. Do not do I/O, payments, or changes to Workflow properties in the callback. Use only its yielded result.
 
 ## Testing Replay Compatibility
 

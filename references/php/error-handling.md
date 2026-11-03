@@ -74,9 +74,11 @@ $options = ActivityOptions::new()
         RetryOptions::new()
             ->withMaximumInterval(60)
             ->withMaximumAttempts(5)
-            ->withNonRetryableExceptions([\InvalidArgumentException::class, 'PaymentDeclined']),
+            ->withNonRetryableExceptions([\InvalidArgumentException::class]),
     );
 ```
+
+`withNonRetryableExceptions()` takes `Throwable` class names. To stop retries for an `ApplicationFailure` type such as `PaymentDeclined`, throw it with `nonRetryable: true`.
 
 Only set retry policies when you have a domain-specific reason. Prefer the defaults otherwise.
 
@@ -93,6 +95,17 @@ $activities = Workflow::newActivityStub(
 ```
 
 A timeout value is an `int` (seconds), a `\DateInterval`, or a string such as `'5 minutes'`. Set at least Start-To-Close or Schedule-To-Close. Options belong to the stub: create another stub for other options.
+
+| Timeout | Meaning |
+| -- | -- |
+| Start-To-Close | One Activity attempt, after a worker accepts the task |
+| Schedule-To-Close | Total Activity time, including queue waits and retries |
+| Schedule-To-Start | Queue wait. Usually leave it unset. It is not retryable |
+| Heartbeat | Maximum time between heartbeats |
+
+A timeout does not stop the PHP code of an attempt. An old attempt can run at the same time as its retry. Set I/O timeouts in the Activity, and use a stable idempotency key across attempts.
+
+A client that waits for the result receives `WorkflowFailedException`, with the Workflow failure as the previous exception.
 
 ## Workflow Failure
 
@@ -133,6 +146,8 @@ ActivityOptions::new()
     ->withHeartbeatTimeout(10)
     ->withCancellationType(ActivityCancellationType::WaitCancellationCompleted);
 ```
+
+With `TryCancel`, a compensation such as a refund can run before the original charge finishes, and miss it. A cancellation request or a timeout does not prove that the external system did not apply the operation. Use a stable operation ID, and reconcile or fence late side effects at the external boundary.
 
 ## Best Practices
 

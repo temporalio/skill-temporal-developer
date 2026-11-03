@@ -1,6 +1,6 @@
 # Laravel Temporal Integration
 
-Use [keepsuit/laravel-temporal](https://github.com/keepsuit/laravel-temporal) when the application uses Laravel. It is a community package, not a requirement of the PHP SDK. Its `temporal/sdk` constraint can lag behind the SDK: make sure it allows the SDK version that you need (for example, the features of SDK 2.20).
+Use [keepsuit/laravel-temporal](https://github.com/keepsuit/laravel-temporal) when the application uses Laravel. It is a community package, not a requirement of the PHP SDK. The current release (v2.3.x) requires `temporal/sdk ~2.17.0`. Features of SDK 2.18+ in these references (the testing interactions and workflow mocks, `AwaitOptions`, serialization context, the read-only callback guard, payload limits, eager Activity options) are not available with it.
 
 ## Setup
 
@@ -83,7 +83,8 @@ $activityMock->assertDispatchedTimes(1);
 
 - `Temporal::fake()` replaces dispatch with fakes. It does not run timers, cancellation or replay.
 - The `WithTemporal` trait starts a test server and a worker for a test case.
-- `WithTemporalWorker` starts only a worker against a server that is already running.
+- `WithTemporalWorker` starts only a worker against a server that is already running, for example one from `php artisan temporal:server`.
+- `TEMPORAL_TESTING_SERVER=false` makes `WithTemporal` use an external server and start only the worker.
 - `WithoutTimeSkipping` and `TemporalTestTime::sleep()` control time in interaction tests.
 
 Add [replay tests](../testing.md#workflow-replay-testing) in addition to dispatch fakes.

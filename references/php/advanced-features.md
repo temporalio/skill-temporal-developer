@@ -68,12 +68,14 @@ Later, complete the Activity from another process:
 ```php
 $completion = $client->newActivityCompletionClient();
 
+$taskToken = base64_decode($encodedToken);
+
 $completion->completeByToken($taskToken, 'approved');
 // or
 $completion->completeExceptionallyByToken($taskToken, new \RuntimeException('Rejected'));
 ```
 
-`complete()` and `completeExceptionally()` take the Workflow ID, Run ID and Activity ID instead of the token. For a human approval, a Signal or an Update with a timer is often more simple than an open Activity.
+The task token is binary data. Encode it for transport and decode it before completion. `complete()` and `completeExceptionally()` take the Workflow ID, Run ID and Activity ID instead of the token. For a human approval, a Signal or an Update with a timer is often more simple than an open Activity.
 
 ## Worker Tuning
 
@@ -112,7 +114,29 @@ $worker = $factory->newWorker(
 );
 ```
 
-More pollers do not give more PHP execution capacity. If `withMaxConcurrentActivityExecutionSize()` is much larger than `num_workers`, tasks wait in the worker while their Start-To-Close timeout runs.
+| Control | What it limits |
+| -- | -- |
+| `temporal.activities.num_workers` | PHP processes for Activities and local Activities of all Task Queues (default: number of CPUs) |
+| `withMaxConcurrentActivityExecutionSize()` | Concurrent Activity executions admitted by the worker |
+| `withMaxConcurrentActivityTaskPollers()` / `withMaxConcurrentWorkflowTaskPollers()` | Concurrent polls, not PHP capacity |
+| `withTaskQueueActivitiesPerSecond()` | Server-side Activity rate for the whole Task Queue |
+| `withWorkerActivitiesPerSecond()` | Activity rate per worker |
+| RoadRunner replicas | Total capacity, limited by shared databases and APIs |
+
+**Process model:**
+
+- All Workflow tasks of a RoadRunner instance run in **one** PHP process. `withMaxConcurrentWorkflowTaskExecutionSize()` does not add PHP capacity. A slow or blocking Workflow stalls all Workflows. `max_worker_memory` and `max_jobs` do not recycle this process.
+- Activities and local Activities of all Task Queues share the `activities` pool.
+- More pollers do not give more PHP execution capacity. If `withMaxConcurrentActivityExecutionSize()` is much larger than `num_workers`, tasks wait for a free process while their Start-To-Close timeout runs. A task that waits longer than `allocate_timeout` (default 60s) fails the attempt.
+
+**Pool settings:**
+
+- `supervisor.max_worker_memory` is a soft limit in MB. `memory_limit` is not a pool key.
+- `max_jobs` restarts a process after a number of tasks. It does not fix a memory leak.
+- `supervisor.exec_ttl` kills a process that runs a task too long. The Activity attempt fails and retries. It is not a replacement for Temporal timeouts.
+- HTTP processes (`http.pool`) and Temporal processes (`temporal.activities`) are separate pools.
+
+**Scaling:** Scale on Activity Schedule-To-Start latency, backlog, CPU and memory. High latency with a full pool means too few PHP processes. High latency with idle processes means a polling, routing or registration problem. On Kubernetes, set a termination grace period, test scale-down with running Activities, and make Activities idempotent: an attempt on a stopped worker is retried elsewhere.
 
 ### Eager Activities
 
@@ -173,13 +197,17 @@ The constructor and the Workflow method must have the same parameters. Do not st
 
 ## Feature Flags
 
-`Temporal\Worker\FeatureFlags` holds static switches for behavior changes that affect command sequences. Set them in the worker entrypoint, before `$factory->run()`:
+`Temporal\Worker\FeatureFlags` holds static switches for behavior changes. Set them at the top of the worker entrypoint, before `WorkerFactory::create()`:
 
 | Flag | Default | Effect |
 | -- | -- | -- |
 | `$readOnlyWorkflowCallbacks` | `true` | A command from a Query handler, an Update validator, an await condition or a `sideEffect()` callback throws (SDK 2.20) |
 | `$settleAwaitOnFirstSettledCondition` | `false` | A multi-condition `await()` unblocks on the first settled condition and propagates a rejection (SDK 2.19) |
 | `$propagateCancellationToNewScopes` | `false` | A nested scope, await or `onCancel` handler created after its scope was cancelled is cancelled immediately (SDK 2.18) |
+| `$cancelAbandonedChildWorkflows` | `true` | Parent cancellation also cancels `ParentClosePolicy::Abandon` children. Set `false` to keep them running (SDK 2.16) |
+| `$workflowDeferredHandlerStart` | `false` | The Workflow method starts after all Signals of the same Workflow Task are handled (experimental) |
+| `$warnOnWorkflowUnfinishedHandlers` | `true` | Log a warning when a Workflow completes while handlers still run |
+| `$warnOnActivityMethodWithoutAttribute` | `true` | Log a warning for a public Activity method without `#[ActivityMethod]` |
 
 A flag that changes commands can break replay of open Workflows. Enable it for new deployments or together with [versioning](versioning.md).
 
@@ -211,7 +239,18 @@ $client = WorkflowClient::create(
 );
 ```
 
-The worker connects through RoadRunner. Set the address, namespace and `tls` in the `temporal` section of `.rr.yaml`. Give an API key to the worker factory:
+The worker connects through RoadRunner. Without a `tls` section, RoadRunner connects without TLS:
+
+```yaml
+temporal:
+  address: "my-namespace.a1b2c.tmprl.cloud:7233"
+  namespace: "my-namespace.a1b2c"
+  tls:
+    server_name: "my-namespace.a1b2c.tmprl.cloud"
+    # For mTLS: key, cert, root_ca
+```
+
+Give an API key to the worker factory:
 
 ```php
 use Temporal\Worker\ServiceCredentials;
@@ -219,3 +258,48 @@ use Temporal\WorkerFactory;
 
 $factory = WorkerFactory::create(credentials: ServiceCredentials::create()->withApiKey($apiKey));
 ```
+
+## Environment Configuration
+
+Since SDK 2.17, the client can load connection settings from a TOML profile and environment variables (`TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE`, `TEMPORAL_API_KEY`, `TEMPORAL_TLS_*`, `TEMPORAL_PROFILE`, `TEMPORAL_CONFIG_FILE`), like the Temporal CLI. Remote codec settings are not supported:
+
+```php
+use Temporal\Client\WorkflowClient;
+use Temporal\Common\EnvConfig\ConfigClient;
+
+$profile = ConfigClient::load();
+$client = WorkflowClient::create($profile->toServiceClient(), $profile->toClientOptions());
+```
+
+## Plugins
+
+Since SDK 2.18, a plugin packages interceptors and configuration for the client, the schedule client and the worker. Extend `Temporal\Plugin\AbstractPlugin` and override only the hooks that you need:
+
+```php
+use Temporal\Plugin\AbstractPlugin;
+use Temporal\Plugin\PluginRegistry;
+use Temporal\Plugin\WorkerPluginContext;
+use Temporal\WorkerFactory;
+
+final class TracingPlugin extends AbstractPlugin
+{
+    public function __construct(private readonly Tracer $tracer)
+    {
+        parent::__construct('acme.tracing');
+    }
+
+    public function configureWorker(WorkerPluginContext $context, callable $next): void
+    {
+        $context->addInterceptor(new OpenTelemetryActivityInboundInterceptor($this->tracer));
+        $next($context);
+    }
+}
+
+$factory = WorkerFactory::create(pluginRegistry: new PluginRegistry([new TracingPlugin($tracer)]));
+```
+
+`WorkflowClient::create()` and `ScheduleClient::create()` also take a `pluginRegistry`.
+
+## Unsupported Features
+
+SDK 2.20 has no Standalone Activities and no Nexus Operations API. For a job queue, start a Workflow that runs one Activity.

@@ -6,11 +6,31 @@ The `temporal/sdk` package contains a PHPUnit testing framework in the `Temporal
 
 - `Environment` - starts and stops the test server and RoadRunner
 - `WorkflowTestCase` / `TimeSkippingWorkflowTestCase` - PHPUnit base classes with a client and mocks
-- `ActivityMocker` and `WorkflowMocker` - mock Activities, child Workflows, `getVersion()` and `sideEffect()`
-- `WorkflowInteractions` - assertions about the Activities, timers, children and Signals of a run
+- `ActivityMocker`, `WorkflowMocker` and `SearchAttributeMocker` - mock Activities, child Workflows, `getVersion()`, `sideEffect()` and typed Search Attribute upserts
+- `WorkflowInteractions` - assertions about the Activities, timers, children and external Signals of a run
 - `WorkflowReplayer` - replay tests
 
+## Choose the Test Boundary
+
+| Test | Shows | Does not show |
+| -- | -- | -- |
+| Plain PHPUnit test of an Activity class | Domain logic, I/O adapters, idempotency | Worker transport, replay |
+| Real worker + mocked Activities | Orchestration, messages, failure handling | Real external side effects |
+| Real worker + real Activities | Serialization, registration, integration | Compatibility with old histories |
+| Replay of recorded histories | Compatibility of the code with those histories | Correctness of new behavior |
+
 ## Test Environment Setup
+
+Use ports that differ from a local dev server and an application RoadRunner. Set them in `phpunit.xml`:
+
+```xml
+<phpunit bootstrap="tests/bootstrap.php">
+    <php>
+        <env name="TEMPORAL_ADDRESS" value="127.0.0.1:7235"/>
+        <env name="RR_RPC" value="tcp://127.0.0.1:6002"/>
+    </php>
+</phpunit>
+```
 
 **tests/bootstrap.php** - starts the test server and the test worker once per PHPUnit run:
 
@@ -29,19 +49,19 @@ $environment->startRoadRunner(['./rr', 'serve', '-c', 'tests/.rr.test.yaml'], co
 register_shutdown_function(static fn() => $environment->stop());
 ```
 
-**tests/.rr.test.yaml** - the test worker needs a `kv` storage for mocks. RoadRunner runs `server.command` in the directory of the configuration file:
+**tests/.rr.test.yaml** - the test worker needs a `kv` storage named `test` for mocks. RoadRunner runs `server.command` in the directory of the configuration file:
 
 ```yaml
 version: "3"
 
 rpc:
-  listen: tcp://127.0.0.1:6001
+  listen: tcp://127.0.0.1:6002
 
 server:
   command: "php worker.test.php"
 
 temporal:
-  address: "127.0.0.1:7233"
+  address: "127.0.0.1:7235"
   activities:
     num_workers: 2
 
@@ -52,7 +72,7 @@ kv:
       interval: 10
 ```
 
-**tests/worker.test.php** - use `Temporal\Testing\WorkerFactory`, which connects the mocks:
+**tests/worker.test.php** - `Temporal\Testing\WorkerFactory` connects the Activity mocks. Child Workflow, `getVersion()`, `sideEffect()` and Search Attribute mocks need the interceptors:
 
 ```php
 <?php
@@ -61,18 +81,35 @@ declare(strict_types=1);
 
 use App\Activity\GreetingActivity;
 use App\Workflow\GreetingWorkflow;
+use Temporal\Interceptor\SimplePipelineProvider;
+use Temporal\Testing\MockChildWorkflowInterceptor;
+use Temporal\Testing\MockSearchAttributeInterceptor;
+use Temporal\Testing\MockSideEffectInterceptor;
 use Temporal\Testing\WorkerFactory;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $factory = WorkerFactory::create();
-$worker = $factory->newWorker('test-queue');
+$worker = $factory->newWorker(
+    'test-queue',
+    interceptorProvider: new SimplePipelineProvider([
+        new MockChildWorkflowInterceptor(),
+        new MockSideEffectInterceptor(),
+        new MockSearchAttributeInterceptor(),
+    ]),
+);
 $worker->registerWorkflowTypes(GreetingWorkflow::class);
 $worker->registerActivity(GreetingActivity::class);
+
+// Replay needs the Workflow on the Task Queue of the recorded histories
+$factory->newWorker('my-task-queue')->registerWorkflowTypes(GreetingWorkflow::class);
+
 $factory->run();
 ```
 
-Set `TEMPORAL_ADDRESS=127.0.0.1:7233` and `bootstrap="tests/bootstrap.php"` in `phpunit.xml`. `Environment` expects the `rr` and `temporal-test-server` binaries in the project root. Download `temporal-test-server` from the [temporalio/sdk-java releases](https://github.com/temporalio/sdk-java/releases) and add it to `.gitignore`.
+`MockSearchAttributeInterceptor` is also necessary for a Workflow that upserts typed Search Attributes: the time-skipping test server does not support that call.
+
+`Environment` expects the `rr` and `temporal-test-server` binaries in the project root. Download `temporal-test-server` from the [temporalio/sdk-java releases](https://github.com/temporalio/sdk-java/releases) and add it to `.gitignore`.
 
 ## Workflow Test Case
 
@@ -101,7 +138,7 @@ final class GreetingWorkflowTest extends WorkflowTestCase
 }
 ```
 
-`WorkflowTestCase` creates `$workflowClient`, `$testingService`, `$activityMocks`, `$workflowMocks` and `$delayedCallbacks`, and clears the mocks in `tearDown()`.
+`WorkflowTestCase` creates `$workflowClient`, `$testingService`, `$activityMocks`, `$workflowMocks`, `$searchAttributeMocks` and `$delayedCallbacks`. It clears the mocks in `tearDown()`.
 
 ## Mocking Activities
 
@@ -130,12 +167,25 @@ public function testUsesMockedActivity(): void
 Other expectations:
 
 ```php
-$this->activityMocks->expectFailure('Payment.charge', new \RuntimeException('Card declined'));
+$this->activityMocks->expectFailure('Payment.charge', new ApplicationFailure('Declined', 'PaymentDeclined', true));
 $this->activityMocks->expectConsecutiveCompletions('Inventory.check', [false, false, true]);
 $this->activityMocks->expectCompletionWhen('Fx.rate', ['EUR', 'USD'], 1.08);
 ```
 
+A mocked failure answers every retry attempt. With the default retry policy, a retryable failure repeats forever. Use a non-retryable failure, or limit `maximumAttempts` in the Activity options.
+
+With a custom data converter, give the same converter to the mock cache:
+
+```php
+use Temporal\Testing\ActivityMocker;
+use Temporal\Worker\ActivityInvocationCache\RoadRunnerActivityInvocationCache;
+
+$mocks = new ActivityMocker(new RoadRunnerActivityInvocationCache('tcp://127.0.0.1:6002', 'test', $converter));
+```
+
 ## Mocking Child Workflows, Versions and Side Effects
+
+These mocks need the interceptors in `worker.test.php`:
 
 ```php
 $this->workflowMocks->expectCompletion('ProcessOrder', 'processed');
@@ -157,15 +207,20 @@ $interactions->activity('Payment.charge')->assertCalledTimes(1);
 $interactions->localActivity('Lookup.quick')->assertNeverCalled();
 $interactions->childWorkflow('ProcessOrder')->assertStartedOnce();
 $interactions->timer()->assertStarted('1 hour');
-$interactions->signal('approve')->assertSentOnce();
 $interactions->assertNoOtherActivities();
+```
+
+`signal()` counts Signals that the Workflow sends to other Workflows, not Signals that it receives:
+
+```php
+$interactions->signal('dataReady')->assertSentOnce();
 ```
 
 ## Time Skipping
 
-The test server skips time when no Activity is running: a one-month timer fires immediately. `TimeSkippingWorkflowTestCase` locks time skipping during client calls, so that a test can interact with a Workflow before its timers fire.
+The test server skips time when no Activity is running: a one-month timer fires immediately. The normal dev server (`temporal server start-dev`) does not skip time.
 
-Send a Signal after a simulated delay:
+Send a Signal after a simulated delay. Use `$this->delayedCallbacks` in a test that extends the plain `WorkflowTestCase`:
 
 ```php
 public function testApprovalArrivesAfterThirtyMinutes(): void
@@ -181,7 +236,11 @@ public function testApprovalArrivesAfterThirtyMinutes(): void
 }
 ```
 
-Control the server time directly with `$this->testingService`:
+By default, the scheduler waits until the Workflow starts its first timer. For a Workflow without a timer, give a condition with `readyWhen()`.
+
+`TimeSkippingWorkflowTestCase` locks time skipping for the whole test and unlocks it only while `getResult()` waits. Signals and Queries that the test sends before `getResult()` arrive before the timers fire. Inside this class, `$this->delayedCallbacks` throws `LogicException`.
+
+Control the server time directly in a plain `WorkflowTestCase`:
 
 ```php
 $this->testingService->lockTimeSkipping();
@@ -192,9 +251,9 @@ try {
 }
 ```
 
-Time-skipping locks are a counter. Balance each `lockTimeSkipping()` with an `unlockTimeSkipping()`. `WorkflowTestCase` fails a test that leaves the counter unbalanced. The normal dev server (`temporal server start-dev`) does not skip time.
+Time-skipping locks are a counter. Balance each `lockTimeSkipping()` with an `unlockTimeSkipping()`. `WorkflowTestCase` fails a test that leaves the counter unbalanced. `unlockTimeSkippingWithSleep()` skips time only when the counter is 1. With more locks it waits in real time.
 
-## Testing Signals and Queries
+## Testing Signals, Queries and Updates
 
 ```php
 public function testSignalAndQuery(): void
@@ -212,6 +271,8 @@ public function testSignalAndQuery(): void
     self::assertSame('Processed 1 items', $run->getResult('string', 10));
 }
 ```
+
+An Update result does not resolve on the test server while time skipping is unlocked. Test Updates in `TimeSkippingWorkflowTestCase`, or add the `Temporal\Testing\WithoutTimeSkipping` trait to the test class.
 
 ## Testing Failure Cases
 
@@ -237,10 +298,13 @@ public function testFailsWhenPaymentDeclined(): void
         $run->getResult(timeout: 10);
         self::fail('The workflow did not fail');
     } catch (WorkflowFailedException $e) {
+        // Assumes the Workflow does not catch the ActivityFailure
         self::assertInstanceOf(ActivityFailure::class, $e->getPrevious());
     }
 }
 ```
+
+The client receives `WorkflowFailedException`. Its previous exception is the failure that the Workflow threw: an `ActivityFailure` that is not caught, or the `ApplicationFailure` that the Workflow throws itself.
 
 ## Workflow Replay Testing
 
@@ -270,15 +334,15 @@ final class OrderReplayTest extends TestCase
 }
 ```
 
-The replayer throws `NonDeterministicWorkflowException` on a mismatch. Export a history with `temporal workflow show --workflow-id order-123 --output json > tests/histories/order.json`. `replayFromServer()` requires the Run ID.
+- The replayer throws `NonDeterministicWorkflowException` (a `ReplayerException`) on a mismatch. Let it fail the test and the CI job.
+- `replayFromServer()` requires the Run ID.
+- `replayFromJSON()` takes an optional `$lastEventId` to replay only a part of the history.
+- `replayHistory(History $history)` replays a `Temporal\Api\History\V1\History` object. `downloadHistory()` saves a history from the server to a file.
+- The replayer connects to the RoadRunner RPC from `RR_RPC`.
 
-The running test worker must register the Workflow on the **same Task Queue** as in the history. Otherwise the replay fails with a non-determinism error, also for unchanged code. Add a worker for the production Task Queue to `worker.test.php`:
+Export a history with `temporal workflow show --workflow-id order-123 --output json > tests/histories/order.json`.
 
-```php
-$factory->newWorker('orders')->registerWorkflowTypes(OrderWorkflow::class);
-```
-
-The JSON file must be readable by the RoadRunner process.
+The running test worker must register the Workflow on the **same Task Queue** as in the history. Otherwise the replay fails with a non-determinism error, also for unchanged code. The `worker.test.php` above adds a worker for the production Task Queue. The JSON file must be readable by the RoadRunner process.
 
 ## Activity Testing
 

@@ -118,4 +118,4 @@ A Workflow that needs a job to outlive it can start a Standalone Activity from i
 
 Conceptual references: [Job Queue](https://docs.temporal.io/evaluate/development-production-features/job-queue) and [Standalone Activity](https://docs.temporal.io/standalone-activity).
 
-Rust is the one SDK in this skill without Standalone Activity support. For a language without support, the fallback is a Workflow that runs the single Activity, accepting the extra Action and latency until support lands.
+Rust and PHP are the SDKs in this skill without Standalone Activity support. For a language without support, the fallback is a Workflow that runs the single Activity, accepting the extra Action and latency until support lands.

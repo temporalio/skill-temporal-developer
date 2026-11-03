@@ -111,6 +111,8 @@ class StatusWorkflow
 For handling queries with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined query handlers.
 
 ```php
+use Temporal\DataConverter\ValuesInterface;
+
 #[WorkflowInterface]
 class DynamicQueryWorkflow
 {
@@ -171,7 +173,7 @@ class CartWorkflow
 
 An Update handler can be a generator and `yield` Activities. A validator must be read-only.
 
-From a client, start an Update and wait only for acceptance:
+From a client, start an Update. `startUpdate()` returns after the Update is accepted. `getResult()` waits until it is completed:
 
 ```php
 use Temporal\Client\Update\LifecycleStage;
@@ -185,7 +187,7 @@ $handle = $stub->startUpdate(
 $count = $handle->getResult();
 ```
 
-Use one Update ID per logical request. Retry the same request with the same ID.
+Use one Update ID per logical request. Retry the same request with the same ID. A client timeout in `getResult()` does not cancel the Update.
 
 ## Child Workflows
 
@@ -213,6 +215,8 @@ class ParentWorkflow
     }
 }
 ```
+
+By default, the PHP SDK also cancels `Abandon` children when the parent is cancelled. For real abandon semantics, set `FeatureFlags::$cancelAbandonedChildWorkflows = false` in the worker. See [feature flags](advanced-features.md#feature-flags).
 
 Use `Workflow::executeChildWorkflow()` for an untyped call:
 
@@ -323,6 +327,29 @@ class BatchWorkflow
 
 Keep only counters and cursors in Workflow state. Store large results outside Temporal and pass references.
 
+To continue the batch when one item fails, turn the terminal failure of an item into an outcome. Let cancellation propagate:
+
+```php
+use Temporal\Exception\Failure\ActivityFailure;
+use Temporal\Exception\Failure\CanceledFailure;
+
+$outcomes = yield Promise::all(array_map(
+    fn(string $itemId) => Workflow::async(function () use ($activities, $batchId, $itemId) {
+        try {
+            yield $activities->processItem($batchId, $itemId);
+            return true;
+        } catch (ActivityFailure $e) {
+            if ($e->getPrevious() instanceof CanceledFailure) {
+                throw $e;
+            }
+            yield $activities->markFailed($batchId, $itemId, $e->getMessage());
+            return false;
+        }
+    }),
+    $page->itemIds,
+));
+```
+
 ## Continue-as-New
 
 ```php
@@ -420,6 +447,8 @@ try {
 ## Wait Condition with Timeout
 
 ```php
+use Temporal\Workflow\SignalMethod;
+
 #[WorkflowInterface]
 class ApprovalWorkflow
 {
@@ -478,6 +507,7 @@ To serialize handlers that change shared state across a `yield`, use one `Tempor
 
 ```php
 use Temporal\Workflow\Mutex;
+use Temporal\Workflow\UpdateMethod;
 
 private Mutex $lock;
 
@@ -511,7 +541,7 @@ public function reserve(string $sku): \Generator
 
 ```php
 use Temporal\Activity;
-use Temporal\Exception\Client\ActivityCanceledException;
+use Temporal\Exception\Client\ActivityCompletionException;
 
 final class FileProcessingActivity implements FileProcessingActivityInterface
 {
@@ -529,13 +559,15 @@ final class FileProcessingActivity implements FileProcessingActivityInterface
                 Activity::heartbeat($file->key());
             }
             return 'completed';
-        } catch (ActivityCanceledException $e) {
+        } catch (ActivityCompletionException $e) {
             $this->cleanup();
             throw $e;
         }
     }
 }
 ```
+
+`Activity::heartbeat()` throws an `ActivityCompletionException` when the Activity is cancelled (`ActivityCanceledException`), paused (`ActivityPausedException`) or reset (`ActivityResetException`). `Activity::getCancellationDetails()` tells the reason. Always rethrow it.
 
 ## Timers
 
@@ -558,8 +590,19 @@ class TimerWorkflow
 
 **Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.
 
+A local Activity interface must have `#[LocalActivityInterface]`. With `#[ActivityInterface]`, `LocalActivityOptions` alone schedules a regular Activity without an error. A `#[LocalActivityInterface]` stub without `LocalActivityOptions` throws.
+
 ```php
+use Temporal\Activity\ActivityMethod;
+use Temporal\Activity\LocalActivityInterface;
 use Temporal\Activity\LocalActivityOptions;
+
+#[LocalActivityInterface(prefix: 'Lookup.')]
+interface LookupActivityInterface
+{
+    #[ActivityMethod]
+    public function quickLookup(string $key): string;
+}
 
 #[WorkflowInterface]
 class LocalActivityWorkflow
