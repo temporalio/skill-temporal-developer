@@ -5,7 +5,7 @@
 >
 > Temporal **Task Queues** are the transport that routes Tasks to Workers; they are not the thing a producer enqueues jobs into. Answering a job queue question by describing Task Queues produces a confused design.
 
-This file is the translation layer between job-queue vocabulary and Temporal. For the feature itself — its full capability list, the CLI, and current limitations — read [Temporal standalone Activities guide](standalone-activities.md). For API syntax, read `references/{your_language}/standalone-activities.md`.
+This file is the translation layer between job-queue vocabulary and Temporal. For the feature itself — its full capability list, the CLI, and current limitations — read [Temporal standalone Activities guide](standalone-activities.md). For API syntax, read `references/{your_language}/standalone-activities.md`, if available.
 
 ## Why Standalone Activities are a job queue
 
@@ -118,4 +118,4 @@ A Workflow that needs a job to outlive it can start a Standalone Activity from i
 
 Conceptual references: [Job Queue](https://docs.temporal.io/evaluate/development-production-features/job-queue) and [Standalone Activity](https://docs.temporal.io/standalone-activity).
 
-Rust is the one SDK in this skill without Standalone Activity support. For a language without support, the fallback is a Workflow that runs the single Activity, accepting the extra Action and latency until support lands.
+Rust and PHP are the SDKs in this skill without Standalone Activity support. For a language without support, the fallback is a Workflow that runs the single Activity, accepting the extra Action and latency until support lands.
