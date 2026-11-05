@@ -69,18 +69,47 @@ The package runs each Activity in a scoped Laravel application and flushes it af
 
 ## Testing
 
+To test that application code starts a Workflow, mock the Workflow and assert its dispatch. The mock returns the configured result without executing the Workflow body:
+
 ```php
 use Keepsuit\LaravelTemporal\Facade\Temporal;
 
 Temporal::fake();
 
 $workflowMock = Temporal::mockWorkflow(OrderWorkflowInterface::class)->andReturn('completed');
-$activityMock = Temporal::mockActivity([PaymentActivityInterface::class, 'charge'])->andReturn('charged');
 
 // ... code that starts the workflow ...
 
 $workflowMock->assertDispatched();
-$activityMock->assertDispatchedTimes(1);
+```
+
+To assert that a Workflow dispatches an Activity, run the real Workflow with a test server and worker. For an Order Workflow that calls `Payment.charge` once, mock only the Activity and wait for Workflow completion before asserting:
+
+```php
+use Keepsuit\LaravelTemporal\Facade\Temporal;
+use Keepsuit\LaravelTemporal\Testing\WithTemporal;
+use Tests\TestCase;
+
+final class OrderWorkflowTest extends TestCase
+{
+    use WithTemporal;
+
+    public function testChargesPayment(): void
+    {
+        Temporal::fake();
+
+        $activityMock = Temporal::mockActivity([PaymentActivityInterface::class, 'charge'])
+            ->andReturn('charged');
+
+        $workflow = Temporal::newWorkflow()
+            ->withTaskQueue(config('temporal.queue'))
+            ->build(OrderWorkflowInterface::class);
+
+        $workflow->run(123);
+
+        $activityMock->assertDispatchedTimes(1);
+    }
+}
 ```
 
 - `Temporal::fake()` returns the mock result only for a Workflow or Activity with a mock. A mocked call runs no timers, cancellation or replay. A Workflow without a mock starts on the real client and needs a server and a worker.

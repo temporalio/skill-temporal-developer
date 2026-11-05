@@ -243,13 +243,28 @@ $factory = WorkerFactory::create(credentials: ServiceCredentials::create()->with
 
 ## Environment Configuration
 
-Since SDK 2.17, the client can load connection settings from a TOML profile and environment variables (`TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE`, `TEMPORAL_API_KEY`, `TEMPORAL_TLS_*`, `TEMPORAL_PROFILE`, `TEMPORAL_CONFIG_FILE`), like the Temporal CLI. Remote codec settings are not supported:
+Since SDK 2.17, the client can load connection settings from a TOML profile and environment variables (`TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE`, `TEMPORAL_API_KEY`, `TEMPORAL_TLS_*`, `TEMPORAL_PROFILE`, `TEMPORAL_CONFIG_FILE`), like the Temporal CLI. Remote codec settings are not supported.
+
+Before loading a TOML profile, install the optional parser dependency. `temporal/sdk` only suggests it; Composer does not install it automatically:
+
+```bash
+composer require internal/toml
+```
+
+Load the profile with environment variable overrides:
 
 ```php
 use Temporal\Client\WorkflowClient;
 use Temporal\Common\EnvConfig\ConfigClient;
 
 $profile = ConfigClient::load();
+$client = WorkflowClient::create($profile->toServiceClient(), $profile->toClientOptions());
+```
+
+Environment-only configuration needs no TOML parser. Use `ConfigClient::loadFromEnv()` to load environment variables without reading a profile file:
+
+```php
+$profile = ConfigClient::loadFromEnv();
 $client = WorkflowClient::create($profile->toServiceClient(), $profile->toClientOptions());
 ```
 
