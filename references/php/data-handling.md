@@ -1,17 +1,34 @@
 # PHP SDK Data Handling
 
-Sources: [SDK converters](https://github.com/temporalio/sdk-php/tree/v2.18/src/DataConverter), [typed Search Attributes](https://github.com/temporalio/sdk-php/blob/v2.18/src/Common/TypedSearchAttributes.php), [Laravel integration](integrations/laravel-temporal.md).
+## Overview
 
-## Contracts and payloads
+The PHP SDK converts arguments and results with a `DataConverter`, which tries a list of payload converters in order. Use small explicit inputs: business IDs, DTOs, cursors and references to large data in external storage.
 
-The default `DataConverter` tries `NullConverter`, `BinaryConverter`, `ProtoJsonConverter`, `ProtoConverter`, then `JsonConverter`. Use small explicit inputs: business IDs, immutable DTO snapshots, cursors and external result references. Do not serialize service/container objects or rely on a hydrated ORM model to stay current. Loading a lazy relation in a workflow is still DB I/O.
+## Default Payload Converter
 
-For a generator workflow, its PHP return declaration describes the coroutine, not the serialized result:
+`DataConverter::createDefault()` uses these converters in order:
+
+1. `NullConverter` - `null`
+2. `BinaryConverter` - `Temporal\DataConverter\Bytes`
+3. `ProtoJsonConverter` - Protobuf messages as JSON
+4. `ProtoConverter` - Protobuf messages as binary
+5. `JsonConverter` - scalars, arrays, objects, DTOs, enums, `DateTimeInterface`, UUIDs
+
+## Typed Inputs and Results
+
+The SDK uses the PHP type declarations of a method to decode its arguments:
 
 ```php
-use Temporal\Workflow\ReturnType;
-use Temporal\Workflow\WorkflowInterface;
-use Temporal\Workflow\WorkflowMethod;
+final class OrderInput
+{
+    // Added in a later version: a property default, not a constructor parameter
+    public ?string $couponCode = null;
+
+    public function __construct(
+        public readonly string $orderId,
+        public readonly int $amountCents,
+    ) {}
+}
 
 #[WorkflowInterface]
 interface OrderWorkflowInterface
@@ -22,61 +39,210 @@ interface OrderWorkflowInterface
 }
 ```
 
-`#[ReturnType]` supplies the result type for typed client/child calls; untyped clients can specify a result type explicitly. Use a compatible declared return type for synchronous methods. Test nested DTOs, enums, UUIDs, dates, collections and nullable fields through the actual converter on both sides. Adding a required constructor field can break old payloads; preserve backward-compatible decoding and fixtures.
-
-## Custom conversion and encryption
-
-Implement `Temporal\DataConverter\PayloadConverterInterface` when specializing one payload type. Its decode signature is `fromPayload(Payload $payload, Temporal\DataConverter\Type $type)`, not `ReflectionType`. Return `null` from `toPayload()` for unsupported values. Put specialized converters before the catch-all `JsonConverter` and preserve support for other encodings that the application uses.
-
-Register the same converter for the client and worker:
+A generator method declares `\Generator`, so `#[ReturnType]` gives the result type to typed client and child stubs. For an untyped stub, give the type to `getResult()`:
 
 ```php
-$client = \Temporal\Client\WorkflowClient::create(
-    \Temporal\Client\GRPC\ServiceClient::create('127.0.0.1:7233'),
-    converter: $converter,
-);
-$factory = \Temporal\WorkerFactory::create(converter: $converter);
+$stub = $client->newUntypedWorkflowStub('Order', WorkflowOptions::new()->withTaskQueue('orders'));
+$client->start($stub, $input);
+$result = $stub->getResult(OrderResult::class);
 ```
 
-Also align Schedule clients, replay workers, and test invocation caches. The named parameter is `converter`, not `dataConverter`.
+The JSON converter creates the object without its constructor. A constructor parameter default is therefore not applied to an old payload: the property stays uninitialized, and the first read throws an `Error`. In Workflow code, this fails the Workflow Task, which retries until the code is fixed. In an Activity, it fails the attempt. Add a new field as a non-promoted property with a property default (`public ?string $couponCode = null;`). A `readonly` property cannot have a default, so use `readonly` only for fields that exist since the first version.
 
-Payload encryption/compression needs an implementation compatible with PHP's converter contracts, for example a `DataConverterInterface` decorator around the normal serialization pipeline. Verify encode/decode, encoding metadata, key rotation and old-history replay; use a reviewed encryption library. SDK v2.18 has no `DataConverter::withCodec()` or `Temporal\DataConverter\PayloadCodecInterface`; do not copy those APIs from other SDKs. A codec server is an optional UI/CLI decoding service, not worker-side encryption by itself. Search Attributes remain queryable metadata and must not contain secrets.
+## Custom Data Conversion
 
-## Search Attributes and Memo
-
-Register custom Search Attribute names/types in the target namespace before using them. Set values at workflow start:
+Implement `Temporal\DataConverter\PayloadConverterInterface` for a custom encoding. Return `null` from `toPayload()` for values that the converter does not handle:
 
 ```php
-use Temporal\Client\WorkflowOptions;
-use Temporal\Common\SearchAttributes\SearchAttributeKey;
-use Temporal\Common\TypedSearchAttributes;
+use Temporal\Api\Common\V1\Payload;
+use Temporal\DataConverter\PayloadConverterInterface;
+use Temporal\DataConverter\Type;
 
-$options = WorkflowOptions::new()
-    ->withTaskQueue('orders')
-    ->withTypedSearchAttributes(
-        TypedSearchAttributes::empty()
-            ->withValue(SearchAttributeKey::forKeyword('OrderId'), 'order-123')
-            ->withValue(SearchAttributeKey::forKeyword('OrderStatus'), 'pending'),
-    )
-    ->withMemo(['source' => 'checkout']);
-```
+final class MoneyConverter implements PayloadConverterInterface
+{
+    public function getEncodingType(): string
+    {
+        return 'json/money';
+    }
 
-Within a workflow:
+    public function toPayload($value): ?Payload
+    {
+        if (!$value instanceof Money) {
+            return null;
+        }
 
-```php
-\Temporal\Workflow::upsertTypedSearchAttributes(
-    \Temporal\Common\SearchAttributes\SearchAttributeKey::forKeyword('OrderStatus')
-        ->valueSet('completed'),
-);
-\Temporal\Workflow::upsertMemo(['phase' => 'fulfilled']);
-```
+        return (new Payload())
+            ->setMetadata(['encoding' => $this->getEncodingType()])
+            ->setData(json_encode(['amount' => $value->amount, 'currency' => $value->currency]));
+    }
 
-These upserts are synchronous SDK calls. Memo is non-indexed metadata; Search Attributes support visibility filtering. Queries read one workflow's current state and require a worker; visibility is indexed and can lag. Use a DB projection for application reporting when appropriate, with Activities updating it idempotently.
-
-```php
-foreach ($client->listWorkflowExecutions('OrderStatus = "pending"') as $info) {
-    echo $info->execution->getID(), PHP_EOL; // Client-side code only.
+    public function fromPayload(Payload $payload, Type $type): Money
+    {
+        $data = json_decode($payload->getData(), true, 512, \JSON_THROW_ON_ERROR);
+        return new Money($data['amount'], $data['currency']);
+    }
 }
 ```
 
-Avoid placing customer names/phones/addresses in Memo, Search Attributes or logs merely to make demos convenient. Payload size, retained workflow state and event-history growth are separate budgets; see [bounded batch design](batch-processing.md).
+Put the custom converter before `JsonConverter`, and register the same converter on the client and the worker:
+
+```php
+use Temporal\Client\GRPC\ServiceClient;
+use Temporal\Client\WorkflowClient;
+use Temporal\DataConverter\BinaryConverter;
+use Temporal\DataConverter\DataConverter;
+use Temporal\DataConverter\JsonConverter;
+use Temporal\DataConverter\NullConverter;
+use Temporal\DataConverter\ProtoConverter;
+use Temporal\DataConverter\ProtoJsonConverter;
+use Temporal\WorkerFactory;
+
+$converter = new DataConverter(
+    new NullConverter(),
+    new BinaryConverter(),
+    new ProtoJsonConverter(),
+    new ProtoConverter(),
+    new MoneyConverter(),
+    new JsonConverter(),
+);
+
+$client = WorkflowClient::create(ServiceClient::create('127.0.0.1:7233'), converter: $converter);
+$factory = WorkerFactory::create(converter: $converter);
+```
+
+## Serialization Context
+
+Since SDK 2.20, a payload converter can know which Workflow or Activity it serializes data for. Use it to select an encryption key or to sign payloads per Workflow. Implement `SerializationContextAwareInterface`. The `DataConverter` gives the context to each converter that implements it. See the example in [Payload Encryption](#payload-encryption).
+
+Context types:
+
+- `WorkflowSerializationContext` - `namespace`, `workflowId`
+- `ActivitySerializationContext` - `namespace`, `activityType`, `taskQueue`, `workflowId`, `workflowType`, `isLocal`
+
+Both implement `HasWorkflowSerializationContext`. The SDK applies the context on the client and the worker to Workflow and Activity inputs and results, Signals, Queries, Updates, Memo, child Workflows, Continue-As-New, external Signals and failures. `ActivityCompletionClient` applies no context by default: call `withContext(ActivitySerializationContext $context)` on it to set one.
+
+## Payload Encryption
+
+The PHP SDK has no `PayloadCodec` interface and no codec chain. To encrypt payloads, decorate the `DataConverter`: encrypt the payload that the inner converter makes, and mark it with its own `encoding`.
+
+```php
+use Temporal\Api\Common\V1\Payload;
+use Temporal\DataConverter\DataConverterInterface;
+use Temporal\DataConverter\HasWorkflowSerializationContext;
+use Temporal\DataConverter\RawValue;
+use Temporal\DataConverter\SerializationContext;
+use Temporal\DataConverter\SerializationContextAwareInterface;
+
+final class EncryptingConverter implements DataConverterInterface, SerializationContextAwareInterface
+{
+    private const ENCODING = 'binary/encrypted';
+
+    private ?SerializationContext $context = null;
+
+    public function __construct(
+        private DataConverterInterface $inner,
+        private readonly KeyStore $keys,
+    ) {}
+
+    public function getSerializationContext(): ?SerializationContext
+    {
+        return $this->context;
+    }
+
+    public function withSerializationContext(?SerializationContext $context): static
+    {
+        $clone = clone $this;
+        $clone->context = $context;
+        if ($this->inner instanceof SerializationContextAwareInterface) {
+            $clone->inner = $this->inner->withSerializationContext($context);
+        }
+        return $clone;
+    }
+
+    public function toPayload($value): Payload
+    {
+        if ($value instanceof RawValue) {
+            return $this->inner->toPayload($value);
+        }
+
+        $keyId = $this->keyId();
+        $plain = $this->inner->toPayload($value)->serializeToString();
+
+        return (new Payload())
+            ->setData($this->keys->encrypt($keyId, $plain))
+            ->setMetadata(['encoding' => self::ENCODING, 'key-id' => $keyId]);
+    }
+
+    public function fromPayload(Payload $payload, $type)
+    {
+        if (($payload->getMetadata()['encoding'] ?? '') !== self::ENCODING) {
+            return $this->inner->fromPayload($payload, $type);
+        }
+
+        $plain = new Payload();
+        $plain->mergeFromString($this->keys->decrypt($payload->getMetadata()['key-id'], $payload->getData()));
+
+        return $this->inner->fromPayload($plain, $type);
+    }
+
+    private function keyId(): string
+    {
+        return $this->context instanceof HasWorkflowSerializationContext ? $this->context->getNamespace() : 'default';
+    }
+}
+
+$converter = new EncryptingConverter(DataConverter::createDefault(), $keyStore);
+```
+
+- Implement `SerializationContextAwareInterface` on the decorator. Otherwise the SDK does not give it the context, and it does not pass the context to the inner converter.
+- Use the same converter on the client, the worker and the replayer. Keep old keys to decrypt old histories.
+- Keep `RawValue` unencrypted: the worker sends its information to RoadRunner this way, and otherwise RoadRunner does not start.
+- Failure messages, stack traces and Memo keys are not encrypted. RoadRunner encodes the values of `Workflow::upsertMemo()` and of child Workflow Memo, so this decorator does not encrypt them.
+- The client encodes Search Attributes of `WorkflowOptions` and schedules with this converter. The server cannot read encrypted values and rejects the start. Set them with `Workflow::upsertTypedSearchAttributes()`, which RoadRunner encodes.
+- To see decrypted payloads in the Web UI and CLI, run a separate codec server.
+
+## Payload Size Limits
+
+Since SDK 2.20, the client logs a `[TMPRL1103]` warning when a request carries a payload above 512 KiB or a Memo above 2 KiB. The limits are configurable (experimental API):
+
+```php
+use Temporal\Client\ClientOptions;
+use Temporal\Common\PayloadLimitOptions;
+
+$options = (new ClientOptions())->withPayloadLimits(
+    PayloadLimitOptions::new()->withPayloadSizeWarning(1024 * 1024),
+);
+
+$client = WorkflowClient::create(ServiceClient::create('127.0.0.1:7233'), $options);
+```
+
+Use `PayloadLimitOptions::disabled()` to turn the warnings off. On the worker, a payload above the namespace limit fails the Workflow Task with `PAYLOADS_TOO_LARGE`, or fails the Activity attempt. With RoadRunner v3, `WorkerOptions::new()->withDisablePayloadErrorLimit()` turns off this experimental check. Store large data outside Temporal and pass a reference instead.
+
+## Workflow Memo
+
+Memo is metadata that is not indexed:
+
+```php
+$options = WorkflowOptions::new()->withMemo(['source' => 'checkout']);
+
+// Inside the workflow
+Workflow::upsertMemo(['phase' => 'fulfilled']);
+```
+
+## Deterministic APIs for Values
+
+Use these in Workflow code:
+
+```php
+$now = Workflow::now();
+$id = yield Workflow::uuid7();
+$random = yield Workflow::sideEffect(fn() => random_int(1, 100));
+```
+
+## Best Practices
+
+1. Use typed DTOs for inputs and results.
+2. Register the same converter on clients, workers and replayers.
+3. Keep payloads small. Store large data externally and pass references.
+4. Do not put secrets or personal data in Search Attributes or Memo.
+5. Add new DTO fields as properties with property defaults, not as constructor parameters.

@@ -2,23 +2,21 @@
 
 ## Overview
 
-The Temporal PHP SDK (`temporal/sdk`) uses RoadRunner to run workflows and activities. The SDK requires PHP 8.1+; framework integrations can require newer PHP. Async operations use generators and `yield`. There is no determinism sandbox: replay checks do not prevent arbitrary PHP I/O.
-
-Before adapting examples, inspect `composer.lock`, the RoadRunner binary/configuration, PHP extensions, and the Temporal Server version. The reviewed course locks SDK 2.16.0; the SDK reference was also checked at tag `v2.18`. These are source snapshots, not an instruction to upgrade. See [sources and course lessons](sources.md) for commits, coverage, and limitations.
-
-Read only the relevant detail: [worker lifecycle and scaling](workers.md), [bounded batches and message handling](patterns.md), [Laravel](integrations/laravel-temporal.md), [support factories and typing](integrations/support.md), or [testing and replay](testing.md).
+The Temporal PHP SDK (`temporal/sdk`) runs Workflows and Activities inside PHP worker processes that [RoadRunner](https://roadrunner.dev) starts and supervises. RoadRunner embeds the Temporal Go SDK, polls the server, and forwards tasks to PHP. SDK 2.20+ requires PHP 8.2+ and recommends RoadRunner v3. Workflow code is a coroutine: asynchronous operations return promises, and the Workflow waits for them with `yield`. The SDK has no determinism sandbox.
 
 ## Quick Demo of Temporal
 
-**Add Dependency on Temporal:** Install the SDK via Composer:
+**Add Dependency on Temporal:** Install the SDK and download the RoadRunner binary:
 
 ```bash
 composer require temporal/sdk
+./vendor/bin/rr get-binary
 ```
 
-Configure Composer PSR-4 autoloading (`"App\\": "src/"`) and run `composer dump-autoload`. For the native gRPC client shown below, install/enable `ext-grpc`; `ext-protobuf` is an optional performance improvement. Install a RoadRunner binary compatible with the locked SDK, for example through `./vendor/bin/rr get-binary`.
+Configure Composer PSR-4 autoloading (`"App\\": "src/"`). The SDK requires the `curl` and `json` PHP extensions. The client needs the `grpc` extension. The `protobuf` extension is optional and makes serialization faster.
 
 **src/Activity/GreetingActivityInterface.php** - Activity interface:
+
 ```php
 <?php
 
@@ -29,7 +27,7 @@ namespace App\Activity;
 use Temporal\Activity\ActivityInterface;
 use Temporal\Activity\ActivityMethod;
 
-#[ActivityInterface]
+#[ActivityInterface(prefix: 'Greeting.')]
 interface GreetingActivityInterface
 {
     #[ActivityMethod]
@@ -38,6 +36,7 @@ interface GreetingActivityInterface
 ```
 
 **src/Activity/GreetingActivity.php** - Activity implementation:
+
 ```php
 <?php
 
@@ -45,7 +44,7 @@ declare(strict_types=1);
 
 namespace App\Activity;
 
-class GreetingActivity implements GreetingActivityInterface
+final class GreetingActivity implements GreetingActivityInterface
 {
     public function greet(string $name): string
     {
@@ -55,6 +54,7 @@ class GreetingActivity implements GreetingActivityInterface
 ```
 
 **src/Workflow/GreetingWorkflowInterface.php** - Workflow interface:
+
 ```php
 <?php
 
@@ -62,18 +62,21 @@ declare(strict_types=1);
 
 namespace App\Workflow;
 
+use Temporal\Workflow\ReturnType;
 use Temporal\Workflow\WorkflowInterface;
 use Temporal\Workflow\WorkflowMethod;
 
 #[WorkflowInterface]
 interface GreetingWorkflowInterface
 {
-    #[WorkflowMethod]
+    #[WorkflowMethod(name: 'Greeting')]
+    #[ReturnType('string')]
     public function greet(string $name): \Generator;
 }
 ```
 
 **src/Workflow/GreetingWorkflow.php** - Workflow implementation:
+
 ```php
 <?php
 
@@ -83,17 +86,18 @@ namespace App\Workflow;
 
 use App\Activity\GreetingActivityInterface;
 use Temporal\Activity\ActivityOptions;
+use Temporal\Internal\Workflow\ActivityProxy;
 use Temporal\Workflow;
 
-class GreetingWorkflow implements GreetingWorkflowInterface
+final class GreetingWorkflow implements GreetingWorkflowInterface
 {
-    private GreetingActivityInterface $activity;
+    private ActivityProxy|GreetingActivityInterface $activity;
 
     public function __construct()
     {
         $this->activity = Workflow::newActivityStub(
             GreetingActivityInterface::class,
-            ActivityOptions::new()->withStartToCloseTimeout(30)
+            ActivityOptions::new()->withStartToCloseTimeout(30),
         );
     }
 
@@ -104,7 +108,8 @@ class GreetingWorkflow implements GreetingWorkflowInterface
 }
 ```
 
-**worker.php** - Worker setup (runs via RoadRunner, processes tasks indefinitely):
+**worker.php** - Worker setup (RoadRunner starts this file; it processes tasks until stopped):
+
 ```php
 <?php
 
@@ -116,59 +121,60 @@ use Temporal\WorkerFactory;
 
 require __DIR__ . '/vendor/autoload.php';
 
-// Create the worker factory (connects via RoadRunner)
 $factory = WorkerFactory::create();
 
-// Create a worker bound to a task queue
 $worker = $factory->newWorker('my-task-queue');
-
-// Register workflow and activity implementations
 $worker->registerWorkflowTypes(GreetingWorkflow::class);
 $worker->registerActivity(GreetingActivity::class);
 
-// Start processing tasks (blocks until stopped)
 $factory->run();
 ```
 
-**Start the dev server:** Start `temporal server start-dev` in the background.
-
-**.rr.yaml** — RoadRunner launches `worker.php` and supplies its transport:
+**.rr.yaml** - RoadRunner configuration:
 
 ```yaml
 version: "3"
+
 rpc:
   listen: tcp://127.0.0.1:6001
+
 server:
   command: "php worker.php"
-  relay: pipes
+
 temporal:
   address: "127.0.0.1:7233"
   activities:
-    num_workers: 2
+    num_workers: 4
+
 logs:
   level: info
 ```
 
-**Start the worker:** Run `./rr serve -c .rr.yaml`. Running `php worker.php` directly does not provide the RoadRunner worker transport. Keep server, worker, and starter addresses/namespace/task queue consistent.
+**Start the dev server:** Start `temporal server start-dev` in the background.
+
+**Start the worker:** Start `./rr serve -c .rr.yaml` in the background. Do not run `php worker.php` directly: the worker needs the RoadRunner transport.
 
 **starter.php** - Start a workflow execution:
+
 ```php
 <?php
 
 declare(strict_types=1);
 
 use App\Workflow\GreetingWorkflowInterface;
+use Temporal\Client\GRPC\ServiceClient;
 use Temporal\Client\WorkflowClient;
 use Temporal\Client\WorkflowOptions;
-use Temporal\Client\GRPC\ServiceClient;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$client = WorkflowClient::create(ServiceClient::create('localhost:7233'));
+$client = WorkflowClient::create(ServiceClient::create('127.0.0.1:7233'));
 
 $workflow = $client->newWorkflowStub(
     GreetingWorkflowInterface::class,
-    WorkflowOptions::new()->withTaskQueue('my-task-queue')
+    WorkflowOptions::new()
+        ->withWorkflowId('greeting-world')
+        ->withTaskQueue('my-task-queue'),
 );
 
 $result = $workflow->greet('World');
@@ -178,93 +184,91 @@ echo "Result: {$result}" . PHP_EOL;
 
 **Run the workflow:** Run `php starter.php`. Should output: `Result: Hello, World!`.
 
-
 ## Key Concepts
 
 ### Workflow Definition
-- Use `#[WorkflowInterface]` attribute on the interface
-- Use `#[WorkflowMethod]` on the entry point method
-- Methods containing `yield` must have a compatible return declaration such as `\Generator`, or omit it; they cannot declare `string`/`void`. A synchronous workflow can return a value directly. Use `#[ReturnType(...)]` for the serialized result of a generator workflow.
-- Use `#[SignalMethod]`, `#[QueryMethod]`, `#[UpdateMethod]` attributes for handlers
-- Put attributes on the interface when using a separate contract. Directly attributed concrete classes are also supported; do not invent an interface-only requirement.
+
+- Put `#[WorkflowInterface]` on the interface (or directly on the class) and `#[WorkflowMethod]` on the entry method.
+- A method that contains `yield` is a generator. Declare its return type as `\Generator` (or omit it). Use `#[ReturnType(...)]` to describe the serialized result.
+- Use `#[SignalMethod]`, `#[QueryMethod]`, `#[UpdateMethod]` and `#[UpdateValidatorMethod]` for message handlers.
+- Use `#[WorkflowInit]` on the constructor to receive the Workflow input before any handler runs. See [advanced features](advanced-features.md#workflow-init-attribute).
 
 ### Activity Definition
-- Use `#[ActivityInterface]` attribute on the interface
-- Use `#[ActivityMethod]` on each activity method
-- Implementation class contains the actual logic — no Temporal attributes needed
-- Activities can perform I/O, call external services, use `sleep()`, etc.
+
+- Put `#[ActivityInterface]` on the interface and `#[ActivityMethod]` on each method.
+- The registered Activity Type is `prefix` + method name, for example `Greeting.greet`.
+- The implementation is ordinary PHP code. It can do I/O, call services, and block.
+
+### Evolving Inputs and Results
+
+The JSON converter creates DTOs without their constructor. Add a new field as a property with a property default (`public ?string $couponCode = null;`), not as a constructor parameter. See [data handling](data-handling.md#typed-inputs-and-results).
 
 ### Worker Setup
-- Create `WorkerFactory::create()` — connects through RoadRunner
-- Call `$factory->newWorker('task-queue')` to bind to a task queue
-- Register workflow types: `$worker->registerWorkflowTypes(MyWorkflow::class)`
-- Register activities by class name. For constructor dependencies: `$worker->registerActivity(MyActivity::class, fn(\ReflectionClass $type) => $container->get($type->getName()))`. `registerActivity()` does not accept an instance; the older `registerActivityImplementations($instance)` API is deprecated. Keep instances stateless between invocations.
-- Call `$factory->run()` to start processing (blocks)
+
+- `WorkerFactory::create()` connects to RoadRunner, not directly to the server. The server address is in `.rr.yaml`.
+- `$factory->newWorker('task-queue', $options)` creates a logical worker for one Task Queue.
+- Register Workflow classes with `registerWorkflowTypes()`.
+- Register Activities with `registerActivity(Class::class)`. For constructor dependencies, give a factory: `registerActivity(MyActivity::class, fn(\ReflectionClass $class) => $container->get($class->getName()))`.
+- `$factory->run()` starts processing and blocks.
 
 ### Determinism
 
-**Workflow code must be deterministic!** The PHP SDK has no sandbox. All non-deterministic operations must use Temporal-provided APIs or be delegated to activities. Read `references/core/determinism.md` and `references/php/determinism.md` for details.
+**Workflow code must be deterministic!** The PHP SDK has no sandbox. Use `Workflow::now()`, `Workflow::timer()`, `Workflow::sideEffect()` and `Workflow::uuid()` instead of their PHP equivalents. Put all I/O in Activities. Read [Temporal determinism rules](../core/determinism.md) and [PHP determinism rules](determinism.md) to understand more.
 
 ## File Organization Best Practice
 
-**Keep Workflow definitions in separate files from Activity definitions.** Use interfaces to decouple workflows from activity implementations.
+**Keep Workflow definitions in separate files from Activity definitions.** A Workflow refers to an Activity only through its interface.
 
-```
+```text
 my_temporal_app/
 ├── src/
 │   ├── Workflow/
-│   │   ├── GreetingWorkflowInterface.php   # Workflow interface only
-│   │   └── GreetingWorkflow.php            # Workflow implementation
+│   │   ├── GreetingWorkflowInterface.php
+│   │   └── GreetingWorkflow.php
 │   └── Activity/
-│       ├── GreetingActivityInterface.php   # Activity interface only
-│       └── GreetingActivity.php            # Activity implementation
-├── worker.php                              # Worker setup, registers both
-└── starter.php                             # Client code to start workflows
+│       ├── GreetingActivityInterface.php
+│       └── GreetingActivity.php
+├── .rr.yaml          # RoadRunner configuration
+├── worker.php        # Worker entrypoint, started by RoadRunner
+└── starter.php       # Client code that starts workflows
 ```
 
-Workflows reference activities only through their interfaces. This keeps the workflow file free of activity implementation details and avoids unnecessary coupling.
+## Unsupported Features
 
-## Determinism Rules
-
-PHP has **no sandbox**. Non-deterministic code in a workflow will cause history replay failures. Do not use:
-
-| Forbidden | Use Instead |
-|-----------|-------------|
-| `sleep($seconds)` | `yield Workflow::timer($seconds)` |
-| `time()` / `microtime()` / `new \DateTime()` | `Workflow::now()` (returns `\DateTimeImmutable`) |
-| `rand()` / `mt_rand()` / `random_int()` | `yield Workflow::sideEffect(fn() => rand())` |
-| Direct I/O (`file_get_contents`, `curl_exec`, DB queries) | Execute an activity |
-| Blocking SPL functions that depend on external state | Execute an activity |
-| `getenv()` / `$_ENV` reads for decisions | Pass configuration via workflow input; fetch changing configuration through an Activity |
-
-Await async results with `yield`, or collect promises and yield their join for concurrency. `Workflow::uuid()`, `sideEffect()`, `getVersion()` and `continueAsNew()` return promises; `now()`, `allHandlersFinished()` and Search Attribute upserts are synchronous. Do not mechanically yield every facade method.
+SDK 2.20 has no Standalone Activities and no Nexus Operations API. For a job queue, use the fallback in the [Temporal job queue guide](../core/job-queue.md).
 
 ## Common Pitfalls
 
-1. **Non-deterministic code in workflows** — Use activities for all I/O, randomness, and time-dependent logic
-2. **Forgetting `yield` on promises** — `$this->activity->greet($name)` returns a promise; without `yield` the workflow gets the promise object, not the result
-3. **Blocking operations in workflow code** — Never call `sleep()`, make HTTP requests, or query a database directly inside a workflow method
-4. **Incorrect heartbeat assumptions** — Heartbeat timeout applies when configured. Heartbeat long work for failure detection, cancellation and checkpoints; it does not extend Start-To-Close or guarantee exactly-once processing.
-5. **Using `echo` or `print()` in workflows** — Use `Workflow::getLogger()->info(...)` instead for replay-safe logging
-6. **Mixing workflow and activity classes in the same file** — Keep them separate for clarity and maintainability
-7. **Registering the wrong class** — Register the implementation class (e.g., `GreetingWorkflow::class`), not the interface
-8. **Missing `declare(strict_types=1)`** — Omitting strict types can cause subtle type coercion bugs in workflow data
+1. **Running `php worker.php` directly** - RoadRunner must start the worker. Use `rr serve`.
+2. **Forgetting `yield`** - An Activity stub call returns a promise. Without `yield`, the Workflow gets the promise, not the result.
+3. **Declaring `string` or `void` on a generator method** - PHP rejects it. Use `\Generator` and `#[ReturnType]`.
+4. **Non-deterministic code in workflows** - No sandbox catches `time()`, `rand()`, `sleep()` or a DB query. See [determinism](determinism.md).
+5. **Registering an Activity instance** - `registerActivity()` takes a class name and an optional factory, not an object.
+6. **Incorrect Activity Type names** - The type includes the interface `prefix`. Mocks and untyped stubs must use the full name.
+7. **Using `echo` or `var_dump()` in a worker** - The output goes to the RoadRunner log without levels or context. A direct write to the `STDOUT` stream corrupts the RoadRunner protocol. Use `Workflow::getLogger()` or a PSR-3 logger that writes to STDERR.
+8. **Typing a stub property with the interface only** - `Workflow::newActivityStub()` returns an `ActivityProxy`. Declare the property as `ActivityProxy|MyActivityInterface`, or a `TypeError` blocks the Workflow.
+9. **Shared state in a worker process** - A worker process runs many Activity tasks. Static variables and shared container services keep their values between tasks. Do not keep request or tenant state there.
 
 ## Writing Tests
 
-See `references/php/testing.md` for info on writing tests.
+See [PHP testing guide](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
-- **`references/php/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
-- **`references/php/determinism.md`** - Forbidden operations, safe alternatives, runtime checks
-- **`references/php/error-handling.md`** - ApplicationFailure, retry policies, non-retryable errors, idempotency
-- **`references/php/observability.md`** - Logging, metrics, tracing, Search Attributes
-- **`references/php/testing.md`** - Testing workflows and activities with the PHP SDK
-- **`references/php/versioning.md`** - Patching API, workflow type versioning
-- **[workers.md](workers.md)** - RoadRunner pools, memory, state isolation and scaling
-- **[integrations/laravel-temporal.md](integrations/laravel-temporal.md)** - Laravel discovery, builders, data conversion and test helpers
-- **[integrations/support.md](integrations/support.md)** - Optional factories, attributes and VirtualPromise
-- **[sources.md](sources.md)** - Source snapshots, course lesson map and corrections to teaching examples
-- **`references/core/determinism.md`** - Core determinism concepts shared across all SDKs
+
+- **[PHP workflow patterns](patterns.md)** - Signals, queries, updates, child workflows, saga, batches
+- **[PHP determinism rules](determinism.md)** - Forbidden operations and safe alternatives
+- **[PHP determinism protection](determinism-protection.md)** - Runtime guards, panic policy, replay checks
+- **[PHP gotchas](gotchas.md)** - PHP-specific mistakes, with examples
+- **[PHP error handling](error-handling.md)** - ApplicationFailure, retry policies, timeouts
+- **[PHP data handling](data-handling.md)** - Data converters, serialization context, encryption, payload limits
+- **[PHP observability](observability.md)** - Logging, metrics, tracing, Search Attributes
+- **[PHP testing guide](testing.md)** - Test framework, mocks, time skipping, replay
+- **[PHP versioning](versioning.md)** - `getVersion()`, Workflow Type versioning, Worker Versioning
+- **[PHP advanced features](advanced-features.md)** - Schedules, async completion, worker tuning, Cloud Operations API
+- **[PHP priority and fairness](priority-fairness.md)** - Task Queue Priority and Fairness
+
+### PHP Integrations
+
+For PHP-specific third-party integrations (Laravel, etc.), see [integrations catalog](../integrations.md) and filter for PHP. Reference files live under `references/php/integrations/`.

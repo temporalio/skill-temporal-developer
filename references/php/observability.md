@@ -2,24 +2,24 @@
 
 ## Overview
 
-The PHP SDK provides observability through PSR-3 logging (with replay-aware Workflow logger), and visibility via Search Attributes.
+The PHP SDK uses PSR-3 loggers, with a replay-aware logger for Workflow code. RoadRunner exports SDK metrics. The `temporal/open-telemetry-interceptors` package adds tracing.
 
 ## Logging
 
-### Workflow Logging
+### Workflow Logging (Replay-Safe)
 
-Use `Workflow::getLogger()` for replay-safe logging inside Workflows:
+Use `Workflow::getLogger()` inside Workflows. It does not write log records again during replay:
 
 ```php
 use Temporal\Workflow;
 
-class OrderWorkflow implements OrderWorkflowInterface
+final class OrderWorkflow implements OrderWorkflowInterface
 {
-    public function run(array $order): \Generator
+    public function run(OrderInput $order): \Generator
     {
-        Workflow::getLogger()->info('Workflow started', ['orderId' => $order['id']]);
+        Workflow::getLogger()->info('Workflow started', ['orderId' => $order->orderId]);
 
-        $result = yield $this->activity->processPayment($order);
+        $result = yield $this->activities->processPayment($order);
 
         Workflow::getLogger()->info('Payment processed', ['result' => $result]);
 
@@ -28,85 +28,153 @@ class OrderWorkflow implements OrderWorkflowInterface
 }
 ```
 
-The Workflow logger automatically suppresses duplicate log messages during replay by default.
-
 ### Activity Logging
 
-Activities are not replayed, so use any standard PSR-3 logger (injected via constructor or DI):
+Activities are not replayed. Use a PSR-3 logger from the container:
 
 ```php
 use Psr\Log\LoggerInterface;
 
-class OrderActivity implements OrderActivityInterface
+final class PaymentActivity implements PaymentActivityInterface
 {
-    public function __construct(private LoggerInterface $logger) {}
+    public function __construct(private readonly LoggerInterface $logger) {}
 
-    public function processPayment(array $order): string
+    public function processPayment(OrderInput $order): string
     {
-        $this->logger->info('Processing payment', ['orderId' => $order['id']]);
-
-        // Perform work...
-
-        $this->logger->info('Payment complete');
+        $this->logger->info('Processing payment', ['orderId' => $order->orderId]);
         return 'completed';
     }
 }
 ```
 
-### Enabling Logging During Replay
+Do not write directly to the `STDOUT` stream: RoadRunner uses it for its protocol. Write to STDERR, or use `roadrunner/psr-logger`, which sends logs to the RoadRunner logger.
 
-By default, `Workflow::getLogger()` suppresses logs during replay. To enable logging during replay (useful for debugging):
+### Customizing the Logger
 
-```php
-use Temporal\Worker\WorkerOptions;
-
-$worker = $factory->newWorker(
-    taskQueue: 'orders',
-    options: WorkerOptions::new()->withEnableLoggingInReplay(true)
-);
-```
-
-## Customizing the Logger
-
-Pass a custom PSR-3 logger when creating the Worker:
+Give a PSR-3 logger to the worker. The Workflow logger and SDK messages use it:
 
 ```php
-use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Temporal\Worker\WorkerOptions;
 use Temporal\WorkerFactory;
 
 $logger = new Logger('temporal');
 $logger->pushHandler(new StreamHandler('php://stderr'));
 
 $factory = WorkerFactory::create();
-
 $worker = $factory->newWorker(
-    taskQueue: 'my-task-queue',
-    logger: $logger
+    'orders',
+    WorkerOptions::new()->withEnableLoggingInReplay(false),
+    logger: $logger,
 );
 ```
 
-Any PSR-3 compatible logger (Monolog, etc.) can be used.
+`withEnableLoggingInReplay(true)` writes Workflow log records also during replay. Use it only for debugging.
+
+## Metrics
+
+### Enabling SDK Metrics
+
+The Go SDK inside RoadRunner records the SDK metrics. Configure a Prometheus endpoint in `.rr.yaml`:
+
+```yaml
+temporal:
+  address: "127.0.0.1:7233"
+  metrics:
+    driver: prometheus
+    prometheus:
+      address: "127.0.0.1:9091"
+      type: summary
+```
+
+The `statsd` driver is also available.
+
+### Key SDK Metrics
+
+- `temporal_request` - Client requests to server
+- `temporal_workflow_task_execution_latency` - Workflow task processing time
+- `temporal_activity_execution_latency` - Activity execution time
+- `temporal_workflow_task_replay_latency` - Replay duration
+- `temporal_activity_schedule_to_start_latency` - Time an Activity waited in the Task Queue
+
+Application metrics can use the separate RoadRunner `metrics` plugin through RPC from Activity code. Do not call it from Workflow code.
+
+## Tracing
+
+Install the OpenTelemetry interceptors:
+
+```bash
+composer require temporal/open-telemetry-interceptors
+```
+
+Register the tracing interceptors on the client and the worker with a `SimplePipelineProvider`:
+
+```php
+use Temporal\Interceptor\SimplePipelineProvider;
+use Temporal\OpenTelemetry\Interceptor\OpenTelemetryActivityInboundInterceptor;
+use Temporal\OpenTelemetry\Interceptor\OpenTelemetryWorkflowClientCallsInterceptor;
+use Temporal\OpenTelemetry\Interceptor\OpenTelemetryWorkflowOutboundRequestInterceptor;
+use Temporal\OpenTelemetry\Tracer;
+
+$tracer = new Tracer($tracerProvider->getTracer('temporal'), $propagator);
+
+$client = WorkflowClient::create(
+    ServiceClient::create('127.0.0.1:7233'),
+    interceptorProvider: new SimplePipelineProvider([
+        new OpenTelemetryWorkflowClientCallsInterceptor($tracer),
+    ]),
+);
+
+$worker = $factory->newWorker(
+    'orders',
+    interceptorProvider: new SimplePipelineProvider([
+        new OpenTelemetryActivityInboundInterceptor($tracer),
+        new OpenTelemetryWorkflowOutboundRequestInterceptor($tracer),
+    ]),
+);
+```
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/php/data-handling.md`
+Register custom Search Attributes in the namespace before use. Set them when the Workflow starts:
+
+```php
+use Temporal\Client\WorkflowOptions;
+use Temporal\Common\SearchAttributes\SearchAttributeKey;
+use Temporal\Common\TypedSearchAttributes;
+
+$options = WorkflowOptions::new()
+    ->withTaskQueue('orders')
+    ->withTypedSearchAttributes(
+        TypedSearchAttributes::empty()
+            ->withValue(SearchAttributeKey::forKeyword('OrderId'), 'order-123')
+            ->withValue(SearchAttributeKey::forKeyword('OrderStatus'), 'pending'),
+    );
+```
+
+Change them from the Workflow:
+
+```php
+Workflow::upsertTypedSearchAttributes(
+    SearchAttributeKey::forKeyword('OrderStatus')->valueSet('completed'),
+);
+```
+
+### Querying Workflows by Search Attributes
+
+Find Workflows by Search Attributes from a client:
+
+```php
+foreach ($client->listWorkflowExecutions('OrderStatus = "pending"') as $execution) {
+    echo $execution->execution->getID(), PHP_EOL;
+}
+```
 
 ## Best Practices
 
-1. Use `Workflow::getLogger()` inside Workflow code for replay-safe logging
-2. Do not use `echo` or `print()` in worker code — replay duplicates output and stdout may carry the RoadRunner protocol
-3. Use standard PSR-3 loggers in Activities (no replay concern)
-4. Use Search Attributes for business-level visibility and querying across Workflow executions
-
-## Metrics and tracing
-
-The course distinguishes two pipelines: `temporal.metrics` exposes SDK/Go metrics through RoadRunner; the top-level `metrics` plugin accepts application metrics through RoadRunner RPC. Configure and scrape them separately. Use queue latency/backlog, execution duration, retries/timeouts, worker capacity and RSS for operations. Check actual metric names/labels in the installed version before writing dashboards or autoscaling rules.
-
-The course emits business counters through an Activity to keep direct RPC I/O out of workflow code. Such a counter can still increment more than once on Activity retry after a lost completion. Use a business-event ledger/deduplication when exact counts matter; do not present a retried metrics Activity as exactly-once accounting. Avoid high-cardinality metric labels such as order IDs or trace IDs; keep those in logs/traces.
-
-The optional `temporal/open-telemetry-interceptors` package supplies tracing integration. Register the client, workflow-outbound and Activity-inbound interceptors appropriate to the installed version, and configure the exporter/propagator consistently. The course keeps an HTTP span active while starting a workflow to propagate one trace context; verify incoming distributed-context extraction and cleanup as well. A generated `X-Trace-Id` header is correlation, not proof of end-to-end parent propagation.
-
-Exporting each span synchronously is a demo tradeoff, not a universal long-running-worker rule. If batching, configure and test periodic flushing, shutdown flushing and bounded queues. Never manually export spans over HTTP in deterministic workflow code. Redact sensitive payloads and SQL bindings. Workflow logs are process logs; they are not automatically shown in Temporal Web UI or stored as history events.
-
-Sources: [course telemetry configuration](https://github.com/agoalofalife-screencasts/temporal-course/blob/9218c4002d79f9f9ee4675784c4ce63d7ad0c1ab/config/temporal.php), [provider](https://github.com/agoalofalife-screencasts/temporal-course/blob/9218c4002d79f9f9ee4675784c4ce63d7ad0c1ab/app/Providers/AppServiceProvider.php), [metrics Activity](https://github.com/agoalofalife-screencasts/temporal-course/blob/9218c4002d79f9f9ee4675784c4ce63d7ad0c1ab/app/Temporal/Activities/MetricsActivity.php).
+1. Use `Workflow::getLogger()` inside Workflow code for replay-safe logging.
+2. Do not write directly to the `STDOUT` stream in worker code.
+3. Use standard PSR-3 loggers in Activities.
+4. Monitor `rr_activities_pool_queue_size` and Schedule-To-Start latency to find workers without free capacity.
+5. Do not use high-cardinality values (order IDs, trace IDs) as metric labels.

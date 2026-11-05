@@ -1,44 +1,92 @@
-# Laravel Temporal (keepsuit)
+# Laravel Temporal Integration
 
-Use when the application already uses Laravel or the user asks for this integration. It is a community package, not a prerequisite for PHP Temporal. Reviewed source: [0173907](https://github.com/keepsuit/laravel-temporal/tree/0173907640765f13f4e8e9ad2a970f5db4f4b1fd). That snapshot requires PHP ^8.2, Laravel components ^11/^12/^13 and SDK **~2.17.0**. The course instead locks integration **2.2.1**, Laravel **12.51.0**, SDK **2.16.0**. Do not force SDK 2.18 into a package whose constraint excludes it.
+## Overview
 
-## Bootstrapping and discovery
+Use [keepsuit/laravel-temporal](https://github.com/keepsuit/laravel-temporal) when the application uses Laravel. It is a community package, not a requirement of the PHP SDK. The current release (v2.3.x) requires `temporal/sdk ~2.17.0`. Features of SDK 2.18+ in these references (for example the testing interactions and workflow mocks, `AwaitOptions` and serialization context) are not available with it.
+
+## Setup
 
 ```bash
 composer require keepsuit/laravel-temporal
 php artisan temporal:install
 php artisan vendor:publish --tag=temporal-config
+```
+
+Generate Workflows and Activities, and start a worker for a Task Queue:
+
+```bash
 php artisan temporal:make:workflow Order
 php artisan temporal:make:activity Payment
 php artisan temporal:work orders
 ```
 
-Inspect existing project conventions before generating files. The integration discovers definitions under `app`; external paths can be registered using `TemporalRegistry` and discovery helpers. Bind interfaces/implementations according to the package's discovery and container rules. Verify the actual registered Workflow/Activity Type names and queue, not just PHP file names.
+The package discovers Workflows and Activities in the `app` directory and registers them on the worker. `temporal:work` starts RoadRunner with the worker of the package. This worker sets `FeatureFlags::$workflowDeferredHandlerStart = true` and `FeatureFlags::$cancelAbandonedChildWorkflows = false`, which differ from the SDK defaults.
 
-Client code can use the bound `WorkflowClientInterface` or `Keepsuit\LaravelTemporal\Facade\Temporal` builders. Distinguish the **Laravel facade** from the SDK's `Temporal\Workflow` facade. Framework DI, DB, HTTP, config and request helpers belong in client/Activity code, not arbitrary workflow decisions.
+## Starting Workflows
 
-`Temporal::buildWorkerOptionsUsing(fn(string $queue) => WorkerOptions::new()...)` customizes logical worker options. RoadRunner process limits are separate. `temporal:work` owns a RoadRunner worker process lifecycle; the course's shared Octane/Temporal `.rr.yaml` is an alternative deployment arrangement, not a requirement. Verify graceful shutdown support/options in the installed version and test SIGTERM with active Activities.
+Use the `Keepsuit\LaravelTemporal\Facade\Temporal` facade (not the SDK `Temporal\Workflow` facade):
 
-## Serialization and application lifetime
+```php
+use Keepsuit\LaravelTemporal\Facade\Temporal;
 
-The package supports `TemporalSerializable`, Eloquent conversion via `TemporalEloquentSerialize`, and Spatie Laravel Data integration. `TemporalSerializableCastAndTransformer` can handle nested serializable values when configured. Test both ends with `DataConverterInterface` resolved from the same integration; mixing a native default client converter with a Laravel worker can break nested objects.
+$workflow = Temporal::newWorkflow()
+    ->withTaskQueue('orders')
+    ->withWorkflowId('order-' . $order->id)
+    ->build(OrderWorkflowInterface::class);
 
-Prefer small explicit DTO snapshots and IDs for long-running workflows. Serialized Eloquent state does not track subsequent DB changes; lazy loading is workflow I/O. Decide whether the workflow or database projection owns each status, and update projections through Activities. Creating a DB row then starting a workflow is not one atomic transaction: use a stable business Workflow ID with reconciliation or an outbox when that gap matters.
+// Start and wait for the result
+$result = $workflow->run($order->id);
 
-The package's [ApplicationSandboxInterceptor](https://github.com/keepsuit/laravel-temporal/blob/0173907640765f13f4e8e9ad2a970f5db4f4b1fd/src/Interceptors/ApplicationSandboxInterceptor.php) creates a scoped application, flushes it and resets `CurrentApplication` in `finally`. This isolates container state; it is not a determinism/security sandbox. Custom static caches, native resources and process-wide listeners still need bounded lifetimes. Do not install another reset mechanism without checking the existing lifecycle. Test tenant context across successful and failed invocations in one process.
+// Or start and return immediately
+Temporal::workflowClient()->start($workflow, $order->id);
+```
+
+Customize worker options per Task Queue:
+
+```php
+Temporal::buildWorkerOptionsUsing(
+    fn(string $taskQueue) => WorkerOptions::new()->withMaxConcurrentActivityExecutionSize(8),
+);
+```
+
+## Serialization
+
+The package supports `TemporalSerializable` DTOs, Eloquent models (`TemporalEloquentSerialize`) and Spatie Laravel Data. Use the data converter of the package on both the client and the worker.
+
+```php
+// BAD - The workflow keeps a copy of the model, which becomes stale
+public function run(Order $order): \Generator;
+
+// GOOD - Pass the ID; Activities load fresh data
+public function run(int $orderId): \Generator;
+```
+
+Lazy loading of an Eloquent relation in Workflow code is database I/O. Load data in Activities.
+
+## Application Lifetime
+
+The package runs each Activity in a scoped Laravel application and flushes it after the call. This isolates services that the Activity resolves from the container during the call. The worker builds the Activity and its constructor dependencies from the root application, so these keep their state between tasks. The sandbox does not make Workflow code deterministic. Static caches and process-wide listeners still keep their state between tasks.
 
 ## Testing
 
-- `Temporal::fake()` with `mockWorkflow(...)->andReturn(...)` or `mockActivity([Interface::class, 'method'])->andReturn(...)` supports dispatch/input/queue assertions. It is not a replay test.
-- `Keepsuit\LaravelTemporal\Testing\WithTemporal` owns a test server and worker. `TEMPORAL_TESTING_SERVER=false` uses an external server while starting a worker.
-- `WithTemporalWorker` is for a server started separately, such as via `temporal:server`.
-- `TEMPORAL_TESTING_SERVER_TIME_SKIPPING=true` or the server command's `--enable-time-skipping` selects the special time-skipping server. A normal dev server does not skip time.
-- `WithoutTimeSkipping` plus `TemporalTestTime::sleep()` controls time in interaction tests.
+```php
+use Keepsuit\LaravelTemporal\Facade\Temporal;
 
-Use one lifecycle owner. Isolate test server/namespace/queue/RPC ports from application workers, and share the right converter and mock cache. A DB transaction confined to PHPUnit's process is not automatically visible to a separate Activity worker. Test real messages/cancellation and [history replay](../testing.md) in addition to dispatch fakes.
+Temporal::fake();
 
-## Interceptors and analysis
+$workflowMock = Temporal::mockWorkflow(OrderWorkflowInterface::class)->andReturn('completed');
+$activityMock = Temporal::mockActivity([PaymentActivityInterface::class, 'charge'])->andReturn('charged');
 
-Register compatible interceptors in `config/temporal.php`. Use headers and scoped tracing propagation across client → workflow → Activity → child calls; reset context at invocation boundaries. The package provides a PHPStan extension (`extension.neon`) for proxy typing. Neither that extension nor `VirtualPromise` proves deterministic execution.
+// ... code that starts the workflow ...
 
-Sources: [package README](https://github.com/keepsuit/laravel-temporal/blob/0173907640765f13f4e8e9ad2a970f5db4f4b1fd/README.md), [integration tests](https://github.com/keepsuit/laravel-temporal/tree/0173907640765f13f4e8e9ad2a970f5db4f4b1fd/tests/Integrations/Temporal), [course findings](../sources.md).
+$workflowMock->assertDispatched();
+$activityMock->assertDispatchedTimes(1);
+```
+
+- `Temporal::fake()` returns the mock result only for a Workflow or Activity with a mock. A mocked call runs no timers, cancellation or replay. A Workflow without a mock starts on the real client and needs a server and a worker.
+- The `WithTemporal` trait starts a test server and a worker for a test case.
+- `WithTemporalWorker` starts only a worker against a server that is already running, for example one from `php artisan temporal:server`.
+- `TEMPORAL_TESTING_SERVER=false` makes `WithTemporal` use an external server and start only the worker.
+- `WithoutTimeSkipping` and `TemporalTestTime::sleep()` control time in interaction tests.
+
+Add [replay tests](../testing.md#workflow-replay-testing) in addition to dispatch fakes.
