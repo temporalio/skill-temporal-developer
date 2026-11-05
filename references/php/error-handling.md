@@ -2,7 +2,7 @@
 
 ## Overview
 
-Application errors use `Temporal\Exception\Failure\ApplicationFailure`. Retry behavior is configured with `Temporal\Common\RetryOptions`. In an Activity, any PHP exception is converted to an `ApplicationFailure`, with the exception class name as its type.
+Application errors use `Temporal\Exception\Failure\ApplicationFailure`. Retry behavior is configured with `Temporal\Common\RetryOptions`. In an Activity, any PHP exception is converted to an `ApplicationFailure`, with the exception class name as its type. A `TypeError` is different: the SDK wraps it, and the type is `Temporal\Exception\InvalidArgumentException`.
 
 ## Application Errors
 
@@ -62,6 +62,8 @@ try {
 }
 ```
 
+With the default `TryCancel`, a cancelled Activity gives a bare `CanceledFailure`, which this `catch` does not receive. With `WaitCancellationCompleted`, it arrives as an `ActivityFailure` with a previous `CanceledFailure`.
+
 ## Retry Policy Configuration
 
 ```php
@@ -105,11 +107,11 @@ A timeout value is an `int` (seconds), a `\DateInterval`, or a string such as `'
 
 A timeout does not stop the PHP code of an attempt. An old attempt can run at the same time as its retry. Set I/O timeouts in the Activity, and use a stable idempotency key across attempts.
 
-A client that waits for the result receives `WorkflowFailedException`, with the Workflow failure as the previous exception.
-
 ## Workflow Failure
 
-PHP differs from other SDKs here. The default `ExceptionInterceptor` treats PHP `\Error` (`TypeError`, `Error`, etc.) as a Workflow Task failure, which Temporal retries until the code is fixed. Any `\Exception`, including `ApplicationFailure`, fails the Workflow Execution.
+PHP differs from other SDKs here. The default `ExceptionInterceptor` treats PHP `\Error` (`TypeError`, `Error`, etc.) as a panic. With the default `BlockWorkflow` policy, the Workflow Task fails and retries until the code is fixed. With `FailWorkflow`, the Workflow Execution fails. A `CanceledFailure` closes the Workflow as cancelled. Any other `\Exception`, including `ApplicationFailure`, fails the Workflow Execution.
+
+A client that waits for the result receives `WorkflowFailedException`, with the Workflow failure as the previous exception.
 
 ```php
 #[WorkflowMethod]
@@ -146,6 +148,8 @@ ActivityOptions::new()
     ->withHeartbeatTimeout(10)
     ->withCancellationType(ActivityCancellationType::WaitCancellationCompleted);
 ```
+
+After `$scope->cancel()`, `yield $scope` rejects at once, also with `WaitCancellationCompleted`. To wait until the Activity stops, catch the failure inside the scope and run the compensation there, or `yield` the Activity in the main Workflow method.
 
 With `TryCancel`, a compensation such as a refund can run before the original charge finishes, and miss it. A cancellation request or a timeout does not prove that the external system did not apply the operation. Use a stable operation ID, and reconcile or fence late side effects at the external boundary.
 

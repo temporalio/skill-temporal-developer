@@ -47,7 +47,7 @@ final class PaymentActivity implements PaymentActivityInterface
 }
 ```
 
-Do not write logs to STDOUT: RoadRunner uses it for its protocol. Write to STDERR, or use `roadrunner/psr-logger`, which sends logs to the RoadRunner logger.
+Do not write directly to the `STDOUT` stream: RoadRunner uses it for its protocol. Write to STDERR, or use `roadrunner/psr-logger`, which sends logs to the RoadRunner logger.
 
 ### Customizing the Logger
 
@@ -137,12 +137,44 @@ $worker = $factory->newWorker(
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of [data handling](data-handling.md#search-attributes).
+Register custom Search Attributes in the namespace before use. Set them when the Workflow starts:
+
+```php
+use Temporal\Client\WorkflowOptions;
+use Temporal\Common\SearchAttributes\SearchAttributeKey;
+use Temporal\Common\TypedSearchAttributes;
+
+$options = WorkflowOptions::new()
+    ->withTaskQueue('orders')
+    ->withTypedSearchAttributes(
+        TypedSearchAttributes::empty()
+            ->withValue(SearchAttributeKey::forKeyword('OrderId'), 'order-123')
+            ->withValue(SearchAttributeKey::forKeyword('OrderStatus'), 'pending'),
+    );
+```
+
+Change them from the Workflow:
+
+```php
+Workflow::upsertTypedSearchAttributes(
+    SearchAttributeKey::forKeyword('OrderStatus')->valueSet('completed'),
+);
+```
+
+### Querying Workflows by Search Attributes
+
+Find Workflows by Search Attributes from a client:
+
+```php
+foreach ($client->listWorkflowExecutions('OrderStatus = "pending"') as $execution) {
+    echo $execution->execution->getID(), PHP_EOL;
+}
+```
 
 ## Best Practices
 
 1. Use `Workflow::getLogger()` inside Workflow code for replay-safe logging.
-2. Do not write to STDOUT in worker code.
+2. Do not write directly to the `STDOUT` stream in worker code.
 3. Use standard PSR-3 loggers in Activities.
-4. Monitor Schedule-To-Start latency to find workers without free capacity.
+4. Monitor `rr_activities_pool_queue_size` and Schedule-To-Start latency to find workers without free capacity.
 5. Do not use high-cardinality values (order IDs, trace IDs) as metric labels.

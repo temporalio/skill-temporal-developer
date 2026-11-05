@@ -1,6 +1,8 @@
 # Laravel Temporal Integration
 
-Use [keepsuit/laravel-temporal](https://github.com/keepsuit/laravel-temporal) when the application uses Laravel. It is a community package, not a requirement of the PHP SDK. The current release (v2.3.x) requires `temporal/sdk ~2.17.0`. Features of SDK 2.18+ in these references (the testing interactions and workflow mocks, `AwaitOptions`, serialization context, the read-only callback guard, payload limits, eager Activity options) are not available with it.
+## Overview
+
+Use [keepsuit/laravel-temporal](https://github.com/keepsuit/laravel-temporal) when the application uses Laravel. It is a community package, not a requirement of the PHP SDK. The current release (v2.3.x) requires `temporal/sdk ~2.17.0`. Features of SDK 2.18+ in these references (for example the testing interactions and workflow mocks, `AwaitOptions` and serialization context) are not available with it.
 
 ## Setup
 
@@ -18,7 +20,7 @@ php artisan temporal:make:activity Payment
 php artisan temporal:work orders
 ```
 
-The package discovers Workflows and Activities in the `app` directory and registers them on the worker. `temporal:work` starts RoadRunner with the worker of the package.
+The package discovers Workflows and Activities in the `app` directory and registers them on the worker. `temporal:work` starts RoadRunner with the worker of the package. This worker sets `FeatureFlags::$workflowDeferredHandlerStart = true` and `FeatureFlags::$cancelAbandonedChildWorkflows = false`, which differ from the SDK defaults.
 
 ## Starting Workflows
 
@@ -63,7 +65,7 @@ Lazy loading of an Eloquent relation in Workflow code is database I/O. Load data
 
 ## Application Lifetime
 
-The package runs each Activity in a scoped Laravel application and flushes it after the call. This isolates container state between Activities. It does not make Workflow code deterministic. Static caches and process-wide listeners still keep their state between tasks.
+The package runs each Activity in a scoped Laravel application and flushes it after the call. This isolates services that the Activity resolves from the container during the call. The worker builds the Activity and its constructor dependencies from the root application, so these keep their state between tasks. The sandbox does not make Workflow code deterministic. Static caches and process-wide listeners still keep their state between tasks.
 
 ## Testing
 
@@ -81,7 +83,7 @@ $workflowMock->assertDispatched();
 $activityMock->assertDispatchedTimes(1);
 ```
 
-- `Temporal::fake()` replaces dispatch with fakes. It does not run timers, cancellation or replay.
+- `Temporal::fake()` returns the mock result only for a Workflow or Activity with a mock. A mocked call runs no timers, cancellation or replay. A Workflow without a mock starts on the real client and needs a server and a worker.
 - The `WithTemporal` trait starts a test server and a worker for a test case.
 - `WithTemporalWorker` starts only a worker against a server that is already running, for example one from `php artisan temporal:server`.
 - `TEMPORAL_TESTING_SERVER=false` makes `WithTemporal` use an external server and start only the worker.

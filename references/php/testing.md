@@ -172,7 +172,7 @@ $this->activityMocks->expectConsecutiveCompletions('Inventory.check', [false, fa
 $this->activityMocks->expectCompletionWhen('Fx.rate', ['EUR', 'USD'], 1.08);
 ```
 
-A mocked failure answers every retry attempt. With the default retry policy, a retryable failure repeats forever. Use a non-retryable failure, or limit `maximumAttempts` in the Activity options.
+A mocked failure answers every retry attempt. With the default retry policy, a retryable failure repeats until a timeout stops it. Use a non-retryable failure, or limit `maximumAttempts` in the Activity options.
 
 With a custom data converter, give the same converter to the mock cache:
 
@@ -255,11 +255,13 @@ Time-skipping locks are a counter. Balance each `lockTimeSkipping()` with an `un
 
 ## Testing Signals, Queries and Updates
 
+This example assumes a Workflow with the Signals `addItem()` and `approve()` and the Query `getItemCount()`:
+
 ```php
 public function testSignalAndQuery(): void
 {
     $workflow = $this->workflowClient->newWorkflowStub(
-        OrderWorkflowInterface::class,
+        CartWorkflowInterface::class,
         WorkflowOptions::new()->withTaskQueue('test-queue'),
     );
     $run = $this->workflowClient->start($workflow);
@@ -272,7 +274,7 @@ public function testSignalAndQuery(): void
 }
 ```
 
-An Update result does not resolve on the test server while time skipping is unlocked. Test Updates in `TimeSkippingWorkflowTestCase`, or add the `Temporal\Testing\WithoutTimeSkipping` trait to the test class.
+The SDK tests Updates on the test server with time skipping locked. Use `TimeSkippingWorkflowTestCase`, or add the `Temporal\Testing\WithoutTimeSkipping` trait to the test class.
 
 ## Testing Failure Cases
 
@@ -289,7 +291,7 @@ public function testFailsWhenPaymentDeclined(): void
     );
 
     $workflow = $this->workflowClient->newWorkflowStub(
-        OrderWorkflowInterface::class,
+        PaymentWorkflowInterface::class,
         WorkflowOptions::new()->withTaskQueue('test-queue'),
     );
     $run = $this->workflowClient->start($workflow, 'order-1');
@@ -315,19 +317,19 @@ use PHPUnit\Framework\TestCase;
 use Temporal\Testing\Replay\WorkflowReplayer;
 use Temporal\Workflow\WorkflowExecution;
 
-final class OrderReplayTest extends TestCase
+final class GreetingReplayTest extends TestCase
 {
     public function testReplayFromFile(): void
     {
-        (new WorkflowReplayer())->replayFromJSON('Order', __DIR__ . '/histories/order.json');
+        (new WorkflowReplayer())->replayFromJSON('Greeting', __DIR__ . '/histories/greeting.json');
         $this->addToAssertionCount(1);
     }
 
     public function testReplayFromServer(): void
     {
         (new WorkflowReplayer())->replayFromServer(
-            'Order',
-            new WorkflowExecution('order-123', 'run-id'),
+            'Greeting',
+            new WorkflowExecution('greeting-world', 'run-id'),
         );
         $this->addToAssertionCount(1);
     }
@@ -340,7 +342,7 @@ final class OrderReplayTest extends TestCase
 - `replayHistory(History $history)` replays a `Temporal\Api\History\V1\History` object. `downloadHistory()` saves a history from the server to a file.
 - The replayer connects to the RoadRunner RPC from `RR_RPC`.
 
-Export a history with `temporal workflow show --workflow-id order-123 --output json > tests/histories/order.json`.
+Export a history with `temporal workflow show --workflow-id greeting-world --output json > tests/histories/greeting.json`.
 
 The running test worker must register the Workflow on the **same Task Queue** as in the history. Otherwise the replay fails with a non-determinism error, also for unchanged code. The `worker.test.php` above adds a worker for the production Task Queue. The JSON file must be readable by the RoadRunner process.
 

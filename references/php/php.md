@@ -213,7 +213,7 @@ The JSON converter creates DTOs without their constructor. Add a new field as a 
 
 ### Determinism
 
-**Workflow code must be deterministic!** The PHP SDK has no sandbox. Use `Workflow::now()`, `Workflow::timer()`, `Workflow::sideEffect()` and `Workflow::uuid()` instead of their PHP equivalents. Put all I/O in Activities. Read `references/core/determinism.md` and `references/php/determinism.md` for details.
+**Workflow code must be deterministic!** The PHP SDK has no sandbox. Use `Workflow::now()`, `Workflow::timer()`, `Workflow::sideEffect()` and `Workflow::uuid()` instead of their PHP equivalents. Put all I/O in Activities. Read [Temporal determinism rules](../core/determinism.md) and [PHP determinism rules](determinism.md) to understand more.
 
 ## File Organization Best Practice
 
@@ -233,9 +233,9 @@ my_temporal_app/
 └── starter.php       # Client code that starts workflows
 ```
 
-### Unsupported Features
+## Unsupported Features
 
-SDK 2.20 has no Standalone Activities and no Nexus Operations API. For a job queue, start a Workflow that runs one Activity.
+SDK 2.20 has no Standalone Activities and no Nexus Operations API. For a job queue, use the fallback in the [Temporal job queue guide](../core/job-queue.md).
 
 ## Common Pitfalls
 
@@ -245,28 +245,30 @@ SDK 2.20 has no Standalone Activities and no Nexus Operations API. For a job que
 4. **Non-deterministic code in workflows** - No sandbox catches `time()`, `rand()`, `sleep()` or a DB query. See [determinism](determinism.md).
 5. **Registering an Activity instance** - `registerActivity()` takes a class name and an optional factory, not an object.
 6. **Incorrect Activity Type names** - The type includes the interface `prefix`. Mocks and untyped stubs must use the full name.
-7. **Using `echo` or `var_dump()` in a worker** - STDOUT carries the RoadRunner protocol. Use `Workflow::getLogger()` or a PSR-3 logger that writes to STDERR.
+7. **Using `echo` or `var_dump()` in a worker** - The output goes to the RoadRunner log without levels or context. A direct write to the `STDOUT` stream corrupts the RoadRunner protocol. Use `Workflow::getLogger()` or a PSR-3 logger that writes to STDERR.
 8. **Typing a stub property with the interface only** - `Workflow::newActivityStub()` returns an `ActivityProxy`. Declare the property as `ActivityProxy|MyActivityInterface`, or a `TypeError` blocks the Workflow.
 9. **Shared state in a worker process** - A worker process runs many Activity tasks. Static variables and shared container services keep their values between tasks. Do not keep request or tenant state there.
 
 ## Writing Tests
 
-See `references/php/testing.md` for info on writing tests.
+See [PHP testing guide](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
 
-- **`references/php/patterns.md`** - Signals, queries, updates, child workflows, saga, batches
-- **`references/php/determinism.md`** - Forbidden operations and safe alternatives
-- **`references/php/determinism-protection.md`** - Runtime guards, panic policy, replay checks
-- **`references/php/gotchas.md`** - PHP-specific mistakes, with examples
-- **`references/php/error-handling.md`** - ApplicationFailure, retry policies, timeouts
-- **`references/php/data-handling.md`** - Data converters, serialization context, payload limits, Search Attributes
-- **`references/php/observability.md`** - Logging, metrics, tracing
-- **`references/php/testing.md`** - Test framework, mocks, time skipping, replay
-- **`references/php/versioning.md`** - `getVersion()`, Workflow Type versioning, Worker Versioning
-- **`references/php/advanced-features.md`** - Schedules, async completion, worker tuning, Cloud Operations API
-- **`references/php/priority-fairness.md`** - Task Queue Priority and Fairness
-- **`references/php/integrations/laravel-temporal.md`** - Laravel integration
-- **`references/core/determinism.md`** - Core determinism concepts shared across all SDKs
+- **[PHP workflow patterns](patterns.md)** - Signals, queries, updates, child workflows, saga, batches
+- **[PHP determinism rules](determinism.md)** - Forbidden operations and safe alternatives
+- **[PHP determinism protection](determinism-protection.md)** - Runtime guards, panic policy, replay checks
+- **[PHP gotchas](gotchas.md)** - PHP-specific mistakes, with examples
+- **[PHP error handling](error-handling.md)** - ApplicationFailure, retry policies, timeouts
+- **[PHP data handling](data-handling.md)** - Data converters, serialization context, encryption, payload limits
+- **[PHP observability](observability.md)** - Logging, metrics, tracing, Search Attributes
+- **[PHP testing guide](testing.md)** - Test framework, mocks, time skipping, replay
+- **[PHP versioning](versioning.md)** - `getVersion()`, Workflow Type versioning, Worker Versioning
+- **[PHP advanced features](advanced-features.md)** - Schedules, async completion, worker tuning, Cloud Operations API
+- **[PHP priority and fairness](priority-fairness.md)** - Task Queue Priority and Fairness
+
+### PHP Integrations
+
+For PHP-specific third-party integrations (Laravel, etc.), see [integrations catalog](../integrations.md) and filter for PHP. Reference files live under `references/php/integrations/`.

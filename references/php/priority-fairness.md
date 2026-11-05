@@ -61,4 +61,4 @@ $child = Workflow::newChildWorkflowStub(
 $result = yield $child->run('input');
 ```
 
-If an Activity or Child Workflow omits the priority, it inherits the parent Workflow's values.
+If an Activity or Child Workflow omits the priority, it inherits the parent Workflow's values. `Activity::getInfo()->priority` shows only the value set on the Activity, not an inherited value.

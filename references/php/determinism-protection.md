@@ -5,7 +5,7 @@
 The PHP SDK does not have a sandbox like Python or illegal call tracing like Ruby. Workflow code runs as ordinary PHP inside the RoadRunner worker process. The SDK gives these protections:
 
 1. **Read-only callback guard** - a command from a callback that must be read-only throws.
-2. **Workflow panic policy** - selects the result of a non-determinism error.
+2. **Workflow panic policy** - selects the result of a non-determinism error or a panic.
 3. **Replay testing** - finds command mismatches before a deployment.
 
 Read [determinism.md](determinism.md) for the rules.
@@ -41,6 +41,8 @@ The guard is on by default. A legacy application can disable it while the code i
 ```php
 \Temporal\Worker\FeatureFlags::$readOnlyWorkflowCallbacks = false;
 ```
+
+With the guard off, an Update validator, an await condition and a `sideEffect()` callback can create commands again. A Query handler that creates a command still fails, with a less clear error.
 
 ## Workflow Panic Policy
 

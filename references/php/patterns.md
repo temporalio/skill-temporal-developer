@@ -1,6 +1,6 @@
 # PHP SDK Patterns
 
-Examples omit imports that are the same in every file: `Temporal\Workflow`, `Temporal\Activity\ActivityOptions`, `Temporal\Workflow\WorkflowInterface` and `Temporal\Workflow\WorkflowMethod`.
+Examples omit imports that are the same in every file: `Temporal\Workflow`, `Temporal\Promise`, `Temporal\Activity\ActivityOptions`, `Temporal\Workflow\WorkflowInterface` and `Temporal\Workflow\WorkflowMethod`.
 
 ## Signals
 
@@ -254,8 +254,6 @@ class CoordinatorWorkflow
 ## Parallel Execution
 
 ```php
-use Temporal\Promise;
-
 #[WorkflowInterface]
 class ParallelWorkflow
 {
@@ -434,15 +432,7 @@ try {
 }
 ```
 
-`Workflow::asyncDetached()` creates a scope that is not cancelled with its parent. Use it for cleanup after Workflow cancellation:
-
-```php
-try {
-    yield $activities->doWork($resourceId);
-} finally {
-    yield Workflow::asyncDetached(fn() => yield $activities->release($resourceId));
-}
-```
+`Workflow::asyncDetached()` creates a scope that is not cancelled with its parent. Use it for [cleanup after Workflow cancellation](gotchas.md#not-handling-workflow-cancellation).
 
 ## Wait Condition with Timeout
 
@@ -554,7 +544,10 @@ final class FileProcessingActivity implements FileProcessingActivityInterface
 
         try {
             while (!$file->eof()) {
-                $this->processLine($file->current());
+                $line = $file->current();
+                if ($line !== '') {
+                    $this->processLine($line);
+                }
                 $file->next();
                 Activity::heartbeat($file->key());
             }
@@ -567,7 +560,7 @@ final class FileProcessingActivity implements FileProcessingActivityInterface
 }
 ```
 
-`Activity::heartbeat()` throws an `ActivityCompletionException` when the Activity is cancelled (`ActivityCanceledException`), paused (`ActivityPausedException`) or reset (`ActivityResetException`). `Activity::getCancellationDetails()` tells the reason. Always rethrow it.
+`Activity::heartbeat()` throws an `ActivityCompletionException` when the Activity is cancelled (`ActivityCanceledException`) or paused (`ActivityPausedException`). Always rethrow it. `Activity::getCancellationDetails()` tells the reason. Do not use the exception class to tell a reset from a cancellation: with RoadRunner 3.0.1 and Server 1.32, a reset of a running Activity arrives as `ActivityCanceledException` with `cancelRequested` set.
 
 ## Timers
 
@@ -590,7 +583,7 @@ class TimerWorkflow
 
 **Purpose**: Reduce latency for short, lightweight operations by skipping the task queue. ONLY use these when necessary for performance. Do NOT use these by default, as they are not durable and distributed.
 
-A local Activity interface must have `#[LocalActivityInterface]`. With `#[ActivityInterface]`, `LocalActivityOptions` alone schedules a regular Activity without an error. A `#[LocalActivityInterface]` stub without `LocalActivityOptions` throws.
+A local Activity interface must have `#[LocalActivityInterface]`. See [gotchas](gotchas.md#local-activity-without-localactivityinterface). A `#[LocalActivityInterface]` stub without `LocalActivityOptions` throws a `RuntimeException`.
 
 ```php
 use Temporal\Activity\ActivityMethod;
@@ -619,15 +612,3 @@ class LocalActivityWorkflow
     }
 }
 ```
-
-## Safe Signal Buffering
-
-Take the batch from the buffer **before** the `yield`. Signals that arrive during the Activity stay in the buffer:
-
-```php
-$batch = $this->pendingOffers;
-$this->pendingOffers = [];
-yield $activities->persistOffers($batch);
-```
-
-Before Continue-As-New, wait for all handlers and pass the remaining buffer to the next run.

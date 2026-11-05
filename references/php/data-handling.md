@@ -47,7 +47,7 @@ $client->start($stub, $input);
 $result = $stub->getResult(OrderResult::class);
 ```
 
-The JSON converter creates the object without its constructor. A constructor parameter default is therefore not applied to an old payload: the property stays uninitialized, and the first read throws an `Error`, which retries the Workflow Task forever. Add a new field as a non-promoted property with a property default (`public ?string $couponCode = null;`). A `readonly` property cannot have a default, so use `readonly` only for fields that exist since the first version.
+The JSON converter creates the object without its constructor. A constructor parameter default is therefore not applied to an old payload: the property stays uninitialized, and the first read throws an `Error`. In Workflow code, this fails the Workflow Task, which retries until the code is fixed. In an Activity, it fails the attempt. Add a new field as a non-promoted property with a property default (`public ?string $couponCode = null;`). A `readonly` property cannot have a default, so use `readonly` only for fields that exist since the first version.
 
 ## Custom Data Conversion
 
@@ -112,86 +112,7 @@ $factory = WorkerFactory::create(converter: $converter);
 
 ## Serialization Context
 
-Since SDK 2.20, a payload converter can know which Workflow or Activity it serializes data for. Use it to select an encryption key or to sign payloads per Workflow. Implement `SerializationContextAwareInterface`. The `DataConverter` gives the context to each converter that implements it.
-
-The example signs each `SignedValue` payload with its Workflow and rejects a payload decoded for another Workflow:
-
-```php
-use Temporal\Api\Common\V1\Payload;
-use Temporal\DataConverter\HasWorkflowSerializationContext;
-use Temporal\DataConverter\PayloadConverterInterface;
-use Temporal\DataConverter\SerializationContext;
-use Temporal\DataConverter\SerializationContextAwareInterface;
-use Temporal\DataConverter\Type;
-
-final class SignedValue
-{
-    public function __construct(public mixed $value) {}
-}
-
-final class SigningConverter implements PayloadConverterInterface, SerializationContextAwareInterface
-{
-    private const ENCODING = 'json/signed';
-    private const METADATA_KEY = 'ctx-signature';
-
-    private ?SerializationContext $context = null;
-    private string $signature = 'none';
-
-    public function getEncodingType(): string
-    {
-        return self::ENCODING;
-    }
-
-    public function getSerializationContext(): ?SerializationContext
-    {
-        return $this->context;
-    }
-
-    public function withSerializationContext(?SerializationContext $context): static
-    {
-        $clone = clone $this;
-        $clone->context = $context;
-        $clone->signature = $context instanceof HasWorkflowSerializationContext
-            ? $context->getNamespace() . '|' . ($context->getWorkflowId() ?? '')
-            : 'none';
-        return $clone;
-    }
-
-    public function toPayload($value): ?Payload
-    {
-        if (!$value instanceof SignedValue) {
-            return null;
-        }
-
-        return (new Payload())
-            ->setData(json_encode($value->value, \JSON_THROW_ON_ERROR))
-            ->setMetadata(['encoding' => self::ENCODING, self::METADATA_KEY => $this->signature]);
-    }
-
-    public function fromPayload(Payload $payload, Type $type): SignedValue
-    {
-        $signature = $payload->getMetadata()[self::METADATA_KEY] ?? '';
-        if ($signature !== $this->signature) {
-            throw new \RuntimeException("Payload signed for \"{$signature}\", decoded for \"{$this->signature}\"");
-        }
-
-        return new SignedValue(json_decode($payload->getData(), true, 512, \JSON_THROW_ON_ERROR));
-    }
-}
-```
-
-Register it on the client and the worker, before `JsonConverter`:
-
-```php
-$converter = new DataConverter(
-    new SigningConverter(),
-    new NullConverter(),
-    new BinaryConverter(),
-    new ProtoJsonConverter(),
-    new ProtoConverter(),
-    new JsonConverter(),
-);
-```
+Since SDK 2.20, a payload converter can know which Workflow or Activity it serializes data for. Use it to select an encryption key or to sign payloads per Workflow. Implement `SerializationContextAwareInterface`. The `DataConverter` gives the context to each converter that implements it. See the example in [Payload Encryption](#payload-encryption).
 
 Context types:
 
@@ -208,6 +129,7 @@ The PHP SDK has no `PayloadCodec` interface and no codec chain. To encrypt paylo
 use Temporal\Api\Common\V1\Payload;
 use Temporal\DataConverter\DataConverterInterface;
 use Temporal\DataConverter\HasWorkflowSerializationContext;
+use Temporal\DataConverter\RawValue;
 use Temporal\DataConverter\SerializationContext;
 use Temporal\DataConverter\SerializationContextAwareInterface;
 
@@ -239,6 +161,10 @@ final class EncryptingConverter implements DataConverterInterface, Serialization
 
     public function toPayload($value): Payload
     {
+        if ($value instanceof RawValue) {
+            return $this->inner->toPayload($value);
+        }
+
         $keyId = $this->keyId();
         $plain = $this->inner->toPayload($value)->serializeToString();
 
@@ -270,7 +196,9 @@ $converter = new EncryptingConverter(DataConverter::createDefault(), $keyStore);
 
 - Implement `SerializationContextAwareInterface` on the decorator. Otherwise the SDK does not give it the context, and it does not pass the context to the inner converter.
 - Use the same converter on the client, the worker and the replayer. Keep old keys to decrypt old histories.
-- Failure messages and stack traces are not encrypted. Search Attributes and Memo keys are not encrypted.
+- Keep `RawValue` unencrypted: the worker sends its information to RoadRunner this way, and otherwise RoadRunner does not start.
+- Failure messages, stack traces and Memo keys are not encrypted. RoadRunner encodes the values of `Workflow::upsertMemo()` and of child Workflow Memo, so this decorator does not encrypt them.
+- The client encodes Search Attributes of `WorkflowOptions` and schedules with this converter. The server cannot read encrypted values and rejects the start. Set them with `Workflow::upsertTypedSearchAttributes()`, which RoadRunner encodes.
 - To see decrypted payloads in the Web UI and CLI, run a separate codec server.
 
 ## Payload Size Limits
@@ -288,41 +216,7 @@ $options = (new ClientOptions())->withPayloadLimits(
 $client = WorkflowClient::create(ServiceClient::create('127.0.0.1:7233'), $options);
 ```
 
-Use `PayloadLimitOptions::disabled()` to turn the warnings off. On the worker, a payload above the namespace limit fails the Workflow Task with `PAYLOADS_TOO_LARGE`. `WorkerOptions::new()->withDisablePayloadErrorLimit()` turns off this check. Store large data outside Temporal and pass a reference instead.
-
-## Search Attributes
-
-Register custom Search Attributes in the namespace before use. Set them when the Workflow starts:
-
-```php
-use Temporal\Client\WorkflowOptions;
-use Temporal\Common\SearchAttributes\SearchAttributeKey;
-use Temporal\Common\TypedSearchAttributes;
-
-$options = WorkflowOptions::new()
-    ->withTaskQueue('orders')
-    ->withTypedSearchAttributes(
-        TypedSearchAttributes::empty()
-            ->withValue(SearchAttributeKey::forKeyword('OrderId'), 'order-123')
-            ->withValue(SearchAttributeKey::forKeyword('OrderStatus'), 'pending'),
-    );
-```
-
-Change them from the Workflow:
-
-```php
-Workflow::upsertTypedSearchAttributes(
-    SearchAttributeKey::forKeyword('OrderStatus')->valueSet('completed'),
-);
-```
-
-Find Workflows by Search Attributes from a client:
-
-```php
-foreach ($client->listWorkflowExecutions('OrderStatus = "pending"') as $execution) {
-    echo $execution->execution->getID(), PHP_EOL;
-}
-```
+Use `PayloadLimitOptions::disabled()` to turn the warnings off. On the worker, a payload above the namespace limit fails the Workflow Task with `PAYLOADS_TOO_LARGE`, or fails the Activity attempt. With RoadRunner v3, `WorkerOptions::new()->withDisablePayloadErrorLimit()` turns off this experimental check. Store large data outside Temporal and pass a reference instead.
 
 ## Workflow Memo
 

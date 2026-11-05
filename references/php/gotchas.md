@@ -16,12 +16,14 @@ php worker.php
 
 ### Writing to STDOUT
 
-RoadRunner uses the STDOUT of the worker process for its protocol. Output on STDOUT corrupts it.
+RoadRunner uses the STDOUT stream of the worker process for its protocol. A direct write to this stream corrupts it. The output of `echo` and `var_dump()` goes to the RoadRunner log, without levels or context.
 
 ```php
-// BAD - Breaks the RoadRunner protocol
+// BAD - Breaks the RoadRunner protocol, the Activity fails and the worker is lost
+fwrite(\STDOUT, "Processing order {$orderId}\n");
+
+// BAD - A log record without level or context
 echo "Processing order {$orderId}\n";
-var_dump($order);
 
 // GOOD - Workflow code: replay-aware logger
 Workflow::getLogger()->info('Processing order', ['orderId' => $orderId]);
@@ -44,13 +46,13 @@ RoadRunner keeps the PHP worker processes alive. After a code change, the old co
 ### Forgetting `yield`
 
 ```php
-// BAD - $result is a promise, the Activity result is lost
+// BAD - $result is a promise, not the Activity result. The Error retries the Workflow Task
 public function run(string $orderId): \Generator
 {
     $result = $this->activities->charge($orderId);
     $uuid = Workflow::uuid();
     yield Workflow::timer(10);
-    return $result;
+    return 'Charged: ' . $result;
 }
 
 // GOOD - Wait for each promise
@@ -59,7 +61,7 @@ public function run(string $orderId): \Generator
     $result = yield $this->activities->charge($orderId);
     $uuid = yield Workflow::uuid();
     yield Workflow::timer(10);
-    return $result;
+    return 'Charged: ' . $result;
 }
 ```
 
@@ -93,18 +95,13 @@ foreach ($allItemIds as $id) {
     $promises[] = $this->activities->process($id);
 }
 yield Promise::all($promises);
-
-// GOOD - Bounded pages, Continue-As-New between pages
-$page = yield $this->activities->readPage($cursor, 100);
-yield Promise::all(array_map(fn(string $id) => $this->activities->process($id), $page->ids));
-if ($page->nextCursor !== null) {
-    return yield Workflow::continueAsNew('ProcessAll', [$page->nextCursor]);
-}
 ```
 
-See [bounded batches](patterns.md#bounded-batch-processing).
+Read bounded pages and use Continue-As-New between pages. See [bounded batches](patterns.md#bounded-batch-processing).
 
-## Activity Registration
+## Activities
+
+### Registering an Activity Instance
 
 ```php
 // BAD - registerActivity() takes a class name, not an object
@@ -144,12 +141,16 @@ final class ReportActivity implements ReportActivityInterface
 }
 ```
 
-Use `registerActivityFinalizer()` to reset application state after each Activity, for example an ORM identity map.
+Reset application state after each Activity with a finalizer, for example an ORM identity map:
+
+```php
+$worker->registerActivityFinalizer(fn() => $entityManager->clear());
+```
 
 ### Local Activity Without `#[LocalActivityInterface]`
 
 ```php
-// BAD - A regular Activity is scheduled, LocalActivityOptions are ignored without an error
+// BAD - With LocalActivityOptions, the stub call throws a TypeError and the Workflow Task retries
 #[ActivityInterface(prefix: 'Lookup.')]
 interface LookupActivityInterface
 {
@@ -237,7 +238,7 @@ public function run(string $resourceId): \Generator
 
 ### Not Handling Activity Cancellation
 
-Cancellation is delivered to an Activity only through a heartbeat. `Activity::heartbeat()` throws an `ActivityCompletionException`: `ActivityCanceledException`, `ActivityPausedException` or `ActivityResetException`.
+Cancellation is delivered to an Activity only through a heartbeat. See [heartbeat details](patterns.md#activity-heartbeat-details) for the exceptions.
 
 ```php
 // BAD - The Activity ignores cancellation
@@ -288,6 +289,8 @@ $this->pendingOffers = [];
 yield $this->activities->persistOffers($batch);
 ```
 
+Before Continue-As-New, wait for all handlers and pass the remaining buffer to the next run.
+
 ## Testing
 
 ### Not Testing Failures
@@ -299,6 +302,8 @@ Make sure Workflows work as expected under failure paths, not just happy paths. 
 Replay tests find non-determinism in Workflow code before a deployment. See [PHP testing guide](testing.md#workflow-replay-testing).
 
 ## Timers and Sleep
+
+### Using sleep()
 
 ```php
 // BAD - sleep() blocks the worker event loop and is not durable

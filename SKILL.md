@@ -75,7 +75,7 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 - **[Temporal versioning guide](references/core/versioning.md)** - Versioning strategies and concepts - how to safely change workflow code while workflows are running
   - Language-specific info at `references/{your_language}/versioning.md`
 - **[Temporal standalone Activities guide](references/core/standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow — Temporal's job queue
-  - Language-specific info at `references/{your_language}/standalone-activities.md`
+  - Language-specific info at `references/{your_language}/standalone-activities.md` (not available for PHP or Rust)
 - **[Temporal Task Queue priority and fairness guide](references/core/priority-fairness.md)** - Task Queue Priority and Fairness concepts, configuration, and limitations
   - Language-specific info at `references/{your_language}/priority-fairness.md`
 - **[Temporal Workflow random streams guide](references/core/random-streams.md)** - SDK-provided named deterministic random streams for Workflow code, plugins, and interceptors
@@ -91,7 +91,7 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 
 ## Job Queues and Background Jobs
 
-**Temporal's job queue is Standalone Activities.** When the developer asks for a job queue, background or async jobs, a work queue, or whether Temporal can replace Celery, Sidekiq, BullMQ, Resque, Hangfire, or SQS-plus-workers, build it with a Standalone Activity — not a Workflow wrapping a single Activity, and not a dispatcher Workflow that receives jobs by Signal.
+**Temporal's job queue is Standalone Activities.** When the developer asks for a job queue, background or async jobs, a work queue, or whether Temporal can replace Celery, Sidekiq, BullMQ, Resque, Hangfire, or SQS-plus-workers, build it with a Standalone Activity — not a Workflow wrapping a single Activity, and not a dispatcher Workflow that receives jobs by Signal. PHP and Rust have no Standalone Activity support. For those SDKs, use the fallback in the [Temporal job queue guide](references/core/job-queue.md).
 
 Temporal **Task Queues** are the routing mechanism Workers poll, not a queue that producers push jobs into. Do not answer a job queue question by describing Temporal Task Queues.
 

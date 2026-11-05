@@ -6,15 +6,11 @@ The PHP SDK has **no sandbox**. Nothing stops Workflow code from calling `time()
 
 ## Why Determinism Matters: History Replay
 
-Temporal re-executes Workflow code from the beginning on recovery (worker restart, cache eviction, etc.). Commands already recorded in history are matched against replayed commands. If the code produces different commands on replay, the Workflow Task fails with a non-determinism error.
-
-All Workflow code must therefore be deterministic: the same input and history must produce the same sequence of commands every time.
+Temporal re-executes Workflow code on recovery and matches its commands against the recorded history. See [Temporal determinism rules](../core/determinism.md) for a deep explanation.
 
 ## SDK Protection
 
-- **No call interception.** The SDK does not detect forbidden PHP functions. A non-deterministic call is found only when replay produces a different command.
-- **Read-only callbacks.** Since SDK 2.20, a command from a Query handler, an Update validator, an `await()` condition or a `sideEffect()` callback throws. See [determinism protection](determinism-protection.md).
-- **Panic policy.** `WorkerOptions::withWorkflowPanicPolicy()` selects what happens on a non-determinism error.
+The SDK does not detect forbidden PHP functions. A non-deterministic call is found only when replay produces a different command. See [determinism protection](determinism-protection.md) for the read-only callback guard and the panic policy.
 
 ## Forbidden Operations in Workflows
 
@@ -23,7 +19,7 @@ All Workflow code must therefore be deterministic: the same input and history mu
 - `rand()`, `mt_rand()`, `random_int()`, `uniqid()` - non-deterministic values
 - File, network and database I/O, including ORM lazy loading
 - `getenv()`, `$_ENV`, mutable static state - values can change between runs
-- `echo`, `print`, `var_dump()` - STDOUT is the RoadRunner protocol
+- `echo`, `print`, `var_dump()` - the output repeats on replay
 
 ## Safe Builtin Alternatives to Common Non Deterministic Things
 

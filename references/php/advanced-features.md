@@ -98,7 +98,7 @@ temporal:
 use Temporal\Worker\WorkerOptions;
 
 $worker = $factory->newWorker(
-    'my-queue',
+    'my-task-queue',
     WorkerOptions::new()
         // Max concurrent Activity executions (keep near num_workers)
         ->withMaxConcurrentActivityExecutionSize(8)
@@ -136,7 +136,7 @@ $worker = $factory->newWorker(
 - `supervisor.exec_ttl` kills a process that runs a task too long. The Activity attempt fails and retries. It is not a replacement for Temporal timeouts.
 - HTTP processes (`http.pool`) and Temporal processes (`temporal.activities`) are separate pools.
 
-**Scaling:** Scale on Activity Schedule-To-Start latency, backlog, CPU and memory. High latency with a full pool means too few PHP processes. High latency with idle processes means a polling, routing or registration problem. On Kubernetes, set a termination grace period, test scale-down with running Activities, and make Activities idempotent: an attempt on a stopped worker is retried elsewhere.
+**Scaling:** Scale on backlog, CPU, memory and the `rr_activities_pool_queue_size` gauge. Activity Schedule-To-Start latency shows a shortage of worker slots, not of PHP processes: with the default slot limit, a task leaves the queue and then waits inside RoadRunner for a free process. Set `withMaxConcurrentActivityExecutionSize()` near `num_workers` so that Schedule-To-Start shows a full pool. High latency with idle processes means a polling, routing or registration problem. On Kubernetes, set a termination grace period, test scale-down with running Activities, and make Activities idempotent: an attempt on a stopped worker is retried elsewhere.
 
 ### Eager Activities
 
@@ -147,22 +147,6 @@ WorkerOptions::new()->withMaxEagerActivityReservationsPerWorkflowTask(10);
 
 // Turn eager execution off
 WorkerOptions::new()->withDisableEagerActivities();
-```
-
-### Payload Error Limit
-
-By default, the worker fails the Workflow Task with `PAYLOADS_TOO_LARGE` when a payload exceeds the namespace limit. Since SDK 2.20, this check can be turned off:
-
-```php
-WorkerOptions::new()->withDisablePayloadErrorLimit();
-```
-
-### Activity Finalizer
-
-A worker process runs many Activity tasks. Reset application state after each task:
-
-```php
-$worker->registerActivityFinalizer(fn() => $entityManager->clear());
 ```
 
 ## Workflow Init Attribute
@@ -197,17 +181,15 @@ The constructor and the Workflow method must have the same parameters. Do not st
 
 ## Feature Flags
 
-`Temporal\Worker\FeatureFlags` holds static switches for behavior changes. Set them at the top of the worker entrypoint, before `WorkerFactory::create()`:
+`Temporal\Worker\FeatureFlags` holds static switches for behavior changes. Set them at the top of the worker entrypoint, before `WorkerFactory::create()`. The main flags:
 
 | Flag | Default | Effect |
 | -- | -- | -- |
 | `$readOnlyWorkflowCallbacks` | `true` | A command from a Query handler, an Update validator, an await condition or a `sideEffect()` callback throws (SDK 2.20) |
-| `$settleAwaitOnFirstSettledCondition` | `false` | A multi-condition `await()` unblocks on the first settled condition and propagates a rejection (SDK 2.19) |
-| `$propagateCancellationToNewScopes` | `false` | A nested scope, await or `onCancel` handler created after its scope was cancelled is cancelled immediately (SDK 2.18) |
+| `$settleAwaitOnFirstSettledCondition` | `false` | A multi-condition `await()` unblocks on the first settled condition and propagates a rejection (SDK 2.19, experimental) |
+| `$propagateCancellationToNewScopes` | `false` | A nested scope, await or `onCancel` handler created after its scope was cancelled is cancelled immediately (SDK 2.18, experimental) |
 | `$cancelAbandonedChildWorkflows` | `true` | Parent cancellation also cancels `ParentClosePolicy::Abandon` children. Set `false` to keep them running (SDK 2.16) |
 | `$workflowDeferredHandlerStart` | `false` | The Workflow method starts after all Signals of the same Workflow Task are handled (experimental) |
-| `$warnOnWorkflowUnfinishedHandlers` | `true` | Log a warning when a Workflow completes while handlers still run |
-| `$warnOnActivityMethodWithoutAttribute` | `true` | Log a warning for a public Activity method without `#[ActivityMethod]` |
 
 A flag that changes commands can break replay of open Workflows. Enable it for new deployments or together with [versioning](versioning.md).
 
@@ -276,6 +258,8 @@ $client = WorkflowClient::create($profile->toServiceClient(), $profile->toClient
 Since SDK 2.18, a plugin packages interceptors and configuration for the client, the schedule client and the worker. Extend `Temporal\Plugin\AbstractPlugin` and override only the hooks that you need:
 
 ```php
+use Temporal\OpenTelemetry\Interceptor\OpenTelemetryActivityInboundInterceptor;
+use Temporal\OpenTelemetry\Tracer;
 use Temporal\Plugin\AbstractPlugin;
 use Temporal\Plugin\PluginRegistry;
 use Temporal\Plugin\WorkerPluginContext;
@@ -299,7 +283,3 @@ $factory = WorkerFactory::create(pluginRegistry: new PluginRegistry([new Tracing
 ```
 
 `WorkflowClient::create()` and `ScheduleClient::create()` also take a `pluginRegistry`.
-
-## Unsupported Features
-
-SDK 2.20 has no Standalone Activities and no Nexus Operations API. For a job queue, start a Workflow that runs one Activity.

@@ -233,7 +233,7 @@ public function run(): \Generator;
 
 ```php
 $worker = $factory->newWorker(
-    'orders-task-queue',
+    'orders',
     WorkerOptions::new()->withDeploymentOptions(
         WorkerDeploymentOptions::new()
             ->withUseVersioning(true)
@@ -268,9 +268,7 @@ Multiple versions run simultaneously:
 
 This works well with Kubernetes where you manage multiple ReplicaSets running different Worker versions.
 
-### Upgrading on Continue-as-New
-
-The PHP SDK 2.20 has no option to upgrade a Workflow to a new deployment version on Continue-As-New: `ContinueAsNewOptions` has no versioning setting.
+A new version receives new Workflows only after you set it as current. Run `temporal worker deployment set-current-version` with the deployment name and Build ID.
 
 ### Querying Workflows by Worker Version
 
@@ -280,6 +278,10 @@ temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
+## Upgrading on Continue-as-New
+
+The PHP SDK 2.20 has no option to upgrade a Workflow to a new deployment version on Continue-As-New: `ContinueAsNewOptions` has no versioning setting.
+
 ## Best Practices
 
 1. **Check for open executions** before removing old code paths
@@ -288,4 +290,3 @@ temporal workflow list --query \
 4. **Use PINNED for short workflows** to simplify version management
 5. **Use AUTO_UPGRADE with `getVersion()`** for long-running workflows that need updates
 6. **Generate Build IDs from code** (git hash) to ensure changes produce new versions
-7. **Avoid rolling deployments** for high-availability services with long-running workflows
