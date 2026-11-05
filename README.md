@@ -52,4 +52,4 @@ See the [contribution guide](CONTRIBUTING.md) for development setup and validati
 - [x] .NET ✅
 - [x] Rust (Public Preview)
 - [x] Ruby ✅
-- [ ] PHP 🚧 ([PR](https://github.com/temporalio/skill-temporal-developer/pull/40))
+- [x] PHP ✅
