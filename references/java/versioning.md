@@ -204,21 +204,20 @@ Worker Versioning is GA and manages versions at the deployment level. See the [c
 ### Configuring Workers
 
 ```java
+import io.temporal.common.VersioningBehavior;
+import io.temporal.common.WorkerDeploymentVersion;
 import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerDeploymentOptions;
 import io.temporal.worker.WorkerFactory;
 import io.temporal.worker.WorkerOptions;
-import io.temporal.worker.WorkerDeploymentOptions;
-import io.temporal.common.WorkerDeploymentVersion;
-import io.temporal.common.VersioningBehavior;
 
-WorkerDeploymentVersion version = WorkerDeploymentVersion.newBuilder()
-    .setDeploymentName("order-service")
-    .setBuildId("v1.0.0")  // or git commit hash
-    .build();
+WorkerDeploymentVersion version =
+    new WorkerDeploymentVersion("order-service", "v1.0.0");  // or git commit hash
 
 WorkerDeploymentOptions deploymentOptions = WorkerDeploymentOptions.newBuilder()
     .setVersion(version)
     .setUseVersioning(true)
+    // Optional: behavior for workflows without @WorkflowVersioningBehavior
     .setDefaultVersioningBehavior(VersioningBehavior.PINNED)
     .build();
 
@@ -236,7 +235,7 @@ factory.start();
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 
-Set the versioning behavior on the workflow definition:
+Set the versioning behavior with the `@WorkflowVersioningBehavior` annotation on the workflow implementation method:
 
 ```java
 import io.temporal.common.VersioningBehavior;
@@ -256,7 +255,7 @@ The method annotation overrides the Worker's default. Set `WorkerDeploymentOptio
 
 **PINNED**: Workflow stays on the Worker version that started it. Use for runs that complete within a deployment's lifetime, or long-running Workflows that upgrade on Continue-as-New. No patching is needed within a pinned run.
 
-**AUTO_UPGRADE**: Workflow moves to its Target Version on the next Workflow Task. Use for long-running Workflows without Continue-as-New and as the default for blue-green deployments. Combine with `Workflow.getVersion()` patching to keep replay safe.
+**AUTO_UPGRADE**: Workflow moves to its Target Version (the Current Version, or the Ramping Version if it's routed to the ramp) on the next Workflow Task. Use for long-running Workflows without Continue-as-New and as the default for blue-green deployments. Combine with `Workflow.getVersion()` patching to keep replay safe.
 
 ### Deployment Strategies
 
