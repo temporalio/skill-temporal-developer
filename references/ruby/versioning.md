@@ -217,7 +217,7 @@ Workflows stay locked to their original Worker version. Set on the workflow defi
 
 ```ruby
 class StableWorkflow < Temporalio::Workflow::Definition
-  workflow_versioning_behavior :pinned
+  workflow_versioning_behavior Temporalio::VersioningBehavior::PINNED
 
   def execute
     Temporalio::Workflow.execute_activity(
@@ -241,7 +241,7 @@ Workflows can move to newer versions:
 
 ```ruby
 class LongRunningWorkflow < Temporalio::Workflow::Definition
-  workflow_versioning_behavior :auto_upgrade
+  workflow_versioning_behavior Temporalio::VersioningBehavior::AUTO_UPGRADE
 
   def execute
     # This workflow may be picked up by a newer Worker version

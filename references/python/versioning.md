@@ -195,7 +195,7 @@ Worker Versioning manages versions at the deployment level, allowing multiple Wo
 ### Configuring Workers for Versioning
 
 ```python
-from temporalio.common import WorkerDeploymentVersion
+from temporalio.common import VersioningBehavior, WorkerDeploymentVersion
 from temporalio.worker import Worker, WorkerDeploymentConfig
 
 worker = Worker(
@@ -209,9 +209,13 @@ worker = Worker(
             build_id="v1.0.0",  # or git commit hash
         ),
         use_worker_versioning=True,
+        default_versioning_behavior=VersioningBehavior.PINNED,
     ),
 )
 ```
+
+> [!IMPORTANT]
+> With `use_worker_versioning=True`, every registered Workflow must declare a versioning behavior (`@workflow.defn(versioning_behavior=...)`, see below) unless `default_versioning_behavior` is set. Otherwise the `Worker` constructor raises `ValueError: Workflow ... must specify a versioning behavior`.
 
 `WorkerDeploymentConfig` accepts exactly three parameters:
 
