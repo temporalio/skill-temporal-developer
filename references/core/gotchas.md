@@ -184,7 +184,7 @@ See language-specific gotchas for details.
 
 **Requirements for activity cancellation**:
 
-1. **Heartbeating** - Cancellation is delivered via heartbeat. Activities that don't heartbeat won't know they've been cancelled.
+1. **Cancellation delivery** - With heartbeat-based delivery, Activities must heartbeat to receive cancellation. Some SDK/server combinations also support delivery without heartbeats (for example, recent Java SDKs); check the language-specific behavior.
 2. **Checking for cancellation** - Activity must explicitly check for cancellation or await a cancellation signal.
 
 **Symptoms**:
@@ -214,9 +214,9 @@ Running `temporal workflow update` alone will not work. Use the correct subcomma
 
 Despite looking like an enum, the only valid value for `--wait-for-stage` on `temporal workflow update start` is `accepted`. Passing `completed` or other values will fail. The flag is required to allow a future CLI version to choose a default.
 
-### `--reapply-type` Only Accepts `Signal` or `None`
+### Reset Event Reapplication
 
-When resetting a workflow with `temporal workflow reset`, `--reapply-type` controls which events get reapplied after the reset point. Only `Signal` and `None` are valid values.
+Use `--reapply-exclude` to control event reapplication after a reset point. It accepts `All`, `Signal`, or `Update` and can be repeated. `--reapply-exclude All` excludes both Signals and Updates for a clean restart. The deprecated `--reapply-type` accepts `All` (the default), `Signal`, or `None`; migrate to the exclusion flag rather than combining them.
 
 ## Payload Size Limits
 
@@ -227,6 +227,12 @@ When resetting a workflow with `temporal workflow reset`, `--reapply-type` contr
 - Max 2MB per individual payload
 - Max 4MB per gRPC message
 - Max 50MB for complete workflow history (aim for < 10MB in practice)
+- Max 51,200 history Events; warnings at 10,240 Events or 10MB
+- Max 2,000 incomplete operations of each type: Activities, outbound external Workflow Signals, Child Workflows, and external Workflow Cancellation requests
+- Max 10,000 received Signals per Workflow Execution
+- Max 10 in-flight Updates and 2,000 total Updates in history per execution
+
+See [Temporal Cloud programming model limits](https://docs.temporal.io/evaluate/cloud/limits#programming-model-level). Keep history to a few thousand Events and use the SDK's Continue-as-New suggestion before approaching warning thresholds.
 
 **Symptoms**:
 
@@ -236,4 +242,4 @@ When resetting a workflow with `temporal workflow reset`, `--reapply-type` contr
 
 **The Fix**: Store large data externally (S3/GCS) and pass references, use compression codecs, or chunk data across multiple activities. See the Large Data Handling pattern in [Temporal workflow patterns](patterns.md).
 
-Before hand-rolling reference passing, check whether the SDK does it for you: the Go, Python, and TypeScript SDKs have built-in External Storage that applies the claim-check pattern automatically. See `references/{your_language}/external-storage.md`, if available.
+Before hand-rolling reference passing, check whether the SDK does it for you: built-in [External Storage](https://docs.temporal.io/external-storage) applies the claim-check pattern automatically. It is Public Preview; Java's integration is Pre-release, and Python's S3 and GCS drivers are Experimental. See the local Go, Python, and TypeScript `external-storage.md` guides and [Java External Storage](https://docs.temporal.io/develop/java/data-handling/external-storage) for supported drivers and stages.

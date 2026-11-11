@@ -26,7 +26,7 @@ Consequences:
 
 ## Setup with the built-in S3 driver
 
-The Python SDK ships an Amazon S3 driver (there is no built-in GCS driver — use a custom driver for other backends). Install the `aioboto3` extra:
+The Python SDK ships Amazon S3 and Google Cloud Storage drivers. Both drivers are Experimental. Install the `aioboto3` extra:
 
 ```bash
 python -m pip install "temporalio[aioboto3]"
@@ -93,6 +93,26 @@ The S3 driver:
 - Rejects any single payload larger than `max_payload_size`, which defaults to **50 MiB**. `payload_size_threshold` does not raise this ceiling — set `max_payload_size` for the largest payload the application must support, and size the backing store to match.
 - Includes diagnostic metadata, such as the AWS region, in error messages.
 
+## Google Cloud Storage driver
+
+Python SDK 1.35+ includes `GCSStorageDriver` (Experimental). Install `temporalio[gcloud-aio-storage]`, then construct the driver with the async GCS client adapter:
+
+```python
+from gcloud.aio.storage import Storage
+from temporalio.contrib.gcp.gcsdriver import GCSStorageDriver
+from temporalio.contrib.gcp.gcsdriver.gcloud_aio import new_gcloud_aio_client
+
+async with Storage() as storage:
+    driver = GCSStorageDriver(
+        client=new_gcloud_aio_client(storage),
+        bucket="my-temporal-payloads",
+    )
+    # Attach to ExternalStorage(drivers=[driver]) on the DataConverter.
+    # Keep Clients and Workers inside this context while they use storage.
+```
+
+See the [driver README](https://github.com/temporalio/sdk-python/tree/main/temporalio/contrib/gcp/gcsdriver) for credentials, object naming, integrity checks, and lifecycle settings.
+
 ## Payload size threshold
 
 - Default: **256 KiB**.
@@ -111,7 +131,7 @@ data_converter = dataclasses.replace(
 
 ## Multiple drivers and migration
 
-When you register more than one driver, you **must** supply a `driver_selector` function. The selector chooses which driver stores each payload. Unselected drivers remain available for **retrieval** — this is how you migrate between storage backends without losing access to existing claims.
+When you register more than one driver, you **must** supply a `driver_selector` function. The selector receives a `StorageDriverSelectContext` and the Payload, and chooses which driver stores it. Unselected drivers remain available for **retrieval** — this is how you migrate between storage backends without losing access to existing claims.
 
 - Return `None` from the selector to keep a specific payload inline in Event History.
 - Every registered driver must have a distinct name; duplicates raise `ValueError` at construction. `S3StorageDriver` defaults its name to `"aws.s3driver"`, so registering two S3 drivers requires passing `driver_name=` to at least one.

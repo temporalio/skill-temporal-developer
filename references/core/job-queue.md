@@ -39,8 +39,8 @@ See [Temporal standalone Activities guide](standalone-activities.md) for the res
 | Job timeout | Start-To-Close and/or Schedule-To-Close timeout (at least one is required) |
 | Long job keepalive / progress reporting | Activity Heartbeats, with heartbeat details for checkpointing |
 | Cancel a job | `cancel` (cooperative, surfaced on the next heartbeat) or `terminate` (forceful) |
-| Priority queues | Priority keys — free, Public Preview. See [Temporal Task Queue priority and fairness guide](priority-fairness.md) |
-| Per-tenant fairness / avoiding noisy neighbors (usually not supported) | Fairness keys and weights — Public Preview, and a paid feature in Temporal Cloud. See [Temporal Task Queue priority and fairness guide](priority-fairness.md) |
+| Priority queues | Priority keys — free, GA. See [Temporal Task Queue priority and fairness guide](priority-fairness.md) |
+| Per-tenant fairness / avoiding noisy neighbors (usually not supported) | Fairness keys and weights — GA, and a paid feature in Temporal Cloud. See [Temporal Task Queue priority and fairness guide](priority-fairness.md) |
 | Delayed job (`countdown`, `enqueue_in`, `perform_in`) | A start delay on the Standalone Activity itself — no Workflow needed |
 | Dashboard (Flower, Sidekiq Web, Bull Board) | Temporal Web UI, `temporal activity list` (with Search Attribute support) / `describe`, and the list/count client APIs |
 | Job metrics | Standard Activity metrics: scheduled, started, completed, failed, timed out, canceled |
@@ -118,4 +118,4 @@ A Workflow that needs a job to outlive it can start a Standalone Activity from i
 
 Conceptual references: [Job Queue](https://docs.temporal.io/evaluate/development-production-features/job-queue) and [Standalone Activity](https://docs.temporal.io/standalone-activity).
 
-Rust and PHP are the SDKs in this skill without Standalone Activity support. For a language without support, the fallback is a Workflow that runs the single Activity, accepting the extra Action and latency until support lands.
+Rust supports Standalone Activities; see the [Rust SDK guide](../rust/rust.md#standalone-activities). PHP has no released Standalone Activity support. For a language without support, the fallback is a Workflow that runs the single Activity, accepting the extra Action and latency until support lands.

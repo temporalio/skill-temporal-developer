@@ -31,20 +31,16 @@ Key behaviors:
 
 ## Forbidden Operations in Workflows
 
-Default forbidden operations:
+The defaults come from [`Temporalio::Worker.default_illegal_workflow_calls`](https://github.com/temporalio/sdk-ruby/blob/main/temporalio/lib/temporalio/worker.rb). Important entries include:
 
-- `Kernel.sleep` -- use `Temporalio::Workflow.sleep`
-- `Time.now` (no args) -- use `Temporalio::Workflow.now`
-- `Thread.new` -- not allowed in workflows
-- `IO.*` -- all IO class methods (`IO.read`, `IO.write`, `IO.pipe`, etc.)
-- `Socket.*` -- all socket operations
-- `Net::HTTP.*` -- all HTTP client calls
-- `Random.*` -- use `Temporalio::Workflow.random`
-- `SecureRandom.*` -- use `Temporalio::Workflow.uuid` for UUIDs
-- `Timeout.timeout` -- use `Temporalio::Workflow.sleep` with cancellation
-- `Mutex` / `synchronize` -- use an explicit `Temporalio::Workflow::Mutex`
+- `Kernel.sleep`, `Kernel.rand`, and `Kernel.srand` -- use `Temporalio::Workflow.sleep` and `.random`.
+- Wall-clock calls such as `Time.now` and `Time.new` without an explicit time -- use `Temporalio::Workflow.now`. Time validators allow deterministic construction with explicit arguments.
+- `Random::Base#initialize` and `SecureRandom.*` -- use `Temporalio::Workflow.random`, including `.random.uuid` for UUIDs.
+- `IO.read` -- other `IO` methods are not all blocked. In particular, `write` is deliberately allowed so `puts` works.
+- All methods on `File`, `Dir`, `FileUtils`, `Socket`, `Net::HTTP`, `Logger`, and `Timeout`, among others.
+- Selected `Process` and `Thread` methods, including process creation and `Thread.new`.
 
-Note: `Time.new('2000-12-31')` with arguments IS deterministic and allowed. Only `Time.now` (wall-clock) is forbidden.
+`Thread::Mutex` has a known-safe validator rather than a blanket ban. `Temporalio::Workflow::Mutex` is the supported Workflow wrapper. A call passing tracing does not by itself prove it is deterministic; keep external I/O and side effects in Activities.
 
 ## Disabling Illegal Call Tracing
 
@@ -75,7 +71,7 @@ worker = Temporalio::Worker.new(
   workflows: [MyWorkflow],
   illegal_workflow_calls: Temporalio::Worker.default_illegal_workflow_calls.merge(
     'MyInternalClass' => :all,
-    'AnotherClass' => { dangerous_method: true }
+    'AnotherClass' => [:dangerous_method]
   )
 )
 ```
@@ -84,13 +80,15 @@ Default set available via:
 
 ```ruby
 Temporalio::Worker.default_illegal_workflow_calls
-# => { 'Kernel' => { sleep: true }, 'IO' => :all, ... }
+# Selected entries: { 'Kernel' => [:sleep, :rand, :srand, ...], 'IO' => [:read], ... }
 ```
 
 Hash format:
 
 - `{ 'ClassName' => :all }` -- block all methods on the class.
-- `{ 'ClassName' => { method_name: true } }` -- block specific methods.
+- `{ 'ClassName' => [:method_name] }` -- block specific methods.
+
+Some SDK defaults use validator objects for conditional checks, such as `Time` and `Thread::Mutex`; preserve those entries when merging custom rules.
 
 ## Common Issues
 
@@ -128,7 +126,7 @@ end
 
 ## Best Practices
 
-- Use `Temporalio::Workflow.sleep`, `.now`, `.random`, `.uuid`, `.logger` for all workflow-level operations.
+- Use `Temporalio::Workflow.sleep`, `.now`, `.random`, `.random.uuid`, `.logger` for all workflow-level operations.
 - Never perform IO, network calls, or file access in workflow code -- delegate to activities.
 - Use `illegal_call_tracing_disabled` sparingly and only when you are certain the code is deterministic.
 - Wrap side-effect-only code in `unless Temporalio::Workflow::Unsafe.replaying?` to avoid duplicate emissions during replay.

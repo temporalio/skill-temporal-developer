@@ -2,7 +2,7 @@
 
 ## Overview
 
-`temporalio.contrib.langsmith` is a Temporal [Plugin](https://docs.temporal.io/develop/plugins-guide) for the Python SDK that makes [LangSmith](https://smith.langchain.com/) traces work across Temporal Workflows and Activities. It propagates trace context across Worker boundaries so `@traceable` calls, LLM invocations, and Temporal operations show up as a single connected trace, and it suppresses duplicate traces during Workflow replays.
+`temporalio.langsmith` is a Temporal [Plugin](https://docs.temporal.io/develop/plugins-guide) for the Python SDK that makes [LangSmith](https://smith.langchain.com/) traces work across Temporal Workflows and Activities. It propagates trace context across Worker boundaries so `@traceable` calls, LLM invocations, and Temporal operations show up as a single connected trace, and it suppresses duplicate traces during Workflow replays.
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
@@ -12,16 +12,18 @@ For Python AI patterns (Pydantic data converter, disabling client-side LLM retri
 ## Install
 
 ```bash
-uv add temporalio[langsmith]
+uv add temporalio-langsmith
 ```
+
+Requires Temporal Python SDK 1.35+.
 
 ## Register the Plugin
 
-Register `LangSmithPlugin` on both the Client (starter side) and every Worker. Strictly only the sides that produce traces need it, but registering everywhere avoids surprises with context propagation. The Client and Worker can use different configurations (e.g. different `add_temporal_runs` settings).
+Register `LangSmithPlugin` on the Client in both starter and Worker processes. A Worker inherits the plugin from its Client; do not register it again on that Worker.
 
 ```python
 from temporalio.client import Client
-from temporalio.contrib.langsmith import LangSmithPlugin
+from temporalio.langsmith import LangSmithPlugin
 
 client = await Client.connect(
     "localhost:7233",
@@ -31,7 +33,7 @@ client = await Client.connect(
 
 ```python
 from temporalio.worker import Worker
-from temporalio.contrib.langsmith import LangSmithPlugin
+from temporalio.langsmith import LangSmithPlugin
 
 client = await Client.connect(
     "localhost:7233",
@@ -54,6 +56,7 @@ Constructor is keyword-only.
 | Parameter | Type | Default | Purpose |
 | -- | -- | -- | -- |
 | `client` | `langsmith.Client \| None` | `None` (auto-created) | LangSmith client; auto-created if not supplied. |
+| `address` | `str \| None` | `None` | Fallback LangSmith agent/environment address. |
 | `project_name` | `str \| None` | `None` | LangSmith project name traces are written to. |
 | `add_temporal_runs` | `bool` | `False` | When `True`, adds Temporal operation nodes (StartWorkflow, RunWorkflow, StartActivity, RunActivity) to the trace tree. |
 | `default_metadata` | `dict[str, Any] \| None` | `None` | Custom metadata attached to all LangSmith traces. |
@@ -224,7 +227,7 @@ my_step
 
 - **`@traceable` on a `@workflow.defn` class.** Not supported — use `@traceable` inside `@workflow.run` instead.
 - **`@activity.defn` on top of `@traceable`.** Wrong order — `@traceable` must be the outer decorator on Activities.
-- **Registering the plugin only on the Client.** Register on both Client and every Worker.
+- **Registering the same plugin on Client and Worker.** A Worker inherits Client plugins; repeating one can produce duplicate instrumentation.
 - **Positional argument to `LangSmithPlugin`.** The constructor is keyword-only — use `LangSmithPlugin(project_name="...")`.
 - **Combining with `temporalio.contrib.opentelemetry` and expecting unified traces.** They are independent integrations; this reference covers LangSmith only.
 

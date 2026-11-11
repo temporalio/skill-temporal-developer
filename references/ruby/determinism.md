@@ -40,7 +40,7 @@ The following are forbidden inside workflow code by default:
 | `Kernel.sleep(n)` | `Temporalio::Workflow.sleep(n)` |
 | `Time.now` | `Temporalio::Workflow.now` |
 | `Random.rand` / `SecureRandom` | `Temporalio::Workflow.random.rand(100)` |
-| `SecureRandom.uuid` | `Temporalio::Workflow.uuid` |
+| `SecureRandom.uuid` | `Temporalio::Workflow.random.uuid` |
 | `Logger.new` / `puts` | `Temporalio::Workflow.logger.info(...)` |
 | `Mutex` / `synchronize` | explicit `Temporalio::Workflow::Mutex` |
 

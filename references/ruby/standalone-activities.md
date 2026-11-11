@@ -7,9 +7,9 @@ Standalone Activities are conceptually the same across all SDKs. Read the [cross
 ## Prerequisites
 
 - Ruby 3.3 or higher.
-- Temporal Ruby SDK (`temporalio` gem) v1.5.0 or higher.
-- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. Dev server includes Standalone Activities support.
-- For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
+- Temporal Ruby SDK (`temporalio` gem) v1.9.0 or higher.
+- Temporal CLI v1.9.1 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. Dev server includes Standalone Activities support.
+- For production, Temporal Server v1.32.0 or higher (or Temporal Cloud).
 
 ## Hosting Activities on a Worker
 

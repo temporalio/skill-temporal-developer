@@ -1,11 +1,8 @@
 # Temporal Rust SDK Reference
 
-> [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
 ## Overview
 
-The Temporal Rust SDK (`temporalio-sdk`) provides native Rust APIs for Workflows, Activities, Workers, and Clients. The SDK is in Public Preview and under active development, so verify exact crate versions and method names against the official docs before giving precise implementation guidance.
+The Temporal Rust SDK (`temporalio-sdk`) is generally available as of v1.0.0 and provides native Rust APIs for Workflows, Activities, Workers, and Clients. Check exact crate versions and method signatures against the official docs when upgrading.
 
 Rust Workflows are structs with macro-decorated methods. Activities are async methods on an `impl` block. Workers register Workflow and Activity types, then poll a Task Queue.
 
@@ -23,6 +20,20 @@ Rust Workflows are structs with macro-decorated methods. Activities are async me
 ## Quick Demo of Temporal
 
 **Add dependencies:** Follow the [official Rust SDK Quickstart](https://docs.temporal.io/develop/rust/quickstart) for the current `Cargo.toml` dependencies.
+
+Use edition 2024 and Rust 1.92 or later. The macros require `temporalio-workflow` and `futures` as direct dependencies, even when your code does not name them:
+
+```toml
+[dependencies]
+temporalio-sdk = "1.1.2"
+temporalio-client = "1.1.2"
+temporalio-common = "1.1.2"
+temporalio-macros = "1.1.2"
+temporalio-workflow = "1.1.2"
+futures = "0.3"
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+```
 
 **src/greeting_input.rs** - Shared input struct:
 
@@ -81,7 +92,7 @@ impl GreetingWorkflow {
         let input = ctx.state(|s| s.input.clone());
 
         // Execute an activity
-        let greeting = ctx.start_activity(
+        let greeting = ctx.execute_activity(
             MyActivities::greet,
             input,
             ActivityOptions::start_to_close_timeout(Duration::from_secs(30)),
@@ -93,9 +104,9 @@ impl GreetingWorkflow {
 }
 ```
 
-Both `ctx.start_activity()` and `client.start_workflow()` take one Rust input value.
+Both `ctx.execute_activity()` and `client.start_workflow()` take one Rust input value.
 When an Activity declares multiple parameters, pass a tuple to
-`ctx.start_activity()`; the SDK converts it into separate argument payloads.
+`ctx.execute_activity()`; the SDK converts it into separate argument payloads.
 For `client.start_workflow()`, a plain tuple is one composite input serialized
 as a JSON array. To start a Workflow that expects multiple argument payloads,
 declare its input as `temporalio_common::data_converters::MultiArgs2` (or the
@@ -106,8 +117,7 @@ matching arity) and pass that type to `client.start_workflow()`.
 ```rust
 use temporalio_client::{Client, ClientOptions, Connection};
 use temporalio_common::envconfig::LoadClientConfigProfileOptions;
-use temporalio_sdk::{Worker, WorkerOptions};
-use temporalio_sdk_core::{CoreRuntime, RuntimeOptions};
+use temporalio_sdk::{Runtime, Worker, WorkerOptions};
 
 mod workflows;
 mod activities;
@@ -118,7 +128,7 @@ use crate::activities::MyActivities;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let runtime = CoreRuntime::new_assume_tokio(RuntimeOptions::builder().build()?)?;
+    let runtime = Runtime::from_current_tokio(Default::default())?;
 
     // Set up client connection options, loading from config if available
     let (connection_options, client_options) = ClientOptions::load_from_config(
@@ -130,7 +140,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let worker_options = WorkerOptions::new("my-task-queue")
         .register_activities(MyActivities)
-        .register_workflow::<GreetingWorkflow>()
+        .register_workflow::<GreetingWorkflow>()?
         .build();
 
     Worker::new(&runtime, client, worker_options)?.run().await?;
@@ -200,8 +210,12 @@ my_temporal_app/
 
 1. **Calling I/O from a Workflow** - Put network, database, filesystem, process calls, and other side effects in Activities.
 2. **Mixing Worker and Workflow concerns** - Runtime setup, clients, secrets, environment config, and external logging sinks belong outside Workflow code.
-3. **Assuming APIs are stable** - The Rust SDK is Public Preview, so check official docs, docs.rs, and SDK examples before naming exact APIs.
+3. **Missing macro dependencies** - Include `temporalio-workflow` and `futures` directly; macro expansion references them.
 
 ## Rust-Specific References Status
 
-Rust-specific local reference files do not exist yet. For deeper Rust SDK details, use the official Rust SDK docs, docs.rs, and [`sdk-rust` examples](https://github.com/temporalio/sdk-rust/tree/main/crates/sdk/examples). For SDK-neutral Temporal concepts, use the core references under `references/core/`.
+Beyond this guide, use the official Rust SDK docs, docs.rs, and [`sdk-rust` examples](https://github.com/temporalio/sdk-rust/tree/main/crates/sdk/examples) for child Workflows, Continue-as-New, message handlers, cancellation, timers, timeouts, Nexus, and Serverless Workers. For SDK-neutral Temporal concepts, use the core references under `references/core/`.
+
+## Standalone Activities
+
+Rust SDK v1.0.0+ supports Standalone Activities (GA). Use Temporal CLI v1.9.1+ and Temporal Server v1.32.0+ or Temporal Cloud. Define and register Activities as usual, then invoke them from non-Workflow Client code. See the [Rust Standalone Activities guide](https://docs.temporal.io/develop/rust/activities/standalone-activities) and [core concepts](../core/standalone-activities.md).

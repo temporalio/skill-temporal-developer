@@ -168,7 +168,7 @@ The TypeScript SDK runs workflows in an isolated V8 sandbox.
 **Automatic replacements:**
 
 - `Math.random()` → deterministic seeded PRNG
-- `Date.now()` → workflow start time
+- `Date.now()` → current Workflow Task time
 - `setTimeout` → deterministic timer
 
 **Safe to use:**

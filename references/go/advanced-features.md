@@ -187,3 +187,7 @@ Key points:
 - Session concurrency limiting is per-process, not per-host — only one worker process per host if you rely on this
 
 **Relationship to worker-specific task queues:** Sessions are essentially a convenience API over the "worker-specific task queue" pattern, where each worker creates a unique task queue and routes activities to it. For simple cases where you don't need separate activities (e.g., download + process + upload can be one unit), consider using a single long-running activity with heartbeating instead.
+
+## Workflow-local values and child versioning overrides
+
+SDK 1.50+ adds `workflow.NewLocalVar[T](ctx)` for typed values shared within a Workflow run, including with Workflow interceptors. `workflow.ChildWorkflowOptions.VersioningOverride` can route a child independently of its parent and requires Temporal Server 1.32+. See the [1.50 release](https://github.com/temporalio/sdk-go/releases/tag/v1.50.0) and keep child code replay-compatible with the selected behavior.

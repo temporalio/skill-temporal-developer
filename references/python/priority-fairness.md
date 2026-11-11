@@ -14,6 +14,8 @@ tenant_priority = Priority(
 )
 ```
 
+Priority and Fairness are GA. Fairness must be enabled separately for the Namespace (and is paid in Temporal Cloud). Priority keys are 1–5; fairness keys are at most 64 bytes, and weights are clamped to 0.001–1000. See [core configuration guidance](../core/priority-fairness.md#enabling-fairness).
+
 ## Start a Workflow
 
 Set `priority` in the Client's Workflow start options:

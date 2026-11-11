@@ -2,7 +2,7 @@
 
 ## Overview
 
-[Braintrust](https://braintrust.dev) is an LLM observability and prompt-management platform. The Temporal Python SDK integrates with it through `braintrust.contrib.temporal.BraintrustPlugin`, which traces every Workflow and Activity as a span in Braintrust and links client-initiated spans to the Workflows they start.
+[Braintrust](https://braintrust.dev) is an LLM observability and prompt-management platform. The Temporal Python SDK integrates with it through `braintrust.integrations.temporal.BraintrustPlugin`, which traces every Workflow and Activity as a span in Braintrust and links client-initiated spans to the Workflows they start.
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
@@ -32,15 +32,15 @@ init_logger(project=os.environ.get("BRAINTRUST_PROJECT", "my-project"))
 
 `init_logger` takes a `project` argument that names the Braintrust project traces are written to.
 
-## Register `BraintrustPlugin` on the Client and the Worker
+## Register `BraintrustPlugin` on the Client
 
-Register `BraintrustPlugin` on **both** the Client and every Worker. The Worker registration produces Workflow/Activity spans; the Client registration propagates span context so client-side spans link to the Workflow they start.
+Register `BraintrustPlugin` on the Client in both starter and Worker processes. A Worker created from that Client inherits the plugin, including Workflow/Activity instrumentation. Do not repeat it in `Worker(plugins=...)`.
 
 Client:
 
 ```python
 from temporalio.client import Client
-from braintrust.contrib.temporal import BraintrustPlugin
+from braintrust.integrations.temporal import BraintrustPlugin
 
 client = await Client.connect(
     "localhost:7233",
@@ -51,7 +51,7 @@ client = await Client.connect(
 Worker:
 
 ```python
-from braintrust.contrib.temporal import BraintrustPlugin
+from braintrust.integrations.temporal import BraintrustPlugin
 from temporalio.worker import Worker
 
 worker = Worker(
@@ -59,7 +59,6 @@ worker = Worker(
     task_queue="my-task-queue",
     workflows=[MyWorkflow],
     activities=[my_activity],
-    plugins=[BraintrustPlugin()],
 )
 ```
 
@@ -185,7 +184,7 @@ except Exception as e:
 ## Common mistakes
 
 - **Initializing the Braintrust logger after constructing the Client or Worker.** Call `init_logger(...)` first; otherwise spans don't connect to the Worker process.
-- **Registering `BraintrustPlugin` on only the Worker (or only the Client).** Register on both — the Client registration is what links client-side spans to Workflow executions.
+- **Repeating `BraintrustPlugin` on a Worker whose Client already has it.** Client plugins propagate to Workers; register once per Client.
 - **Forgetting `max_retries=0` on the wrapped OpenAI client.** Temporal owns retries; leaving the OpenAI client's built-in retries on duplicates work and obscures retry counts in traces.
 - **Calling `load_prompt` from inside a Workflow.** Prompt loading is an external I/O call; keep it in an Activity.
 - **Setting `BRAINTRUST_API_KEY` only on the Client process.** The Worker is what calls Braintrust; the Client doesn't need the key.

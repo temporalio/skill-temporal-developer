@@ -9,7 +9,7 @@ Both LangGraph APIs are supported:
 - **Graph API** (`StateGraph`).
 - **Functional API** (`@entrypoint` / `@task`).
 
-The plugin ships in the Temporal Python SDK at `temporalio.contrib.langgraph`.
+Install the standalone `temporalio-langgraph` package and import `temporalio.langgraph`. Requires Temporal Python SDK 1.34+ and LangGraph 1.2+; the Functional API requires Python 3.11+.
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
@@ -19,16 +19,16 @@ For general Temporal Python AI/LLM patterns (Pydantic data converter, LLM Activi
 ## Installation
 
 ```bash
-uv add temporalio[langgraph]
+uv add temporalio-langgraph
 ```
 
 This pulls in `langgraph` as well for you.
 
 ## Public API
 
-`temporalio.contrib.langgraph` exports four symbols:
+`temporalio.langgraph` exports four symbols:
 
-- `LangGraphPlugin` — the plugin class. Pass to both the `Client` and the `Worker`.
+- `LangGraphPlugin` — the plugin class. Pass to the `Client`; Workers created from it inherit the plugin.
 - `graph(name, cache=...)` — Workflow-side accessor that returns a registered `StateGraph` by name.
 - `entrypoint(name, cache=...)` — Workflow-side accessor that returns a registered Functional-API `Pregel`.
 - `cache()` — accessor for the per-workflow LangGraph cache.
@@ -44,6 +44,8 @@ LangGraphPlugin(
     tasks: list | None = None,
     activity_options: dict[str, dict[str, Any]] | None = None,
     default_activity_options: dict[str, Any] | None = None,
+    streaming_topic: str | None = None,
+    streaming_batch_interval: timedelta = timedelta(milliseconds=100),
 )
 ```
 
@@ -53,7 +55,7 @@ Register your `StateGraph` instances in `graphs=`, keyed by a name your workflow
 
 ```python
 from langgraph.graph import StateGraph
-from temporalio.contrib.langgraph import LangGraphPlugin
+from temporalio.langgraph import LangGraphPlugin
 
 g = StateGraph(State)
 g.add_node("my_node", my_node, metadata={"execute_in": "activity"})
@@ -66,7 +68,7 @@ plugin = LangGraphPlugin(graphs={"my-graph": g})
 Pass entrypoints in `entrypoints=`, tasks in `tasks=`, and per-task activity options in `activity_options=` (keyed by task function name):
 
 ```python
-from temporalio.contrib.langgraph import LangGraphPlugin
+from temporalio.langgraph import LangGraphPlugin
 
 plugin = LangGraphPlugin(
     entrypoints={"my_entrypoint": my_entrypoint},
@@ -75,9 +77,9 @@ plugin = LangGraphPlugin(
 )
 ```
 
-## Register the plugin on Client and Worker
+## Register the plugin on the Client
 
-Pass the same `LangGraphPlugin` instance to both the Temporal Client and the Worker via their `plugins=` parameter, like any other Temporal Python SDK plugin:
+Pass `LangGraphPlugin` to the Temporal Client. Workers inherit Client plugins; do not repeat the same plugin in `Worker(plugins=...)`:
 
 ```python
 from temporalio.client import Client
@@ -89,10 +91,11 @@ worker = Worker(
     client,
     task_queue="my-task-queue",
     workflows=[MyWorkflow],
-    plugins=[plugin],
 )
 await worker.run()
 ```
+
+For custom streaming, configure `streaming_topic` and `streaming_batch_interval` on `LangGraphPlugin` and host a `WorkflowStream` on the Workflow. These options capture values written through `get_stream_writer()`; bridge other LangGraph stream modes explicitly. Activity retries can publish duplicates. See [Workflow Streams](../workflow-streams.md).
 
 ## Execution location — required per node and per task
 
@@ -140,7 +143,7 @@ g.add_node("my_node", my_node, metadata={
 ```python
 from datetime import timedelta
 from temporalio.common import RetryPolicy
-from temporalio.contrib.langgraph import LangGraphPlugin
+from temporalio.langgraph import LangGraphPlugin
 
 plugin = LangGraphPlugin(
     entrypoints={"my_entrypoint": my_entrypoint},
@@ -163,7 +166,7 @@ Inside the Workflow, get the registered graph by name with `graph(name)`, compil
 import typing
 import langgraph.checkpoint.memory
 from temporalio import workflow
-from temporalio.contrib.langgraph import graph
+from temporalio.langgraph import graph
 
 @workflow.defn
 class MyWorkflow:
@@ -184,7 +187,7 @@ LangGraph's run-scoped context (`context_schema`) is reconstructed on the Activi
 ```python
 from langgraph.runtime import Runtime
 from typing_extensions import TypedDict
-from temporalio.contrib.langgraph import graph
+from temporalio.langgraph import graph
 
 class Context(TypedDict):
     user_id: str
