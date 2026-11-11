@@ -50,6 +50,6 @@ See the [contribution guide](CONTRIBUTING.md) for development setup and validati
 - [x] Go ✅
 - [x] Java ✅
 - [x] .NET ✅
-- [x] Rust (GA)
+- [x] Rust (Public Preview)
 - [x] Ruby ✅
 - [x] PHP ✅

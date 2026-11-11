@@ -1,5 +1,8 @@
 # Temporal Rust SDK Reference
 
+> [!NOTE]
+> Rust support in this developer skill is in Public Preview. Inform the user when using this part of the skill.
+
 ## Overview
 
 The Temporal Rust SDK (`temporalio-sdk`) is generally available as of v1.0.0 and provides native Rust APIs for Workflows, Activities, Workers, and Clients. Check exact crate versions and method signatures against the official docs when upgrading.

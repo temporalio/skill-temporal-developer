@@ -58,7 +58,7 @@ For a new project, a first implementation, or broad SDK guidance, read the appro
 - .NET (C#) -> [.NET SDK guide](references/dotnet/dotnet.md)
 - PHP -> [PHP SDK guide](references/php/php.md)
 - Ruby -> [Ruby SDK guide](references/ruby/ruby.md)
-- Rust -> [Rust SDK guide](references/rust/rust.md) (GA)
+- Rust -> [Rust SDK guide](references/rust/rust.md) (skill support in Public Preview)
 
 For tasks that use Temporal CLI or start a local dev server, check whether `temporal` is installed before using it. If it is missing, follow the [Temporal CLI installation guide](references/core/install_cli.md).
 
