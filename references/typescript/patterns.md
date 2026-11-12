@@ -223,7 +223,7 @@ export async function longRunningWorkflow(state: State): Promise<string> {
 
 ## Saga Pattern
 
-**Important:** Compensation activities should be idempotent.
+**Important:** Compensation activities should be idempotent - they may be retried. Forward activities should throw a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
 
 ```typescript
 import { CancellationScope, log } from '@temporalio/workflow';

@@ -350,7 +350,7 @@ func MyWorkflow(ctx workflow.Context) error {
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent -- they may be retried (as with ALL activities).
+**Important:** Compensation activities should be idempotent -- they may be retried. Forward activities should return a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
 
 Use `workflow.NewDisconnectedContext` when running compensations so they execute even if the workflow is cancelled.
 

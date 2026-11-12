@@ -200,7 +200,7 @@ end
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent - they may be retried (as with ALL activities).
+**Important:** Compensation activities should be idempotent - they may be retried. Forward activities should raise a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
