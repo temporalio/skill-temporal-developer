@@ -22,20 +22,13 @@ Temporalio::Worker.default_illegal_workflow_calls
 
 ## Forbidden Operations in Workflows
 
-The following are forbidden inside workflow code by default:
+Keep external I/O, network calls, wall-clock access, non-deterministic randomness, process creation, and blocking synchronization out of Workflow code. Use Activities for side effects and the SDK alternatives below for deterministic operations.
 
-- `Kernel.sleep` -- blocks the fiber non-deterministically
-- `Time.now` (without args) -- returns wall-clock time
-- `Thread.new` -- spawns non-deterministic OS threads
-- `IO` operations (`IO.read`, `IO.write`, `File.open`, etc.)
-- `Random.rand` / `SecureRandom` -- non-deterministic randomness
-- `Process` calls (`Process.spawn`, `Process.exec`, etc.)
-- Network calls (`Net::HTTP`, `Socket`, etc.)
-- `Mutex` / `synchronize`
+See [Workflow determinism protection](determinism-protection.md#forbidden-operations-in-workflows) for the default illegal-call rules and their limits. Tracing blocks `IO.read` and `File` operations such as `File.open`, but deliberately allows `IO.write` so `puts` works. A call passing tracing does not prove it is deterministic; use `Temporalio::Workflow.logger` for replay-aware logging.
 
 ## Safe Builtin Alternatives to Common Non Deterministic Things
 
-| Forbidden | Safe Alternative |
+| Avoid in Workflow Code | Safe Alternative |
 | -- | -- |
 | `Kernel.sleep(n)` | `Temporalio::Workflow.sleep(n)` |
 | `Time.now` | `Temporalio::Workflow.now` |
@@ -57,7 +50,7 @@ replayer.replay_workflow(workflow_history)
 
 ## Best Practices
 
-- Use `Temporalio::Workflow.sleep`, `.now`, `.random`, `.uuid`, `.logger` instead of stdlib equivalents.
+- Use `Temporalio::Workflow.sleep`, `.now`, `.random`, `.random.uuid`, `.logger` instead of stdlib equivalents.
 - Delegate all I/O, network calls, and side effects to activities.
 - Test with `WorkflowReplayer` against saved histories before deploying workflow changes.
 - Use `Temporalio::Workflow.logger` for all logging inside workflows -- it is replay-aware and suppresses duplicate logs during replay.
