@@ -5,7 +5,7 @@
 | **Non-determinism** | TMPRL1100 | `WorkflowTaskFailed` in history | Replay doesn't match history | Analyze error first. **If accidental**: fix code to match history → restart worker. **If intentional v2 change**: terminate → start fresh workflow. | https://github.com/temporalio/rules/blob/main/rules/TMPRL1100.md |
 | **Deadlock** | TMPRL1101 | `WorkflowTaskFailed` in history, worker logs | Workflow blocked too long (deadlock detected) | Remove blocking operations from workflow code (no I/O, no sleep, no threading locks). Use Temporal primitives instead. | https://github.com/temporalio/rules/blob/main/rules/TMPRL1101.md |
 | **Unfinished handlers** | TMPRL1102 | `WorkflowTaskFailed` in history | Workflow completed while update/signal handlers still running | Ensure all handlers complete before workflow finishes. Use `workflow.wait_condition()` to wait for handler completion. | https://github.com/temporalio/rules/blob/main/rules/TMPRL1102.md |
-| **Payload overflow** | TMPRL1103 | `WorkflowTaskFailed` or `ActivityTaskFailed` in history | Payload size limit exceeded (default 2MB) | Reduce payload size. Use the SDK's built-in External Storage where available (see `references/{your_language}/external-storage.md`; Go, Python, and TypeScript), or pass references to external storage yourself (see the Large Data Handling pattern in [Temporal workflow patterns](patterns.md)). | https://github.com/temporalio/rules/blob/main/rules/TMPRL1103.md |
+| **Payload overflow** | TMPRL1103 | `WorkflowTaskFailed` or `ActivityTaskFailed` in history | Payload size limit exceeded (default 2MB) | Reduce payload size. Use built-in External Storage where available (Public Preview; Java integration Pre-release). See [External Storage guidance](gotchas.md#payload-size-limits), or pass references to external storage yourself (see the Large Data Handling pattern in [Temporal workflow patterns](patterns.md)). | https://github.com/temporalio/rules/blob/main/rules/TMPRL1103.md |
 | **Workflow code bug** |  | `WorkflowTaskFailed` in history | Bug in workflow logic | Fix code → Restart worker → Workflow auto-resumes |  |
 | **Missing workflow** |  | Worker logs | Workflow not registered | Add to worker.py → Restart worker |  |
 | **Missing activity** |  | Worker logs | Activity not registered | Add to worker.py → Restart worker |  |
@@ -25,6 +25,8 @@
 | `CANCELED` | Explicitly canceled | Review reason |
 | `TERMINATED` | Force-stopped | Review reason |
 | `TIMED_OUT` | Exceeded timeout | Increase timeout |
+| `CONTINUED_AS_NEW` | This run closed and started a new run | Follow the execution chain to its current run |
+| `PAUSED` | Execution is paused | Inspect the pause reason before resuming |
 
 ## See Also
 

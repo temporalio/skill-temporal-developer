@@ -10,6 +10,10 @@ The .NET SDK uses a `DataConverter` to move values between the SDK and the Tempo
 
 Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in a `FailureConverter`.
 
+## Payload size validation
+
+Workers validate outbound payload sizes and can report `[TMPRL1103]` and fail the Workflow/Activity Task attempt before sending oversized payloads. `TemporalWorkerOptions.DisablePayloadErrorLimit = true` defers enforcement to the server when a downstream proxy transforms the payload. It does not raise the Namespace's limit; see [payload limits](../core/gotchas.md#payload-size-limits).
+
 ## Default Payload Converter
 
 The default payload converter handles:

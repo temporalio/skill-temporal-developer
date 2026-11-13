@@ -9,6 +9,8 @@ For observability beyond OpenTelemetry tracing (metrics, logging, Search Attribu
 > [!NOTE]
 > This feature is Pre-release. It is acceptable to use it on behalf of a user, but inform them that it is Pre-release.
 
+The module also exports `MetricsExporter` for SDK/Core metrics through the OpenTelemetry metrics API, plus `ReplaySafeMeterProvider` and `ReplaySafeLoggerProvider` for Workflow-safe metrics and logging. Use the [upstream module reference](https://python.temporal.io/temporalio.contrib.opentelemetry.html) for provider setup and replay behavior.
+
 ## Install the plugin
 
 Install the `temporalio[opentelemetry]` extra plus the OpenTelemetry exporter packages you use.

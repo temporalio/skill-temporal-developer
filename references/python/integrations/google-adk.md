@@ -2,12 +2,12 @@
 
 ## Overview
 
-`temporalio.contrib.google_adk_agents` makes [Google ADK](https://adk.dev/) agents durable on the Temporal Python SDK: ADK model calls run through Temporal Activities, tools dispatch through Activities or the workflow thread, and non-deterministic primitives (`time.time()`, `uuid.uuid4()`) are replaced with deterministic workflow equivalents inside the sandbox.
+`temporalio.google_adk` makes [Google ADK](https://adk.dev/) agents durable on the Temporal Python SDK: ADK model calls run through Temporal Activities, tools dispatch through Activities or the workflow thread, and non-deterministic primitives (`time.time()`, `uuid.uuid4()`) are replaced with deterministic workflow equivalents inside the sandbox.
 
-The integration is built on the Python SDK [Plugin system](https://docs.temporal.io/develop/plugins-guide) and ships as part of the `temporalio` package via the `google-adk` extra.
+The integration is built on the Python SDK [Plugin system](https://docs.temporal.io/develop/plugins-guide) and ships as the standalone `temporalio-google-adk` package.
 
 > [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+> This integration is Pre-release. Inform the user when using it.
 
 For general Temporal AI/LLM patterns (retries, rate limits, multi-agent orchestration) see [Temporal AI integration patterns](../../core/ai-patterns.md) and [Python AI integration patterns](../ai-patterns.md).
 
@@ -15,30 +15,31 @@ For general Temporal AI/LLM patterns (retries, rate limits, multi-agent orchestr
 
 | Dependency | Minimum version |
 | -- | -- |
-| Temporal Python SDK | 1.24.0 |
-| Google ADK | a working `google-adk` install (pulled in by the extra) |
+| Python | 3.11 |
+| Temporal Python SDK | 1.34.0 |
+| Google ADK | `>=2.12.0,<3` |
 
 You also need access to a supported model (e.g. a Gemini API key for `gemini-flash-latest` / `gemini-2.5-pro`) and a running Temporal server — `temporal server start-dev` for local development, self-hosted, or Temporal Cloud.
 
 ## Install
 
 ```bash
-pip install "temporalio[google-adk]"
+pip install "temporalio-google-adk"
 ```
 
-The extra name is `google-adk` (hyphen). The module path is `temporalio.contrib.google_adk_agents` (note the `_agents` suffix).
+Import the standalone package through `temporalio.google_adk`; the old `temporalio.contrib.google_adk_agents` path is a compatibility shim.
 
 ## Public API
 
 | Symbol | Import | Purpose |
 | -- | -- | -- |
-| `GoogleAdkPlugin` | `from temporalio.contrib.google_adk_agents import GoogleAdkPlugin` | Client/Worker plugin: determinism replacement + Pydantic/ADK passthrough |
-| `TemporalModel` | `from temporalio.contrib.google_adk_agents import TemporalModel` | LLM model wrapper that routes model calls through a Temporal Activity |
-| `activity_tool` | `from temporalio.contrib.google_adk_agents.workflow import activity_tool` | Wraps a plain `@activity.defn` function as an ADK tool |
-| `TemporalMcpToolSet` | `from temporalio.contrib.google_adk_agents import TemporalMcpToolSet` | Executes MCP tools as Temporal Activities |
-| `TemporalMcpToolSetProvider` | `from temporalio.contrib.google_adk_agents import TemporalMcpToolSetProvider` | Factory wired into `GoogleAdkPlugin(toolset_providers=[...])` so MCP activities register with the worker |
+| `GoogleAdkPlugin` | `from temporalio.google_adk import GoogleAdkPlugin` | Client/Worker plugin: determinism replacement + Pydantic/ADK passthrough |
+| `TemporalModel` | `from temporalio.google_adk import TemporalModel` | LLM model wrapper that routes model calls through a Temporal Activity |
+| `activity_as_tool` | `from temporalio.google_adk.workflow import activity_as_tool` | Wraps a plain `@activity.defn` function as an ADK tool |
+| `TemporalMcpToolSet` | `from temporalio.google_adk import TemporalMcpToolSet` | Executes MCP tools as Temporal Activities |
+| `TemporalMcpToolSetProvider` | `from temporalio.google_adk import TemporalMcpToolSetProvider` | Factory wired into `GoogleAdkPlugin(toolset_providers=[...])` so MCP activities register with the worker |
 
-## Configure the plugin on Client and Worker
+## Configure the plugin on the Client
 
 `GoogleAdkPlugin()` must be attached to the Temporal `Client` used to build the worker. It installs the determinism replacements, configures Pydantic/ADK serialization, and registers the model and MCP activities on the worker.
 
@@ -46,7 +47,7 @@ The extra name is `google-adk` (hyphen). The module path is `temporalio.contrib.
 import asyncio
 from temporalio.client import Client
 from temporalio.worker import Worker
-from temporalio.contrib.google_adk_agents import GoogleAdkPlugin
+from temporalio.google_adk import GoogleAdkPlugin
 
 async def main():
     client = await Client.connect(
@@ -80,28 +81,28 @@ result = await client.execute_workflow(
 )
 ```
 
-## Define tools with `activity_tool`
+## Define tools with `activity_as_tool`
 
-Write the underlying function as a normal Temporal Activity, then wrap it with `activity_tool(...)` to produce a tool that ADK can attach to an Agent. The wrapper records timeouts and retry policy at construction time, so each invocation runs as a Temporal Activity with those settings.
+Write the underlying function as a normal Temporal Activity, then wrap it with `activity_as_tool(...)` to produce a tool that ADK can attach to an Agent. The wrapper records timeouts and retry policy at construction time, so each invocation runs as a Temporal Activity with those settings.
 
 ```python
 from datetime import timedelta
 from temporalio import activity
 from temporalio.common import RetryPolicy
-from temporalio.contrib.google_adk_agents.workflow import activity_tool
+from temporalio.google_adk.workflow import activity_as_tool
 
 @activity.defn
 async def get_weather(city: str) -> str:
     return f"72°F and sunny in {city}"
 
-weather_tool = activity_tool(
+weather_tool = activity_as_tool(
     get_weather,
     start_to_close_timeout=timedelta(seconds=30),
     retry_policy=RetryPolicy(maximum_attempts=3),
 )
 ```
 
-Register the underlying `@activity.defn` function on the worker's `activities=` list — `activity_tool` does **not** auto-register it.
+Register the underlying `@activity.defn` function on the worker's `activities=` list — `activity_as_tool` does **not** auto-register it.
 
 ## Use `TemporalModel` on the Agent
 
@@ -109,7 +110,7 @@ Register the underlying `@activity.defn` function on the worker's `activities=` 
 
 ```python
 from google.adk.agents import Agent
-from temporalio.contrib.google_adk_agents import TemporalModel
+from temporalio.google_adk import TemporalModel
 from temporalio.workflow import ActivityConfig
 
 agent = Agent(
@@ -122,7 +123,7 @@ agent = Agent(
 )
 ```
 
-Streaming responses are not currently supported through `TemporalModel`.
+For streaming, set `TemporalModel("gemini-flash-latest", streaming_topic="responses")` and host a `WorkflowStream` on the Workflow. External consumers subscribe through `WorkflowStreamClient`; see [Python Workflow Streams](../workflow-streams.md).
 
 ## Wrap the agent in a Workflow
 
@@ -171,7 +172,7 @@ To expose [MCP](https://modelcontextprotocol.io/) tools to an ADK agent through 
 from google.adk.tools.mcp_tool import McpToolset
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from mcp import StdioServerParameters
-from temporalio.contrib.google_adk_agents import (
+from temporalio.google_adk import (
     GoogleAdkPlugin,
     TemporalMcpToolSet,
     TemporalMcpToolSetProvider,
@@ -206,13 +207,13 @@ The provider name (`"my-tools"` above) must match between `TemporalMcpToolSetPro
 
 ## Local fallback for `adk run` / `adk web`
 
-`TemporalModel`, `activity_tool`, and `TemporalMcpToolSet` detect when they are invoked outside a workflow and execute directly against the underlying model, function, or MCP toolset. The same agent definition therefore works both under `adk run` / `adk web` for local development and under a Temporal worker in production — no separate code paths.
+`TemporalModel`, `activity_as_tool`, and `TemporalMcpToolSet` detect when they are invoked outside a workflow and execute directly against the underlying model, function, or MCP toolset. The same agent definition therefore works both under `adk run` / `adk web` for local development and under a Temporal worker in production — no separate code paths.
 
 ## Common mistakes
 
 - **Mixing up `ActivityConfig` and `ActivityOptions`.** `TemporalModel` takes `activity_config=ActivityConfig(...)` from `temporalio.workflow`.
 - **Forgetting `not_in_workflow_toolset` on `TemporalMcpToolSet`.** Required for local fallback.
 - **Skipping `GoogleAdkPlugin()` on the client used by `execute_workflow`.** Data-converter and toolset wiring lives on the plugin; using only the worker-side plugin leads to serialization errors.
-- **Registering `activity_tool(...)` wrappers in `activities=`.** Register the underlying `@activity.defn` function instead.
+- **Registering `activity_as_tool(...)` wrappers in `activities=`.** Register the underlying `@activity.defn` function instead.
 - **Forgetting non-determinism rules.** As with Temporal broadly, workflow code must be deterministic. This plugin makes it a bit easier by auto-replacing common sources of non-determinism with Temporal durable variants, but you are strongly encouraged to just use those explicitly. In workflow code: use `workflow.now()`, etc. In activity code: use `time.time()` or whatever standard non-deterministic things, NOT `workflow.*` calls.
-- **Expecting streaming responses.** Not currently supported via `TemporalModel`.
+- **Enabling streaming without a Workflow Stream.** Set `streaming_topic` on `TemporalModel` and host the corresponding stream on the Workflow.

@@ -6,9 +6,9 @@ Standalone Activities are conceptually the same across all SDKs. Read the [cross
 
 ## Prerequisites
 
-- Temporal Go SDK v1.41.0 or higher.
-- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. The Temporal Dev Server has Standalone Activities enabled by default.
-- For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
+- Temporal Go SDK v1.49.0 or higher.
+- Temporal CLI v1.9.1 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. The Temporal Dev Server has Standalone Activities enabled by default.
+- For production, Temporal Server v1.32.0 or higher (or Temporal Cloud).
 
 ## Hosting Activities on a Worker
 
@@ -96,7 +96,7 @@ if err != nil {
 log.Println("Started", "ActivityID", handle.GetID(), "RunID", handle.GetRunID())
 
 var result string
-err := handle.Get(context.Background(), &result)
+err = handle.Get(context.Background(), &result)
 if err != nil {
 	log.Fatalln("Activity failed", err)
 }
@@ -122,7 +122,7 @@ if err != nil {
 log.Println("Started", "ActivityID", handle.GetID(), "RunID", handle.GetRunID())
 
 var result string
-err := handle.Get(context.Background(), &result)
+err = handle.Get(context.Background(), &result)
 if err != nil {
 	log.Fatalln("Activity failed", err)
 }
@@ -131,7 +131,7 @@ log.Println("Activity result:", result)
 
 ### Get a handle to an existing Activity execution
 
-Use `client.GetActivityHandle()` to attach a handle to a previously started Standalone Activity. Both `ActivityID` and `RunID` are required.
+Use `client.GetActivityHandle()` to attach a handle to a previously started Standalone Activity. `ActivityID` is required; omit `RunID` to target the latest run, or supply it to target a specific run.
 
 ```go
 handle := c.GetActivityHandle(client.GetActivityHandleOptions{

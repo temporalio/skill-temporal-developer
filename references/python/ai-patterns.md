@@ -301,7 +301,7 @@ class DeepResearchWorkflow:
 
 ## OpenAI Agents SDK Integration
 
-If using the OpenAI Agents SDK to create an agent, register `OpenAIAgentsPlugin` from `temporalio.contrib.openai_agents` with `Client.connect(..., plugins=[...])` in both the Worker process and the client process. Inside the Workflow, write standard OpenAI Agents SDK code. The plugin runs model calls as Activities, so the agent loop is durable:
+If using the OpenAI Agents SDK to create an agent, register `OpenAIAgentsPlugin` from `temporalio.openai_agents` with `Client.connect(..., plugins=[...])` in both the Worker process and the client process. Inside the Workflow, write standard OpenAI Agents SDK code. The plugin runs model calls as Activities, so the agent loop is durable:
 
 ```python
 from temporalio import workflow

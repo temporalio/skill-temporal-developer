@@ -10,6 +10,10 @@ The Ruby SDK uses a `Temporalio::Converters::DataConverter` to move values betwe
 
 Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in a `failure_converter`.
 
+## Payload size validation
+
+Workers proactively validate outbound payload sizes and can report `[TMPRL1103]` and fail the Workflow/Activity Task attempt when the Namespace limit is exceeded. Ruby SDK 1.7+ exposes `disable_payload_error_limit: true` on `Temporalio::Worker.new` to defer this check to the server when payloads are transformed downstream. The server's limit still applies; see [payload limits](../core/gotchas.md#payload-size-limits).
+
 ## Default Payload Converter
 
 The default payload converter handles types in this order:
@@ -151,9 +155,9 @@ region = Temporalio::Workflow.memo['region']
 Use these instead of standard Ruby equivalents inside workflows:
 
 ```ruby
-Temporalio::Workflow.uuid       # deterministic UUID
-Temporalio::Workflow.random     # deterministic random number
-Temporalio::Workflow.now        # deterministic current time
+Temporalio::Workflow.random.uuid # deterministic UUID
+Temporalio::Workflow.random      # deterministic Random instance
+Temporalio::Workflow.now         # deterministic current time
 ```
 
 ## Best Practices
@@ -161,4 +165,4 @@ Temporalio::Workflow.now        # deterministic current time
 - Use dedicated model classes for Temporal data, not ActiveRecord models.
 - Keep payloads small; store large data externally and pass references.
 - Encrypt sensitive data with a `PayloadCodec`.
-- Use `Temporalio::Workflow.uuid`, `.random`, and `.now` inside workflows for determinism.
+- Use `Temporalio::Workflow.random.uuid`, `.random`, and `.now` inside workflows for determinism.

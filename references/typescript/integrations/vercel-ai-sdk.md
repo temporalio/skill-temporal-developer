@@ -2,10 +2,7 @@
 
 ## Overview
 
-`@temporalio/ai-sdk` is the Temporal TypeScript SDK integration for [Vercel's AI SDK](https://ai-sdk.dev/) v7. It registers an `AiSdkPlugin` on the Worker so that LLM calls made by functions like `generateText()`, along with MCP tool invocations, run as Temporal Activities under Temporal's retry, timeout, and Durable Execution semantics. AI SDK tool functions execute inside the Workflow and must delegate any non-deterministic work to Activities, while the Workflow author otherwise writes normal AI SDK code.
-
-> [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+`@temporalio/vercel-ai-sdk` is the Temporal TypeScript SDK integration for [Vercel's AI SDK](https://ai-sdk.dev/) v7. It registers an `AiSdkPlugin` on the Worker so that LLM calls made by functions like `generateText()`, along with MCP tool invocations, run as Temporal Activities under Temporal's retry, timeout, and Durable Execution semantics. AI SDK tool functions execute inside the Workflow and must delegate any non-deterministic work to Activities, while the Workflow author otherwise writes normal AI SDK code.
 
 For cross-SDK AI/LLM patterns (Activities wrapping LLM calls, centralized retries, multi-agent orchestration) see [Temporal AI integration patterns](../../core/ai-patterns.md). For TypeScript SDK fundamentals (Worker setup, `proxyActivities`, the V8 workflow sandbox) see [TypeScript SDK guide](../typescript.md) and [TypeScript determinism rules](../determinism.md) — this file does not restate them.
 
@@ -15,10 +12,12 @@ For cross-SDK AI/LLM patterns (Activities wrapping LLM calls, centralized retrie
 - Familiarity with the Vercel AI SDK itself — for AI SDK API details refer to the [Vercel AI SDK documentation](https://ai-sdk.dev/).
 - Provider credentials available to the Worker process. Most AI SDK providers read credentials from environment variables; the client process does **not** need provider credentials.
 
+Requires Node.js 22.12+, Vercel AI SDK v7, and compatible Temporal packages (the standalone integration currently depends on SDK 1.24+). `@temporalio/ai-sdk` is the older compatibility package; use `@temporalio/vercel-ai-sdk` for new code.
+
 ## Install
 
 ```bash
-npm install @temporalio/ai-sdk
+npm install @temporalio/vercel-ai-sdk
 ```
 
 ## Configure the Worker
@@ -27,7 +26,7 @@ Register `AiSdkPlugin` on `Worker.create` and pass a `modelProvider` (any AI SDK
 
 ```ts
 import { openai } from '@ai-sdk/openai';
-import { AiSdkPlugin } from '@temporalio/ai-sdk';
+import { AiSdkPlugin } from '@temporalio/vercel-ai-sdk';
 import { Worker } from '@temporalio/worker';
 import * as activities from './activities';
 
@@ -52,7 +51,7 @@ In Workflow code, call AI SDK functions exactly as you would outside Temporal, b
 
 ```ts
 import { generateText } from 'ai';
-import { temporalProvider } from '@temporalio/ai-sdk/workflow';
+import { temporalProvider } from '@temporalio/vercel-ai-sdk/workflow';
 
 export async function haikuAgent(prompt: string): Promise<string> {
   const result = await generateText({
@@ -88,8 +87,8 @@ Workflow that exposes the Activity as a tool:
 
 ```ts
 import { proxyActivities } from '@temporalio/workflow';
-import { generateText, tool } from 'ai';
-import { temporalProvider } from '@temporalio/ai-sdk/workflow';
+import { generateText, stepCountIs, tool } from 'ai';
+import { temporalProvider } from '@temporalio/vercel-ai-sdk/workflow';
 import { z } from 'zod';
 import type * as activities from './activities';
 
@@ -157,8 +156,8 @@ With `StdioClientTransport`, the Worker starts the MCP server process and connec
 Inside the workflow, construct `new TemporalMCPClient({ name: '<server-name>' })` using the same name as the factory key, then call `await mcpClient.tools()` to get the tools to pass to `generateText`.
 
 ```ts
-import { TemporalMCPClient, temporalProvider } from '@temporalio/ai-sdk/workflow';
-import { generateText } from 'ai';
+import { TemporalMCPClient, temporalProvider } from '@temporalio/vercel-ai-sdk/workflow';
+import { generateText, stepCountIs } from 'ai';
 
 export async function mcpAgent(prompt: string): Promise<string> {
   const mcpClient = new TemporalMCPClient({ name: 'testServer' });
@@ -176,7 +175,7 @@ export async function mcpAgent(prompt: string): Promise<string> {
 
 ## Common mistakes
 
-- **Importing from the wrong package.** `AiSdkPlugin` comes from `@temporalio/ai-sdk`, while Workflow-side helpers such as `temporalProvider` and `TemporalMCPClient` come from `@temporalio/ai-sdk/workflow`. `generateText` and `tool` come from `ai`; `experimental_createMCPClient` comes from `@ai-sdk/mcp`.
+- **Importing from the wrong package.** `AiSdkPlugin` comes from `@temporalio/vercel-ai-sdk`, while Workflow-side helpers such as `temporalProvider` and `TemporalMCPClient` come from `@temporalio/vercel-ai-sdk/workflow`. `generateText` and `tool` come from `ai`; `experimental_createMCPClient` comes from `@ai-sdk/mcp`.
 - **Calling `fetch` (or any I/O) directly inside a tool's `execute`.** Tool functions run in the Workflow sandbox and must delegate to an Activity obtained through `proxyActivities`.
 - **Passing an option other than `modelProvider`/`mcpClientFactories` to `AiSdkPlugin`.** Only those two options are documented.
 - **Constructing `TemporalMCPClient` positionally.** Use the object form `new TemporalMCPClient({ name: '<server-name>' })`.

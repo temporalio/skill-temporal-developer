@@ -116,7 +116,7 @@ temporal workflow list --query 'WorkflowType = "MyWorkflow" AND ExecutionStatus 
 
 ## Worker Versioning
 
-Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
+Worker Versioning is GA and manages versions at the deployment level, allowing multiple Worker versions to run simultaneously. See the [core guide](../core/versioning.md) for rollout and recovery tooling.
 
 ### Key Concepts
 
@@ -146,6 +146,14 @@ w := worker.New(c, "my-task-queue", worker.Options{
 - `DefaultVersioningBehavior`: `VersioningBehaviorPinned` or `VersioningBehaviorAutoUpgrade`
 - Build ID: typically a git commit hash, version number, or timestamp
 
+Prefer declaring behavior per Workflow Type; the Worker's default covers types without an explicit behavior:
+
+```go
+w.RegisterWorkflowWithOptions(MyWorkflow, workflow.RegisterOptions{
+	VersioningBehavior: workflow.VersioningBehaviorPinned,
+})
+```
+
 ### PINNED vs AUTO_UPGRADE Behaviors
 
 **PINNED Behavior**
@@ -155,6 +163,7 @@ Workflows stay locked to their original Worker version.
 **When to use PINNED:**
 
 - Short-running workflows (minutes to hours)
+- Long-running Workflows that upgrade on Continue-as-New, without patching within each run
 - Consistency is critical (e.g., financial transactions)
 - You want to eliminate version compatibility complexity
 - Building new applications and want simplest development experience
@@ -165,7 +174,7 @@ Workflows can move to newer versions.
 
 **When to use AUTO_UPGRADE:**
 
-- Long-running workflows (weeks or months)
+- Long-running workflows without Continue-as-New
 - Workflows need to benefit from bug fixes during execution
 - Migrating from traditional rolling deployments
 - You are already using GetVersion for version transitions
@@ -175,7 +184,7 @@ Workflows can move to newer versions.
 ### Worker Configuration with Default Behavior
 
 ```go
-// For short-running workflows, prefer PINNED
+// PINNED for short runs or upgrade on Continue-as-New
 w := worker.New(c, "orders-task-queue", worker.Options{
 	DeploymentOptions: worker.DeploymentOptions{
 		UseVersioning: true,

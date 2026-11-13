@@ -2,28 +2,28 @@
 
 ## Overview
 
-The Temporal Python SDK ships a contrib module that runs [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) agents as durable Temporal Workflows. Model calls execute as Temporal Activities; tools can be Activities, Nexus stubs, or workflow-resident `@function_tool`s; MCP servers, sandbox backends, and OpenTelemetry export are layered on top.
+The standalone `temporalio-openai-agents` package runs [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) agents as durable Temporal Workflows. Model calls execute as Temporal Activities; tools can be Activities, Nexus stubs, or workflow-resident `@function_tool`s; MCP servers, sandbox backends, and OpenTelemetry export are layered on top.
 
-The integration is delivered as a Temporal plugin: `OpenAIAgentsPlugin` from `temporalio.contrib.openai_agents`, registered on both the client and the worker via `plugins=[...]`.
+The integration is delivered as a Temporal plugin: `OpenAIAgentsPlugin` from `temporalio.openai_agents`, registered on the Client via `plugins=[...]`; Workers created from that Client inherit it.
 
 For language-agnostic AI/LLM patterns (centralized retries, multi-agent orchestration, when to put a tool in an Activity vs. the workflow) see [Temporal AI integration patterns](../../core/ai-patterns.md). For Python-side LLM patterns that apply when **not** using this plugin (Pydantic data converter, generic LLM activity, `max_retries=0` on the raw OpenAI client) see [Python AI integration patterns](../ai-patterns.md) — note that the plugin already configures Pydantic serialization for you.
 
 ## Install
 
-The integration lives at `temporalio.contrib.openai_agents`; use it by installing `temporalio[openai-agents]` to get the extra OpenAI Agents SDK dep.
+Install with `uv add temporalio-openai-agents`. The integration is GA. Current package releases require Python 3.10+ and Temporal Python SDK 1.34+. The initial GA package supported SDK 1.33 in standard virtual environments; editable or split-directory installations require SDK 1.34+. See the [package requirements](https://github.com/temporalio/ai-integrations/blob/main/python/openai_agents/pyproject.toml).
 
 ```python
-from temporalio.contrib.openai_agents import OpenAIAgentsPlugin, ModelActivityParameters
+from temporalio.openai_agents import OpenAIAgentsPlugin, ModelActivityParameters
 ```
 
 ## Register the plugin
 
-Pass `OpenAIAgentsPlugin` to `Client.connect(..., plugins=[...])`. Register it on **both** the worker process and the client process — the worker uses it to host the model activity; the client uses it to keep payload serialization compatible.
+Pass `OpenAIAgentsPlugin` to `Client.connect(..., plugins=[...])`. Configure the Client in both the Worker process and the starter process. A Worker inherits the plugin from its Client; do not also pass it to `Worker(plugins=...)`, which runs it twice.
 
 ```python
 from datetime import timedelta
 from temporalio.client import Client
-from temporalio.contrib.openai_agents import OpenAIAgentsPlugin, ModelActivityParameters
+from temporalio.openai_agents import OpenAIAgentsPlugin, ModelActivityParameters
 from temporalio.worker import Worker
 
 client = await Client.connect(
@@ -75,13 +75,13 @@ Two ways to wire a tool into an agent. Choose based on whether the tool has side
 
 ### Activities as tools — for I/O, retries, timeouts
 
-Wrap a Temporal activity with `temporalio.contrib.openai_agents.workflow.activity_as_tool` to expose it to the agent. Each invocation runs as a Temporal Activity, with retries and timeouts governed by the `ActivityOptions` you pass.
+Wrap a Temporal activity with `temporalio.openai_agents.workflow.activity_as_tool` to expose it to the agent. Each invocation runs as a Temporal Activity, with retries and timeouts governed by the `ActivityOptions` you pass.
 
 ```python
 from dataclasses import dataclass
 from datetime import timedelta
 from temporalio import activity, workflow
-from temporalio.contrib import openai_agents
+from temporalio import openai_agents
 from agents import Agent, Runner
 
 @dataclass
@@ -177,77 +177,57 @@ In addition, since a `@function_tool` runs in the workflow, they can also call T
 
 ## MCP servers
 
-MCP support comes in two flavors based on whether the server keeps session state between calls. Choose by examining the server's protocol, not by guessing.
-
-- **Stateless MCP server** — each call is self-contained. Wrap with `StatelessMCPServerProvider(factory)` and register on the plugin.
-- **Stateful MCP server** — session state persists between calls. Failure raises `ApplicationError`; **Temporal cannot auto-recover** the lost server state, so you implement application-level retry.
-
-Both wrappers work with `MCPServerStdio`, `MCPServerSse`, and `MCPServerStreamableHttp` transports.
-
-### Stateless MCP — worker setup
+For new code, install `temporalio-openai-agents[mcp]` and use MCP Python SDK v2. Register named server factories on the plugin; transport and credentials remain on the Worker:
 
 ```python
-from agents.mcp import MCPServerStdio
-from temporalio.contrib.openai_agents import (
-    ModelActivityParameters,
-    OpenAIAgentsPlugin,
-    StatelessMCPServerProvider,
-)
-
-filesystem_server = StatelessMCPServerProvider(
-    lambda: MCPServerStdio(
-        name="FileSystemServer",
-        params={
-            "command": "npx",
-            "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/files"],
-        },
-    )
-)
+from agents.mcp import MCPServerStreamableHttp
+from temporalio.client import Client
+from temporalio.openai_agents import OpenAIAgentsPlugin
 
 client = await Client.connect(
     "localhost:7233",
-    plugins=[
-        OpenAIAgentsPlugin(
-            model_params=ModelActivityParameters(
-                start_to_close_timeout=timedelta(seconds=60)
-            ),
-            mcp_server_providers=[filesystem_server],
+    plugins=[OpenAIAgentsPlugin(mcp_servers={
+        "weather": lambda: MCPServerStreamableHttp(
+            name="weather",
+            params={"url": "https://example.com/mcp"},
         ),
-    ],
+    })],
 )
 ```
 
-### Stateless MCP — workflow usage
-
-Reference the server inside a workflow with `openai_agents.workflow.stateless_mcp_server("Name")`. The string must match the `name=` argument on the MCP server instance the factory creates.
+Reference the same registration key inside a Workflow:
 
 ```python
-from temporalio import workflow
-from temporalio.contrib import openai_agents
 from agents import Agent, Runner
+from temporalio import workflow
+from temporalio.openai_agents.workflow import temporal_mcp_server
 
 @workflow.defn
-class FileSystemWorkflow:
+class WeatherWorkflow:
     @workflow.run
     async def run(self, query: str) -> str:
-        server = openai_agents.workflow.stateless_mcp_server("FileSystemServer")
         agent = Agent(
-            name="File Assistant",
-            instructions="Use the filesystem tools to read files and answer questions.",
-            mcp_servers=[server],
+            name="Weather Assistant",
+            mcp_servers=[temporal_mcp_server("weather")],
         )
         result = await Runner.run(agent, input=query)
         return result.final_output
 ```
 
-### Hosted MCP
+Workflow-facing approval policies and callable tool filters belong on `temporal_mcp_server(...)` and must be deterministic. Resolve secrets inside the Worker factory; `factory_argument` is persisted in history.
 
-For network-accessible MCP servers, the upstream `HostedMCPTool` (OpenAI Responses API hosting an MCP client) is also supported and avoids the stateless/stateful wrapping choice.
+`StatelessMCPServerProvider`, `StatefulMCPServerProvider`, `mcp_server_providers`, `stateless_mcp_server()`, and `stateful_mcp_server()` are deprecated compatibility APIs. Preserve them for existing histories until migrated; see the [upstream MCP guide](https://github.com/temporalio/ai-integrations/tree/main/python/openai_agents#mcp-support). Temporal cannot reconstruct a lost stateful MCP session automatically.
+
+For network-accessible servers, the upstream `HostedMCPTool` is also supported. Use `temporal_worker_env_ref()` for supported hosted-tool credential fields so credentials are resolved on the Worker rather than recorded in history. `nexus_operation_as_tool()` exposes Nexus operations as agent tools; consult the upstream API for its operation and timeout arguments.
+
+## Conversation history
+
+Use `WorkflowSession` from `temporalio.openai_agents` and pass the same instance to each `Runner.run(..., session=session)` within one Workflow execution. The history is reconstructed on replay; using the same session ID in another execution does not share conversation state.
 
 ## Sandbox support
 
 > [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+> Sandbox support is Pre-release. Inform the user when using it.
 
 The OpenAI Agents SDK's `SandboxAgent` runs commands inside a remote or local sandbox (e.g. Daytona, Docker, E2B, local Unix). With this integration, every sandbox operation — creating a session, exec, file I/O, PTY — dispatches as a Temporal activity, so sandbox work is durable like any other activity and sandbox session state survives worker restarts.
 
@@ -258,13 +238,13 @@ The OpenAI Agents SDK's `SandboxAgent` runs commands inside a remote or local sa
 Register one or more `SandboxClientProvider("name", BaseSandboxClient())` on the plugin via `sandbox_clients=[...]`. Each provider's name becomes the prefix for its activities, so names must be unique.
 
 ```python
-from temporalio.contrib.openai_agents import (
+from temporalio.openai_agents import (
     OpenAIAgentsPlugin,
     SandboxClientProvider,
     ModelActivityParameters,
 )
 from agents.extensions.sandbox.daytona import DaytonaSandboxClient
-from agents.extensions.sandbox.unix_local import UnixLocalSandboxClient
+from agents.sandbox.sandboxes.unix_local import UnixLocalSandboxClient
 
 client = await Client.connect(
     "localhost:7233",
@@ -288,7 +268,7 @@ Reference a registered backend in the workflow with `temporal_sandbox_client("na
 
 ```python
 from temporalio import workflow
-from temporalio.contrib.openai_agents.workflow import temporal_sandbox_client
+from temporalio.openai_agents.workflow import temporal_sandbox_client
 from agents import Runner
 from agents.sandbox import SandboxAgent, SandboxRunConfig
 from agents.run import RunConfig
@@ -319,7 +299,7 @@ A single workflow can target multiple backends by name; register each on the wor
 ## Streaming
 
 > [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+> Streaming is Experimental. Inform the user when using it.
 
 Streaming uses the upstream `Runner.run_streamed` API. Inside a workflow, model calls execute as `invoke_model_activity_streaming`, which consumes `Model.stream_response` and returns the collected list of native OpenAI response events. The workflow surfaces those events via `RunResultStreaming.stream_events()`.
 
@@ -355,7 +335,7 @@ Retry visibility differs between the two consumer paths: `RunResultStreaming.str
 Enable OTEL export of OpenAI agent telemetry by setting `use_otel_instrumentation=True` on the plugin and installing a global `ReplaySafeTracerProvider` created with `temporalio.contrib.opentelemetry.create_tracer_provider`. Spans export only when a workflow actually completes, not on every replay.
 
 ```python
-from temporalio.contrib.openai_agents import OpenAIAgentsPlugin, ModelActivityParameters
+from temporalio.openai_agents import OpenAIAgentsPlugin, ModelActivityParameters
 from temporalio.contrib.opentelemetry import create_tracer_provider
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry import trace
@@ -383,7 +363,7 @@ client = await Client.connect(
 OTEL extras need to be installed separately:
 
 ```bash
-pip install openinference-instrumentation-openai-agents opentelemetry-sdk
+pip install "temporalio-openai-agents[openinference]"
 ```
 
 If `use_otel_instrumentation=True` is set without the deps installed, the plugin raises `ImportError` with the exact install line. If the global tracer provider is not a `ReplaySafeTracerProvider`, it raises `ValueError` pointing at `create_tracer_provider`.
@@ -438,7 +418,7 @@ The README's compatibility matrix, condensed:
 | Tools | `FunctionTool`, `WebSearchTool`, `FileSearchTool`, `HostedMCPTool`, `ImageGenerationTool`, `CodeInterpreterTool` | `LocalShellTool`, `ComputerTool` |
 | MCP transports | `MCPServerStdio`, `MCPServerSse`, `MCPServerStreamableHttp` | — |
 | Guardrails | Code, Agent | — |
-| Sessions | (in-workflow agent state) | `SQLiteSession` |
+| Sessions | `WorkflowSession` (in-workflow conversation history) | `SQLiteSession` |
 | Tracing | OpenAI platform; OpenTelemetry (Public Preview) | — |
 | Voice | `VoicePipeline` (STT/TTS outside Temporal, agent loop durable) | Realtime agents |
 | Utilities | — | REPL |
@@ -452,12 +432,12 @@ Tool context propagation:
 
 ## Common pitfalls
 
-- **Register the plugin on both client and worker.** Skipping client-side registration breaks payload compatibility.
+- **Register the plugin on each Client used by a starter or Worker process.** Workers inherit their Client plugins; do not repeat them on the Worker.
 - **Don't put I/O or non-deterministic code in `@function_tool` bodies.** Move it to an `@activity.defn` and wrap with `activity_as_tool`.
 - **Don't expect Temporal to auto-recover stateful MCP server sessions.** A failed session raises `ApplicationError`; implement your own application-level retry.
 - **Don't enable streaming together with `use_local_activity`.** Local activities lack heartbeats and the workflow-stream signal channel. Use the standard activity path.
 - **Don't call `Runner.run_streamed` without `ModelActivityParameters(streaming_topic="...")`.** It raises before any activity is scheduled.
-- **MCP server names must match exactly** between `MCPServerStdio(name="X")` and `stateless_mcp_server("X")`. Same for `SandboxClientProvider("Y", ...)` and `temporal_sandbox_client("Y")`.
+- **MCP registration keys must match exactly** between `mcp_servers={"X": factory}` and `temporal_mcp_server("X")`. Same for `SandboxClientProvider("Y", ...)` and `temporal_sandbox_client("Y")`.
 - **`use_otel_instrumentation=True` requires `ReplaySafeTracerProvider`.** Setting `trace.set_tracer_provider(...)` with anything else raises `ValueError`.
 - **Activity-tool context is a read-only copy.** A tool that needs to mutate agent state must be a `@function_tool`.
 

@@ -13,7 +13,7 @@ For conceptual LLM patterns shared across SDKs read [Temporal AI integration pat
 ## Prerequisites
 
 - An existing Temporal TypeScript development environment as described in [TypeScript SDK guide](../typescript.md).
-- Temporal TypeScript SDK 2.1.0 or later.
+- Use compatible, aligned Temporal TypeScript SDK packages. [`@braintrust/temporal` 1.0.1 package metadata](https://github.com/braintrustdata/braintrust-sdk-javascript/blob/main/integrations/temporal-js/package.json) declares Temporal peer dependencies `>=1.11.0` and Braintrust `>=2.0.0`; verify the installed release's requirements. The upstream guide's SDK `2.1.0+` claim does not match these published requirements.
 - A Braintrust account.
 
 ## Install

@@ -1,8 +1,10 @@
 # Standalone Activities (Concepts)
 
-This document provides core conceptual explanations of Standalone Activities in Temporal. For language-specific implementation details, see `references/{your_language}/standalone-activities.md` for the language you are working in (Python, TypeScript, Java, .NET, Go, Ruby).
+This document provides core conceptual explanations of Standalone Activities in Temporal. For language-specific implementation details, see `references/{your_language}/standalone-activities.md` for the language you are working in (Python, TypeScript, Java, .NET, Go, Ruby); for Rust, see the [official Rust guide](https://docs.temporal.io/develop/rust/activities/standalone-activities).
 
 ## What is a Standalone Activity?
+
+Standalone Activities are **generally available**, including Start Delay, cancellation, termination, deletion, and Temporal Cloud support in all regions. Operator commands (pause, unpause, reset, update-options) and batch cancel, terminate, and delete operations by List Filter remain Public Preview. Exposing a Standalone Activity as a Nexus operation remains Experimental where supported by the SDK. See [feature release stages](https://docs.temporal.io/standalone-activity#feature-release-stages).
 
 A **Standalone Activity** is a top-level Activity Execution started directly by a Client, without using a Workflow. It is Temporal's job queue — the simplest way to run a single durable, retryable task.
 
@@ -72,7 +74,9 @@ See below for a quick reference how to call these operations from the CLI rather
 > [!IMPORTANT]
 > When using an SDK, these operations are owned by the Temporal Client, and belong **in your non-workflow application code**. It is INVALID to call an activity as a standalone activity from within a workflow: you instead should use standard within-workflow activity calls.
 
-**Currently Supported SDKs: Python, TypeScript, Java, .NET, Go, Ruby**
+**Currently Supported SDKs: Python, TypeScript, Java, .NET, Go, Ruby, Rust**
+
+When upgrading from preview APIs, apply the GA renames: Go `Details` → `StaticDetails`; Java `setStaticSummary` → `setSummary`; Ruby `static_summary:` → `summary:`; .NET `StaticSummary` / `GetStaticSummaryAsync` / `ScheduledTime` → `Summary` / `GetSummaryAsync` / `ScheduleTime`. .NET removed `LongPollToken` and `StateTransitionCount`. In Python, use `ActivityExecution.schedule_time` and call `last_failure()` as a method. These are Standalone Activity API changes; Workflow metadata can still use static-summary names.
 
 ## Quick CLI Standalone Activity Man Page
 
@@ -142,6 +146,12 @@ temporal activity cancel    --activity-id my-activity-id --reason "no longer nee
 temporal activity terminate --activity-id my-activity-id --reason "no longer needed"
 ```
 
+**Delete** terminates a running execution and then deletes it asynchronously:
+
+```bash
+temporal activity delete --activity-id my-activity-id
+```
+
 ## Observability
 
 All existing Activity metrics apply to Standalone Activities (scheduled, started, completed, failed, timed out, canceled).
@@ -155,7 +165,7 @@ All existing Activity metrics apply to Standalone Activities (scheduled, started
 
 ## Temporal CLI support
 
-- Requires **Temporal CLI v1.7.0+** and **Temporal Server v1.31.0+**. See [Temporal CLI installation guide](install_cli.md) if you need to update the CLI.
+- Requires **Temporal CLI v1.9.1+** and **Temporal Server v1.32.0+**. See [Temporal CLI installation guide](install_cli.md) if you need to update the CLI.
 - The Temporal Dev Server (`temporal server start-dev`) has Standalone Activities enabled by default.
 
 ## Temporal Cloud support

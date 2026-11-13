@@ -2,7 +2,7 @@
 
 ## Overview
 
-Priority and Fairness control how Tasks are distributed within a Task Queue. Priority determines execution order. Fairness prevents one group of Tasks from starving others. They can be used independently or together.
+Priority and Fairness are GA in Temporal Cloud and Temporal Server v1.31.0+. They control how Tasks are distributed within a Task Queue. Priority determines execution order. Fairness prevents one group of Tasks from starving others. They can be used independently or together.
 
 Priority is enabled by default in Temporal Cloud and self-hosted Temporal. Fairness must be enabled separately and is a paid feature in Temporal Cloud.
 
@@ -130,7 +130,7 @@ Use `key=default` to remove one override or `--fairness-key-weight-clear-all` to
 
 When Fairness is enabled with an active backlog, existing queued Tasks are processed before new Fairness-mode Tasks. Disabling Fairness likewise drains the existing Fairness-ordered backlog before returning to Priority and FIFO ordering.
 
-**Temporal Cloud**: enable Fairness for the Namespace from its Overview page. Billing applies while Fairness is enabled, even if individual Tasks do not use fairness keys.
+**Temporal Cloud**: enable Fairness for the Namespace from its Overview page or with `temporal cloud namespace fairness set --namespace my-namespace --enable-task-queue-fairness`. Billing applies while Fairness is enabled, even if individual Tasks do not use fairness keys.
 
 **Self-hosted**: set the `matching.enableFairness` dynamic configuration setting to `true` for the relevant Namespace, Task Queue, or globally. Priority uses the new matcher by default; setting `matching.useNewMatcher` to `false` disables it for the selected scope.
 
