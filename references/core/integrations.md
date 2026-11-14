@@ -11,7 +11,7 @@ Temporal ships and supports a growing set of integrations with third-party frame
 
 Temporal-maintained Python AI integrations ship as standalone `temporalio-*` packages with `temporalio.<integration>` imports. For integrations migrated out of the SDK, former `temporalio.contrib.*` paths and SDK extras are compatibility shims. Register Python plugins on the Client; Workers created from that Client inherit plugins implementing the Worker protocol.
 
-Catalog checked against Temporal's [SDK integrations index](https://docs.temporal.io/integrations) and all 19 packages in the maintained AI integrations repository on 2026-11-13. AI package stages below follow each package's `plugin.toml` metadata (for example, [MCP](https://github.com/temporalio/ai-integrations/blob/main/python/mcp/plugin.toml)); other stages follow the linked guides. Verify stages and requirements when upgrading.
+Stages below follow the [maintained AI integrations repository](https://github.com/temporalio/ai-integrations) and linked guides; verify them when upgrading.
 
 ## Catalog
 
