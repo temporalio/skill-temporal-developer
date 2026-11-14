@@ -225,3 +225,5 @@ See [.NET testing guide](testing.md) for info on writing tests.
 - **[.NET standalone Activities guide](standalone-activities.md)** — Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [Temporal standalone Activities guide](../core/standalone-activities.md).
 - **[.NET Task Queue priority and fairness guide](priority-fairness.md)** — Task Queue Priority and Fairness SDK options and examples. Concept overview at [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md).
 - **[.NET determinism protection guide](determinism-protection.md)** — Runtime task detection, .NET Task determinism rules
+
+For integrations with third-party frameworks and SDKs, see the [integrations catalog](../core/integrations.md).

@@ -269,6 +269,4 @@ See [PHP testing guide](testing.md) for info on writing tests.
 - **[PHP advanced features](advanced-features.md)** - Schedules, async completion, worker tuning, Cloud Operations API
 - **[PHP priority and fairness](priority-fairness.md)** - Task Queue Priority and Fairness
 
-### PHP Integrations
-
-For PHP-specific third-party integrations (Laravel, etc.), see [integrations catalog](../core/integrations.md) and filter for PHP. Reference files live under `references/php/integrations/`.
+For integrations with third-party frameworks and SDKs, see the [integrations catalog](../core/integrations.md).
