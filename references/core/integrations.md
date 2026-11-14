@@ -42,7 +42,7 @@ These entries link directly to maintained upstream guides until a local referenc
 | Baseten | Python | Model-provider sample patterns using OpenAI Agents | [Temporal guide](https://docs.temporal.io/develop/python/integrations/baseten) |
 | Braintrust (`github.com/braintrustdata/braintrust-sdk-go`) | Go | Workflow and Activity tracing through Temporal's OpenTelemetry interceptor and Braintrust's tracer provider | [Provider guide](https://docs.braintrust.dev/integrations/sdk-integrations/temporal) |
 | Claude Agent SDK (`temporalio-claude-agent-sdk`) | Python | Durable Claude agents; Pre-release | [Temporal guide](https://docs.temporal.io/develop/python/integrations/claude-agent-sdk) |
-| Deep Agents (`temporalio-deepagents`) | Python | Durable LangChain agents; Pre-release, Python 3.11+ | [Temporal guide](https://docs.temporal.io/develop/python/integrations/deepagents) |
+| Deep Agents (`temporalio-deepagents`) | Python | Durable LangChain agents; Pre-release | [Temporal guide](https://docs.temporal.io/develop/python/integrations/deepagents) |
 | Fireworks AI | Python | Model-provider sample patterns using OpenAI Agents | [Temporal guide](https://docs.temporal.io/develop/python/integrations/fireworks-ai) |
 | Future AGI | Go | Workflow and Activity tracing through Temporal's OpenTelemetry integrations; model/tool tracing through library instrumentation | [Go guide](https://docs.futureagi.com/docs/integrations/frameworks/temporal-go/) |
 | Future AGI | Python | Workflow and Activity tracing through Temporal's OpenTelemetry integrations; model/tool tracing through library instrumentation | [Python guide](https://docs.futureagi.com/docs/integrations/frameworks/temporal/) |
