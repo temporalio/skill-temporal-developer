@@ -7,7 +7,7 @@ Temporal ships and supports a growing set of integrations with third-party frame
 1. Find the row matching the framework, SDK, or library the user is working with.
 2. Confirm the language column matches what the user is building in.
 3. Read the linked local reference or upstream guide for setup, APIs, release stage, and version requirements.
-4. For AI/LLM integrations, also read [Temporal AI integration patterns](ai-patterns.md) and the language's `ai-patterns.md`; for Spring-based integrations, read [Spring Boot Java integration guide](../java/integrations/spring-boot.md) first.
+4. For AI/LLM integrations, also read [Temporal AI integration patterns](ai-patterns.md) and the language's `ai-patterns.md`.
 
 Temporal-maintained Python AI integrations ship as standalone `temporalio-*` packages with `temporalio.<integration>` imports. For integrations migrated out of the SDK, former `temporalio.contrib.*` paths and SDK extras are compatibility shims. Register Python plugins on the Client; Workers created from that Client inherit plugins implementing the Worker protocol.
 
