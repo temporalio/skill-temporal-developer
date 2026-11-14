@@ -7,7 +7,7 @@
 Mastra appears on the Temporal TypeScript integrations page as the "Mastra | Agent framework" row, which links out to the upstream Mastra deployment guide.
 
 > [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview. The upstream `@mastra/temporal` package is also flagged as "experimental and not ready for production use"; the API may change between releases.
+> The upstream `@mastra/temporal` package is experimental and supports a subset of the Mastra workflow API. Check the upstream compatibility table before choosing Workflow methods; unsupported constructs can fail when the Worker builds.
 
 For Temporal TypeScript SDK fundamentals (Worker, Workflow, Activity, Task Queue, replay), see [TypeScript SDK guide](../typescript.md) and [TypeScript determinism rules](../determinism.md).
 
@@ -196,4 +196,4 @@ For language-agnostic AI/LLM orchestration patterns (centralized retries, tool p
 ## Resources
 
 - Temporal TypeScript integrations index: <https://docs.temporal.io/develop/typescript/integrations>
-- Upstream Mastra deployment guide: <https://mastra.ai/guides/deployment/temporal>
+- Upstream Mastra deployment guide: <https://mastra.ai/integrations/deploy/temporal>
