@@ -219,8 +219,6 @@ my_temporal_app/
 
 Beyond this guide, use the official Rust SDK docs, docs.rs, and [`sdk-rust` examples](https://github.com/temporalio/sdk-rust/tree/main/crates/sdk/examples) for child Workflows, Continue-as-New, message handlers, cancellation, timers, timeouts, Nexus, and Serverless Workers. For SDK-neutral Temporal concepts, use the core references under `references/core/`.
 
-For integrations with third-party frameworks and SDKs, see the [integrations catalog](../core/integrations.md).
-
 ## Standalone Activities
 
 Rust SDK v1.0.0+ supports Standalone Activities (GA). Use Temporal CLI v1.9.1+ and Temporal Server v1.32.0+ or Temporal Cloud. Define and register Activities as usual, then invoke them from non-Workflow Client code. See the [Rust Standalone Activities guide](https://docs.temporal.io/develop/rust/activities/standalone-activities) and [core concepts](../core/standalone-activities.md).
