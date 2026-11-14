@@ -109,7 +109,7 @@ When a developer says "task queue" they may mean "job queue": Celery, Dramatiq, 
 
 ## Third-Party Integrations
 
-For Temporal plugins and integrations with third-party frameworks and SDKs (Spring Boot, Spring AI, OpenAI Agents SDK, Google ADK, etc.), see **[integrations catalog](references/integrations.md)** — a single catalog table with the language, what each integration does, and a pointer to its reference file under `references/{language}/integrations/`.
+For Temporal plugins and integrations with third-party frameworks and SDKs (Claude Agent SDK, OpenAI Agents SDK, Google ADK, etc.), see the **[integrations catalog](references/core/integrations.md)** for supported languages, what each integration does, and local references or upstream guides.
 
 ## Feedback
 
