@@ -25,15 +25,15 @@ Plugins maintained in the Temporal AI integrations repository. Use the linked lo
 | Google ADK (`io.temporal:google-adk`, Public Preview) | Java | Durable agents | [Package guide](https://github.com/temporalio/ai-integrations/tree/main/java/google-adk) |
 | Google ADK (`temporalio-google-adk`, Pre-release) | Python | Durable Google ADK agents | [Google ADK Python integration guide](../python/integrations/google-adk.md) |
 | Google ADK (`@temporalio/google-adk`, Public Preview) | TypeScript | Durable agents | [Temporal guide](https://docs.temporal.io/develop/typescript/integrations/google-adk-agents) |
-| Google GenAI (`temporalio-google-genai`, [GA](https://github.com/temporalio/ai-integrations/blob/main/python/google_genai/plugin.toml)) | Python | Durable Gemini calls | [Temporal guide](https://docs.temporal.io/develop/python/integrations/google-genai) |
+| Google GenAI (`temporalio-google-genai`, GA) | Python | Durable Gemini calls | [Temporal guide](https://docs.temporal.io/develop/python/integrations/google-genai) |
 | LangGraph (`temporalio-langgraph`, Public Preview) | Python | Durable LangGraph agents and graphs | [LangGraph Python integration guide](../python/integrations/langgraph.md) |
 | LangSmith (`temporalio-langsmith`, Public Preview) | Python | Trace propagation across Workflows, Activities, and Workers | [LangSmith Python integration guide](../python/integrations/langsmith.md) |
 | LangSmith (`@temporalio/langsmith`, Public Preview) | TypeScript | Trace propagation | [Temporal guide](https://docs.temporal.io/develop/typescript/integrations/langsmith) |
 | MCP (`temporalio-mcp`, Pre-release) | Python | Tools, prompts, and resources as Activities | [Temporal guide](https://docs.temporal.io/develop/python/integrations/mcp) |
 | OpenAI Agents SDK (`temporalio-openai-agents`, GA) | Python | Durable OpenAI Agents SDK agents | [OpenAI Agents SDK Python integration guide](../python/integrations/openai-agents-sdk.md) |
-| OpenAI Agents SDK (`@temporalio/openai-agents`, [GA](https://github.com/temporalio/ai-integrations/blob/main/typescript/openai-agents/plugin.toml)) | TypeScript | Durable agent execution | [Temporal guide](https://docs.temporal.io/develop/typescript/integrations/openai-agents) |
+| OpenAI Agents SDK (`@temporalio/openai-agents`, GA) | TypeScript | Durable agent execution | [Temporal guide](https://docs.temporal.io/develop/typescript/integrations/openai-agents) |
 | OpenAI Codex (`temporalio-openai-codex`, Pre-release) | Python | Durable Codex agents | [Package guide](https://github.com/temporalio/ai-integrations/tree/main/python/openai_codex) |
-| Spring AI (`io.temporal:spring-ai`, Public Preview; legacy `temporal-spring-ai`) | Java | Durable Spring AI agents | [Spring AI Java integration guide](../java/integrations/spring-ai.md) |
+| Spring AI (`io.temporal:spring-ai`, Public Preview) | Java | Durable Spring AI agents | [Spring AI Java integration guide](../java/integrations/spring-ai.md) |
 | Strands Agents (`temporalio-strands-agents`, Public Preview) | Python | Durable Strands agents | [Temporal guide](https://docs.temporal.io/develop/python/integrations/strands-agents) |
 | Strands Agents (`@temporalio/strands-agents`, Pre-release) | TypeScript | Durable Strands agents | [Temporal guide](https://docs.temporal.io/develop/typescript/integrations/strands-agents) |
 | TypeSafe (`temporalio-typesafe`, Pre-release) | Python | Durable decision calls as Activities, with confidence routing in Workflow code | [Package guide](https://github.com/temporalio/ai-integrations/tree/main/python/typesafe) |
