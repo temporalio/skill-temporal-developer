@@ -2,9 +2,9 @@
 
 ## Overview
 
-Temporal provides durable execution for AI/LLM applications, handling retries, rate limits, and long-running operations automatically. These patterns apply across languages, with Python being the most mature for AI integration.
+Temporal provides durable execution for AI/LLM applications, handling retries, rate limits, and long-running operations automatically. These patterns apply across languages.
 
-For Python-specific implementation details and code examples, see [Python AI integration patterns](../python/ai-patterns.md). Temporal's Python SDK also provides pre-built integrations with several LLM and agent SDKs, which can be leveraged to create agentic workflows with minimal effort (when working in Python).
+For available integrations with LLM and agent SDKs across languages, see [Temporal AI integrations](https://github.com/temporalio/ai-integrations). For Python-specific implementation details and code examples, see [Python AI integration patterns](../python/ai-patterns.md).
 
 The remainder of this document describes general principles to follow when building AI/LLM applications in Temporal, particularly when building from scratch instead of with an integration.
 
