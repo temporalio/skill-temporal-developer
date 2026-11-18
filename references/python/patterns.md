@@ -171,11 +171,12 @@ Generally, asyncio is OK to use in Temoral workflows. But some asyncio calls are
 # workflow.wait() - like asyncio.wait()
 done, pending = await workflow.wait(
     futures,
-    return_when=workflow.WaitConditionResult.FIRST_COMPLETED
+    return_when=asyncio.FIRST_COMPLETED
 )
 
 # workflow.as_completed() - like asyncio.as_completed()
-async for future in workflow.as_completed(futures):
+# Returns a plain iterator of awaitables: use `for`, not `async for`
+for future in workflow.as_completed(futures):
     result = await future
     # Process each result as it completes
 ```
