@@ -350,21 +350,32 @@ func MyWorkflow(ctx workflow.Context) error {
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent -- they may be retried (as with ALL activities).
+**Important:** Compensation activities should be idempotent -- they may be retried. Forward activities should return a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
 
 Use `workflow.NewDisconnectedContext` when running compensations so they execute even if the workflow is cancelled.
 
 ```go
+package orders
+
+import (
+    "time"
+
+    "go.temporal.io/sdk/workflow"
+)
+
+type Order struct {
+    ID          string
+    AmountCents int64
+}
+
 func OrderWorkflow(ctx workflow.Context, order Order) (string, error) {
     actCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
         StartToCloseTimeout: 5 * time.Minute,
     })
 
-    var compensations []func(ctx workflow.Context) error
+    var compensations []func(workflow.Context) error
 
-    // Helper to run all compensations in reverse, using a disconnected context
-    // so compensations run even if the workflow is cancelled.
-    runCompensations := func() {
+    compensate := func(cause error) (string, error) {
         disconnectedCtx, _ := workflow.NewDisconnectedContext(ctx)
         compCtx := workflow.WithActivityOptions(disconnectedCtx, workflow.ActivityOptions{
             StartToCloseTimeout: 5 * time.Minute,
@@ -374,30 +385,28 @@ func OrderWorkflow(ctx workflow.Context, order Order) (string, error) {
                 workflow.GetLogger(ctx).Error("Compensation failed", "error", err)
             }
         }
+        return "", cause
     }
 
-    // Register compensation BEFORE running the activity.
-    // If the activity completes the effect but fails on return,
-    // we still need the compensation.
     compensations = append(compensations, func(ctx workflow.Context) error {
         return workflow.ExecuteActivity(ctx, ReleaseInventoryIfReserved, order).Get(ctx, nil)
     })
     if err := workflow.ExecuteActivity(actCtx, ReserveInventory, order).Get(ctx, nil); err != nil {
-        runCompensations()
-        return "", err
+        return compensate(err)
     }
 
     compensations = append(compensations, func(ctx workflow.Context) error {
         return workflow.ExecuteActivity(ctx, RefundPaymentIfCharged, order).Get(ctx, nil)
     })
     if err := workflow.ExecuteActivity(actCtx, ChargePayment, order).Get(ctx, nil); err != nil {
-        runCompensations()
-        return "", err
+        return compensate(err)
     }
 
+    compensations = append(compensations, func(ctx workflow.Context) error {
+        return workflow.ExecuteActivity(ctx, CancelShipmentIfCreated, order).Get(ctx, nil)
+    })
     if err := workflow.ExecuteActivity(actCtx, ShipOrder, order).Get(ctx, nil); err != nil {
-        runCompensations()
-        return "", err
+        return compensate(err)
     }
 
     return "Order completed", nil
