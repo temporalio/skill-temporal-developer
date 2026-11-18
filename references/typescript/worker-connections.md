@@ -1,17 +1,10 @@
 # TypeScript SDK Worker Connections
 
-How a TypeScript Worker connects to the Temporal Service, and what is documented about managing that connection over the Worker's lifetime.
-
 ## `NativeConnection` vs `Connection`
 
-The TypeScript SDK has two connection classes:
+`Worker.create()` accepts a [`NativeConnection`](https://typescript.temporal.io/api/classes/worker.NativeConnection) from `@temporalio/worker`. `Client` accepts a [`ConnectionLike`](https://typescript.temporal.io/api/interfaces/client.ClientOptions#connection), including a `Connection` from `@temporalio/client` or a `NativeConnection`.
 
-- **`NativeConnection`** from `@temporalio/worker` — used by Workers.
-- **`Connection`** from `@temporalio/client` — used by a Temporal Application or by code inside an Activity (typically wrapped by `Client`).
-
-Both classes accept the same set of connection options.
-
-Do not import `NativeConnection` from `@temporalio/client`, and do not pass a client `Connection` into `Worker.create()`. They are distinct types.
+Both classes support address, TLS, and gRPC metadata settings. Check the [Worker options](https://typescript.temporal.io/api/interfaces/worker.NativeConnectionOptions) and [Client options](https://typescript.temporal.io/api/interfaces/client.ConnectionOptions) before sharing configuration. For example, `connectTimeout` is specific to `Connection`.
 
 ## Build a connection and hand it to the Worker
 
@@ -39,13 +32,7 @@ async function run() {
 }
 ```
 
-Key points:
-
-- `NativeConnection.connect(options)` returns a `NativeConnection`.
-- Pass the resulting object as the `connection` field of `Worker.create()`.
-- Call `await connection.close()` in a `finally` block after `worker.run()` resolves.
-
-If you omit `connection`, the Worker connects to `localhost` by default.
+If you omit `connection`, the Worker connects to `localhost:7233` by default.
 
 ## Load options from `@temporalio/envconfig`
 
@@ -59,17 +46,15 @@ const config = loadClientConnectConfig();
 const connection = await NativeConnection.connect(config.connectionOptions);
 ```
 
-`loadClientConnectConfig` reads `~/.config/temporalio/temporal.toml` (or the path in `TEMPORAL_CONFIG_FILE`) plus standard `TEMPORAL_*` environment variables; env vars take precedence over file values.
+Use `namespace: config.namespace` in `Worker.create()`. The Namespace is separate from `connectionOptions`.
+
+`loadClientConnectConfig` reads `temporal.toml` from the platform's configuration directory or the path in `TEMPORAL_CONFIG_FILE`. Supported environment variables override values from the file. See the [Worker configuration examples](https://docs.temporal.io/develop/typescript/client/temporal-client#connect-to-temporal-service-from-a-worker).
 
 ## Temporal Cloud
 
-A Worker connecting to Temporal Cloud needs:
+Use your Namespace's gRPC endpoint as the address and pass the full Namespace ID (`<namespace>.<account-id>`) to `Worker.create()`. See [Temporal Cloud Namespaces](https://docs.temporal.io/cloud/namespaces#how-to-access-a-namespace-in-temporal-cloud).
 
-- Address of the form `<Namespace>.<ID>.tmprl.cloud:<port>`.
-- An mTLS CA certificate.
-- An mTLS private key.
-
-API-key authentication is an alternative to mTLS:
+For API key authentication, enable TLS and pass the API key:
 
 ```typescript
 const connection = await NativeConnection.connect({
@@ -79,28 +64,20 @@ const connection = await NativeConnection.connect({
 });
 ```
 
-## Updating an API key at runtime (client `Connection` only)
+For mTLS, pass the client certificate and matching private key as `tls.clientCertPair` with `crt` and `key`. Configure the signing CA certificate on the Namespace. See [Temporal Cloud mTLS setup](https://docs.temporal.io/cloud/certificates).
 
-On the client-side `Connection`, replace the API key without reconnecting:
+## Rotate an API key at runtime
+
+Update a Worker's API key without recreating its `NativeConnection`:
 
 ```typescript
-connection.setApiKey('<NewAPIKey>');
+await connection.setApiKey(newApiKey);
 ```
 
-This is documented for the client `Connection` from `@temporalio/client`. Do not assume the same method exists on `NativeConnection` — the local docs do not describe it.
+An explicit `authorization` entry in the connection metadata takes precedence. See [`NativeConnection.setApiKey()`](https://typescript.temporal.io/api/classes/worker.NativeConnection#setapikey).
 
 ## Lifecycle and shutdown
 
-- Workers shut down on `SIGINT`, `SIGTERM`, `SIGQUIT`, or `SIGUSR2`.
-- After `worker.run()` resolves (graceful or forced), close the connection in a `finally`.
-- For programmatic shutdown call `Worker.shutdown()`, then close the connection.
+Workers begin shutdown on `SIGINT`, `SIGTERM`, `SIGQUIT`, or `SIGUSR2` by default. For programmatic shutdown, call `worker.shutdown()` to begin draining. Wait for `worker.run()` to settle, then close the connection in `finally` as shown above.
 
-Do not close the connection while `worker.run()` is still pending — the Worker uses that connection for polling.
-
-## Common mistakes
-
-1. **Wrong import** — `NativeConnection` lives in `@temporalio/worker`, not `@temporalio/client`.
-2. **Mixing the two classes** — `Worker.create({ connection })` expects a `NativeConnection`; `new Client({ connection })` expects a `Connection`.
-3. **Skipping `close()`** — leaking the underlying gRPC connection on process exit; always `await connection.close()` in `finally`.
-4. **Calling `connection.setApiKey()` on a `NativeConnection`** — only documented on the client `Connection`.
-5. **Hard-coding Cloud credentials** — load them with `loadClientConnectConfig` from `@temporalio/envconfig` so the Worker reads them from env vars or a TOML profile at runtime.
+`worker.run()` can reject if graceful shutdown fails. If multiple Workers share a connection, wait for all of them to stop before closing it. See [Worker shutdown](https://typescript.temporal.io/api/classes/worker.Worker#shutdown) and [`NativeConnection.close()`](https://typescript.temporal.io/api/classes/worker.NativeConnection#close).

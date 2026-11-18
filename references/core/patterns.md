@@ -129,13 +129,13 @@ Client                    Workflow
 
 - Long-running workflows (entity workflows, subscriptions)
 - Workflows with many iterations
-- When history approaches 10,000+ events
+- Keep history to a few thousand Events; use the SDK's Continue-as-New suggestion instead of waiting for the 10,240-Event / 10MB warning
 - Periodic cleanup of accumulated state
 
 **How It Works**:
 
 ```
-Workflow (history: 10,000 events)
+Workflow (history: a few thousand Events)
     │
     │ continueAsNew(currentState)
     ▼
@@ -193,8 +193,8 @@ On failure at step 3:
 
 **Patterns**:
 
-- `Promise` / `asyncio` - Use traditional concurrency helpers (e.g. wait for all, wait for first, etc)
-- Partial failure handling - Continue with successful results
+- Use the concurrency primitives supported inside the Workflow by the chosen SDK. See the parallel execution examples for [Python](../python/patterns.md#parallel-execution), [TypeScript](../typescript/patterns.md#parallel-execution), [Go](../go/patterns.md#parallel-execution), [Java](../java/patterns.md#parallel-execution), [.NET](../dotnet/patterns.md#parallel-execution), [Ruby](../ruby/patterns.md#parallel-execution), and [PHP](../php/patterns.md#parallel-execution).
+- Decide how to handle a failed operation: fail the Workflow, cancel remaining work, or collect successful results. The choice depends on whether partial results are useful.
 
 ## Entity Workflow Pattern
 
@@ -362,11 +362,13 @@ This ensures that on replay, already-completed steps are skipped.
 
 **Purpose**: Handle data that exceeds Temporal's payload limits without polluting workflow history.
 
-**Limits** (see `references/core/gotchas.md` for details):
+**Limits** (see [Temporal common pitfalls](gotchas.md) for details):
 
 - Max 2MB per individual payload
 - Max 4MB per gRPC message
 - Max 50MB for workflow history (aim for < 10MB)
+
+**Check for SDK support first**: the Go, Python, and TypeScript SDKs have built-in External Storage (Public Preview); [Java support](https://docs.temporal.io/develop/java/data-handling/external-storage) is Pre-release. External Storage applies the claim-check pattern for you — Payloads over a size threshold are offloaded to S3 or GCS and replaced in Event History with a small reference, with no changes to Workflow or Activity code. Prefer it where it exists; see `references/{your_language}/external-storage.md`, if available. The rest of this section applies when you need explicit control over which data is offloaded, or when your SDK has no built-in support.
 
 **Key Principle**: Large data should never flow through workflow history. Activities read and write large data directly, passing only small references through the workflow.
 
@@ -416,7 +418,7 @@ The workflow only handles references (small strings). The activity does all larg
 
 **Why Heartbeat**:
 
-1. **Support activity cancellation** - Cancellations are delivered to activities via heartbeat. Activities that don't heartbeat won't know they've been cancelled.
+1. **Support activity cancellation** - With heartbeat-based cancellation delivery, Activities must heartbeat to receive cancellation. Check the SDK for additional delivery mechanisms.
 2. **Resume progress after failure** - Heartbeat details persist across retries, allowing activities to resume where they left off.
 3. **Detect stuck activities** - If an activity stops heartbeating, Temporal can time it out and retry.
 
@@ -437,7 +439,7 @@ Activity calls heartbeat()
             Activity can catch this to perform cleanup
 ```
 
-**Key Point**: If an activity never heartbeats, it will run to completion even if cancelled—it has no way to learn about the cancellation.
+**Key Point**: With heartbeat-based delivery, an Activity that never heartbeats cannot receive a cancellation request while running. Recent Java SDK/server combinations also support cancellation delivery without heartbeats; check the SDK before relying on that mechanism.
 
 ## Local Activities
 
@@ -466,7 +468,7 @@ Activity calls heartbeat()
 ## Choosing Between Patterns
 
 | Need | Pattern |
-|------|---------|
+| -- | -- |
 | Send data, don't need response | Signal |
 | Read state, no modification | Query |
 | Modify state, need response | Update |
@@ -477,3 +479,4 @@ Activity calls heartbeat()
 | Long-lived stateful entity | Entity Workflow |
 | Safe retries/replays | Idempotency |
 | Low-latency short operations | Local Activities |
+| Run a background job (job queue) | Standalone Activity — see [Temporal job queue guide](job-queue.md) |

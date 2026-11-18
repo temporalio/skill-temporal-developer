@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Java SDK has **no sandbox** (only Python and TypeScript have sandboxing). The Java SDK relies on developer conventions to enforce determinism. The SDK provides `Workflow.*` APIs as safe replacements for common non-deterministic operations. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time — see `references/java/determinism-protection.md`.
+The Java SDK has **no sandbox** (only Python and TypeScript have sandboxing). The Java SDK relies on developer conventions to enforce determinism. The SDK provides `Workflow.*` APIs as safe replacements for common non-deterministic operations. A static analysis tool (`temporal-workflowcheck`, beta) can catch violations at build time — see [Java determinism protection guide](determinism-protection.md).
 
 ## Why Determinism Matters: History Replay
 
@@ -31,7 +31,7 @@ The following are forbidden inside workflow code but are appropriate to use in a
 ## Safe Builtin Alternatives
 
 | Forbidden | Safe Alternative |
-|-----------|------------------|
+| -- | -- |
 | `Thread.sleep(millis)` | `Workflow.sleep(Duration.ofMillis(millis))` |
 | `UUID.randomUUID()` | `Workflow.randomUUID()` |
 | `Math.random()` | `Workflow.newRandom().nextInt()` |
@@ -43,7 +43,7 @@ The following are forbidden inside workflow code but are appropriate to use in a
 
 ## Testing Replay Compatibility
 
-Use the `WorkflowReplayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/java/testing.md`.
+Use the `WorkflowReplayer` class to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of [Java testing guide](testing.md).
 
 ## Best Practices
 

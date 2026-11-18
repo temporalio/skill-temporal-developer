@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Python SDK provides comprehensive observability through logging, metrics, tracing, and visibility (Search Attributes).
+The Python SDK provides comprehensive observability through logging, metrics, tracing (OpenTelemetry), and visibility (Search Attributes).
+
+These pillars are complementary: **logging** (below) captures discrete events, **metrics** capture aggregate worker health, **tracing** stitches a single request across Client/Workflow/Activity/Nexus boundaries, and **Search Attributes** make executions queryable.
 
 ## Logging
 
@@ -94,9 +96,73 @@ Runtime.set_default(runtime, error_if_already_set=True)
 - `temporal_activity_execution_latency` - Activity execution time
 - `temporal_workflow_task_replay_latency` - Replay duration
 
+## Distributed Tracing (OpenTelemetry)
+
+See [OpenTelemetry Python integration guide](integrations/opentelemetry.md).
+
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/python/data-handling.md`
+Custom searchable fields for workflow visibility. These can be created at Workflow start:
+
+```python
+from temporalio.common import (
+    SearchAttributeKey,
+    SearchAttributePair,
+    TypedSearchAttributes,
+)
+from datetime import datetime
+from datetime import timezone
+
+ORDER_ID = SearchAttributeKey.for_keyword("OrderId")
+ORDER_STATUS = SearchAttributeKey.for_keyword("OrderStatus")
+ORDER_TOTAL = SearchAttributeKey.for_float("OrderTotal")
+CREATED_AT = SearchAttributeKey.for_datetime("CreatedAt")
+
+# At workflow start
+handle = await client.start_workflow(
+    OrderWorkflow.run,
+    order,
+    id=f"order-{order.id}",
+    task_queue="orders",
+    search_attributes=TypedSearchAttributes([
+        SearchAttributePair(ORDER_ID, order.id),
+        SearchAttributePair(ORDER_STATUS, "pending"),
+        SearchAttributePair(ORDER_TOTAL, order.total),
+        SearchAttributePair(CREATED_AT, datetime.now(timezone.utc)),
+    ]),
+)
+```
+
+Or upserted during Workflow execution:
+
+```python
+from temporalio import workflow
+from temporalio.common import SearchAttributeKey
+
+ORDER_STATUS = SearchAttributeKey.for_keyword("OrderStatus")
+
+@workflow.defn
+class OrderWorkflow:
+    @workflow.run
+    async def run(self, order: Order) -> str:
+        # ... process order ...
+
+        # Update search attribute
+        workflow.upsert_search_attributes([
+            ORDER_STATUS.value_set("completed"),
+        ])
+        return "done"
+```
+
+### Querying Workflows by Search Attributes
+
+```python
+# List workflows using search attributes
+async for workflow in client.list_workflows(
+    'OrderStatus = "processing" OR OrderStatus = "pending"'
+):
+    print(f"Workflow {workflow.id} is still processing")
+```
 
 ## Best Practices
 
@@ -104,3 +170,4 @@ See the Search Attributes section of `references/python/data-handling.md`
 2. Don't use print() in workflows - it will produce duplicate output on replay
 3. Configure metrics for production monitoring
 4. Use Search Attributes for business-level visibility
+5. Use the `OpenTelemetryPlugin` for distributed tracing across Client/Workflow/Activity/Nexus boundaries.
