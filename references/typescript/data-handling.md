@@ -102,14 +102,16 @@ export const payloadConverter = new DefaultPayloadConverterWithProtobufs({ proto
 const dataConverter = { payloadConverterPath: require.resolve('./payload-converter') };
 ```
 
-For SDK versions before v1.25, import the converter from `@temporalio/common/lib/protobufs`.
+### Protobuf.js compatibility
 
-### Upgrade to Protobuf.js v8
-
-The TypeScript SDK uses Protobuf.js v8 starting with v1.23. Upgrade the application's `protobufjs` dependency when supplying a custom root to a Protobuf payload converter. A v7 root can still decode binary payloads but fails for Protobuf JSON with `TypeError: type must be a Type`. In v1.25+, explicitly install peer dependencies `protobufjs@^8.7.1` and `long@^5.3.2` if your package manager leaves them unresolved.
+Use Protobuf.js v8 when supplying a custom root to the current SDK's Protobuf payload converter. A v7 root can decode binary payloads, but Protobuf JSON decoding fails with `TypeError: type must be a Type`. If your package manager leaves `protobufjs` or `long` unresolved, install them using the peer dependency ranges declared by your installed `@temporalio/common`.
 
 - Construct generated messages with `Message.create({...})`.
 - Read default-valued fields directly. They can return the default even when the field is missing from `Object.keys()` or an object spread.
+
+### Older SDK import path
+
+If your installed `@temporalio/common` only provides the converter at `@temporalio/common/lib/protobufs`, import it from that path.
 
 ## Payload Codec (Encryption)
 
