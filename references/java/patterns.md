@@ -198,6 +198,27 @@ ProcessOrderWorkflow child = Workflow.newChildWorkflowStub(
     ProcessOrderWorkflow.class, options);
 ```
 
+### Set defaults when registering the parent
+
+Prefer call-site options so the parent Workflow shows how each child runs. Use registration defaults when several children of the same parent intentionally share a policy, such as an execution timeout.
+
+Set defaults on the `WorkflowImplementationOptions` used to register the parent Workflow implementation. They apply to typed and untyped Child Workflow stubs created by that implementation.
+
+```java
+WorkflowImplementationOptions parentOptions = WorkflowImplementationOptions.newBuilder()
+    .setDefaultChildWorkflowOptions(ChildWorkflowOptions.newBuilder()
+        .setWorkflowExecutionTimeout(Duration.ofMinutes(10))
+        .build())
+    .setChildWorkflowOptions(Collections.singletonMap("ProcessOrder",
+        ChildWorkflowOptions.newBuilder().setTaskQueue("order-tasks").build()))
+    .build();
+worker.registerWorkflowImplementationTypes(parentOptions, MyWorkflowImpl.class);
+```
+
+Use the registered Child Workflow Type name as the map key, for example `ProcessOrder` from `@WorkflowMethod(name = "ProcessOrder")`. For the Task Queue and execution timeout, per-type settings override the shared defaults. Settings passed to `Workflow.newChildWorkflowStub(...)` override both.
+
+Java generates a Workflow ID when none is set. If a child needs an explicit ID, set it at the call site so it can vary between starts.
+
 ## Handles to External Workflows
 
 ```java
