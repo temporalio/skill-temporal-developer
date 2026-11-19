@@ -296,6 +296,7 @@ See [Java testing guide](testing.md) for info on writing tests.
 - **[Java observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
 - **[Java testing guide](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **[Java advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
+- **[Java Nexus guide](nexus.md)** - Register a Nexus Service and call its Operations from a Workflow
 - **[Java data handling guide](data-handling.md)** - Data converters, Jackson, payload encryption
 - **[Java versioning guide](versioning.md)** - Patching API, workflow type versioning, Worker Versioning
 - **[Java standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [Temporal standalone Activities guide](../core/standalone-activities.md).
@@ -303,4 +304,4 @@ See [Java testing guide](testing.md) for info on writing tests.
 
 ### Java Integrations
 
-For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see [integrations catalog](../integrations.md) and filter for Java. Reference files live under `references/java/integrations/`.
+For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see [integrations catalog](../core/integrations.md) and filter for Java. Reference files live under `references/java/integrations/`.

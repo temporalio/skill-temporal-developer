@@ -120,6 +120,16 @@ Outputs this JSON shape:
 }
 ```
 
+**Delay the first attempt.** Add `--start-delay 10m` to `temporal activity start` for a one-time job that should become available later. The Retry Policy controls the timing of subsequent attempts.
+
+Before the first Activity Task is dispatched, change the delay with the Public Preview `update-options` command:
+
+```bash
+temporal activity update-options --activity-id my-activity-id --start-delay 20m
+```
+
+The new delay is relative to the original schedule time. Set it to `0s` to make the task available immediately. When unpausing a Standalone Activity before its first attempt, the service honors the existing deadline and dispatches immediately if it has passed.
+
 **Result (wait for a started Activity).** Waits for completion and prints the result. `--run-id` is optional and defaults to the latest run of that Activity ID:
 
 ```bash

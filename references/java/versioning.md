@@ -39,9 +39,30 @@ public class ShippingWorkflowImpl implements ShippingWorkflow {
 
 **How it works:**
 
-- For new executions: returns `maxSupported` and records a marker in history
+- When first recording a version: selects `maxSupported` by default
 - For replay with the marker: returns the recorded version
 - For replay without the marker: returns `DEFAULT_VERSION` (-1)
+
+### Choose the first version with a Worker provider
+
+Use the experimental `WorkerOptions.Builder.setPreferredVersionProvider` to stage a new `Workflow.getVersion` branch while both versions are supported. It runs during live execution before the SDK records a version marker for a change ID. Replay follows history, and a recorded version stays fixed for that run.
+
+```java
+import io.temporal.worker.VersionPreference;
+import io.temporal.worker.WorkerOptions;
+
+WorkerOptions options = WorkerOptions.newBuilder()
+    .setPreferredVersionProvider(input -> {
+        if (input.getChangeId().equals("order-validation") && !enableOrderValidation) {
+            return VersionPreference.of(input.getMinSupported());
+        }
+        return null;
+    })
+    .build();
+factory.newWorker("orders", options);
+```
+
+`enableOrderValidation` is Worker configuration. Keep the Workflow's `Workflow.getVersion("order-validation", Workflow.DEFAULT_VERSION, 1)` guard and both branches during rollout. A `null` preference selects `maxSupported`. An out-of-range preference fails the Workflow Task unless you call `VersionPreference.of(version).clampToSupportedRange()`. Keep the provider fast because it runs on the Workflow thread.
 
 ### Three-Step Patching Process
 

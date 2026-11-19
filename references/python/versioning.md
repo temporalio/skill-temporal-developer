@@ -31,11 +31,35 @@ class ShippingWorkflow:
 
 **How it works:**
 
-- For new executions: `patched()` returns `True` and records a marker in the Workflow history
+- On the first live call for a new patch ID, `patched()` defaults to `True` and records a marker in Workflow history
 - For replay with the marker: `patched()` returns `True` (history includes this patch)
 - For replay without the marker: `patched()` returns `False` (history predates this patch)
 
-**Python-specific behavior:** The `patched()` return value is memoized on first call. This means you cannot reliably use `patched()` in loops—it will return the same value every iteration. Workaround: append a sequence number to the patch ID for each iteration (e.g., `f"my-change-{i}"`).
+Repeated calls with the same patch ID reuse the memoized decision.
+
+### Gate a new patch during rollout
+
+The experimental `Worker(..., patch_activation_callback=...)` option receives `PatchActivationInput` at the first live encounter with a non-deprecated patch ID. Returning `False` leaves `workflow.patched()` false and writes no marker. Returning `True` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
+
+Read the rollout flag in Worker startup code and capture its Boolean value in the callback.
+
+```python
+import os
+
+from temporalio.worker import Worker
+
+enable_email_path = os.environ.get("ENABLE_EMAIL_PATH") == "true"
+worker = Worker(
+    client,
+    task_queue="orders",
+    workflows=[MyWorkflow],
+    patch_activation_callback=lambda patch: (
+        patch.patch_id != "send-email-instead-of-fax" or enable_email_path
+    ),
+)
+```
+
+In the Workflow, use `workflow.patched("send-email-instead-of-fax")` to choose between the two branches. The callback returns only the rollout decision. The Workflow branch schedules the Activity.
 
 ### Three-Step Patching Process
 

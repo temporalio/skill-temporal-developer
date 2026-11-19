@@ -88,19 +88,30 @@ export const payloadConverter = new CompositePayloadConverter(
 
 ## Protobuf Support
 
-Using Protocol Buffers for type-safe serialization.
-
-**Note:** JSON serialization (the default) is preferred for TypeScript applications—it's simpler and more performant. Use Protobuf only when interoperating with services that require it.
+Configure a Protobuf payload converter when Workflow, Signal, or Activity payloads contain Protobuf message instances. Export `payloadConverter` from a module with the generated Protobuf root and pass the same `payloadConverterPath` to the Client and Worker. Also pass that path to `bundleWorkflowCode` if building the Workflow bundle separately.
 
 ```typescript
-import { DefaultPayloadConverterWithProtobufs } from '@temporalio/common/lib/protobufs';
+// payload-converter.ts
+import { DefaultPayloadConverterWithProtobufs } from '@temporalio/common/protobufs';
+import root from './generated/root';
 
-const dataConverter: DataConverter = {
-  payloadConverter: new DefaultPayloadConverterWithProtobufs({
-    protobufRoot: myProtobufRoot,
-  }),
-};
+export const payloadConverter = new DefaultPayloadConverterWithProtobufs({ protobufRoot: root });
 ```
+
+```typescript
+const dataConverter = { payloadConverterPath: require.resolve('./payload-converter') };
+```
+
+### Protobuf.js compatibility
+
+Use Protobuf.js v8 when supplying a custom root to the current SDK's Protobuf payload converter. A v7 root can decode binary payloads, but Protobuf JSON decoding fails with `TypeError: type must be a Type`. If your package manager leaves `protobufjs` or `long` unresolved, install them using the peer dependency ranges declared by your installed `@temporalio/common`.
+
+- Construct generated messages with `Message.create({...})`.
+- Read default-valued fields directly. They can return the default even when the field is missing from `Object.keys()` or an object spread.
+
+### Older SDK import path
+
+If your installed `@temporalio/common` only provides the converter at `@temporalio/common/lib/protobufs`, import it from that path.
 
 ## Payload Codec (Encryption)
 

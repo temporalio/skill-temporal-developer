@@ -272,6 +272,17 @@ public class MyWorkflowImpl implements MyWorkflow {
 }
 ```
 
+### Delay the first Workflow Task of the next run
+
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Set the delay as a `Duration` on `ContinueAsNewOptions`.
+
+```java
+ContinueAsNewOptions options = ContinueAsNewOptions.newBuilder()
+    .setBackoffStartInterval(Duration.ofSeconds(30))
+    .build();
+Workflow.continueAsNew(options, state);
+```
+
 ## Saga Pattern (Compensations)
 
 **Important:** Compensation activities should be idempotent — they may be retried. Forward activities should throw a non-retryable error for permanent business failures such as payment declines, so compensation can begin.

@@ -323,6 +323,16 @@ for {
 return "", workflow.NewContinueAsNewError(ctx, LongRunningWorkflow, state)
 ```
 
+### Delay the first Workflow Task of the next run
+
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Pass a `time.Duration` in `workflow.ContinueAsNewErrorOptions.BackoffStartInterval`.
+
+```go
+return "", workflow.NewContinueAsNewErrorWithOptions(ctx, workflow.ContinueAsNewErrorOptions{
+    BackoffStartInterval: 30 * time.Second,
+}, LongRunningWorkflow, state)
+```
+
 ## Cancellation Handling
 
 Use `ctx.Done()` to detect cancellation and `workflow.NewDisconnectedContext` for cleanup that must run even after cancellation.

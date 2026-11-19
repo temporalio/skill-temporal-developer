@@ -10,6 +10,27 @@ The Python SDK uses a `DataConverter` to move values between the SDK and the Tem
 
 Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in `failure_converter`.
 
+
+## Payload and Memo Size Checks
+
+Workers check outbound payload and aggregate Memo size before uploading Task completions. The Worker fails the Task attempt if the payload field or Memo exceeds the error limit reported by the Server for that Namespace. Reduce the data or configure [External Storage](external-storage.md) for eligible payloads.
+
+In Python SDK 1.31 and later, pass warning thresholds in bytes to `Client.connect`. The defaults are 512 KiB for an outbound payload field and 2 KiB for a Memo. Set an individual threshold to zero to turn off its warning.
+
+```python
+from temporalio.client import Client, PayloadLimitsConfig
+
+client = await Client.connect(
+    "localhost:7233",
+    payload_limits=PayloadLimitsConfig(
+        payloads_warn_size=256 * 1024,
+        memo_warn_size=4 * 1024,
+    ),
+)
+```
+
+If a downstream gRPC proxy shrinks or offloads payloads after they leave the Worker, use `Worker(..., disable_payload_error_limit=True)` to defer enforcement to the Server. The Server's limits still apply.
+
 ## Default Payload Converter
 
 The default payload converter handles:

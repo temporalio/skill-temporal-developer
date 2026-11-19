@@ -35,9 +35,26 @@ public class ShippingWorkflow
 
 **How it works:**
 
-- For new executions: `Patched()` returns `true` and records a marker in the Workflow history
+- On the first live call for a new patch ID, `Patched()` defaults to `true` and records a marker in Workflow history
 - For replay with the marker: `Patched()` returns `true` (history includes this patch)
 - For replay without the marker: `Patched()` returns `false` (history predates this patch)
+
+### Gate a new patch during rollout
+
+The experimental `TemporalWorkerOptions.PatchActivationCallback` runs at the first live encounter with a non-deprecated patch ID. Returning `false` leaves `Workflow.Patched()` false and writes no marker. Returning `true` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
+
+Read the rollout flag in Worker startup code and capture its Boolean value in the callback.
+
+```csharp
+var enableEmailPath = Environment.GetEnvironmentVariable("ENABLE_EMAIL_PATH") == "true";
+var options = new TemporalWorkerOptions("orders")
+{
+    PatchActivationCallback = patch =>
+        patch.PatchId != "send-email-instead-of-fax" || enableEmailPath,
+};
+```
+
+In the Workflow, use `Workflow.Patched("send-email-instead-of-fax")` to choose between the two branches. The callback returns only the rollout decision. The Workflow branch schedules the Activity.
 
 ### Three-Step Patching Process
 

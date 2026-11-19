@@ -271,4 +271,4 @@ See [PHP testing guide](testing.md) for info on writing tests.
 
 ### PHP Integrations
 
-For PHP-specific third-party integrations (Laravel, etc.), see [integrations catalog](../integrations.md) and filter for PHP. Reference files live under `references/php/integrations/`.
+For PHP-specific third-party integrations (Laravel, etc.), see [integrations catalog](../core/integrations.md) and filter for PHP. Reference files live under `references/php/integrations/`.

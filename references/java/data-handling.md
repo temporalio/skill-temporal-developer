@@ -41,6 +41,18 @@ WorkflowClient client = WorkflowClient.newInstance(
 
 POJOs used as Workflow or Activity parameters are handled by the default `JacksonJsonPayloadConverter` and its `ObjectMapper`. Jackson may serialize a bean getter such as `getTotalPrice()` even when it has no corresponding field or setter. If deserialization then fails with an `UnrecognizedPropertyException`, a Workflow parameter can cause a Workflow Task processing failure, while an Activity parameter can cause an Activity Task failure. Mark computed getters with `@JsonIgnore`.
 
+## Jackson 3 (opt-in)
+
+The Java SDK defaults to Jackson 2 for JSON payloads. Java SDK v1.34.0 introduced experimental Jackson 3 support. To opt in, use Java 17 or later and add `tools.jackson.core:jackson-databind:3.x` to your classpath. See the [Java SDK release notes](https://github.com/temporalio/sdk-java/releases/tag/v1.34.0#spring-boot-4-and-jackson-3-support).
+
+Call this method before creating any Temporal clients:
+
+```java
+JacksonJsonPayloadConverter.setDefaultAsJackson3(true, true);
+```
+
+This changes the default JSON converter globally. The second argument enables Jackson 2 compatibility mode. Both converters use the `json/plain` encoding. See the [startup API Javadoc](https://javadoc.io/static/io.temporal/temporal-sdk/1.37.0/io/temporal/common/converter/JacksonJsonPayloadConverter.html#setDefaultAsJackson3(boolean,boolean)) and [Jackson 3 converter Javadoc](https://javadoc.io/static/io.temporal/temporal-sdk/1.37.0/io/temporal/common/converter/Jackson3JsonPayloadConverter.html).
+
 ## Custom Data Converter
 
 Implement `PayloadConverter` for custom serialization:
