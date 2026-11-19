@@ -71,7 +71,38 @@ Set the default runtime **before** creating any clients or workers.
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/ruby/data-handling.md`
+Define a search attribute key:
+
+```ruby
+key = Temporalio::SearchAttributes::Key.new(
+  'CustomerId',
+  Temporalio::SearchAttributes::IndexedValueType::KEYWORD
+)
+```
+
+Set at Workflow start:
+
+```ruby
+client.start_workflow(
+  MyWorkflow,
+  'arg',
+  id: 'wf-1',
+  task_queue: 'my-queue',
+  search_attributes: Temporalio::SearchAttributes.new({ key => 'customer-123' })
+)
+```
+
+Upsert from a Workflow:
+
+```ruby
+Temporalio::Workflow.upsert_search_attributes(key.value_set('new-value'))
+```
+
+### Querying Workflows by Search Attributes
+
+```ruby
+client.list_workflows("CustomerId = 'customer-123'")
+```
 
 ## Best Practices
 

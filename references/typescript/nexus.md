@@ -1,32 +1,57 @@
-# Nexus — TypeScript
+# TypeScript SDK Nexus
 
-Use Temporal Nexus from TypeScript with the `@temporalio/nexus` package.
+Use the [Nexus concepts](../core/nexus.md) to choose an operation and configure its Endpoint. Share the service contract between the caller and handler.
 
-## Key APIs
+## Define and handle an operation
 
-- `getClient()` — obtain a Temporal Client that shares the same connection as the current Worker; use for Signals, Queries, Updates from sync handlers.
-- `WorkflowRunOperationHandler` — start a Workflow as an asynchronous Nexus Operation.
+Declare the contract in a module usable from Workflow code:
 
-## Choosing Sync vs Async
+```typescript
+import { operation, service } from 'nexus-rpc';
 
-- Sync handler: only for highly reliable, predictably low‑latency work that completes well within 10s.
-- Async handler: use when latency/availability is uncertain, the work may exceed the 10s deadline, or depends on unreliable systems.
+export const invoiceService = service('Invoices', {
+  generate: operation<string, string>(),
+});
+```
 
-## Patterns
+Connect the contract to its implementation on the handler Worker:
 
-- From a sync handler, use `getClient()` to Signal/Query/Update existing Workflows (pass `ctx.abortSignal` to propagate request deadline).
-- From an async handler, wrap a Workflow via `new WorkflowRunOperationHandler<In,Out>(...)`.
+```typescript
+import { serviceHandler } from 'nexus-rpc';
+import { TemporalOperationHandler } from '@temporalio/nexus';
+import { invoiceService } from './invoice-service';
+import { generateInvoice } from './workflows';
 
-## Constraints and Behavior
+export const invoiceHandler = serviceHandler(invoiceService, {
+  generate: new TemporalOperationHandler<string, string>({
+    start: (_ctx, client, invoiceId) =>
+      client.startWorkflow(generateInvoice, {
+        args: [invoiceId],
+        workflowId: `invoice-${invoiceId}`,
+      }),
+  }),
+});
+```
 
-- Sync handlers must complete within the 10‑second Nexus request timeout.
-- Circuit breaker trips after 5 consecutive retryable errors for a caller‑Namespace/Endpoint pair.
-- Timeouts available to callers: Schedule‑to‑Close, Schedule‑to‑Start, Start‑to‑Close (async only).
+Register the handler with `Worker.create({ ..., nexusServices: [invoiceHandler] })`. Register the backing Workflow on the handler Task Queue, which is the default Task Queue for `startWorkflow`. Its return value becomes the operation result. Use a Workflow ID that identifies the business operation so retried starts target the same execution.
 
-## Quick Checklist
+For an operation that reliably completes well within 10 seconds, return `TemporalOperationResult.sync(result)` from `start`. To query or signal an existing Workflow, use `client.client.workflow.getHandle(workflowId)` in the handler.
 
-- Register the Nexus Service in a Worker listening on the Endpoint’s target Task Queue.
-- Ensure the Endpoint’s allowlist includes the caller Namespace.
-- Prefer async Operation for anything not comfortably under 10s.
+## Call from a Workflow
 
-Resources: https://docs.temporal.io/develop/typescript/nexus/feature-guide
+```typescript
+import { createNexusServiceClient } from '@temporalio/workflow';
+import { invoiceService } from './invoice-service';
+
+export async function requestInvoice(invoiceId: string): Promise<string> {
+  const invoices = createNexusServiceClient({
+    service: invoiceService,
+    endpoint: 'invoice-service-endpoint',
+  });
+  return invoices.executeOperation('generate', invoiceId, {
+    scheduleToCloseTimeout: '10m',
+  });
+}
+```
+
+The Endpoint must target the handler's Namespace and Task Queue and allow the caller's Namespace.

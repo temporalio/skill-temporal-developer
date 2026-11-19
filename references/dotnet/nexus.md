@@ -1,28 +1,57 @@
-# Nexus — .NET
+# .NET SDK Nexus
 
-Use Temporal Nexus from .NET with APIs in the `Temporalio.Nexus` namespace.
+Use the [Nexus concepts](../core/nexus.md) to choose an operation and configure its Endpoint. Share the service interface between the caller and handler.
 
-## Key APIs
+## Define and handle an operation
 
-- `NexusOperationExecutionContext.Current.TemporalClient` — obtain the Worker’s Temporal Client for Signals/Queries/Updates in sync handlers.
-- `WorkflowRunOperationHandler.FromHandleFactory(...)` — expose a Workflow as an asynchronous Nexus Operation.
-- `OperationHandler.Sync<In,Out>(...)` — simple synchronous handler implementation.
+```csharp
+using NexusRpc;
+using NexusRpc.Handlers;
+using Temporalio.Nexus;
 
-## Choosing Sync vs Async
+[NexusService]
+public interface IInvoiceService
+{
+    [NexusOperation]
+    string Generate(string invoiceId);
+}
 
-- Sync handler: use only for reliable, short work that finishes well within 10s.
-- Async handler: use when latency/availability is uncertain or work can exceed 10s.
+[NexusServiceHandler(typeof(IInvoiceService))]
+public class InvoiceService
+{
+    [TemporalOperation]
+    public Task<TemporalOperationResult<string>> Generate(
+        TemporalOperationStartContext context,
+        ITemporalNexusClient client,
+        string invoiceId) =>
+        client.StartWorkflowAsync(
+            (GenerateInvoiceWorkflow workflow) => workflow.RunAsync(invoiceId),
+            new() { Id = $"invoice-{invoiceId}" });
+}
+```
 
-## Constraints and Behavior
+Register the handler with `TemporalWorkerOptions.AddNexusService(new InvoiceService())`. Register the backing Workflow with `AddWorkflow<GenerateInvoiceWorkflow>()` on the handler Task Queue. By default, the Workflow runs on that Task Queue. Its return value becomes the operation result. Use a Workflow ID that identifies the business operation so retried starts target the same execution.
 
-- Sync handlers must complete within the 10‑second Nexus request timeout.
-- Circuit breaker trips after 5 consecutive retryable errors (per caller‑Namespace/Endpoint pair).
-- Caller‑side timeouts: Schedule‑to‑Close (overall), Schedule‑to‑Start, Start‑to‑Close (async only).
+For an operation that reliably completes well within 10 seconds, return `TemporalOperationResult<string>.SyncResult(result)` from the handler. Use `client.TemporalClient` to get a handle when you need to query or signal an existing Workflow.
 
-## Quick Checklist
+## Call from a Workflow
 
-- Register Nexus Service handlers in a Worker polling the Endpoint’s target Task Queue.
-- Ensure the Endpoint’s allowlist includes the caller Namespace.
-- Prefer async Operation when in doubt about finishing under 10s.
+```csharp
+using Temporalio.Workflows;
 
-Resources: https://docs.temporal.io/develop/dotnet/nexus/feature-guide
+[Workflow]
+public class RequestInvoiceWorkflow
+{
+    [WorkflowRun]
+    public Task<string> RunAsync(string invoiceId)
+    {
+        var invoices = Workflow.CreateNexusWorkflowClient<IInvoiceService>(
+            "invoice-service-endpoint");
+        return invoices.ExecuteNexusOperationAsync(
+            svc => svc.Generate(invoiceId),
+            new() { ScheduleToCloseTimeout = TimeSpan.FromMinutes(10) });
+    }
+}
+```
+
+The Endpoint must target the handler's Namespace and Task Queue and allow the caller's Namespace.
