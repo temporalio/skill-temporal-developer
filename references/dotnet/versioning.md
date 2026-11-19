@@ -43,7 +43,10 @@ public class ShippingWorkflow
 
 The experimental `TemporalWorkerOptions.PatchActivationCallback` runs at the first live encounter with a non-deprecated patch ID. Returning `false` leaves `Workflow.Patched()` false and writes no marker. Returning `true` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
 
+Read the rollout flag in Worker startup code and capture its Boolean value in the callback.
+
 ```csharp
+var enableEmailPath = Environment.GetEnvironmentVariable("ENABLE_EMAIL_PATH") == "true";
 var options = new TemporalWorkerOptions("orders")
 {
     PatchActivationCallback = patch =>
@@ -51,7 +54,7 @@ var options = new TemporalWorkerOptions("orders")
 };
 ```
 
-Read `enableEmailPath` from Worker configuration. Keep the `Workflow.Patched("send-email-instead-of-fax")` guard and both branches during rollout. The callback runs in a read-only Workflow context. Keep it synchronous and free of Workflow commands.
+In the Workflow, use `Workflow.Patched("send-email-instead-of-fax")` to choose between the two branches. The callback returns only the rollout decision. The Workflow branch schedules the Activity.
 
 ### Three-Step Patching Process
 
