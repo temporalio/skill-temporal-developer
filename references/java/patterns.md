@@ -200,6 +200,8 @@ ProcessOrderWorkflow child = Workflow.newChildWorkflowStub(
 
 ### Set defaults when registering the parent
 
+Prefer call-site options so the parent Workflow shows how each child runs. Use registration defaults when several children of the same parent intentionally share a policy, such as an execution timeout.
+
 Set defaults on the `WorkflowImplementationOptions` used to register the parent Workflow implementation. They apply to typed and untyped Child Workflow stubs created by that implementation.
 
 ```java
