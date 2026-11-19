@@ -168,6 +168,12 @@ func (s *UnitTestSuite) Test_WorkflowFailure() {
 
 ## Replay Testing
 
+For replay tests that read history from a JSON file, use the [CLI export command](../core/cli-workflow-commands.md#workflow-show) to create that file.
+
+For worker integration tests that should replay workflow history on every Workflow Task, disable the sticky workflow cache with `worker.SetStickyWorkflowCacheSize(0)` before starting any workers. This is process-wide; use it in an isolated test process. It complements replaying saved histories with `WorkflowReplayer`.
+
+To make detected nondeterminism fail the Workflow Execution immediately in a test, set `WorkflowPanicPolicy: worker.FailWorkflow` in `worker.Options`. This also makes workflow panics fail the execution.
+
 Use `worker.NewWorkflowReplayer()` to verify that code changes do not break determinism. Load history from a JSON file exported via the Temporal CLI or Web UI.
 
 ```go
@@ -188,8 +194,6 @@ func Test_ReplayFromFile(t *testing.T) {
 	assert.NoError(t, err)
 }
 ```
-
-Export history via CLI: `temporal workflow show --workflow-id <id> --output json > history.json`
 
 **Replay from a programmatically fetched history:**
 

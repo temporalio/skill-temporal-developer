@@ -112,7 +112,7 @@ throw ApplicationFailure.create({ message: 'User not found' });
 throw ApplicationFailure.nonRetryable('User not found');
 ```
 
-For detailed guidance on error classification and retry policies, see `error-handling.md`.
+For detailed guidance on error classification and retry policies, see [error handling guide](error-handling.md).
 
 ## Cancellation
 
@@ -310,4 +310,4 @@ test('replay compatibility', async () => {
 
 ## Timers and Sleep
 
-`setTimeout` works in workflows (the SDK mocks it), but `sleep()` from `@temporalio/workflow` is preferred because its interaction with cancellation scopes is more intuitive. See Timers in `references/typescript/patterns.md`.
+`setTimeout` works in workflows (the SDK mocks it), but `sleep()` from `@temporalio/workflow` is preferred because its interaction with cancellation scopes is more intuitive. See Timers in [TypeScript workflow patterns](patterns.md).

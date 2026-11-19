@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides Python-specific implementation details for integrating LLMs with Temporal. For conceptual patterns, see `references/core/ai-patterns.md`.
+This document provides Python-specific implementation details for integrating LLMs with Temporal. For conceptual patterns, see [Temporal AI integration patterns](../core/ai-patterns.md).
 
 ## Pydantic Data Converter Setup
 
@@ -301,30 +301,29 @@ class DeepResearchWorkflow:
 
 ## OpenAI Agents SDK Integration
 
-If using the OpenAI Agent SDK to create an agent, use Temporal's OpenAI contrib module to create a Temporal-aware durable agent:
+If using the OpenAI Agents SDK to create an agent, register `OpenAIAgentsPlugin` from `temporalio.openai_agents` with `Client.connect(..., plugins=[...])` in both the Worker process and the client process. Inside the Workflow, write standard OpenAI Agents SDK code. The plugin runs model calls as Activities, so the agent loop is durable:
 
 ```python
 from temporalio import workflow
-from temporalio.contrib.openai import create_workflow_agent
 from agents import Agent, Runner
 
 @workflow.defn
 class DurableAgentWorkflow:
     @workflow.run
     async def run(self, task: str) -> str:
-        # Create a Temporal-aware agent
-        agent = create_workflow_agent(
-            model="gpt-4",
-            tools=[search_tool, calculator_tool],
+        agent = Agent(
+            name="Assistant",
+            instructions="You are a helpful assistant.",
         )
-        # Run it. Under the hood, the automatically dispatches to activities for LLM calls, etc.
-        result = await agent.run(task)
-        return result.output
+        result = await Runner.run(agent, input=task)
+        return result.final_output
 ```
+
+For plugin setup, tools, MCP servers, and streaming, see [OpenAI Agents SDK integration guide](integrations/openai-agents-sdk.md).
 
 ## Streaming LLM Output / Tool Calls / etc. to a UI
 
-For streaming tokens or progress events from an Activity to an outside subscriber (browser, terminal, SSE endpoint), see `references/python/workflow-streams.md`. Workflow Streams is a `contrib` module that handles batching, dedup, and offset-based consumption built on Signals, Updates, and Queries.
+For streaming tokens or progress events from an Activity to an outside subscriber (browser, terminal, SSE endpoint), see [Python Workflow Streams guide](workflow-streams.md). Workflow Streams is a `contrib` module that handles batching, dedup, and offset-based consumption built on Signals, Updates, and Queries.
 
 ## Best Practices
 

@@ -1,6 +1,3 @@
-> [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
 ## Overview
 
 Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
@@ -9,10 +6,10 @@ Standalone Activities are conceptually the same across all SDKs. Read the [cross
 
 ## Prerequisites
 
-- Temporal TypeScript SDK v1.17.0 or higher.
+- Temporal TypeScript SDK v1.24.0 or higher.
 - All `@temporalio/*` packages must be pinned to the same version (heads-up — install/upgrade them together).
-- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. Dev server includes Standalone Activities support.
-- For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
+- Temporal CLI v1.9.1 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. Dev server includes Standalone Activities support.
+- For production, Temporal Server v1.32.0 or higher (or Temporal Cloud).
 
 ## Hosting Activities on a Worker
 
@@ -107,6 +104,8 @@ Use `activitiesClient.start(...)` (or `client.activity.start<R>(...)` on the unt
 ```typescript
 const handle = await activitiesClient.start(...);
 ```
+
+For a one-time delayed job, include `startDelay: '10m'` in the start options. The delay applies to the first attempt.
 
 ### Get a handle to an existing Activity execution
 
