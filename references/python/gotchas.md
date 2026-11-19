@@ -1,6 +1,6 @@
 # Python Gotchas
 
-Python-specific mistakes and anti-patterns. See also [Common Gotchas](references/core/gotchas.md) for language-agnostic concepts.
+Python-specific mistakes and anti-patterns. See also [Common Gotchas](../core/gotchas.md) for language-agnostic concepts.
 
 ## File Organization
 
@@ -29,7 +29,7 @@ class MyWorkflow:
     pass
 ```
 
-`references/python/determinism-protection.md` contains more info about the Python sandbox.
+[Python determinism protection guide](determinism-protection.md) contains more info about the Python sandbox.
 
 ### Mixing Workflows and Activities
 
@@ -63,7 +63,7 @@ async def my_activity():
 
 ## Async vs Sync Activities
 
-The Temporal Python SDK supports both async and sync activities. See `references/python/sync-vs-async.md` to understand which to choose. Below are important anti-patterns for both aysnc and sync activities.
+The Temporal Python SDK supports both async and sync activities. See [Python sync and async Activity guide](sync-vs-async.md) to understand which to choose. Below are important anti-patterns for both aysnc and sync activities.
 
 ### Blocking in Async Activities
 
@@ -122,7 +122,7 @@ Worker(
 ## Wrong Retry Classification
 
 **Example:** Transient networks errors should be retried. Authentication errors should not be.
-See `references/python/error-handling.md` to understand how to classify errors.
+See [Python error handling guide](error-handling.md) to understand how to classify errors.
 
 ## Heartbeating
 
@@ -244,11 +244,11 @@ async def long_activity() -> None:
 
 ### Not Testing Failures
 
-It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see `references/python/testing.md` for more info.
+It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see [Python testing guide](testing.md) for more info.
 
 ### Not Testing Replay
 
-Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code, and should be considered in addition to standard testing. Please see `references/python/testing.md` for more info.
+Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code, and should be considered in addition to standard testing. Please see [Python testing guide](testing.md) for more info.
 
 ## Timers and Sleep
 

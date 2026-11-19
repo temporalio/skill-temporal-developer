@@ -4,6 +4,24 @@
 
 The Go SDK uses the `converter.DataConverter` interface to serialize/deserialize workflow inputs, outputs, and activity parameters. The default converter converts values to JSON.
 
+
+## Payload and Memo Size Checks
+
+Go SDK v1.43 and later check outbound payload and aggregate Memo size before uploading Worker Task completions. The Worker fails the Task attempt if the payload field or Memo exceeds the error limit reported by the Server for that Namespace. Reduce the data or configure [External Storage](external-storage.md) for eligible payloads.
+
+Set warning thresholds in bytes through `client.Options.PayloadLimits`. The defaults are 512 KiB for an outbound payload field and 2 KiB for a Memo. A warning does not fail the Task.
+
+```go
+c, err := client.Dial(client.Options{
+    PayloadLimits: client.PayloadLimitOptions{
+        PayloadSizeWarning: 256 * 1024,
+        MemoSizeWarning:    4 * 1024,
+    },
+})
+```
+
+If a downstream gRPC proxy shrinks or offloads payloads after they leave the Worker, set `worker.Options.DisablePayloadErrorLimit` to defer enforcement to the Server. The Server's limits still apply.
+
 ## Default Data Converter
 
 The default `CompositeDataConverter` applies converters in order until one returns a non-nil Payload:
@@ -193,45 +211,6 @@ c, err := client.Dial(client.Options{
 })
 ```
 
-## Search Attributes
-
-Set at workflow start:
-
-```go
-handle, err := c.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
-    ID:        "order-123",
-    TaskQueue: "orders",
-    SearchAttributes: map[string]interface{}{
-        "OrderStatus": "pending",
-        "CustomerId":  "cust-456",
-    },
-}, OrderWorkflow, input)
-```
-
-Upsert from within a workflow:
-
-```go
-err := workflow.UpsertSearchAttributes(ctx, map[string]interface{}{
-    "OrderStatus": "completed",
-})
-```
-
-Typed search attributes (v1.26.0+, preferred):
-
-```go
-var OrderStatusKey = temporal.NewSearchAttributeKeyKeyword("OrderStatus")
-
-err := workflow.UpsertTypedSearchAttributes(ctx, OrderStatusKey.ValueSet("completed"))
-```
-
-Query workflows by search attributes:
-
-```go
-resp, err := c.ListWorkflow(ctx, &workflowservice.ListWorkflowExecutionsRequest{
-    Query: `OrderStatus = "pending" AND CustomerId = "cust-456"`,
-})
-```
-
 ## Workflow Memo
 
 Set in start options:
@@ -259,6 +238,6 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 
 1. Use structs with exported fields for inputs and outputs
 2. Prefer JSON for readability during development, protobuf for performance in production
-3. Keep payloads small -- see `references/core/gotchas.md` for limits
+3. Keep payloads small -- see [Temporal common pitfalls](../core/gotchas.md) for limits
 4. Use `PayloadCodec` for encryption; never store sensitive data unencrypted
 5. Configure the same data converter on both client and worker
