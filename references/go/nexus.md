@@ -62,4 +62,4 @@ func RequestInvoice(ctx workflow.Context, invoiceID string) (string, error) {
 }
 ```
 
-Register `RequestInvoice` on the caller Worker. Configure `invoice-service-endpoint` to target the handler Worker's Namespace and Task Queue and allow the caller's Namespace.
+Register `RequestInvoice` on the caller Worker. Configure `invoice-service-endpoint` to target the handler Worker's Namespace and Task Queue. In Temporal Cloud, include the caller's Namespace in the Endpoint allowlist.

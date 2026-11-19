@@ -18,24 +18,23 @@ Connect the contract to its implementation on the handler Worker:
 
 ```typescript
 import { serviceHandler } from 'nexus-rpc';
-import { TemporalOperationHandler } from '@temporalio/nexus';
+import { startWorkflow, WorkflowRunOperationHandler } from '@temporalio/nexus';
 import { invoiceService } from './invoice-service';
 import { generateInvoice } from './workflows';
 
 export const invoiceHandler = serviceHandler(invoiceService, {
-  generate: new TemporalOperationHandler<string, string>({
-    start: (_ctx, client, invoiceId) =>
-      client.startWorkflow(generateInvoice, {
-        args: [invoiceId],
-        workflowId: `invoice-${invoiceId}`,
-      }),
-  }),
+  generate: new WorkflowRunOperationHandler<string, string>((ctx, invoiceId) =>
+    startWorkflow(ctx, generateInvoice, {
+      args: [invoiceId],
+      workflowId: `invoice-${ctx.requestId}`,
+    }),
+  ),
 });
 ```
 
-Register the handler with `Worker.create({ ..., nexusServices: [invoiceHandler] })`. Register the backing Workflow on the handler Task Queue, which is the default Task Queue for `startWorkflow`. Its return value becomes the operation result. Use a Workflow ID that identifies the business operation so retried starts target the same execution.
+Register the handler with `Worker.create({ ..., nexusServices: [invoiceHandler] })`. Register the backing Workflow on the handler's Task Queue. This is the default Task Queue for `startWorkflow`, and the Workflow's return value becomes the operation result. The request ID stays stable across retries of the operation start, so those retries target the same Workflow ID.
 
-For an operation that reliably completes well within 10 seconds, return `TemporalOperationResult.sync(result)` from `start`. To query or signal an existing Workflow, use `client.client.workflow.getHandle(workflowId)` in the handler.
+For an operation that reliably completes well within 10 seconds, provide an async function in `serviceHandler` that returns the result directly.
 
 ## Call from a Workflow
 
@@ -54,4 +53,4 @@ export async function requestInvoice(invoiceId: string): Promise<string> {
 }
 ```
 
-The Endpoint must target the handler's Namespace and Task Queue and allow the caller's Namespace.
+Configure the Endpoint to target the handler's Namespace and Task Queue. In Temporal Cloud, include the caller's Namespace in the Endpoint allowlist.

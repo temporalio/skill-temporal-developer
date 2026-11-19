@@ -4,6 +4,8 @@ Use the [Nexus concepts](../core/nexus.md) to choose an operation and configure 
 
 ## Define and handle an operation
 
+Use a Workflow-backed operation when the handler should start a Workflow and return its result. This example assumes `GenerateInvoiceWorkflow` has a `Task<string> RunAsync(string invoiceId)` Workflow Run method.
+
 ```csharp
 using NexusRpc;
 using NexusRpc.Handlers;
@@ -19,20 +21,19 @@ public interface IInvoiceService
 [NexusServiceHandler(typeof(IInvoiceService))]
 public class InvoiceService
 {
-    [TemporalOperation]
-    public Task<TemporalOperationResult<string>> Generate(
-        TemporalOperationStartContext context,
-        ITemporalNexusClient client,
-        string invoiceId) =>
-        client.StartWorkflowAsync(
-            (GenerateInvoiceWorkflow workflow) => workflow.RunAsync(invoiceId),
-            new() { Id = $"invoice-{invoiceId}" });
+    [NexusOperationHandler]
+    public IOperationHandler<string, string> Generate() =>
+        WorkflowRunOperationHandler.FromHandleFactory(
+            (WorkflowRunOperationContext context, string invoiceId) =>
+                context.StartWorkflowAsync(
+                    (GenerateInvoiceWorkflow workflow) => workflow.RunAsync(invoiceId),
+                    new() { Id = $"generate-invoice-{context.HandlerContext.RequestId}" }));
 }
 ```
 
-Register the handler with `TemporalWorkerOptions.AddNexusService(new InvoiceService())`. Register the backing Workflow with `AddWorkflow<GenerateInvoiceWorkflow>()` on the handler Task Queue. By default, the Workflow runs on that Task Queue. Its return value becomes the operation result. Use a Workflow ID that identifies the business operation so retried starts target the same execution.
+Deriving the Workflow ID from the Nexus request ID keeps it stable across retries of that request. Register the handler with `TemporalWorkerOptions.AddNexusService(new InvoiceService())` and the backing Workflow with `AddWorkflow<GenerateInvoiceWorkflow>()` on the handler Task Queue. The backing Workflow runs on that queue by default.
 
-For an operation that reliably completes well within 10 seconds, return `TemporalOperationResult<string>.SyncResult(result)` from the handler. Use `client.TemporalClient` to get a handle when you need to query or signal an existing Workflow.
+For an operation that reliably finishes well within the 10-second handler deadline, use `OperationHandler.Sync<TInput, TResult>`.
 
 ## Call from a Workflow
 
@@ -54,4 +55,4 @@ public class RequestInvoiceWorkflow
 }
 ```
 
-The Endpoint must target the handler's Namespace and Task Queue and allow the caller's Namespace.
+Configure the Endpoint to target the handler's Namespace and Task Queue. In Temporal Cloud, allow the caller's Namespace on the Endpoint.
