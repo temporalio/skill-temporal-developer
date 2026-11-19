@@ -303,4 +303,4 @@ See [Java testing guide](testing.md) for info on writing tests.
 
 ### Java Integrations
 
-For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see [integrations catalog](../integrations.md) and filter for Java. Reference files live under `references/java/integrations/`.
+For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see [integrations catalog](../core/integrations.md) and filter for Java. Reference files live under `references/java/integrations/`.
