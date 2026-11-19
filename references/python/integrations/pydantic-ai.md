@@ -6,7 +6,7 @@
 
 The same agent remains usable outside a Workflow as a normal, non-durable agent. Attaching the capability does not make calls durable by itself: the call to `agent.run()` must execute inside a Temporal Workflow started through a Temporal Client.
 
-This integration comes from Pydantic AI, not `temporalio.contrib`. For general design guidance, also read `references/core/ai-patterns.md` and `references/python/ai-patterns.md`.
+This integration comes from Pydantic AI, not `temporalio.contrib`. For general design guidance, also read [Temporal AI integration patterns](../../core/ai-patterns.md) and [Python AI integration patterns](../ai-patterns.md).
 
 ## Install
 
@@ -39,12 +39,12 @@ Module-scope construction lets the Worker discover and register every generated 
 ### `TemporalDurability` configuration
 
 | Parameter | Purpose |
-|---|---|
+| -- | -- |
 | `models` | Additional model instances keyed by stable IDs for runtime model switching. |
 | `event_stream_handler` | Handles live model events inside model-request Activities and tool events in event-handler Activities. |
 | `event_stream_topic` | Publishes events to a Temporal Workflow Stream topic for an external consumer. |
-| `event_stream_events` | Filters which events are published to `event_stream_topic`. |
-| `event_stream_batch_interval` | Controls Workflow Stream batching; defaults to 100 ms. |
+| `continue_as_new` | Callback invoked before a model request when Temporal suggests Continue-as-New. |
+| `non_retryable_model_errors` | Model API error classes that should fail without Activity retries. |
 | `name` | Overrides the agent name used in generated Activity names. |
 | `deps_type` | Overrides the dependency type used for Temporal serialization. |
 | `activity_config` | Base `ActivityConfig`; defaults to a 60-second `start_to_close_timeout`. |
@@ -52,6 +52,8 @@ Module-scope construction lets the Worker discover and register every generated 
 | `event_stream_handler_activity_config` | Overrides the base config for event-handler Activities. |
 | `toolset_activity_config` | Per-toolset overrides keyed by stable toolset ID. |
 | `run_context_type` | Custom `TemporalRunContext` subclass for the Activity boundary. |
+
+`event_stream_topic` accepts a topic name or `WorkflowStreamTopic`. Configure filtering and batching through the topic object's `events` and `batch_interval` fields; those keywords are not parameters of `TemporalDurability`. External consumers can use `stream_agent_events()`; see the upstream API for subscription and retry semantics.
 
 ## Stable agent and toolset identity
 
@@ -244,7 +246,7 @@ if __name__ == "__main__":
 
 ## Resources
 
-- `references/python/ai-patterns.md` — Python AI/LLM patterns, payload conversion, and retry classification.
-- `references/core/ai-patterns.md` — language-agnostic agent and tool-placement patterns.
+- [Python AI integration patterns](../ai-patterns.md) — Python AI/LLM patterns, payload conversion, and retry classification.
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — language-agnostic agent and tool-placement patterns.
 - Upstream guide — [Pydantic AI durable execution with Temporal](https://pydantic.dev/docs/ai/capabilities/durable_execution/temporal/).
 - Upstream API reference — [`pydantic_ai.durable_exec.temporal`](https://pydantic.dev/docs/ai/api/pydantic-ai/durable_exec/).
