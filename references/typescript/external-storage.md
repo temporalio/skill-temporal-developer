@@ -5,7 +5,7 @@
 
 ## What this is
 
-External Storage uses the **claim check pattern**: it offloads each Payload to an external store (e.g. Amazon S3 or Google Cloud Storage), records a small reference token (the "claim check") in Event History, and uses that token to retrieve the Payload when needed. The SDK handles storage and retrieval transparently.
+External Storage uses the **claim check pattern**: it offloads each Payload to an external store (e.g. Amazon S3 or Google Cloud Storage), records a small reference token (the claim check) in Event History, and uses that token to retrieve the Payload when needed. The SDK handles storage and retrieval transparently. Configure it with `DataConverter.externalStorage`, set to a `new ExternalStorage({ drivers, driverSelector?, payloadSizeThreshold?, concurrency? })` instance.
 
 ## When to use it
 
@@ -16,7 +16,7 @@ External Storage uses the **claim check pattern**: it offloads each Payload to a
 
 ## Where it sits in the pipeline
 
-Order: **Payload Converter → Payload Codec → External Storage**. Storage runs last on outbound; it reverses on inbound.
+Order: **Payload Converter -> Payload Codec -> External Storage**. Storage runs last on outbound; it reverses on inbound.
 
 Consequences:
 
@@ -31,19 +31,13 @@ The TypeScript SDK provides first-party drivers for Amazon S3 and Google Cloud S
 Amazon S3:
 
 ```bash
-npm install @temporalio/external-storage-s3 \
-  @temporalio/external-storage-s3-aws-sdk \
-  @temporalio/envconfig \
-  @aws-sdk/client-s3
+npm install @temporalio/external-storage-s3 @temporalio/external-storage-s3-aws-sdk @temporalio/envconfig @aws-sdk/client-s3
 ```
 
 Google Cloud Storage:
 
 ```bash
-npm install @temporalio/external-storage-gcs \
-  @temporalio/external-storage-gcs-google-sdk \
-  @temporalio/envconfig \
-  @google-cloud/storage
+npm install @temporalio/external-storage-gcs @temporalio/external-storage-gcs-google-sdk @temporalio/envconfig @google-cloud/storage
 ```
 
 ### Amazon S3 driver
@@ -128,9 +122,9 @@ The External Storage threshold does not override `maxPayloadSize`. Configure the
 ## Payload size threshold
 
 - Default: **256 KiB**.
-- Set `payloadSizeThreshold: 0` to externalize **all** Payloads regardless of size.
-- Payloads whose serialized size is **greater than or equal to** the threshold are eligible for external storage.
-- The measured size includes Payload metadata after Payload Converter and Payload Codec processing, not only the raw application value.
+- Payloads above the threshold are eligible for external storage.
+- Set `payloadSizeThreshold: 0` to consider **all** Payloads regardless of size.
+- The value must be a non-negative finite number.
 
 ```typescript
 const dataConverter = {
@@ -143,11 +137,17 @@ const dataConverter = {
 
 ## Multiple drivers and migration
 
-When registering more than one driver, supply a `driverSelector`. The selector chooses which driver stores each Payload. Unselected registered drivers remain available for **retrieval**, which supports migrations without losing access to existing claims.
+When registering more than one driver, supply a `driverSelector`. The `ExternalStorage` constructor throws a `ValueError` if more than one driver is registered without one. With a single driver, the selector is optional.
 
-- Return `null` from the selector to keep a specific Payload inline in Event History.
-- Every registered driver must have a distinct `name`.
-- `S3StorageDriver` defaults its name to `"aws.s3driver"`; when registering two S3 drivers, set `driverName` on at least one.
+The selector has the signature `(context, payload) => StorageDriver | null`:
+
+- Return a registered driver to store that Payload with it.
+- Return `null` to keep that Payload inline in Event History.
+
+Unselected registered drivers remain available for **retrieval**, which supports migrations without losing access to existing claims.
+
+- Every registered driver must have a distinct, non-empty `name`; duplicates throw a `ValueError`.
+- `S3StorageDriver` defaults its name to `aws.s3driver`; when registering two S3 drivers, set `driverName` on at least one.
 
 ```typescript
 const preferredDriver = new S3StorageDriver({
@@ -164,19 +164,41 @@ const externalStorage = new ExternalStorage({
 
 Useful routing patterns include driver migration, hot/cold storage tiers, per-tenant storage, and selecting S3 or GCS based on the runtime environment.
 
+## Concurrency limits
+
+The `concurrency` option sets two limits on in-flight storage requests:
+
+- `maxDriverOperations` (default 64): the maximum across every driver registered on this `ExternalStorage` instance. Share one instance between Workers and Clients for a single process-wide budget, or give each its own instance for independent budgets.
+- `maxOperationsPerMessage` (default 8): the maximum for a single message, such as a Workflow activation, an Activity task, a client request, or a Nexus operation. Each message gets its own budget, which keeps one message with many large Payloads from starving the others.
+
+Both values must be positive integers.
+
+```typescript
+const externalStorage = new ExternalStorage({
+  drivers: [driver],
+  concurrency: { maxDriverOperations: 32, maxOperationsPerMessage: 4 },
+});
+```
+
+The values in this example are illustrative.
+
 ## Custom storage driver
 
 Implement the `StorageDriver` interface with two readonly properties and two methods:
 
-- `name: string` — unique identifier for **this driver instance**, stored in the reference so the SDK can route retrieval. Changing it after Payloads are stored **breaks retrieval**.
-- `type: string` — stable identifier for the driver implementation, shared by all instances of that implementation and reported in Worker heartbeats (e.g. `"aws.s3driver"`).
-- `store(context, payloads): Promise<StorageDriverClaim[]>` — serialize and upload each Payload, then return one claim per Payload. Each claim contains string key-value data sufficient to find the object later.
-- `retrieve(context, claims): Promise<Payload[]>` — download and reconstruct one Payload per claim, preserving input order.
+- `name: string` - unique identifier for **this driver instance**, stored in the reference so the SDK can route retrieval. Changing it after Payloads are stored **breaks retrieval**.
+- `type: string` - stable identifier for the driver implementation, shared by all instances of that implementation and reported in Worker heartbeats (e.g. `aws.s3driver`).
+- `store(context, payloads): Promise<StorageDriverClaim[]>` - serialize and upload each Payload, then return one claim per Payload. Each claim contains string key-value data sufficient to find the object later.
+- `retrieve(context, claims): Promise<Payload[]>` - download and reconstruct one Payload per claim, preserving input order.
 
-The `store()` context includes an optional `abortSignal` and `target`. The target is a discriminated union:
+The `store()` context includes `limiter`, an optional `abortSignal`, and an optional `target`. The target is a discriminated union:
 
-- Check `target.kind` for `"workflow"` or `"activity"`.
+- Check `target.kind` for `workflow` or `activity`.
 - Read `namespace`, `id`, `runId`, and `type` to scope storage keys.
+
+The `retrieve()` context includes `limiter` and an optional `abortSignal`.
+
+Wrap each storage request in `context.limiter.permit(item, () => request)`. The concurrency limits are cooperative: they apply only to requests made inside a permit. Do not take a permit inside another permit; nesting beyond the limit can deadlock.
 
 Honor `abortSignal` in storage calls so sibling operations can be cancelled after the first failure. Content-addressable keys can make retries idempotent and deduplicate identical Payloads.
 
@@ -211,15 +233,15 @@ Cross-region replication is eventually consistent. Activities reading newly writ
 
 ## Codec Server with External Storage
 
-When Workers and Clients use External Storage, Event History contains reference tokens — not payload data. A plain codec server that only implements `/encode` and `/decode` leaves the Web UI and CLI showing raw reference tokens.
+When Workers and Clients use External Storage, Event History contains reference tokens - not payload data. A plain codec server that only implements `/encode` and `/decode` leaves the Web UI and CLI showing raw reference tokens.
 
 The TypeScript SDK does not ship a codec-server handler, so implement the routes yourself (e.g. with Express), wiring in your storage drivers, your pre-storage codecs (the Payload Codecs your Workers use), and any post-storage codecs (applied by a proxy after external storage):
 
-- **`/download`** — retrieves payload data from external storage and decodes it through the Payload Codec. The Web UI calls this when a user clicks to view the full payload behind a reference.
-- **`/decode`** — decodes encoded payloads and, by default, retrieves storage references inline. Support `?preserveStorageRefs=true` to return storage references as-is without retrieval; the Web UI uses it to render history without downloading every blob.
-- **`/encode`** — applies the Payload Codec, then uploads payloads exceeding the threshold and replaces them with reference tokens.
+- **`/download`** - retrieves payload data from external storage and decodes it through the Payload Codec. The Web UI calls this when a user clicks to view the full payload behind a reference.
+- **`/decode`** - decodes encoded payloads and, by default, retrieves storage references inline. Support `?preserveStorageRefs=true` to return storage references as-is without retrieval; the Web UI uses it to render history without downloading every blob.
+- **`/encode`** - applies the Payload Codec, then uploads payloads exceeding the threshold and replaces them with reference tokens.
 
-**Don't point a Worker's remote codec at the storage-aware handler** — it runs the full encode-store-encode and decode-retrieve-decode pipeline. Serve remote codecs from a separate non-storage endpoint, configured with the same codecs.
+**Don't point a Worker's remote codec at the storage-aware handler** - it runs the full encode-store-encode and decode-retrieve-decode pipeline. Serve remote codecs from a separate non-storage endpoint, configured with the same codecs.
 
 ## Lifecycle and failure handling
 
@@ -229,7 +251,7 @@ Temporal does **not** automatically delete Payloads from the external store. Con
 TTL > Maximum Workflow Run Timeout + Namespace Retention Period
 ```
 
-Example: Run Timeout 14 days + Namespace retention 30 days → set TTL to at least 44 days.
+Example: Run Timeout 14 days + Namespace retention 30 days -> set TTL to at least 44 days.
 
 For Workflows with no finite Run Timeout, there is no safe finite TTL. Use Continue-as-New so the new run uploads fresh Payloads and the old run's Payloads only need to survive its retention period.
 
@@ -239,7 +261,8 @@ The SDK does not retry a failed `store()` or `retrieve()` call within the same T
 
 - **Don't change a driver's `name` after Payloads have been stored.** The name is embedded in references; changing it breaks retrieval.
 - **Don't register duplicate driver names.** Give each instance a unique `name` or `driverName`.
-- **Don't register multiple drivers without a `driverSelector`.** Construction fails when more than one driver is registered without one.
+- **Don't register multiple drivers without a `driverSelector`.** The constructor throws a `ValueError`.
+- **Don't make storage requests outside `context.limiter.permit` in a custom driver.** The concurrency limits will not apply to them.
 - **Don't omit External Storage configuration from a Client or Worker that may retrieve offloaded data.** It cannot resolve the reference without the matching driver.
 - **Don't assume the 2 MB Temporal limit is the built-in driver's maximum.** The S3 and GCS drivers default `maxPayloadSize` to 50 MiB.
 - **Don't point a Worker's remote codec at a storage-aware codec-server handler.** Serve remote codecs from a separate non-storage endpoint.
