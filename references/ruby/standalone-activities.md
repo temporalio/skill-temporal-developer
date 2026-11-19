@@ -144,7 +144,7 @@ Calling `execute_activity` is equivalent to `start_activity` followed by `handle
 
 ### Inspect execution details
 
-On Ruby SDK 1.8.0 or later, `handle.describe` returns payloads only when requested and available. Set the corresponding keyword to `true`:
+`handle.describe` returns payloads only when requested and available. Set the corresponding keyword to `true`:
 
 | Keyword | Accessor on the description |
 | --- | --- |
