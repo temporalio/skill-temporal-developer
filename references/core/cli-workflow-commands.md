@@ -13,6 +13,8 @@ Developer-facing CLI commands for interacting with workflows during development 
 - [Workflow update](#workflow-update)
 - [Workflow signal-with-start](#workflow-signal-with-start)
 - [Workflow result](#workflow-result)
+- [Workflow show](#workflow-show)
+- [Workflow cancel](#workflow-cancel)
 - [Workflow metadata](#workflow-metadata)
 
 ## Workflow start
@@ -31,7 +33,7 @@ temporal workflow start \
 Required flags: `--type`, `--task-queue`. Optional `--workflow-id` -- the Service generates a UUID if omitted.
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--type` | Yes | Workflow Type name. |
 | `--task-queue`, `-t` | Yes | Workflow Task queue. |
 | `--workflow-id`, `-w` | No | Workflow ID. Service generates a UUID if omitted. |
@@ -86,13 +88,11 @@ temporal workflow signal \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes (or `--query`) | Workflow ID. |
 | `--name` | Yes | Signal name. |
 | `--input`, `-i` | No | Input value (JSON). Repeatable. |
 | `--run-id`, `-r` | No | Pin to a specific run. Only with `--workflow-id`. |
-
-For bulk signaling with `--query` (runs as a batch job), see skill-temporal-ops.
 
 ## Workflow query
 
@@ -107,7 +107,7 @@ temporal workflow query \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--name` | Yes | Query Type/Name. |
 | `--input`, `-i` | No | Input value (JSON). Repeatable. |
@@ -132,7 +132,7 @@ temporal workflow update start \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--name` | Yes | Handler method name. |
 | `--wait-for-stage` | Yes | Update stage to wait for. The **only** accepted value is `accepted`. Required to allow a future CLI version to choose a default. |
@@ -154,7 +154,7 @@ temporal workflow update execute \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--name` | Yes | Handler method name. |
 | `--input`, `-i` | No | Input value (JSON). Repeatable. |
@@ -174,7 +174,7 @@ temporal workflow update result \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--update-id` | Yes | Update ID. Must be unique per Workflow Execution. |
 | `--run-id`, `-r` | No | Run ID. |
@@ -191,7 +191,7 @@ temporal workflow update describe \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--update-id` | Yes | Update ID. Must be unique per Workflow Execution. |
 | `--run-id`, `-r` | No | Run ID. |
@@ -214,7 +214,7 @@ temporal workflow signal-with-start \
 Takes `--signal-name` (required), `--signal-input`, plus all start-time flags from `workflow start`.
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--signal-name` | Yes | Signal name. |
 | `--signal-input` | No | Signal input value (JSON). Repeatable. |
 | `--type` | Yes | Workflow Type name. |
@@ -234,9 +234,37 @@ temporal workflow result \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--run-id`, `-r` | No | Run ID. |
+
+## Workflow show
+
+Export an existing Workflow Execution's Event History as JSON for SDK replay testing. Point the CLI at the cluster and namespace where the Workflow ran, and save the output to the path your replay test reads:
+
+```bash
+temporal workflow show --workflow-id YourWorkflowId --output json > history.json
+```
+
+Use `--run-id YourRunId` to select a specific run; otherwise, the CLI returns the most recent run for that Workflow ID. When a replay API requires a Workflow ID, use the ID of the exported Workflow.
+
+## Workflow cancel
+
+Request cancellation of a running Workflow Execution. The request allows the Workflow to perform cleanup, so the execution may remain open for a while.
+
+```bash
+temporal workflow cancel \
+    --output json \
+    --workflow-id YourWorkflowId \
+    --run-id YourRunId
+```
+
+| Flag | Required | Purpose |
+| -- | -- | -- |
+| `--workflow-id`, `-w` | Yes, for a single execution | Workflow ID. |
+| `--run-id`, `-r` | No | Pin cancellation to a specific run; omit to target the current execution. |
+
+Check the namespace and profile as well as the IDs before cancelling. Then use `temporal workflow describe --workflow-id YourWorkflowId --run-id YourRunId --output json` to verify the eventual status. Omit `--run-id` from both commands if it is unknown.
 
 ## Workflow metadata
 
@@ -249,7 +277,7 @@ temporal workflow metadata \
 ```
 
 | Flag | Required | Purpose |
-|---|---|---|
+| -- | -- | -- |
 | `--workflow-id`, `-w` | Yes | Workflow ID. |
 | `--run-id`, `-r` | No | Run ID. |
 | `--reject-condition` | No | Reject queries based on Workflow state. Accepted values: `not_open`, `not_completed_cleanly`. |

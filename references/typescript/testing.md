@@ -142,6 +142,12 @@ describe('Failure handling', () => {
 
 ## Replay Testing
 
+For replay tests that read history from a JSON file, use the [CLI export command](../core/cli-workflow-commands.md#workflow-show) to create that file.
+
+For worker integration tests that should replay workflow history on every Workflow Task, configure the worker with `maxCachedWorkflows: 0`. This complements replaying saved histories with `Worker.runReplayHistory`.
+
+To make nondeterminism fail the Workflow Execution immediately in a test, configure the worker with `workflowFailureErrorTypes: { '*': ['NondeterminismError'] }`.
+
 ```typescript
 import { Worker } from '@temporalio/worker';
 import { Client, Connection } from '@temporalio/client';

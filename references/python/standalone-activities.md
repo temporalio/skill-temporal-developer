@@ -1,6 +1,3 @@
-> [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
 ## Overview
 
 Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
@@ -9,9 +6,10 @@ Standalone Activities are conceptually the same across all SDKs. Read the [cross
 
 ## Prerequisites
 
-- Temporal Python SDK v1.23.0 or higher.
-- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. Dev server includes Standalone Activities support.
-- For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
+- Python 3.10 or higher.
+- Temporal Python SDK v1.33.0 or higher.
+- Temporal CLI v1.9.1 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. Dev server includes Standalone Activities support.
+- For production, Temporal Server v1.32.0 or higher (or Temporal Cloud).
 
 ## Hosting Activities on a Worker
 
@@ -131,6 +129,24 @@ result = await activity_handle.result()
 ```
 
 Calling `execute_activity` is equivalent to `start_activity` followed by `await activity_handle.result()`.
+
+### Inspect execution details
+
+Call `await activity_handle.describe()` for metadata such as status, attempt, and Task Queue. Include the payloads you need using these keyword arguments, which default to `False`:
+
+| Keyword argument | Async accessor on the description |
+| --- | --- |
+| `include_input` | `input()` for the original arguments |
+| `include_outcome` | `result()` after success or `outcome_failure()` after a terminal failure |
+| `include_heartbeat_details` | `heartbeat_details()` for the latest recorded checkpoint |
+| `include_last_failure` | `last_failure()` for the most recent failed attempt, even during retries |
+
+```python
+description = await activity_handle.describe(include_heartbeat_details=True)
+checkpoint = await description.heartbeat_details()
+```
+
+The accessors decode with the Client's Data Converter and return `None` when a payload is unavailable. Use the same Payload Codec configuration as the producing application when it encodes or encrypts payloads. To wait for an unfinished Activity, call `activity_handle.result()`.
 
 ### List Standalone Activities
 
