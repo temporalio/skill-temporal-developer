@@ -81,6 +81,7 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 - **[Temporal Workflow random streams guide](references/core/random-streams.md)** - SDK-provided named deterministic random streams for Workflow code, plugins, and interceptors
   - Language-specific info at `references/{your_language}/random-streams.md` (Go and TypeScript)
 - **[Temporal troubleshooting guide](references/core/troubleshooting.md)** - Decision trees, recovery procedures
+- **[gRPC transport compression](references/core/transport-compression.md)** - Connection defaults and SDK-specific opt-out settings
 - **[Temporal error reference](references/core/error-reference.md)** - Common error types, workflow status reference
 - **[Temporal interactive workflow guide](references/core/interactive-workflows.md)** - Testing signals, updates, queries
 - **[Temporal development management guide](references/core/dev-management.md)** - Dev cycle & management of server and workers
