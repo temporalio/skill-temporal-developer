@@ -160,6 +160,37 @@ async def test_activity():
     assert result == "expected"
 ```
 
+
+### Set Activity Info for a Test
+
+`ActivityEnvironment()` supplies test values for `activity.info()`. To exercise a branch based on the retry attempt or the execution type, replace the relevant fields in `ActivityEnvironment.default_info()` and assign the result to `env.info` before calling `env.run()`.
+
+```python
+from dataclasses import replace
+
+from temporalio import activity
+from temporalio.testing import ActivityEnvironment
+
+def retrying_standalone_activity() -> bool:
+    info = activity.info()
+    return info.attempt > 1 and not info.in_workflow
+
+def test_retrying_standalone_activity():
+    env = ActivityEnvironment()
+    env.info = replace(
+        ActivityEnvironment.default_info(),
+        attempt=2,
+        workflow_id=None,
+        workflow_run_id=None,
+        workflow_namespace=None,
+        workflow_type=None,
+        activity_run_id="test-activity-run",
+    )
+    assert env.run(retrying_standalone_activity)
+```
+
+For an async Activity, await `env.run(...)`.
+
 ## Best Practices
 
 1. Use the `WorkflowEnvironment.start_local` environment for most testing
