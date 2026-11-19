@@ -1,6 +1,6 @@
 # Go SDK Versioning
 
-For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
+For conceptual overview and guidance on choosing an approach, see [Temporal versioning guide](../core/versioning.md).
 
 ## GetVersion API
 
@@ -116,7 +116,7 @@ temporal workflow list --query 'WorkflowType = "MyWorkflow" AND ExecutionStatus 
 
 ## Worker Versioning
 
-Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously.
+Worker Versioning is GA and manages versions at the deployment level, allowing multiple Worker versions to run simultaneously. See the [core guide](../core/versioning.md) for rollout and recovery tooling.
 
 ### Key Concepts
 
@@ -132,7 +132,7 @@ w := worker.New(c, "my-task-queue", worker.Options{
 		UseVersioning: true,
 		Version: worker.WorkerDeploymentVersion{
 			DeploymentName: "my-service",
-			BuildId:        "v1.0.0", // or git commit hash
+			BuildID:        "v1.0.0", // or git commit hash
 		},
 		DefaultVersioningBehavior: workflow.VersioningBehaviorPinned,
 	},
@@ -146,6 +146,14 @@ w := worker.New(c, "my-task-queue", worker.Options{
 - `DefaultVersioningBehavior`: `VersioningBehaviorPinned` or `VersioningBehaviorAutoUpgrade`
 - Build ID: typically a git commit hash, version number, or timestamp
 
+Prefer declaring behavior per Workflow Type; the Worker's default covers types without an explicit behavior:
+
+```go
+w.RegisterWorkflowWithOptions(MyWorkflow, workflow.RegisterOptions{
+	VersioningBehavior: workflow.VersioningBehaviorPinned,
+})
+```
+
 ### PINNED vs AUTO_UPGRADE Behaviors
 
 **PINNED Behavior**
@@ -155,6 +163,7 @@ Workflows stay locked to their original Worker version.
 **When to use PINNED:**
 
 - Short-running workflows (minutes to hours)
+- Long-running Workflows that upgrade on Continue-as-New, without patching within each run
 - Consistency is critical (e.g., financial transactions)
 - You want to eliminate version compatibility complexity
 - Building new applications and want simplest development experience
@@ -165,7 +174,7 @@ Workflows can move to newer versions.
 
 **When to use AUTO_UPGRADE:**
 
-- Long-running workflows (weeks or months)
+- Long-running workflows without Continue-as-New
 - Workflows need to benefit from bug fixes during execution
 - Migrating from traditional rolling deployments
 - You are already using GetVersion for version transitions
@@ -175,13 +184,13 @@ Workflows can move to newer versions.
 ### Worker Configuration with Default Behavior
 
 ```go
-// For short-running workflows, prefer PINNED
+// PINNED for short runs or upgrade on Continue-as-New
 w := worker.New(c, "orders-task-queue", worker.Options{
 	DeploymentOptions: worker.DeploymentOptions{
 		UseVersioning: true,
 		Version: worker.WorkerDeploymentVersion{
 			DeploymentName: "order-service",
-			BuildId:        os.Getenv("BUILD_ID"),
+			BuildID:        os.Getenv("BUILD_ID"),
 		},
 		DefaultVersioningBehavior: workflow.VersioningBehaviorPinned,
 	},
@@ -225,6 +234,47 @@ temporal worker deployment set-current-version \
 temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
+
+## Upgrading on Continue-as-New
+
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `WorkflowInfo` and continue-as-new with `ContinueAsNewVersioningBehaviorAutoUpgrade` so the new run starts on the Target Version. See [Temporal versioning guide](../core/versioning.md) for the conceptual model.
+
+### Detecting the Target Version change
+
+`workflow.GetInfo(ctx).GetTargetWorkerDeploymentVersionChanged()` returns `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment. The flag is refreshed after each Workflow Task completes.
+
+Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
+
+### Continue-as-new with upgrade
+
+When the flag is set, return `workflow.NewContinueAsNewErrorWithOptions` with `InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade` so the new run starts on the Target Version of its Worker Deployment.
+
+```go
+// At a natural Workflow Task boundary, e.g. before accepting Updates,
+// starting Activities, starting child Workflows, etc.:
+if workflow.GetInfo(ctx).GetTargetWorkerDeploymentVersionChanged() {
+  return "", workflow.NewContinueAsNewErrorWithOptions(
+    ctx,
+    workflow.ContinueAsNewErrorOptions{
+      InitialVersioningBehavior: workflow.ContinueAsNewVersioningBehaviorAutoUpgrade,
+    },
+    "ContinueAsNewWithVersionUpgrade",
+    nextInput,
+  )
+}
+```
+
+> [!IMPORTANT]
+> Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
+
+### Limitations
+
+- **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check `GetTargetWorkerDeploymentVersionChanged`.
+- **Workflow input must remain compatible across versions.** The new version's Workflow definition must accept the previous version's input; otherwise the new run may fail on its first Workflow Task.
+- **Pinned Workflow Types only.** Auto-Upgrade Workflows move at Workflow Task boundaries already; the upgrade-on-CaN pattern adds nothing for them.
 
 ## Best Practices
 

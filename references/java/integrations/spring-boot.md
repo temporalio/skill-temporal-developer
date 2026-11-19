@@ -2,76 +2,69 @@
 
 ## Overview
 
-`io.temporal:temporal-spring-boot-starter`  auto-configures Workers, registers Workflow / Activity / Nexus Service implementations, and exposes `WorkflowClient` as a Spring bean. This eliminates the manual `WorkflowServiceStubs` to `WorkflowClient` to `WorkerFactory` setup required without Spring.
-
-Temporal's Spring Boot integration supports Spring Boot 2.x, 3.x, and 4.x .
+`temporal-spring-boot-starter` auto-configures workers, registers workflow/activity implementations, and exposes `WorkflowClient` as a Spring bean. This eliminates the manual `WorkflowServiceStubs` → `WorkflowClient` → `WorkerFactory` setup required without Spring.
 
 ## Dependency Setup
 
-Maven :
+Maven:
+
 ```xml
 <dependency>
     <groupId>io.temporal</groupId>
     <artifactId>temporal-spring-boot-starter</artifactId>
-    <version>1.31.0</version>
+    <version>1.40.0</version>
 </dependency>
 ```
 
-Gradle :
+Gradle:
+
 ```groovy
-implementation 'io.temporal:temporal-spring-boot-starter:1.31.0'
+implementation 'io.temporal:temporal-spring-boot-starter:1.40.0'
 ```
 
-The starter transitively includes `temporal-sdk` and the autoconfigure module.
+The starter transitively includes `temporal-sdk` and the autoconfigure module. You can declare both `temporal-sdk` and `temporal-spring-boot-starter` explicitly, but the starter alone is sufficient.
+
+Spring Boot 3 and Spring Boot 4 are supported; Boot 4 / Jackson 3 support requires Java SDK 1.34+. Keep Temporal dependencies aligned. Spring AI integrations have separate Boot 3 / AI 1 and Boot 4 / AI 2 coordinates; see [Spring AI](spring-ai.md).
 
 ## Minimal Configuration
 
-The minimum to autowire a `WorkflowClient` is a `connection.target` :
+`application.properties`:
 
-```yaml
-spring.temporal:
-  connection:
-    target: local # shorthand for localhost:7233; use host:port for remote
+```properties
+spring.temporal.connection.target=local
+spring.temporal.start-workers=true
+spring.temporal.workers-auto-discovery.enabled=true
+spring.temporal.workers-auto-discovery.workflow-packages=greetingapp
 ```
 
-To set a non-default Namespace, add `spring.temporal.namespace` :
+`application.yml` equivalent:
 
 ```yaml
-spring.temporal:
-  connection:
-    target: local
-  namespace: my-namespace
+spring:
+  temporal:
+    connection:
+      target: local  # shorthand for localhost:7233
+    start-workers: true
+    workers-auto-discovery:
+      enabled: true
+      workflow-packages:
+        - greetingapp
+    workers:
+      - task-queue: greeting-queue
+        name: greeting-worker
 ```
 
-### Temporal Cloud with API key
+For self-hosted Temporal, replace `local` with the server address:
 
-```yaml
-spring.temporal:
-  connection:
-    target: <region>.<account>.tmprl.cloud:7233
-    apiKey: <API key>
-  namespace: <namespace>
+```properties
+spring.temporal.connection.target=temporal.internal:7233
 ```
 
-### Temporal Cloud with mTLS
+## Interface Design + Spring Annotation Layering
 
-```yaml
-spring.temporal:
-  connection:
-    mtls:
-      target: <region>.<account>.tmprl.cloud:7233
-      key-file: /path/to/key.key
-      cert-chain-file: /path/to/cert.pem
-  namespace: <namespace>
-```
+The key concept: Temporal SDK annotations go on **interfaces**, Spring Boot autoconfigure annotations go on **implementation classes**. This is identical to non-Spring usage at the interface level.
 
-`cert-chain-file` may be omitted when the `key-file` is a PKCS12 bundle that already contains the certificate chain .
-
-## Interface Design and Spring Annotation Layering
-
-Temporal SDK annotations go on **interfaces**, Spring Boot autoconfigure annotations go on **implementation classes**. The interface side is identical to non-Spring usage.
-
-### Workflow interface
+### Workflow Interface (unchanged from non-Spring)
 
 ```java
 package greetingapp;
@@ -86,9 +79,7 @@ public interface GreetingWorkflow {
 }
 ```
 
-### Workflow implementation
-
-`io.temporal.spring.boot.WorkflowImpl`  replaces the manual `worker.registerWorkflowImplementationTypes()` call. The `workers` member  names the Worker(s) this class registers with.
+### Workflow Implementation
 
 ```java
 package greetingapp;
@@ -99,10 +90,12 @@ import io.temporal.workflow.Workflow;
 
 import java.time.Duration;
 
-// No @Component — Temporal creates a new instance per execution.
-@WorkflowImpl(workers = "greeting-worker")
+// @WorkflowImpl replaces manual worker.registerWorkflowImplementationTypes()
+// No @Component — workflows are NOT Spring beans; Temporal creates a new instance per execution
+@WorkflowImpl(taskQueues = "greeting-queue")
 public class GreetingWorkflowImpl implements GreetingWorkflow {
 
+    // Activity stubs created via Workflow.newActivityStub() as usual
     private final GreetActivities activities = Workflow.newActivityStub(
         GreetActivities.class,
         ActivityOptions.newBuilder()
@@ -118,7 +111,7 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
 }
 ```
 
-### Activity interface
+### Activity Interface (unchanged from non-Spring)
 
 ```java
 package greetingapp;
@@ -133,9 +126,7 @@ public interface GreetActivities {
 }
 ```
 
-### Activity implementation
-
-`io.temporal.spring.boot.ActivityImpl`  must be applied to a Spring bean; the documented way is to add `@Component` .
+### Activity Implementation
 
 ```java
 package greetingapp;
@@ -143,12 +134,15 @@ package greetingapp;
 import io.temporal.spring.boot.ActivityImpl;
 import org.springframework.stereotype.Component;
 
+// @Component makes this a Spring bean — dependencies can be injected normally
+// @ActivityImpl replaces manual worker.registerActivitiesImplementations()
 @Component
-@ActivityImpl(workers = "greeting-worker") // docs/develop/java/integrations/spring-boot.mdx:157
+@ActivityImpl(taskQueues = "greeting-queue")
 public class GreetActivitiesImpl implements GreetActivities {
 
     private final GreetingService greetingService;
 
+    // Constructor injection works because this is a Spring bean
     public GreetActivitiesImpl(GreetingService greetingService) {
         this.greetingService = greetingService;
     }
@@ -160,92 +154,84 @@ public class GreetActivitiesImpl implements GreetActivities {
 }
 ```
 
-Nexus Service implementations follow the same pattern using `io.temporal.spring.boot.NexusServiceImpl` ; the impl must be a Spring bean.
+## Auto-Discovery
 
-## Configure Workers
+With Java SDK 1.35 and later, set `spring.temporal.workers-auto-discovery.enabled=true` to register Spring beans annotated with `@ActivityImpl`, `@NexusServiceImpl`, or `@WorkflowImpl`. For Workflow classes such as the example above that live outside the Spring context, also set `spring.temporal.workers-auto-discovery.workflow-packages` to their package names.
 
-The integration supports two configuration methods for Workers: explicit configuration and auto-discovery . They compose: auto-discovery is applied **after and on top of** explicit configuration .
+When migrating from `workers-auto-discovery.packages`, remove that property before setting `enabled` or `workflow-packages`.
 
-### Explicit configuration
+Use `taskQueues = "greeting-queue"` to register an implementation by Task Queue. Auto-discovery creates a Worker with default options if the Task Queue has no configured Worker. Use `workers = "greeting-worker"` to register by name when the Worker is already configured. An unknown Worker name causes startup to fail.
 
-The `workers:` block lists Workers and their members :
+**Important:** `@ActivityImpl(taskQueues = "greeting-queue")` only registers the activity bean with that worker. It does not route individual activity task executions. Activity stubs default to the Task Queue the Workflow was started on. Set `ActivityOptions.setTaskQueue(...)` only to route Activities to a different queue.
 
-```yaml
-spring.temporal:
-  workers:
-    - task-queue: greeting-queue
-      name: greeting-worker # if omitted, the Task Queue name is used as the Worker name
-      workflow-classes:
-        - greetingapp.GreetingWorkflowImpl
-      activity-beans:
-        - greetActivitiesImpl
-```
-
-- `task-queue` is the Task Queue the Worker polls.
-- `name` is the unique Worker name; it defaults to the Task Queue when omitted .
-- `workflow-classes` lists fully qualified Workflow implementation class names .
-- `activity-beans` lists Spring bean names of Activity implementations .
-
-### Auto-discovery
-
-Auto-discovery lets you skip listing Workflow classes, Activity beans, and Nexus Service beans by referencing Worker Task Queue names or Worker names on the implementations themselves .
-
-```yaml
-spring.temporal:
-  workers-auto-discovery:
-    packages:
-      - greetingapp # docs/develop/java/integrations/spring-boot.mdx:138-142
-```
-
-#### Auto-discovery scope
-
-Auto-discovery picks up exactly the following :
-
-- Workflow implementation classes annotated with `io.temporal.spring.boot.WorkflowImpl` .
-- Activity beans present in the Spring context whose implementations are annotated with `io.temporal.spring.boot.ActivityImpl` .
-- Nexus Service beans present in the Spring context whose implementations are annotated with `io.temporal.spring.boot.NexusServiceImpl` .
-- Workers themselves — if a Task Queue or Worker name is referenced by one of the annotations but not explicitly configured, a Worker is created with default options .
-
-Auto-discovered Workflow classes, Activity beans, and Nexus Service beans are registered with configured Workers if not already registered .
-
-`ActivityImpl` and `NexusServiceImpl` only work when the implementation is a Spring bean (for example, annotated with `@Component`) .
-
-### Explicit vs auto-discovery, side by side
+### Comparison: Auto-Discovery vs Explicit YAML Registration
 
 Auto-discovery via annotations:
 
-```yaml
-spring.temporal:
-  workers-auto-discovery:
-    packages:
-      - greetingapp
+```properties
+spring.temporal.workers-auto-discovery.enabled=true
+spring.temporal.workers-auto-discovery.workflow-packages=greetingapp
 ```
+
 ```java
 @Component
-@ActivityImpl(workers = "greeting-worker")
-public class GreetActivitiesImpl implements GreetActivities { }
+@ActivityImpl(taskQueues = "greeting-queue")
+public class GreetActivitiesImpl implements GreetActivities { ... }
 ```
 
-Explicit registration:
+Explicit YAML registration (alternative):
 
 ```yaml
-spring.temporal:
-  workers:
-    - task-queue: greeting-queue
-      name: greeting-worker
-      workflow-classes:
-        - greetingapp.GreetingWorkflowImpl
-      activity-beans:
-        - greetActivitiesImpl
+spring:
+  temporal:
+    workers:
+      - task-queue: greeting-queue
+        name: greeting-worker
+        activity-beans:
+          - greetActivitiesImpl
+        workflow-classes:
+          - greetingapp.GreetingWorkflowImpl
 ```
 
-Use auto-discovery when implementations are colocated in a package tree (most apps). Use explicit configuration when registering beans defined outside scanned packages, or when you want the YAML to be the single source of truth.
+Use auto-discovery when implementations are colocated in a single package tree (most apps). Use explicit YAML when you need fine-grained control, want to exclude specific classes, or are registering beans defined elsewhere.
+
+
+## Customize Worker Options
+
+Register a Spring bean implementing `WorkerOptionsCustomizer` when an option depends on the Worker name or Task Queue. Spring calls it after applying the properties for each Worker. Return the builder with any overrides.
+
+```java
+import io.temporal.spring.boot.WorkerOptionsCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+class TemporalWorkerConfiguration {
+    @Bean
+    WorkerOptionsCustomizer workerOptions() {
+        return (builder, workerName, taskQueue) -> {
+            if ("greeting-queue".equals(taskQueue)) {
+                builder.setMaxConcurrentActivityExecutionSize(16);
+            }
+            return builder;
+        };
+    }
+}
+```
 
 ## WorkflowClient Injection
 
-`WorkflowClient` is autowired by the integration . Inject it into any `@Service` or `@RestController`:
+`WorkflowClient` is automatically registered as a Spring bean by the autoconfigure. Inject it into any `@Service` or `@RestController`:
 
 ```java
+package greetingapp;
+
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowOptions;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+
 @Service
 public class GreetingStarter {
 
@@ -260,93 +246,84 @@ public class GreetingStarter {
             GreetingWorkflow.class,
             WorkflowOptions.newBuilder()
                 .setWorkflowId(UUID.randomUUID().toString())
-                .setTaskQueue("greeting-queue") // must match the Worker's Task Queue
+                .setTaskQueue("greeting-queue")  // must match the worker's task queue
                 .build()
         );
+        // Synchronous — blocks until workflow completes
         return stub.greet(name);
     }
-}
-```
 
-## Interceptors
-
-Create beans implementing one of `io.temporal.common.interceptors.WorkflowClientInterceptor`, `io.temporal.common.interceptors.ScheduleClientInterceptor`, or `io.temporal.common.interceptors.WorkerInterceptor` . Registration order is controlled by Spring's `org.springframework.core.annotation.Order`  annotation on each bean — lower values run first.
-
-```java
-import io.temporal.common.interceptors.WorkerInterceptor;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-
-@Component
-@Order(10)
-public class TracingWorkerInterceptor implements WorkerInterceptor {
-    // ...
-}
-```
-
-These three interceptor interfaces are the only ordering hook the integration documents — there is no Temporal-specific ordering API. For broader extension (registering Workflow / Activity / Nexus types, modifying Worker or Client options across the SDK), see the [Temporal Plugin system](https://docs.temporal.io/develop/plugins-guide).
-
-## Customization of Options
-
-Create a bean implementing `io.temporal.spring.boot.TemporalOptionsCustomizer<OptionsBuilderType>`  to programmatically adjust options after the YAML/property values are applied. The supported builder types are :
-
-- `WorkflowServiceStubsOptions.Builder`
-- `WorkflowClientOptions.Builder`
-- `WorkerFactoryOptions.Builder`
-- `WorkerOptions.Builder`
-- `WorkflowImplementationOptions.Builder`
-- `TestEnvironmentOptions.Builder`
-
-For per-Task-Queue or per-Worker-name customization of `WorkerOptions`, use `io.temporal.spring.boot.WorkerOptionsCustomizer` instead of the generic form . For per-Workflow-Type customization of `WorkflowImplementationOptions`, use `io.temporal.spring.boot.WorkflowImplementationOptionsCustomizer` .
-
-## Integrations (metrics and tracing)
-
-The integration picks up a `io.micrometer.core.instrument.MeterRegistry` bean (for example, from Spring Boot Actuator) and reports Temporal metrics through it .
-
-For tracing, the integration picks up the OpenTelemetry bean configured by `spring-cloud-sleuth-otel-autoconfigure`, or a custom `io.opentelemetry.api.OpenTelemetry` / `io.opentracing.Tracer` bean in the application context .
-
-The Spring AI integration (`io.temporal:temporal-spring-ai`) builds on this Spring Boot integration: when on the classpath, its `SpringAiPlugin` auto-registers `ChatModelActivity` with all Temporal Workers created by the Spring Boot integration .
-
-## Testing
-
-Switch the client to an in-memory `io.temporal.testing.TestWorkflowEnvironment` by enabling the test server :
-
-```yaml
-spring.temporal:
-  test-server:
-    enabled: true
-```
-
-When `spring.temporal.test-server.enabled: true` is set, the `spring.temporal.connection` block is ignored . You can then autowire the `TestWorkflowEnvironment` alongside `WorkflowClient`:
-
-```java
-@SpringBootTest(classes = Test.Configuration.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class Test {
-    @Autowired ConfigurableApplicationContext applicationContext;
-    @Autowired TestWorkflowEnvironment testWorkflowEnvironment;
-    @Autowired WorkflowClient workflowClient;
-
-    @BeforeEach
-    void setUp() {
-        applicationContext.start();
+    public void startGreetingAsync(String name) {
+        var stub = client.newWorkflowStub(
+            GreetingWorkflow.class,
+            WorkflowOptions.newBuilder()
+                .setWorkflowId(UUID.randomUUID().toString())
+                .setTaskQueue("greeting-queue")
+                .build()
+        );
+        // Fire-and-forget — returns immediately
+        WorkflowClient.start(stub::greet, name);
     }
-
-    @ComponentScan // discovers @Component-annotated Activity beans
-    public static class Configuration {}
 }
 ```
 
-For unit tests without Spring, use `TestWorkflowExtension` or `TestWorkflowEnvironment` directly; see [Java SDK test frameworks](https://docs.temporal.io/develop/java/best-practices/testing-suite#test-frameworks). Don't mix Spring integration tests and direct `TestWorkflowExtension` tests in the same test class — pick one.
+## Worker Lifecycle
+
+Workers start on `ApplicationReadyEvent` — after the full Spring context is initialized (DB migrations run, all beans wired). This means activity beans are fully ready before any workflow tasks are processed.
+
+To run a client-only app (one that submits workflows but does not execute them):
+
+```properties
+spring.temporal.start-workers=false
+```
+
+## Testing Strategies
+
+See [Java testing guide](../testing.md) for full details on both approaches.
+
+**Spring integration tests** — uses an embedded Temporal test server wired into the Spring context:
+
+```properties
+# src/test/resources/application-test.properties
+spring.temporal.test-server.enabled=true
+```
+
+```java
+@SpringBootTest
+@ActiveProfiles("test")
+class GreetingIntegrationTest {
+    @Autowired WorkflowClient client;  // points at the embedded test server
+
+    @Test
+    void testWorkflowThroughSpringContext() { ... }
+}
+```
+
+**Unit tests without Spring** — use `TestWorkflowEnvironment` or `TestWorkflowExtension` directly. No Spring context, faster startup, full time-skipping support:
+
+```java
+@RegisterExtension
+static final TestWorkflowExtension testWorkflow = TestWorkflowExtension.newBuilder()
+    .setWorkflowTypes(GreetingWorkflowImpl.class)
+    .setDoNotStart(true)
+    .build();
+```
+
+Do not mix approaches in the same test class — choose one or the other.
 
 ## Spring-Specific Gotchas
 
-**Workflow impls must not have `@Component`.** Temporal creates a new Workflow instance per execution. Adding `@Component` makes Spring also manage it as a singleton bean, causing confusing lifecycle behavior. Leave `@WorkflowImpl` classes as plain classes with no Spring stereotype.
+**Workflow impls must not have `@Component`**
+Temporal creates a new workflow instance per execution via `beanFactory.createBean()` (not `getBean()`). Adding `@Component` means Spring also registers it as a singleton bean, which can cause confusing lifecycle behavior. Leave `@WorkflowImpl` classes as plain classes with no Spring annotations.
 
-**Activity beans are Spring singletons.** Temporal may invoke Activity methods concurrently across many Workflow executions. Don't keep mutable instance state on Activity beans — use injected stateless or thread-safe services instead.
+**Activity beans are Spring singletons**
+Temporal may invoke activity methods concurrently across many workflow executions. Keep activity implementations stateless — no mutable instance fields. Use injected services (which are themselves stateless or thread-safe) for all state.
 
-**`@WorkflowImpl` / `@ActivityImpl` without `workers-auto-discovery.packages` is silently ignored.** Without the packages list, nothing scans the annotations and nothing registers. Verify in the Temporal UI that the Worker reports the expected Workflow and Activity types.
+**The Worker starts without an expected implementation**
+Check that the implementation has the matching Spring annotation and Task Queue or Worker name. For non-bean Workflow implementations, check that `workflow-packages` includes their package.
 
-**`ActivityOptions.setTaskQueue(...)` is still required on Activity stubs.** `@ActivityImpl(workers = "...")`  only binds the Activity bean to a Worker; it doesn't route Activity Task execution. Inside Workflow code, set `.setTaskQueue(...)` on `ActivityOptions` to direct Activity Tasks to the right queue.
+**Activity stubs inherit the Workflow Task Queue**
+`@ActivityImpl(taskQueues = "greeting-queue")` registers the activity bean with the worker — it does not set the default task queue for activity execution. An Activity stub defaults to the Task Queue the Workflow was started on; set `.setTaskQueue(...)` when the Activity Worker polls a different queue.
 
-**Multiple `DataConverter` beans cause ambiguity.** If you declare more than one `DataConverter` bean, designate the primary by naming one of them `mainDataConverter`.
+**Multiple `DataConverter` beans**
+If you define more than one `DataConverter` bean (e.g., a custom JSON converter and a default), the autoconfigure fails with an ambiguity error. Name one of them `mainDataConverter` to designate it as the primary.

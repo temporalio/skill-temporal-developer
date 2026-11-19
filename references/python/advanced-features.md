@@ -79,7 +79,7 @@ async def complete_approval(request_id: str, approved: bool):
 
 ## Sandbox Customization
 
-The Python SDK runs workflows in a sandbox to help you ensure determinism. You can customize sandbox restrictions when needed. See `references/python/determinism-protection.md`
+The Python SDK runs workflows in a sandbox to help you ensure determinism. You can customize sandbox restrictions when needed. See [Python determinism protection guide](determinism-protection.md)
 
 ## Gevent Compatibility Warning
 
@@ -116,7 +116,7 @@ worker = Worker(
 
 ## DNS Resolver Configuration
 
-`DnsLoadBalancingConfig`  makes Core periodically re-resolve the client's target host and round-robin requests across the resolved addresses . Use it when `target_host` resolves to multiple A/AAAA records (e.g., a load-balanced gRPC frontend, multi-address private endpoints) and you want the client to spread RPCs across them.
+`DnsLoadBalancingConfig` makes Core periodically re-resolve the client's target host and round-robin requests across the resolved addresses . Use it when `target_host` resolves to multiple A/AAAA records (e.g., a load-balanced gRPC frontend, multi-address private endpoints) and you want the client to spread RPCs across them.
 
 ### Configuration
 
@@ -132,14 +132,14 @@ client = await Client.connect(
 )
 ```
 
-- The only field is `resolution_interval_millis: int = 30000`  — how often to re-resolve DNS, in milliseconds.
-- `DnsLoadBalancingConfig.default`  is a pre-built instance with the default 30-second interval.
+- The only field is `resolution_interval_millis: int = 30000` — how often to re-resolve DNS, in milliseconds.
+- `DnsLoadBalancingConfig.default` is a pre-built instance with the default 30-second interval.
 - `dns_load_balancing_config` defaults to 30 seconds if you don't pass anything explicitly.
 - Pass `dns_load_balancing_config=None` to disable DNS load balancing entirely.
 
 ### Mutual exclusion with HTTP CONNECT proxy
 
-DNS load balancing and `HttpConnectProxyConfig` cannot be used together. When `http_connect_proxy_config` is set on the same client, DNS load balancing is **silently disabled**  — there is no error and no precedence flag. If you need both, you cannot have both; choose the one your network requires.
+DNS load balancing and `HttpConnectProxyConfig` cannot be used together. When `http_connect_proxy_config` is set on the same client, DNS load balancing is **silently disabled** — there is no error and no precedence flag. If you need both, you cannot have both; choose the one your network requires.
 
 ## Workflow Init Decorator
 
@@ -152,7 +152,7 @@ Normally, your `__init__` must have no arguments. However, if you add the `@work
 class MyWorkflow:
     @workflow.init
     def __init__(self, initial_value: str) -> None:
-        # This runs only on first execution, not replay
+        # This runs when the Workflow is instantiated, including during replay
         self._value = initial_value
         self._items: list[str] = []
 

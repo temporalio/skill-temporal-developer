@@ -1,17 +1,14 @@
-> [!NOTE]
-> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
-
 ## Overview
 
 Standalone Activities are Activities run independently of any Workflow, started directly from a Temporal Client — useful when you need a single durable, retryable task (job-queue style) and not multi-step orchestration. The same Activity method can be executed both as a Standalone Activity and as a Workflow Activity with no code changes.
 
-Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](references/core/standalone-activities.md) if you have not already, and then see below for the Java SDK specific APIs for calling Standalone Activities.
+Standalone Activities are conceptually the same across all SDKs. Read the [cross-SDK concept file](../core/standalone-activities.md) if you have not already, and then see below for the Java SDK specific APIs for calling Standalone Activities.
 
 ## Prerequisites
 
-- Temporal Java SDK v1.35.0 or higher.
-- Temporal CLI v1.7.0 or higher — see [Temporal CLI install instructions](references/core/install_cli.md) if needed. Dev server includes Standalone Activities support.
-- For production, Temporal Server v1.31.0 or higher (or Temporal Cloud).
+- Temporal Java SDK v1.39.0 or higher.
+- Temporal CLI v1.9.1 or higher — see [Temporal CLI install instructions](../core/install_cli.md) if needed. Dev server includes Standalone Activities support.
+- For production, Temporal Server v1.32.0 or higher (or Temporal Cloud).
 
 ## Hosting Activities on a Worker
 

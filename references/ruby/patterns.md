@@ -200,7 +200,7 @@ end
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent - they may be retried (as with ALL activities).
+**Important:** Compensation activities should be idempotent - they may be retried. Forward activities should raise a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
 
 ```ruby
 class MyWorkflow < Temporalio::Workflow::Definition
@@ -333,10 +333,12 @@ end
 ## Activity Heartbeat Details
 
 ### WHY:
+
 - **Support activity cancellation** - Cancellations are delivered via heartbeat; activities that don't heartbeat won't know they've been cancelled
 - **Resume progress after worker failure** - Heartbeat details persist across retries
 
 ### WHEN:
+
 - **Cancellable activities** - Any activity that should respond to cancellation
 - **Long-running activities** - Track progress for resumability
 - **Checkpointing** - Save progress periodically
@@ -400,4 +402,4 @@ end
 
 ## Using ActiveModel
 
-See `references/ruby/data-handling.md`.
+See [Ruby data handling guide](data-handling.md).

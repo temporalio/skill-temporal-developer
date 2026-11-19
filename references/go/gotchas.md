@@ -1,6 +1,6 @@
 # Go Gotchas
 
-Go-specific mistakes and anti-patterns. See also [Common Gotchas](references/core/gotchas.md) for language-agnostic concepts.
+Go-specific mistakes and anti-patterns. See also [Common Gotchas](../core/gotchas.md) for language-agnostic concepts.
 
 ## Goroutines and Concurrency
 
@@ -129,7 +129,7 @@ Always use named functions for local activities (and regular activities).
 ## Wrong Retry Classification
 
 **Example:** Transient network errors should be retried. Authentication errors should not be.
-See `references/go/error-handling.md` for detailed guidance on error classification and retry policies.
+See [Go error handling guide](error-handling.md) for detailed guidance on error classification and retry policies.
 
 ## Heartbeating
 
@@ -237,11 +237,11 @@ func LongActivity(ctx context.Context) error {
 
 ### Not Testing Failures
 
-It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see `references/go/testing.md` for more info.
+It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see [Go testing guide](testing.md) for more info.
 
 ### Not Testing Replay
 
-Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code, and should be considered in addition to standard testing. Please see `references/go/testing.md` for more info.
+Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code, and should be considered in addition to standard testing. Please see [Go testing guide](testing.md) for more info.
 
 ## Timers and Sleep
 
