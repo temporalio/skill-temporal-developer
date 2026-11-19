@@ -1,5 +1,22 @@
 # .NET SDK Advanced Features
 
+## DNS Load Balancing
+
+Set `DnsLoadBalancing` on your Temporal connection options to distribute RPCs across the addresses for your server hostname. When enabled, Core refreshes the addresses every 30 seconds by default.
+
+```csharp
+using Temporalio.Client;
+
+var client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions
+{
+    TargetHost = "temporal.internal:7233",
+    Namespace = "default",
+    DnsLoadBalancing = new DnsLoadBalancingOptions(),
+});
+```
+
+Set `DnsLoadBalancingOptions.ResolutionInterval` to a `TimeSpan` to change the refresh interval. Setting `HttpConnectProxy` disables DNS load balancing.
+
 ## Schedules
 
 Create recurring workflow executions.
