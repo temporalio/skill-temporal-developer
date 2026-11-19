@@ -214,6 +214,16 @@ class MyWorkflow:
                 workflow.continue_as_new(args=[state])
 ```
 
+### Delay the first Workflow Task of the next run
+
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Pass a `timedelta` as `backoff_start_interval` to `workflow.continue_as_new`.
+
+```python
+from datetime import timedelta
+
+workflow.continue_as_new(args=[state], backoff_start_interval=timedelta(seconds=30))
+```
+
 ## Saga Pattern (Compensations)
 
 **Important:** Compensation activities should be idempotent - they may be retried. Forward activities should raise a non-retryable error for permanent business failures such as payment declines, so compensation can begin.

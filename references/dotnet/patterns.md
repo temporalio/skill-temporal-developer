@@ -285,6 +285,16 @@ public class LongRunningWorkflow
 }
 ```
 
+### Delay the first Workflow Task of the next run
+
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Pass a `TimeSpan` in `ContinueAsNewOptions.BackoffStartInterval` when creating the Continue-as-New exception.
+
+```csharp
+throw Workflow.CreateContinueAsNewException(
+    (LongRunningWorkflow wf) => wf.RunAsync(state),
+    new ContinueAsNewOptions { BackoffStartInterval = TimeSpan.FromSeconds(30) });
+```
+
 ## Saga Pattern (Compensations)
 
 **Important:** Compensation activities should be idempotent — they may be retried. Forward activities should throw a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
