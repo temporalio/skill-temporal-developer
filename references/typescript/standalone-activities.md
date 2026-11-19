@@ -123,6 +123,24 @@ const result = await handle.result();
 
 Calling `execute` is equivalent to `start` followed by `await handle.result()`.
 
+### Inspect execution details
+
+Call `await handle.describe()` for metadata such as status, attempt, and Task Queue. Include payloads by setting the corresponding option to `true`:
+
+| Option | Async accessor on the description |
+| --- | --- |
+| `includeInput` | `getInput()` for the original arguments |
+| `includeOutcome` | `getResult()` after success or `getOutcomeFailure()` after a terminal failure |
+| `includeHeartbeatDetails` | `getHeartbeatDetails()` for the latest recorded checkpoint |
+| `includeLastFailure` | `getLastFailure()` for the most recent failed attempt, even during retries |
+
+```typescript
+const description = await handle.describe({ includeHeartbeatDetails: true });
+const checkpoint = await description.getHeartbeatDetails();
+```
+
+The accessors decode with the Client's Data Converter and return `undefined` when a payload is unavailable. Use the same Payload Codec configuration as the producing application when it encodes or encrypts payloads. To wait for an unfinished Activity, call `handle.result()`.
+
 ### List Standalone Activities
 
 ```typescript

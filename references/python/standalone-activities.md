@@ -132,6 +132,24 @@ result = await activity_handle.result()
 
 Calling `execute_activity` is equivalent to `start_activity` followed by `await activity_handle.result()`.
 
+### Inspect execution details
+
+Call `await activity_handle.describe()` for metadata such as status, attempt, and Task Queue. Include the payloads you need using these keyword arguments, which default to `False`:
+
+| Keyword argument | Async accessor on the description |
+| --- | --- |
+| `include_input` | `input()` for the original arguments |
+| `include_outcome` | `result()` after success or `outcome_failure()` after a terminal failure |
+| `include_heartbeat_details` | `heartbeat_details()` for the latest recorded checkpoint |
+| `include_last_failure` | `last_failure()` for the most recent failed attempt, even during retries |
+
+```python
+description = await activity_handle.describe(include_heartbeat_details=True)
+checkpoint = await description.heartbeat_details()
+```
+
+The accessors decode with the Client's Data Converter and return `None` when a payload is unavailable. Use the same Payload Codec configuration as the producing application when it encodes or encrypts payloads. To wait for an unfinished Activity, call `activity_handle.result()`.
+
 ### List Standalone Activities
 
 ```python
