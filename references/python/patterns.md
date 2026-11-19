@@ -24,6 +24,22 @@ class OrderWorkflow:
         return f"Processed {len(self._items)} items"
 ```
 
+### Signal with Start
+
+With the default conflict policy, Signal-with-Start sends a Signal to the running execution for a Workflow ID. If none is running, it starts a Workflow and sends the Signal in one Client call. The Client returns a Workflow handle without waiting for the Signal handler to finish.
+
+```python
+handle = await client.start_workflow(
+    OrderWorkflow.run,
+    id="order-123",
+    task_queue="orders",
+    start_signal="add_item",
+    start_signal_args=["tea"],
+)
+```
+
+Initialize state used by Signal handlers in `__init__`. The Signal handler can run before `run`. If the caller needs the handler's result, use Update-with-Start.
+
 ### Dynamic Signal Handlers
 
 For handling signals with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined signal handlers.
