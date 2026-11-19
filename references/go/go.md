@@ -12,6 +12,17 @@ The Temporal Go SDK (`go.temporal.io/sdk`) provides a strongly-typed, idiomatic 
 go get go.temporal.io/sdk go.temporal.io/sdk/contrib/envconfig
 ```
 
+**greeting/input.go** - Shared input struct:
+
+```go
+package greeting
+
+type Input struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+```
+
 **workflows/greeting.go** - Workflow definition:
 
 ```go
@@ -20,17 +31,19 @@ package workflows
 import (
 	"time"
 
+	"yourmodule/greeting"
+
 	"go.temporal.io/sdk/workflow"
 )
 
-func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
+func GreetingWorkflow(ctx workflow.Context, input greeting.Input) (string, error) {
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute,
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
 	var result string
-	err := workflow.ExecuteActivity(ctx, "Greet", name).Get(ctx, &result)
+	err := workflow.ExecuteActivity(ctx, "Greet", input).Get(ctx, &result)
 	if err != nil {
 		return "", err
 	}
@@ -46,12 +59,14 @@ package activities
 import (
 	"context"
 	"fmt"
+
+	"yourmodule/greeting"
 )
 
 type Activities struct{}
 
-func (a *Activities) Greet(ctx context.Context, name string) (string, error) {
-	return fmt.Sprintf("Hello, %s!", name), nil
+func (a *Activities) Greet(ctx context.Context, input greeting.Input) (string, error) {
+	return fmt.Sprintf("Hello, %s %s!", input.FirstName, input.LastName), nil
 }
 ```
 
@@ -104,6 +119,7 @@ import (
 	"fmt"
 	"log"
 
+	"yourmodule/greeting"
 	"yourmodule/workflows"
 
 	"github.com/google/uuid"
@@ -123,7 +139,8 @@ func main() {
 		TaskQueue: "my-task-queue",
 	}
 
-	we, err := c.ExecuteWorkflow(context.Background(), options, workflows.GreetingWorkflow, "my name")
+	input := greeting.Input{FirstName: "Ada", LastName: "Lovelace"}
+	we, err := c.ExecuteWorkflow(context.Background(), options, workflows.GreetingWorkflow, input)
 	if err != nil {
 		log.Fatalln("Unable to execute workflow", err)
 	}
@@ -138,7 +155,7 @@ func main() {
 }
 ```
 
-**Run the workflow:** Run `go run starter/main.go`. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `go run starter/main.go`. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 
@@ -156,6 +173,10 @@ func main() {
 - Struct methods are preferred for dependency injection
 - Signature: `func (a *Activities) MyActivity(ctx context.Context, input string) (string, error)`
 - Register struct with `w.RegisterActivity(&Activities{})` (registers all exported methods)
+
+### Evolving Inputs and Results
+
+Prefer one serializable `struct` for Workflow and Activity inputs that may grow, and a result `struct` when needed. New fields in old JSON payloads decode to zero values; changing an existing scalar input to a struct requires a migration because old payloads remain in history.
 
 ### Worker Setup
 
@@ -184,7 +205,7 @@ go install go.temporal.io/sdk/contrib/tools/workflowcheck@latest
 workflowcheck ./...
 ```
 
-Read `references/core/determinism.md` and `references/go/determinism.md` to understand more.
+Read [Temporal determinism rules](../core/determinism.md) and [Go determinism rules](determinism.md) to understand more.
 
 ## File Organization Best Practice
 
@@ -192,6 +213,8 @@ Read `references/core/determinism.md` and `references/go/determinism.md` to unde
 
 ```
 myapp/
+├── greeting/
+│   └── input.go         # Shared input struct
 ├── workflows/
 │   └── greeting.go      # Only Workflow functions
 ├── activities/
@@ -238,21 +261,23 @@ w.RegisterActivity(activities)
 
 ## Writing Tests
 
-See `references/go/testing.md` for info on writing tests.
+See [Go testing guide](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
 
-- **`references/go/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
-- **`references/go/determinism.md`** - Determinism rules, workflowcheck tool, safe alternatives
-- **`references/go/gotchas.md`** - Go-specific mistakes and anti-patterns
-- **`references/go/error-handling.md`** - ApplicationError, retry policies, non-retryable errors
-- **`references/go/observability.md`** - Logging, metrics, tracing, Search Attributes
-- **`references/go/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
-- **`references/go/advanced-features.md`** - Schedules, worker tuning, and more
-- **`references/go/data-handling.md`** - Data converters, payload codecs, encryption
-- **`references/go/external-storage.md`** - Claim-check pattern for large payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
-- **`references/go/versioning.md`** - Patching API (`workflow.GetVersion`), Worker Versioning
-- **`references/go/determinism-protection.md`** - Information on **`workflowcheck`** tool to help statically check for determinism issues.
-- **`references/go/standalone-activities.md`** - Standalone Activities (Public Preview): run an Activity directly from a Client without a Workflow; see also `references/core/standalone-activities.md` for cross-SDK concepts.
+- **[Go workflow patterns](patterns.md)** - Signals, queries, child workflows, saga pattern, etc.
+- **[Go determinism rules](determinism.md)** - Determinism rules, workflowcheck tool, safe alternatives
+- **[Go common pitfalls](gotchas.md)** - Go-specific mistakes and anti-patterns
+- **[Go error handling guide](error-handling.md)** - ApplicationError, retry policies, non-retryable errors
+- **[Go observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
+- **[Go testing guide](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
+- **[Go advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
+- **[Go data handling guide](data-handling.md)** - Data converters, payload codecs, encryption
+- **[Go external storage guide](external-storage.md)** - Claim-check pattern for large payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
+- **[Go versioning guide](versioning.md)** - Patching API (`workflow.GetVersion`), Worker Versioning
+- **[Go determinism protection guide](determinism-protection.md)** - Information on **`workflowcheck`** tool to help statically check for determinism issues.
+- **[Go standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow; see also [Temporal standalone Activities guide](../core/standalone-activities.md) for cross-SDK concepts.
+- **[Go Task Queue priority and fairness guide](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples; see also [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md) for cross-SDK concepts.
+- **[Go Workflow random streams guide](random-streams.md)** - Named deterministic random streams with `workflow.GetRandomStream`; see also [Temporal Workflow random streams guide](../core/random-streams.md) for cross-SDK concepts.

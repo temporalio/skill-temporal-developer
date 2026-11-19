@@ -2,11 +2,21 @@
 
 ## Overview
 
-The .NET SDK uses data converters to serialize/deserialize workflow inputs, outputs, and activity parameters.
+The .NET SDK uses a `DataConverter` to move values between the SDK and the Temporal Service. It combines three components:
 
-## Default Data Converter
+- `PayloadConverter` serializes values to and from payload bytes. The default converter handles `null`, `byte[]`, Protobuf messages, JSON-serializable types, and `IRawValue`.
+- `PayloadCodec` transforms payloads, for example to encrypt or compress them.
+- `FailureConverter` converts exceptions to and from Temporal `Failure` protobufs.
 
-The default converter handles:
+Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in a `FailureConverter`.
+
+## Payload size validation
+
+Workers validate outbound payload sizes and can report `[TMPRL1103]` and fail the Workflow/Activity Task attempt before sending oversized payloads. `TemporalWorkerOptions.DisablePayloadErrorLimit = true` defers enforcement to the server when a downstream proxy transforms the payload. It does not raise the Namespace's limit; see [payload limits](../core/gotchas.md#payload-size-limits).
+
+## Default Payload Converter
+
+The default payload converter handles:
 
 - `null`
 - `byte[]` (as binary)
@@ -104,54 +114,6 @@ var client = await TemporalClient.ConnectAsync(new("localhost:7233")
 });
 ```
 
-## Search Attributes
-
-Custom searchable fields for workflow visibility. These can be set at workflow start:
-
-```csharp
-using Temporalio.Common;
-
-var handle = await client.StartWorkflowAsync(
-    (OrderWorkflow wf) => wf.RunAsync(order),
-    new(id: $"order-{order.Id}", taskQueue: "orders")
-    {
-        TypedSearchAttributes = new SearchAttributeCollection.Builder()
-            .Set(SearchAttributeKey.CreateKeyword("OrderId"), order.Id)
-            .Set(SearchAttributeKey.CreateKeyword("OrderStatus"), "pending")
-            .Set(SearchAttributeKey.CreateFloat("OrderTotal"), order.Total)
-            .Build(),
-    });
-```
-
-Or upserted during workflow execution:
-
-```csharp
-[Workflow]
-public class OrderWorkflow
-{
-    [WorkflowRun]
-    public async Task<string> RunAsync(Order order)
-    {
-        // ... process order ...
-
-        // Update search attribute
-        Workflow.UpsertTypedSearchAttributes(
-            SearchAttributeKey.CreateKeyword("OrderStatus").ValueSet("completed"));
-        return "done";
-    }
-}
-```
-
-### Querying Workflows by Search Attributes
-
-```csharp
-await foreach (var wf in client.ListWorkflowsAsync(
-    "OrderStatus = \"processing\" OR OrderStatus = \"pending\""))
-{
-    Console.WriteLine($"Workflow {wf.Id} is still processing");
-}
-```
-
 ## Workflow Memo
 
 Store arbitrary metadata with workflows (not searchable).
@@ -211,7 +173,7 @@ public class MyWorkflow
 ## Best Practices
 
 1. Use records or classes with `System.Text.Json` support for input/output
-2. Keep payloads small — see `references/core/gotchas.md` for limits
+2. Keep payloads small — see [Temporal common pitfalls](../core/gotchas.md) for limits
 3. Encrypt sensitive data with `IPayloadCodec`
 4. Use `Workflow.NewGuid()` and `Workflow.Random` for deterministic values
 5. Use camelCase converter if interoperating with other SDKs

@@ -1,6 +1,6 @@
 # Java SDK Versioning
 
-For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
+For conceptual overview and guidance on choosing an approach, see [Temporal versioning guide](../core/versioning.md).
 
 ## Patching API
 
@@ -39,9 +39,30 @@ public class ShippingWorkflowImpl implements ShippingWorkflow {
 
 **How it works:**
 
-- For new executions: returns `maxSupported` and records a marker in history
+- When first recording a version: selects `maxSupported` by default
 - For replay with the marker: returns the recorded version
 - For replay without the marker: returns `DEFAULT_VERSION` (-1)
+
+### Choose the first version with a Worker provider
+
+Java SDK v1.37.0+ exposes the experimental `WorkerOptions.Builder.setPreferredVersionProvider`. Use it to stage a new `Workflow.getVersion` branch while both versions are supported. It runs during live execution before the SDK records a version marker for a change ID. Replay follows history, and a recorded version stays fixed for that run.
+
+```java
+import io.temporal.worker.VersionPreference;
+import io.temporal.worker.WorkerOptions;
+
+WorkerOptions options = WorkerOptions.newBuilder()
+    .setPreferredVersionProvider(input -> {
+        if (input.getChangeId().equals("order-validation") && !enableOrderValidation) {
+            return VersionPreference.of(input.getMinSupported());
+        }
+        return null;
+    })
+    .build();
+factory.newWorker("orders", options);
+```
+
+`enableOrderValidation` is Worker configuration. Keep the Workflow's `Workflow.getVersion("order-validation", Workflow.DEFAULT_VERSION, 1)` guard and both branches during rollout. A `null` preference selects `maxSupported`. An out-of-range preference fails the Workflow Task unless you call `VersionPreference.of(version).clampToSupportedRange()`. Keep the provider fast because it runs on the Workflow thread.
 
 ### Three-Step Patching Process
 
@@ -194,7 +215,7 @@ temporal workflow list --query 'WorkflowType = "PizzaWorkflow" AND ExecutionStat
 
 ## Worker Versioning
 
-Worker Versioning manages versions at the deployment level. Available since Java SDK v1.29.
+Worker Versioning is GA and manages versions at the deployment level. See the [core guide](../core/versioning.md) for server requirements, rollout, and recovery tooling.
 
 ### Key Concepts
 
@@ -204,20 +225,21 @@ Worker Versioning manages versions at the deployment level. Available since Java
 ### Configuring Workers
 
 ```java
+import io.temporal.common.VersioningBehavior;
+import io.temporal.common.WorkerDeploymentVersion;
 import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerDeploymentOptions;
 import io.temporal.worker.WorkerFactory;
 import io.temporal.worker.WorkerOptions;
-import io.temporal.worker.WorkerDeploymentOptions;
-import io.temporal.worker.WorkerDeploymentVersion;
 
-WorkerDeploymentVersion version = WorkerDeploymentVersion.newBuilder()
-    .setDeploymentName("order-service")
-    .setBuildId("v1.0.0")  // or git commit hash
-    .build();
+WorkerDeploymentVersion version =
+    new WorkerDeploymentVersion("order-service", "v1.0.0");  // or git commit hash
 
 WorkerDeploymentOptions deploymentOptions = WorkerDeploymentOptions.newBuilder()
     .setVersion(version)
-    .setUseWorkerVersioning(true)
+    .setUseVersioning(true)
+    // Optional: behavior for workflows without @WorkflowVersioningBehavior
+    .setDefaultVersioningBehavior(VersioningBehavior.PINNED)
     .build();
 
 WorkerFactory factory = WorkerFactory.newInstance(client);
@@ -234,24 +256,27 @@ factory.start();
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 
-Set the versioning behavior on the workflow definition:
+Set the versioning behavior with the `@WorkflowVersioningBehavior` annotation on the workflow implementation method:
 
 ```java
-import io.temporal.workflow.VersioningBehavior;
-import io.temporal.workflow.Workflow;
+import io.temporal.common.VersioningBehavior;
+import io.temporal.workflow.WorkflowVersioningBehavior;
 
 public class MyWorkflowImpl implements MyWorkflow {
     @Override
+    @WorkflowVersioningBehavior(VersioningBehavior.PINNED)
     public String run(String input) {
-        Workflow.setVersioningBehavior(VersioningBehavior.PINNED);
         // ... workflow logic
+        return input;
     }
 }
 ```
 
-**PINNED**: Workflow stays on the Worker version that started it. Use for short-running workflows or when consistency within a single execution is critical. New workflows start on the current version; existing ones stay put.
+The method annotation overrides the Worker's default. Set `WorkerDeploymentOptions.Builder.setDefaultVersioningBehavior(...)` for unannotated Workflow Types.
 
-**AUTO_UPGRADE**: Workflow moves to the latest Worker version on the next Workflow Task. Use for long-running workflows that need bug fixes or feature updates. Combine with `Workflow.getVersion()` patching to handle version transitions safely.
+**PINNED**: Workflow stays on the Worker version that started it. Use for runs that complete within a deployment's lifetime, or long-running Workflows that upgrade on Continue-as-New. No patching is needed within a pinned run.
+
+**AUTO_UPGRADE**: Workflow moves to its Target Version (the Current Version, or the Ramping Version if it's routed to the ramp) on the next Workflow Task. Use for long-running Workflows without Continue-as-New and as the default for blue-green deployments. Combine with `Workflow.getVersion()` patching to keep replay safe.
 
 ### Deployment Strategies
 
@@ -276,11 +301,11 @@ temporal workflow count --query \
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.getInfo()` and continue-as-new with `InitialVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version. See `references/core/versioning.md` for the conceptual model.
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.getInfo()` and continue-as-new with `InitialVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version. See [Temporal versioning guide](../core/versioning.md) for the conceptual model.
 
 ### Detecting the Target Version change
 
-`Workflow.getInfo().isTargetWorkerDeploymentVersionChanged()` returns `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment.  The flag is refreshed after each Workflow Task completes.
+`Workflow.getInfo().isTargetWorkerDeploymentVersionChanged()` returns `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment. The flag is refreshed after each Workflow Task completes.
 
 Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
 
@@ -307,6 +332,8 @@ if (Workflow.getInfo().isTargetWorkerDeploymentVersionChanged()) {
 > [!IMPORTANT]
 > Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
 
+`InitialVersioningBehavior.USE_RAMPING_VERSION` (Java SDK 1.36+) can explicitly choose the Ramping Version for the new run.
+
 ### Limitations
 
 - **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check `isTargetWorkerDeploymentVersionChanged`.
@@ -319,6 +346,6 @@ if (Workflow.getInfo().isTargetWorkerDeploymentVersionChanged()) {
 2. **Use descriptive change IDs** that explain the change (e.g., `"add-fraud-check"` not `"patch-1"`)
 3. **Deploy patches incrementally**: patch, remove old path, remove `getVersion`
 4. **Manually upsert `TemporalChangeVersion`** search attribute when using `getVersion` if you need query filtering
-5. **Use PINNED for short workflows** to simplify version management
-6. **Use AUTO_UPGRADE with patching** for long-running workflows that need updates
+5. **Use PINNED for short runs or upgrade on Continue-as-New** to simplify version management
+6. **Use AUTO_UPGRADE with patching** for long-running workflows without Continue-as-New
 7. **Generate Build IDs from code** (git hash) to ensure changes produce new versions
