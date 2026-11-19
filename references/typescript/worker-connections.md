@@ -2,9 +2,9 @@
 
 ## `NativeConnection` vs `Connection`
 
-`Worker.create()` accepts a [`NativeConnection`](https://typescript.temporal.io/api/classes/worker.NativeConnection) from `@temporalio/worker`. `Client` accepts a [`ConnectionLike`](https://typescript.temporal.io/api/interfaces/client.ClientOptions#connection), including a `Connection` from `@temporalio/client` or a `NativeConnection`.
+Use `NativeConnection` from `@temporalio/worker` when supplying a connection to `Worker.create()`. `Client` accepts a `ConnectionLike`, so it can use a `Connection` from `@temporalio/client` or share the Worker's `NativeConnection`.
 
-Both classes support address, TLS, and gRPC metadata settings. Check the [Worker options](https://typescript.temporal.io/api/interfaces/worker.NativeConnectionOptions) and [Client options](https://typescript.temporal.io/api/interfaces/client.ConnectionOptions) before sharing configuration. For example, `connectTimeout` is specific to `Connection`.
+Both connection types accept `address` in `host:port` form, `tls: true` for standard TLS or a `tls` object for custom settings, `metadata` for gRPC headers, and `apiKey` for API key authentication. `connectTimeout` is a client `Connection` option. It takes milliseconds or a duration string and defaults to 10 seconds.
 
 ## Build a connection and hand it to the Worker
 
@@ -74,10 +74,10 @@ Update a Worker's API key without recreating its `NativeConnection`:
 await connection.setApiKey(newApiKey);
 ```
 
-An explicit `authorization` entry in the connection metadata takes precedence. See [`NativeConnection.setApiKey()`](https://typescript.temporal.io/api/classes/worker.NativeConnection#setapikey).
+An explicit `authorization` entry in the connection metadata takes precedence over the new key.
 
 ## Lifecycle and shutdown
 
 Workers begin shutdown on `SIGINT`, `SIGTERM`, `SIGQUIT`, or `SIGUSR2` by default. For programmatic shutdown, call `worker.shutdown()` to begin draining. Wait for `worker.run()` to settle, then close the connection in `finally` as shown above.
 
-`worker.run()` can reject if graceful shutdown fails. If multiple Workers share a connection, wait for all of them to stop before closing it. See [Worker shutdown](https://typescript.temporal.io/api/classes/worker.Worker#shutdown) and [`NativeConnection.close()`](https://typescript.temporal.io/api/classes/worker.NativeConnection#close).
+`worker.run()` can reject if graceful shutdown fails. Wait for every Worker sharing the connection to stop before closing it. `NativeConnection.close()` rejects with `IllegalStateError` if a Worker still uses the connection.
