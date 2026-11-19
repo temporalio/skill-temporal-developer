@@ -45,6 +45,16 @@ describe('Workflow', () => {
 });
 ```
 
+### Server startup timeout
+
+Both `createLocal()` and `createTimeSkipping()` accept ephemeral server options under `server`, including `startupTimeout` (a `Duration`). It is the maximum time to wait for server readiness after spawning the process, excluding executable download time. Default: `'5s'`.
+
+```typescript
+testEnv = await TestWorkflowEnvironment.createLocal({
+  server: { startupTimeout: '30s' },
+});
+```
+
 ## Activity Mocking
 
 ```typescript
