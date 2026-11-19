@@ -156,9 +156,7 @@ public class GreetActivitiesImpl implements GreetActivities {
 
 ## Auto-Discovery
 
-With Java SDK 1.35 and later, set `spring.temporal.workers-auto-discovery.enabled=true` to register Spring beans annotated with `@ActivityImpl`, `@NexusServiceImpl`, or `@WorkflowImpl`. For Workflow classes such as the example above that live outside the Spring context, also set `spring.temporal.workers-auto-discovery.workflow-packages` to their package names.
-
-When migrating from `workers-auto-discovery.packages`, remove that property before setting `enabled` or `workflow-packages`.
+Set `spring.temporal.workers-auto-discovery.enabled=true` to register Spring beans annotated with `@ActivityImpl`, `@NexusServiceImpl`, or `@WorkflowImpl`. For Workflow classes such as the example above that live outside the Spring context, also set `spring.temporal.workers-auto-discovery.workflow-packages` to their package names.
 
 Use `taskQueues = "greeting-queue"` to register an implementation by Task Queue. Auto-discovery creates a Worker with default options if the Task Queue has no configured Worker. Use `workers = "greeting-worker"` to register by name when the Worker is already configured. An unknown Worker name causes startup to fail.
 
@@ -195,6 +193,9 @@ spring:
 
 Use auto-discovery when implementations are colocated in a single package tree (most apps). Use explicit YAML when you need fine-grained control, want to exclude specific classes, or are registering beans defined elsewhere.
 
+### Migrating legacy configuration
+
+If your configuration uses `spring.temporal.workers-auto-discovery.packages`, remove it before setting `enabled` or `workflow-packages`. The starter rejects configurations that combine the legacy property with either setting.
 
 ## Customize Worker Options
 
