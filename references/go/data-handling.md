@@ -216,10 +216,9 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
 })
 ```
 
-
 ### Memo encoding
 
-Go SDK v1.44 and later try the configured Data Converter first by default when encoding Memo values. The SDK retries encoding with the default Data Converter if the configured converter returns an error. Memos can therefore be stored without your encryption codec. Keep sensitive values in a protected store and put an opaque reference in the Memo.
+If the configured Data Converter fails to encode a Memo value, the Go SDK can retry with its default Data Converter. That fallback can store the value without applying your encryption codec. Keep sensitive values in a protected store and put an opaque reference in the Memo.
 
 ## Best Practices
 
