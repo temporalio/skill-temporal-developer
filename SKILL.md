@@ -91,7 +91,7 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
 - **[Temporal Nexus guide](references/core/nexus.md)** - Nexus: cross-namespace service contracts, operations, endpoints
-  - Python implementation: [Python Nexus guide](references/python/nexus.md)
+  - SDK implementation: [Go](references/go/nexus.md), [Java](references/java/nexus.md), [Python](references/python/nexus.md), [TypeScript](references/typescript/nexus.md), [.NET](references/dotnet/nexus.md)
 
 ## Job Queues and Background Jobs
 
