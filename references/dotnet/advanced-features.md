@@ -32,7 +32,7 @@ await handle.DeleteAsync();
 
 ## Record Local Activity arguments in Event History
 
-In .NET SDK 1.19 or later, set `LocalActivityOptions.IncludeArgumentsInMarker` when calling `Workflow.ExecuteLocalActivityAsync` to record the serialized inputs alongside the Local Activity outcome.
+Set `LocalActivityOptions.IncludeArgumentsInMarker` when calling `Workflow.ExecuteLocalActivityAsync` to record the serialized inputs alongside the Local Activity outcome.
 
 ```csharp
 var greeting = await Workflow.ExecuteLocalActivityAsync(
