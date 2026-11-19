@@ -36,6 +36,35 @@ Register the handler with `Worker.create({ ..., nexusServices: [invoiceHandler] 
 
 For an operation that reliably completes well within 10 seconds, provide an async function in `serviceHandler` that returns the result directly.
 
+## Signal-with-start and Updates from a handler
+
+To signal a Workflow and start it first if it is not running, call `signalWithStartWorkflow(ctx, workflowTypeOrFunc, options)` from `@temporalio/nexus`. `ctx` is the operation's start context. The options match the client's signal-with-start options (`args`, `workflowId`, `signal`, `signalArgs`, ...), except `taskQueue` is optional and defaults to the handling Worker's Task Queue.
+
+Inside a `TemporalOperationHandler`, use the provided client:
+
+```typescript
+import * as temporalNexus from '@temporalio/nexus';
+
+attachContext: new temporalNexus.TemporalOperationHandler({
+  async start(_ctx, client, input: AttachInput) {
+    await client.signalWithStartWorkflow(sessionWorkflow, {
+      args: [],
+      workflowId: `session-${input.userId}`,
+      signal: attachSignal,
+      signalArgs: [input],
+    });
+    return temporalNexus.TemporalOperationResult.sync(undefined);
+  },
+}),
+```
+
+For a Workflow Update from a Nexus handler, always pass an options object with `waitForStage: 'ACCEPTED'`. It is required and `ACCEPTED` is the only allowed stage, even for an Update with no arguments. Add `args` when the Update takes arguments:
+
+```typescript
+const handle = client.getWorkflowHandle(`session-${input.userId}`);
+return await handle.update(setLanguageUpdate, { args: [input.language], waitForStage: 'ACCEPTED' });
+```
+
 ## Call from a Workflow
 
 ```typescript
