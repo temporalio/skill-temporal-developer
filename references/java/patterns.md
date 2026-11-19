@@ -215,7 +215,9 @@ WorkflowImplementationOptions parentOptions = WorkflowImplementationOptions.newB
 worker.registerWorkflowImplementationTypes(parentOptions, MyWorkflowImpl.class);
 ```
 
-Use the registered Child Workflow Type name as the map key, for example `ProcessOrder` from `@WorkflowMethod(name = "ProcessOrder")`. Each field specified in the per-type options overrides the corresponding default. Options passed directly to `Workflow.newChildWorkflowStub(...)` take highest precedence. Give each Child Workflow its ID at the call site so repeated starts can use distinct IDs.
+Use the registered Child Workflow Type name as the map key, for example `ProcessOrder` from `@WorkflowMethod(name = "ProcessOrder")`. For the Task Queue and execution timeout, per-type settings override the shared defaults. Settings passed to `Workflow.newChildWorkflowStub(...)` override both.
+
+Java generates a Workflow ID when none is set. If a child needs an explicit ID, set it at the call site so it can vary between starts.
 
 ## Handles to External Workflows
 
