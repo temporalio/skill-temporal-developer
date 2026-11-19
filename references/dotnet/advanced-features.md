@@ -30,6 +30,22 @@ await handle.TriggerAsync(); // Run immediately
 await handle.DeleteAsync();
 ```
 
+## Record Local Activity arguments in Event History
+
+In .NET SDK 1.19 or later, set `LocalActivityOptions.IncludeArgumentsInMarker` when calling `Workflow.ExecuteLocalActivityAsync` to record the serialized inputs alongside the Local Activity outcome.
+
+```csharp
+var greeting = await Workflow.ExecuteLocalActivityAsync(
+    (GreetingActivities a) => a.Greet(name),
+    new LocalActivityOptions
+    {
+        StartToCloseTimeout = TimeSpan.FromSeconds(5),
+        IncludeArgumentsInMarker = true,
+    });
+```
+
+In the Workflow Event History, inspect the `input` entry under the Local Activity's `MarkerRecorded` event details. The option defaults to `false`. Enabling it increases history size and makes the serialized inputs available to anyone who can read the history.
+
 ## Async Activity Completion
 
 For activities that complete asynchronously (e.g., human tasks, external callbacks).
@@ -201,3 +217,7 @@ public class MyActivities
 ```
 
 **Note:** Dependency injection is NOT available in workflows — workflows must be self-contained for determinism.
+
+## Experimental Workflow Streams and Event Groups
+
+SDK 1.20+ provides `Temporalio.Extensions.WorkflowStreams` for durable batched publish/subscribe streams hosted by Workflows. SDK 1.21+ adds Event Groups through `Workflow.CreateEventGroup` and `Workflow.WithEventGroups` to associate related history events. Both are Experimental; inform the user before using them and consult the [1.20 release](https://github.com/temporalio/sdk-dotnet/releases/tag/1.20.0) and [1.21 release](https://github.com/temporalio/sdk-dotnet/releases/tag/1.21.0) for setup and compatibility.
