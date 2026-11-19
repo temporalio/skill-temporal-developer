@@ -62,7 +62,7 @@ Use `execute` to durably enqueue the Activity, wait for it to run on a Worker, a
 
 #### With type checking
 
-Use when activity definitions are available in this language. Call `client.activity.typed<typeof activities>()` to obtain a typed Activity Client interface. Calling `typed` does not create a new Client object — it only adjusts the type annotation of the existing Client.
+Use when activity definitions are available in this language. Call `client.activity.typed<typeof activities>()` to obtain a typed Activity Client interface that checks Activity names, arguments, and results. Calling `typed` does not create a new Client object — it only adjusts the type annotation of the existing Client.
 
 ```typescript
 import * as activities from './activities';
@@ -109,7 +109,7 @@ For a one-time delayed job, include `startDelay: '10m'` in the start options. Th
 
 ### Get a handle to an existing Activity execution
 
-Use `client.activity.getHandle<R>(activityId, runId?)` to attach a handle to a previously started Standalone Activity. Omitting `runId` targets the latest run of that Activity ID. `getHandle` is not available on the typed interface, and the optional type argument constrains the result type but isn't verified.
+Use `client.activity.getHandle<R>(activityId, runId?)` to attach a handle to a previously started Standalone Activity. Without `runId`, the handle targets the newest run with that Activity ID, and `handle.runId` stays unset even after method calls. To learn the targeted run ID, read `activityRunId` from `await handle.describe()`. An invalid ID raises an error only when you call a handle method.
 
 ```typescript
 const newHandle = client.activity.getHandle<string>(activityId);
@@ -142,6 +142,8 @@ const checkpoint = await description.getHeartbeatDetails();
 The accessors decode with the Client's Data Converter and return `undefined` when a payload is unavailable. Use the same Payload Codec configuration as the producing application when it encodes or encrypts payloads. To wait for an unfinished Activity, call `handle.result()`.
 
 ### List Standalone Activities
+
+`list(query)` and `count(query)` take a visibility query. Their results are approximate and eventually consistent, so a just-started Activity may not appear yet.
 
 ```typescript
 const query = 'TaskQueue="hello-standalone-activities"';
