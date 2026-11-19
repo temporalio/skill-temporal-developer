@@ -1,6 +1,6 @@
 # .NET Gotchas
 
-.NET-specific mistakes and anti-patterns. See also [Common Gotchas](references/core/gotchas.md) for language-agnostic concepts.
+.NET-specific mistakes and anti-patterns. See also [Common Gotchas](../core/gotchas.md) for language-agnostic concepts.
 
 ## .NET Task Determinism
 
@@ -61,12 +61,12 @@ var mutex = new Temporalio.Workflows.Mutex();
 var semaphore = new Temporalio.Workflows.Semaphore(1);
 ```
 
-See `references/dotnet/determinism-protection.md` for the complete list.
+See [.NET determinism protection guide](determinism-protection.md) for the complete list.
 
 ## Wrong Retry Classification
 
 **Example:** Transient network errors should be retried. Authentication errors should not be.
-See `references/dotnet/error-handling.md` to understand how to classify errors.
+See [.NET error handling guide](error-handling.md) to understand how to classify errors.
 
 ## Heartbeating
 
@@ -211,11 +211,11 @@ public async Task LongActivityAsync()
 
 ### Not Testing Failures
 
-It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see `references/dotnet/testing.md` for more info.
+It is important to make sure workflows work as expected under failure paths in addition to happy paths. Please see [.NET testing guide](testing.md) for more info.
 
 ### Not Testing Replay
 
-Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code. Please see `references/dotnet/testing.md` for more info.
+Replay tests help you test that you do not have hidden sources of non-determinism bugs in your workflow code. Please see [.NET testing guide](testing.md) for more info.
 
 ## Timers and Sleep
 

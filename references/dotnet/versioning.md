@@ -1,6 +1,6 @@
 # .NET SDK Versioning
 
-For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
+For conceptual overview and guidance on choosing an approach, see [Temporal versioning guide](../core/versioning.md).
 
 ## Patching API
 
@@ -192,6 +192,7 @@ Worker Versioning manages versions at the deployment level, allowing multiple Wo
 ### Configuring Workers for Versioning
 
 ```csharp
+using Temporalio.Common;
 using Temporalio.Worker;
 
 var worker = new TemporalWorker(
@@ -199,9 +200,10 @@ var worker = new TemporalWorker(
     new TemporalWorkerOptions("my-task-queue")
     {
         DeploymentOptions = new WorkerDeploymentOptions(
-            DeploymentName: "my-service",
-            BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
-        UseWorkerVersioning = true,
+            new WorkerDeploymentVersion(
+                DeploymentName: "my-service",
+                BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
+            useWorkerVersioning: true),
     }
     .AddWorkflow<MyWorkflow>()
     .AddAllActivities(new MyActivities()));
@@ -209,9 +211,10 @@ var worker = new TemporalWorker(
 
 **Configuration parameters:**
 
-- `UseWorkerVersioning`: Enables Worker Versioning
-- `DeploymentOptions`: Identifies the Worker Deployment Version (deployment name + build ID)
+- `DeploymentOptions`: A `WorkerDeploymentOptions` holding the `Version` (a `WorkerDeploymentVersion` of deployment name + build ID), `UseWorkerVersioning`, and optional `DefaultVersioningBehavior`
 - Build ID: Typically a git commit hash, version number, or timestamp
+
+Do not set `UseWorkerVersioning` or `BuildId` directly on `TemporalWorkerOptions`; those are obsolete legacy Build ID-based options.
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 
@@ -220,6 +223,9 @@ var worker = new TemporalWorker(
 Workflows stay locked to their original Worker version:
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Workflows;
+
 [Workflow(VersioningBehavior = VersioningBehavior.Pinned)]
 public class StableWorkflow { /* ... */ }
 ```
@@ -236,6 +242,9 @@ public class StableWorkflow { /* ... */ }
 Workflows can move to newer versions:
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Workflows;
+
 [Workflow(VersioningBehavior = VersioningBehavior.AutoUpgrade)]
 public class UpgradableWorkflow { /* ... */ }
 ```
@@ -252,17 +261,21 @@ public class UpgradableWorkflow { /* ... */ }
 ### Worker Configuration with Default Behavior
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Worker;
+
 var worker = new TemporalWorker(
     client,
     new TemporalWorkerOptions("my-task-queue")
     {
         DeploymentOptions = new WorkerDeploymentOptions(
-            DeploymentName: "order-service",
-            BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev")
+            new WorkerDeploymentVersion(
+                DeploymentName: "order-service",
+                BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
+            useWorkerVersioning: true)
         {
             DefaultVersioningBehavior = VersioningBehavior.Pinned,
         },
-        UseWorkerVersioning = true,
     }
     .AddWorkflow<OrderWorkflow>()
     .AddAllActivities(new OrderActivities()));
@@ -295,6 +308,49 @@ Multiple versions run simultaneously:
 temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
+
+## Upgrading on Continue-as-New
+
+> [!NOTE]
+> This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
+
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.TargetWorkerDeploymentVersionChanged` and continue-as-new with `InitialVersioningBehavior.AutoUpgrade` so the new run starts on the Target Version. See [Temporal versioning guide](../core/versioning.md) for the conceptual model.
+
+### Detecting the Target Version change
+
+`Workflow.TargetWorkerDeploymentVersionChanged` is `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment. The flag is refreshed after each Workflow Task completes.
+
+Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
+
+### Continue-as-new with upgrade
+
+When the flag is set, throw the exception from `Workflow.CreateContinueAsNewException`, passing a `ContinueAsNewOptions` whose `InitialVersioningBehavior` is `AutoUpgrade`, so the new run starts on the Target Version of its Worker Deployment.
+
+```csharp
+using Temporalio.Common;
+using Temporalio.Workflows;
+
+// At a natural Workflow Task boundary, e.g. before accepting Updates,
+// starting Activities, starting child Workflows, etc.:
+if (Workflow.TargetWorkerDeploymentVersionChanged)
+{
+    throw Workflow.CreateContinueAsNewException(
+        (MyWorkflow wf) => wf.RunAsync(nextInput),
+        new ContinueAsNewOptions
+        {
+            InitialVersioningBehavior = InitialVersioningBehavior.AutoUpgrade,
+        });
+}
+```
+
+> [!IMPORTANT]
+> Don't busy-poll the flag on a timer. Check it at a natural Workflow Task boundary — before accepting Updates, starting Activities, starting child Workflows, etc. For idle Workflows, send a Signal to wake them so they can check it (see Limitations).
+
+### Limitations
+
+- **Lazy moving only — idle Workflows do not upgrade.** Send a Signal to wake an idle Workflow so it can check `TargetWorkerDeploymentVersionChanged`.
+- **Workflow input must remain compatible across versions.** The new version's Workflow definition must accept the previous version's input; otherwise the new run may fail on its first Workflow Task.
+- **Pinned Workflow Types only.** Auto-Upgrade Workflows move at Workflow Task boundaries already; the upgrade-on-CaN pattern adds nothing for them.
 
 ## Best Practices
 
