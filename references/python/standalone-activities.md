@@ -114,6 +114,8 @@ Use `client.start_activity(...)` to durably enqueue the Activity and get back a 
 activity_handle = await client.start_activity(...)
 ```
 
+For a one-time delayed job, pass `start_delay=timedelta(minutes=10)` to `client.start_activity`. The delay applies to the first attempt.
+
 ### Get a handle to an existing Activity execution
 
 Use `client.get_activity_handle(...)` to attach a handle to a previously started Standalone Activity. Omitting `run_id` (or passing `None`) targets the latest run of that Activity ID.

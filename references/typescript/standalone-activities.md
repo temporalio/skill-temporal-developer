@@ -105,6 +105,8 @@ Use `activitiesClient.start(...)` (or `client.activity.start<R>(...)` on the unt
 const handle = await activitiesClient.start(...);
 ```
 
+For a one-time delayed job, include `startDelay: '10m'` in the start options. The delay applies to the first attempt.
+
 ### Get a handle to an existing Activity execution
 
 Use `client.activity.getHandle<R>(activityId, runId?)` to attach a handle to a previously started Standalone Activity. Omitting `runId` targets the latest run of that Activity ID. `getHandle` is not available on the typed interface, and the optional type argument constrains the result type but isn't verified.
