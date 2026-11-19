@@ -32,7 +32,7 @@ public class OrderWorkflow
 
 ### Signal with Start
 
-Start an Order Workflow if needed and send it its first item with one Client call. If the same Workflow ID is already running, only the Signal is sent under the default conflict policy. The call returns a Workflow handle without waiting for the Signal handler.
+With the default conflict policy, Signal-with-Start sends a Signal to the running execution for a Workflow ID. If none is running, it starts a Workflow and sends the Signal in one Client call. The Client returns a Workflow handle without waiting for the Signal handler to finish.
 
 ```csharp
 var options = new WorkflowOptions(id: "order-123", taskQueue: "orders");
@@ -40,7 +40,7 @@ options.SignalWithStart((OrderWorkflow wf) => wf.AddItemAsync("tea"));
 var handle = await client.StartWorkflowAsync((OrderWorkflow wf) => wf.RunAsync(), options);
 ```
 
-Initialize state used by Signal handlers in field initializers or the constructor, since the start Signal can run before `RunAsync`. For a synchronous result from a message handler, use Update-With-Start.
+Initialize state used by Signal handlers in field initializers or the constructor. The Signal handler can run before `RunAsync`. If the caller needs the handler's result, use Update-with-Start.
 
 ## Dynamic Signal Handlers
 
