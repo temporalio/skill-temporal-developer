@@ -14,6 +14,40 @@ Most serialization customization belongs in a `PayloadConverter`; encryption and
 
 Since SDK 1.21, Workers validate outbound payload sizes, log `[TMPRL1103]`, and fail oversized Workflow/Activity Tasks retryably before sending them. Prefer smaller payloads or [External Storage](external-storage.md). If a downstream proxy transforms payloads after the Worker (for example, compression or externalization), `WorkerOptions.disablePayloadErrorLimit: true` defers enforcement to the server; it does not raise the server limit.
 
+## Experimental payload cache
+
+`WorkerOptions.payloadCache` (experimental) sets the payload cache shared by the Worker. Pass a `PayloadCache` object to enable caching, or `false` to disable it. The default is `false`.
+
+`PayloadCache` (from `@temporalio/common`) has two async methods:
+
+- `get(key: string): Promise<Payload | undefined>` resolves to the stored payload, or `undefined` on a miss.
+- `set(key: string, payload: Payload): Promise<boolean>` resolves to whether the cache accepted the payload.
+
+Implementations should not throw or reject. Return `undefined` or `false` instead. The SDK treats a failed `get` as a miss and ignores a failed `set`.
+
+```typescript
+import type { Payload, PayloadCache } from '@temporalio/common';
+
+// Illustrative in-memory cache; not a built-in or default.
+class MapPayloadCache implements PayloadCache {
+  private readonly entries = new Map<string, Payload>();
+
+  async get(key: string): Promise<Payload | undefined> {
+    return this.entries.get(key);
+  }
+
+  async set(key: string, payload: Payload): Promise<boolean> {
+    this.entries.set(key, payload);
+    return true;
+  }
+}
+
+const worker = await Worker.create({
+  payloadCache: new MapPayloadCache(),
+  // ...
+});
+```
+
 ## Default Payload Converter
 
 The default payload converter handles:
