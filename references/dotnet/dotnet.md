@@ -4,11 +4,11 @@
 
 The Temporal .NET SDK provides a high-performance, type-safe approach to building durable workflows using C# and .NET. Workflows use attributes (`[Workflow]`, `[WorkflowRun]`) and lambda expressions for type-safe invocations. Supports .NET Framework 4.6.2+ and .NET Core 3.1+ (including .NET 5+).
 
-**CRITICAL**: The .NET SDK has **no sandbox**. Developers must be careful to avoid non-deterministic code in workflows. See the Determinism Rules section below and `references/dotnet/determinism.md`.
+**CRITICAL**: The .NET SDK has **no sandbox**. Developers must be careful to avoid non-deterministic code in workflows. See the Determinism Rules section below and [.NET determinism rules](determinism.md).
 
 ## Understanding Replay
 
-Temporal workflows are durable through history replay. For details on how this works, see `references/core/determinism.md`.
+Temporal workflows are durable through history replay. For details on how this works, see [Temporal determinism rules](../core/determinism.md).
 
 ## Quick Start
 
@@ -16,6 +16,12 @@ Temporal workflows are durable through history replay. For details on how this w
 
 ```bash
 dotnet add package Temporalio
+```
+
+**Models/GreetingInput.cs** - Shared input record:
+
+```csharp
+public record GreetingInput(string FirstName, string LastName);
 ```
 
 **Activities.cs** - Activity definitions (separate file for clarity):
@@ -26,9 +32,9 @@ using Temporalio.Activities;
 public class MyActivities
 {
     [Activity]
-    public string Greet(string name)
+    public string Greet(GreetingInput input)
     {
-        return $"Hello, {name}!";
+        return $"Hello, {input.FirstName} {input.LastName}!";
     }
 }
 ```
@@ -42,10 +48,10 @@ using Temporalio.Workflows;
 public class GreetingWorkflow
 {
     [WorkflowRun]
-    public async Task<string> RunAsync(string name)
+    public async Task<string> RunAsync(GreetingInput input)
     {
         return await Workflow.ExecuteActivityAsync(
-            (MyActivities a) => a.Greet(name),
+            (MyActivities a) => a.Greet(input),
             new() { StartToCloseTimeout = TimeSpan.FromSeconds(30) });
     }
 }
@@ -93,13 +99,13 @@ connectOptions.TargetHost ??= "localhost:7233";
 var client = await TemporalClient.ConnectAsync(connectOptions);
 
 var result = await client.ExecuteWorkflowAsync(
-    (GreetingWorkflow wf) => wf.RunAsync("my name"),
+    (GreetingWorkflow wf) => wf.RunAsync(new GreetingInput("Ada", "Lovelace")),
     new(id: $"greeting-{Guid.NewGuid()}", taskQueue: "my-task-queue"));
 
 Console.WriteLine($"Result: {result}");
 ```
 
-**Run the workflow:** Run `dotnet run` in the starter project. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `dotnet run` in the starter project. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 
@@ -118,6 +124,10 @@ Console.WriteLine($"Result: {result}");
 - Instance methods support dependency injection
 - Static methods are also supported
 
+### Evolving Inputs and Results
+
+Prefer one serializable record or class for Workflow and Activity inputs that may grow, and a structured result when needed. Make new fields optional or give them defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history.
+
 ### Worker Setup
 
 - Load connection settings with `ClientEnvConfig.LoadClientConnectOptions()`, connect the client, and create `TemporalWorker` with workflows and activities
@@ -125,7 +135,7 @@ Console.WriteLine($"Result: {result}");
 
 ### Determinism
 
-**Workflow code must be deterministic!** The .NET SDK has no sandbox. See the Determinism Rules section below and `references/core/determinism.md` and `references/dotnet/determinism.md`.
+**Workflow code must be deterministic!** The .NET SDK has no sandbox. See the Determinism Rules section below and [Temporal determinism rules](../core/determinism.md) and [.NET determinism rules](determinism.md).
 
 ## File Organization Best Practice
 
@@ -138,7 +148,7 @@ MyTemporalApp/
 ├── Activities/
 │   └── TranslateActivities.cs       # Only Activity classes
 ├── Models/
-│   └── OrderInput.cs                # Shared data models
+│   └── GreetingInput.cs             # Shared input record
 ├── Worker/
 │   └── Program.cs                   # Worker setup
 └── Starter/
@@ -182,7 +192,7 @@ dotnet_diagnostic.VSTHRD105.severity = none
 
 The .NET SDK has **no sandbox** like Python or TypeScript. Developers must avoid non-deterministic operations manually. Many standard .NET `Task` APIs use `TaskScheduler.Default` implicitly, which breaks determinism.
 
-See `references/dotnet/determinism.md` for the full list of forbidden operations, safe alternatives, and best practices. See `references/dotnet/determinism-protection.md` for details on the runtime detection mechanism.
+See [.NET determinism rules](determinism.md) for the full list of forbidden operations, safe alternatives, and best practices. See [.NET determinism protection guide](determinism-protection.md) for details on the runtime detection mechanism.
 
 ## Common Pitfalls
 
@@ -197,20 +207,21 @@ See `references/dotnet/determinism.md` for the full list of forbidden operations
 
 ## Writing Tests
 
-See `references/dotnet/testing.md` for info on writing tests.
+See [.NET testing guide](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
 
-- **`references/dotnet/patterns.md`** — Signals, queries, child workflows, saga pattern, etc.
-- **`references/dotnet/determinism.md`** — Essentials of determinism in .NET
-- **`references/dotnet/gotchas.md`** — .NET-specific mistakes and anti-patterns
-- **`references/dotnet/error-handling.md`** — ApplicationFailureException, retry policies, non-retryable errors
-- **`references/dotnet/observability.md`** — Logging, metrics, tracing
-- **`references/dotnet/testing.md`** — WorkflowEnvironment, time-skipping, activity mocking
-- **`references/dotnet/advanced-features.md`** — Schedules, worker tuning, dependency injection
-- **`references/dotnet/data-handling.md`** — Data converters, payload encryption, etc.
-- **`references/dotnet/versioning.md`** — Patching API, workflow type versioning, Worker Versioning
-- **`references/dotnet/standalone-activities.md`** — Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
-- **`references/dotnet/determinism-protection.md`** — Runtime task detection, .NET Task determinism rules
+- **[.NET workflow patterns](patterns.md)** — Signals, queries, child workflows, saga pattern, etc.
+- **[.NET determinism rules](determinism.md)** — Essentials of determinism in .NET
+- **[.NET common pitfalls](gotchas.md)** — .NET-specific mistakes and anti-patterns
+- **[.NET error handling guide](error-handling.md)** — ApplicationFailureException, retry policies, non-retryable errors
+- **[.NET observability guide](observability.md)** — Logging, metrics, tracing, Search Attributes
+- **[.NET testing guide](testing.md)** — WorkflowEnvironment, time-skipping, activity mocking
+- **[.NET advanced features guide](advanced-features.md)** — Schedules, worker tuning, dependency injection
+- **[.NET data handling guide](data-handling.md)** — Data converters, payload encryption, etc.
+- **[.NET versioning guide](versioning.md)** — Patching API, workflow type versioning, Worker Versioning
+- **[.NET standalone Activities guide](standalone-activities.md)** — Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [Temporal standalone Activities guide](../core/standalone-activities.md).
+- **[.NET Task Queue priority and fairness guide](priority-fairness.md)** — Task Queue Priority and Fairness SDK options and examples. Concept overview at [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md).
+- **[.NET determinism protection guide](determinism-protection.md)** — Runtime task detection, .NET Task determinism rules

@@ -2,11 +2,21 @@
 
 ## Overview
 
-Data converters serialize and deserialize workflow/activity inputs and outputs. The `Temporalio::Converters` module provides the conversion pipeline.
+The Ruby SDK uses a `Temporalio::Converters::DataConverter` to move values between the SDK and the Temporal Service. It combines three components:
 
-## Default Data Converter
+- `PayloadConverter` serializes values to and from payload bytes. The default converter handles `nil`, binary strings, Protobuf messages, and JSON values.
+- `PayloadCodec` transforms payloads, for example to encrypt or compress them.
+- `failure_converter` converts exceptions to and from Temporal `Failure` protobufs.
 
-The default converter handles types in this order:
+Most serialization customization belongs in a `PayloadConverter`; encryption and compression belong in a `PayloadCodec`; and custom exception serialization belongs in a `failure_converter`.
+
+## Payload size validation
+
+Workers proactively validate outbound payload sizes and can report `[TMPRL1103]` and fail the Workflow/Activity Task attempt when the Namespace limit is exceeded. Ruby SDK 1.7+ exposes `disable_payload_error_limit: true` on `Temporalio::Worker.new` to defer this check to the server when payloads are transformed downstream. The server's limit still applies; see [payload limits](../core/gotchas.md#payload-size-limits).
+
+## Default Payload Converter
+
+The default payload converter handles types in this order:
 
 1. `nil` - null payload
 2. Bytes - `String` with `ASCII_8BIT` encoding
@@ -54,6 +64,8 @@ end
 ```
 
 ## Custom Data Conversion
+
+The data converter combines the payload converter, payload codec, and failure converter. Configure each component through the corresponding keyword argument:
 
 ```ruby
 converter = Temporalio::Converters::DataConverter.new(
@@ -118,41 +130,6 @@ converter = Temporalio::Converters::DataConverter.new(
 )
 ```
 
-## Search Attributes
-
-Define a search attribute key:
-
-```ruby
-key = Temporalio::SearchAttributes::Key.new(
-  'CustomerId',
-  Temporalio::SearchAttributes::IndexedValueType::KEYWORD
-)
-```
-
-Set at workflow start:
-
-```ruby
-client.start_workflow(
-  MyWorkflow,
-  'arg',
-  id: 'wf-1',
-  task_queue: 'my-queue',
-  search_attributes: Temporalio::SearchAttributes.new({ key => 'customer-123' })
-)
-```
-
-Upsert from a workflow:
-
-```ruby
-Temporalio::Workflow.upsert_search_attributes({ key => 'new-value' })
-```
-
-### Querying Workflows by Search Attributes
-
-```ruby
-client.list_workflows("CustomerId = 'customer-123'")
-```
-
 ## Workflow Memo
 
 Set at workflow start:
@@ -178,9 +155,9 @@ region = Temporalio::Workflow.memo['region']
 Use these instead of standard Ruby equivalents inside workflows:
 
 ```ruby
-Temporalio::Workflow.uuid       # deterministic UUID
-Temporalio::Workflow.random     # deterministic random number
-Temporalio::Workflow.now        # deterministic current time
+Temporalio::Workflow.random.uuid # deterministic UUID
+Temporalio::Workflow.random      # deterministic Random instance
+Temporalio::Workflow.now         # deterministic current time
 ```
 
 ## Best Practices
@@ -188,4 +165,4 @@ Temporalio::Workflow.now        # deterministic current time
 - Use dedicated model classes for Temporal data, not ActiveRecord models.
 - Keep payloads small; store large data externally and pass references.
 - Encrypt sensitive data with a `PayloadCodec`.
-- Use `Temporalio::Workflow.uuid`, `.random`, and `.now` inside workflows for determinism.
+- Use `Temporalio::Workflow.random.uuid`, `.random`, and `.now` inside workflows for determinism.

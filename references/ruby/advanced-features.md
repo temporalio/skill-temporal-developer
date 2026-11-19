@@ -1,5 +1,21 @@
 # Ruby SDK Advanced Features
 
+## DNS Load Balancing
+
+Pass `dns_load_balancing:` to `Temporalio::Client.connect` to distribute RPCs across the addresses for your server hostname. Set `resolution_interval:` in seconds to control how often Core refreshes the addresses. The default interval is 30 seconds when enabled.
+
+```ruby
+require "temporalio/client"
+
+client = Temporalio::Client.connect(
+  "temporal.internal:7233",
+  "default",
+  dns_load_balancing: Temporalio::Client::Connection::DnsLoadBalancingOptions.new
+)
+```
+
+Omitting the option leaves DNS load balancing disabled. Setting `http_connect_proxy:` also disables it.
+
 ## Schedules
 
 Create recurring workflow executions with `Temporalio::Client::Schedule`.
@@ -159,6 +175,7 @@ Temporalio::Worker.new(
 ```
 
 **Tips:**
+
 - Set to `[Exception]` in tests so any unhandled exception fails the workflow immediately rather than retrying the workflow task forever. Surfaces bugs faster.
 - Include `Temporalio::Workflow::NondeterminismError` to fail the workflow instead of leaving it in a retrying state on non-determinism errors.
 
