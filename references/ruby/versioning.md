@@ -38,7 +38,7 @@ Repeated calls with the same patch ID reuse the memoized decision.
 
 ### Gate a new patch during rollout
 
-Ruby SDK v1.6.0+ exposes the experimental `Temporalio::Worker` option `patch_activation_callback:`. It runs at the first live encounter with a non-deprecated patch ID. Returning `false` leaves `Temporalio::Workflow.patched` false and writes no marker. Returning `true` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
+The experimental `Temporalio::Worker` option `patch_activation_callback:` runs at the first live encounter with a non-deprecated patch ID. Returning `false` leaves `Temporalio::Workflow.patched` false and writes no marker. Returning `true` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
 
 ```ruby
 worker = Temporalio::Worker.new(

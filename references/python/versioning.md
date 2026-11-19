@@ -39,7 +39,7 @@ Repeated calls with the same patch ID reuse the memoized decision.
 
 ### Gate a new patch during rollout
 
-Python SDK v1.31.0+ exposes the experimental `Worker(..., patch_activation_callback=...)` option. It receives `PatchActivationInput` at the first live encounter with a non-deprecated patch ID. Returning `False` leaves `workflow.patched()` false and writes no marker. Returning `True` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
+The experimental `Worker(..., patch_activation_callback=...)` option receives `PatchActivationInput` at the first live encounter with a non-deprecated patch ID. Returning `False` leaves `workflow.patched()` false and writes no marker. Returning `True` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
 
 ```python
 worker = Worker(

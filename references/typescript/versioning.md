@@ -34,7 +34,7 @@ The SDK memoizes the live activation decision for a patch ID. A replay call with
 
 ### Gate a new patch during rollout
 
-TypeScript SDK v1.19.0+ exposes the experimental `WorkerOptions.patchActivationCallback`. It runs on the Worker for the first live encounter with a non-deprecated patch ID. Returning `false` makes `patched()` return `false` without recording a marker. Returning `true` activates the new branch and records the marker. Replay follows history, and a recorded patch bypasses this callback.
+The experimental `WorkerOptions.patchActivationCallback` runs on the Worker for the first live encounter with a non-deprecated patch ID. Returning `false` makes `patched()` return `false` without recording a marker. Returning `true` activates the new branch and records the marker. Replay follows history, and a recorded patch bypasses this callback.
 
 ```typescript
 const worker = await Worker.create({
