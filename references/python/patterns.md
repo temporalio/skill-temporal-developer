@@ -24,6 +24,22 @@ class OrderWorkflow:
         return f"Processed {len(self._items)} items"
 ```
 
+### Signal with Start
+
+Start an Order Workflow if needed and send it its first item with one Client call. If the same Workflow ID is already running, only the Signal is sent under the default conflict policy. The call returns a Workflow handle without waiting for the Signal handler.
+
+```python
+handle = await client.start_workflow(
+    OrderWorkflow.run,
+    id="order-123",
+    task_queue="orders",
+    start_signal="add_item",
+    start_signal_args=["tea"],
+)
+```
+
+Initialize state used by Signal handlers in `__init__`, since the start Signal can run before `run`. For a synchronous result from a message handler, use Update-With-Start.
+
 ### Dynamic Signal Handlers
 
 For handling signals with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined signal handlers.
@@ -200,7 +216,7 @@ class MyWorkflow:
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent - they may be retried (as with ALL activities).
+**Important:** Compensation activities should be idempotent - they may be retried. Forward activities should raise a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
 
 ```python
 @workflow.defn
@@ -395,4 +411,4 @@ class MyWorkflow:
 
 ## Using Pydantic Models
 
-See `references/python/data-handling.md`.
+See [Python data handling guide](data-handling.md).

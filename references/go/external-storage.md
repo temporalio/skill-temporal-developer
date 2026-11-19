@@ -201,6 +201,8 @@ Useful routing patterns include driver migration, hot/cold storage tiers, per-te
 
 ## Custom storage driver
 
+Go SDK 1.50+ adds Experimental `ExternalStorage.Concurrency` controls: `MaxDriverOperations` limits storage operations per Client or Worker, and `MaxOperationsPerMessage` limits them per message. Custom drivers must wrap each store/retrieve operation in `ctx.GetLimiter().Permit(...)`; operations outside a permit are not limited. Do not nest permits. See the [release notes](https://github.com/temporalio/sdk-go/releases/tag/v1.50.0).
+
 Implement `converter.StorageDriver` with **four** methods:
 
 - `Name() string` — unique identifier for **this driver instance**, stored in the claim reference so the SDK can route retrieval. Renaming after payloads are stored **breaks retrieval**.
@@ -294,18 +296,24 @@ func (d *LocalDiskStorageDriver) Store(
 
     claims := make([]converter.StorageDriverClaim, len(payloads))
     for i, payload := range payloads {
-        data, err := proto.Marshal(payload)
+        err := ctx.GetLimiter().Permit(ctx.Context, payload, func() error {
+            data, err := proto.Marshal(payload)
+            if err != nil {
+                return fmt.Errorf("marshal payload: %w", err)
+            }
+            sum := sha256.Sum256(data)
+            key := hex.EncodeToString(sum[:]) + ".bin"
+            filePath := filepath.Join(dir, key)
+            if err := os.WriteFile(filePath, data, 0o644); err != nil {
+                return fmt.Errorf("write payload: %w", err)
+            }
+            claims[i] = converter.StorageDriverClaim{
+                ClaimData: map[string]string{"path": filePath},
+            }
+            return nil
+        })
         if err != nil {
-            return nil, fmt.Errorf("marshal payload: %w", err)
-        }
-        sum := sha256.Sum256(data)
-        key := hex.EncodeToString(sum[:]) + ".bin"
-        filePath := filepath.Join(dir, key)
-        if err := os.WriteFile(filePath, data, 0o644); err != nil {
-            return nil, fmt.Errorf("write payload: %w", err)
-        }
-        claims[i] = converter.StorageDriverClaim{
-            ClaimData: map[string]string{"path": filePath},
+            return nil, err
         }
     }
     return claims, nil
@@ -317,19 +325,25 @@ func (d *LocalDiskStorageDriver) Retrieve(
 ) ([]*commonpb.Payload, error) {
     payloads := make([]*commonpb.Payload, len(claims))
     for i, claim := range claims {
-        filePath, err := d.resolvePath(claim.ClaimData["path"])
+        err := ctx.GetLimiter().Permit(ctx.Context, claim, func() error {
+            filePath, err := d.resolvePath(claim.ClaimData["path"])
+            if err != nil {
+                return err
+            }
+            data, err := os.ReadFile(filePath)
+            if err != nil {
+                return fmt.Errorf("read payload: %w", err)
+            }
+            payload := &commonpb.Payload{}
+            if err := proto.Unmarshal(data, payload); err != nil {
+                return fmt.Errorf("unmarshal payload: %w", err)
+            }
+            payloads[i] = payload
+            return nil
+        })
         if err != nil {
             return nil, err
         }
-        data, err := os.ReadFile(filePath)
-        if err != nil {
-            return nil, fmt.Errorf("read payload: %w", err)
-        }
-        payload := &commonpb.Payload{}
-        if err := proto.Unmarshal(data, payload); err != nil {
-            return nil, fmt.Errorf("unmarshal payload: %w", err)
-        }
-        payloads[i] = payload
     }
     return payloads, nil
 }

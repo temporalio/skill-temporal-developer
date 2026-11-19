@@ -6,7 +6,7 @@
 
 Workflow-side spans are emitted out of the Workflow isolate through an injected Sink that hands serialized spans to a host-side `SpanProcessor`.
 
-For observability beyond OpenTelemetry tracing (metrics, runtime logger, sinks) read `references/typescript/observability.md`.
+For observability beyond OpenTelemetry tracing (metrics, runtime logger, sinks) read [TypeScript observability guide](../observability.md).
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
@@ -74,4 +74,4 @@ The SDK uses the global OpenTelemetry propagator (default: W3C TraceContext + Ba
 
 ## Resources
 
-- SDK metrics / observability reference: `references/typescript/observability.md`
+- SDK metrics / observability reference: [TypeScript observability guide](../observability.md)

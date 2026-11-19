@@ -138,4 +138,4 @@ class MyWorkflow:
 3. Configure appropriate retry policies
 4. Log errors before re-raising
 5. Use `ActivityError` to catch activity failures in workflows
-6. Design code to be idempotent for safe retries (see more at `references/core/patterns.md`)
+6. Design code to be idempotent for safe retries (see more at [Temporal workflow patterns](../core/patterns.md))

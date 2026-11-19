@@ -30,6 +30,18 @@ public class OrderWorkflow
 }
 ```
 
+### Signal with Start
+
+Start an Order Workflow if needed and send it its first item with one Client call. If the same Workflow ID is already running, only the Signal is sent under the default conflict policy. The call returns a Workflow handle without waiting for the Signal handler.
+
+```csharp
+var options = new WorkflowOptions(id: "order-123", taskQueue: "orders");
+options.SignalWithStart((OrderWorkflow wf) => wf.AddItemAsync("tea"));
+var handle = await client.StartWorkflowAsync((OrderWorkflow wf) => wf.RunAsync(), options);
+```
+
+Initialize state used by Signal handlers in field initializers or the constructor, since the start Signal can run before `RunAsync`. For a synchronous result from a message handler, use Update-With-Start.
+
 ## Dynamic Signal Handlers
 
 For handling signals with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined signal handlers.
@@ -275,7 +287,7 @@ public class LongRunningWorkflow
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent — they may be retried (as with ALL activities).
+**Important:** Compensation activities should be idempotent — they may be retried. Forward activities should throw a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
 
 ```csharp
 [Workflow]
