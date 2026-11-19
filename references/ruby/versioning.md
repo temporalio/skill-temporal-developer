@@ -30,11 +30,26 @@ end
 
 **How it works:**
 
-- For new executions: `patched()` returns `true` and records a marker in the Workflow history
+- On the first live call for a new patch ID, `patched()` defaults to `true` and records a marker in Workflow history
 - For replay with the marker: `patched()` returns `true` (history includes this patch)
 - For replay without the marker: `patched()` returns `false` (history predates this patch)
 
-**Note:** The `patched()` return value is memoized per patch ID. This means you cannot reliably use `patched()` in loops—it will return the same value every iteration. Workaround: append a sequence number to the patch ID for each iteration (e.g., `"my-change-#{i}"`).
+Repeated calls with the same patch ID reuse the memoized decision.
+
+### Gate a new patch during rollout
+
+The experimental `Temporalio::Worker` option `patch_activation_callback:` runs at the first live encounter with a non-deprecated patch ID. Returning `false` leaves `Temporalio::Workflow.patched` false and writes no marker. Returning `true` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
+
+```ruby
+worker = Temporalio::Worker.new(
+  client: client,
+  task_queue: 'orders',
+  workflows: [MyWorkflow],
+  patch_activation_callback: ->(patch) { patch.patch_id != 'my-patch' || enable_new_order_path }
+)
+```
+
+Read `enable_new_order_path` from Worker configuration. Keep the `Temporalio::Workflow.patched('my-patch')` guard and both branches during rollout. Keep the callback synchronous and limited to deciding whether to activate the patch.
 
 ### Three-Step Patching Process
 

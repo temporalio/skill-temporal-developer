@@ -4,6 +4,24 @@
 
 The Go SDK uses the `converter.DataConverter` interface to serialize/deserialize workflow inputs, outputs, and activity parameters. The default converter converts values to JSON.
 
+
+## Payload and Memo Size Checks
+
+Go SDK v1.43 and later check outbound payload and aggregate Memo size before uploading Worker Task completions. The Worker fails the Task attempt if the payload field or Memo exceeds the error limit reported by the Server for that Namespace. Reduce the data or configure [External Storage](external-storage.md) for eligible payloads.
+
+Set warning thresholds in bytes through `client.Options.PayloadLimits`. The defaults are 512 KiB for an outbound payload field and 2 KiB for a Memo. A warning does not fail the Task.
+
+```go
+c, err := client.Dial(client.Options{
+    PayloadLimits: client.PayloadLimitOptions{
+        PayloadSizeWarning: 256 * 1024,
+        MemoSizeWarning:    4 * 1024,
+    },
+})
+```
+
+If a downstream gRPC proxy shrinks or offloads payloads after they leave the Worker, set `worker.Options.DisablePayloadErrorLimit` to defer enforcement to the Server. The Server's limits still apply.
+
 ## Default Data Converter
 
 The default `CompositeDataConverter` applies converters in order until one returns a non-nil Payload:
@@ -215,6 +233,10 @@ err := workflow.UpsertMemo(ctx, map[string]interface{}{
     "notes": "Updated notes",
 })
 ```
+
+### Memo encoding
+
+If the configured Data Converter fails to encode a Memo value, the Go SDK can retry with its default Data Converter. That fallback can store the value without applying your encryption codec. Keep sensitive values in a protected store and put an opaque reference in the Memo.
 
 ## Best Practices
 

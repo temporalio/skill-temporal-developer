@@ -1,5 +1,20 @@
 # TypeScript SDK Advanced Features
 
+## DNS Load Balancing
+
+Opt in on `NativeConnection` when the server hostname resolves to several addresses and you want the SDK to distribute RPCs across them. Core refreshes the addresses at the configured interval.
+
+```typescript
+import { NativeConnection } from '@temporalio/worker';
+
+const connection = await NativeConnection.connect({
+  address: 'temporal.internal:7233',
+  dnsLoadBalancingConfig: { resolutionInterval: '30s' },
+});
+```
+
+Use a `host:port` address. The SDK disables this option when you also set `proxy`. A Worker and a Client can share this native connection.
+
 ## Schedules
 
 Create recurring workflow executions.

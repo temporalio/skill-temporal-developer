@@ -13,7 +13,7 @@ v := workflow.GetVersion(ctx, "changeID", workflow.DefaultVersion, maxSupported)
 - `changeID`: unique string identifying the change
 - `minSupported`: oldest version still supported (`workflow.DefaultVersion` is `-1`)
 - `maxSupported`: current/newest version
-- Returns `maxSupported` for new executions; returns the recorded version on replay
+- Selects `maxSupported` by default when first recording a version. Replay uses the recorded version.
 
 ### Three-Step Lifecycle
 
@@ -68,6 +68,23 @@ After all version-1 executions complete, collapse again:
 _ = workflow.GetVersion(ctx, "Step1", 2, 2)
 err = workflow.ExecuteActivity(ctx, ActivityD, data).Get(ctx, &result1)
 ```
+
+### Choose the first version with a Worker provider
+
+Use the experimental `worker.Options.PreferredVersionProvider` to stage a new `workflow.GetVersion` branch while both versions are supported. The SDK calls the provider before writing the first version marker for a change ID during live execution. Replay follows history, and a recorded version stays fixed for that run.
+
+```go
+w := worker.New(c, "orders", worker.Options{
+    PreferredVersionProvider: func(input worker.PreferredVersionProviderInput) *worker.VersionPreference {
+        if input.ChangeID == "order-validation" && !enableOrderValidation {
+            return &worker.VersionPreference{Version: input.MinSupported}
+        }
+        return nil
+    },
+})
+```
+
+`enableOrderValidation` is Worker configuration. Keep the Workflow's `workflow.GetVersion(ctx, "order-validation", workflow.DefaultVersion, 1)` guard and both branches during rollout. A `nil` preference selects `MaxSupported`. Return a version within the call's supported range. An out-of-range preference fails the Workflow Task unless `ClampToSupportedRange` is set on the preference. Keep the provider fast because it runs on a Workflow goroutine.
 
 ### Using GetVersion in Loops
 

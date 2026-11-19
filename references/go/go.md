@@ -159,6 +159,21 @@ func main() {
 
 ## Key Concepts
 
+### Target a Workflow Execution Chain
+
+After `ExecuteWorkflow`, keep the Workflow ID from `run.GetID()` and the first execution Run ID from `run.GetFirstExecutionRunID()`. The first execution Run ID stays the same when the Workflow retries or Continues-As-New. `run.GetRunID()` identifies the run the handle was created for. A handle from `GetWorkflow` leaves `GetFirstExecutionRunID()` empty.
+
+Use `CancelWorkflowWithOptions` or `TerminateWorkflowWithOptions` with `FirstExecutionRunID` to target the current run of that chain:
+
+```go
+err := c.CancelWorkflowWithOptions(ctx, client.CancelWorkflowOptions{
+    WorkflowID:          workflowID,
+    FirstExecutionRunID: firstExecutionRunID,
+})
+```
+
+The Server rejects the request if the current run belongs to a different chain, such as a new start that reused the Workflow ID. Capture a nonempty first execution Run ID before relying on that check. For CLI Updates, see [Workflow Update flags](../core/cli-workflow-commands.md#temporal-workflow-update-execute).
+
 ### Workflow Definition
 
 - Exported function with `workflow.Context` as the first parameter
@@ -274,6 +289,7 @@ See [Go testing guide](testing.md) for info on writing tests.
 - **[Go observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
 - **[Go testing guide](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **[Go advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
+- **[Go Nexus guide](nexus.md)** - Register a Nexus Service and call its Operations from a Workflow
 - **[Go data handling guide](data-handling.md)** - Data converters, payload codecs, encryption
 - **[Go external storage guide](external-storage.md)** - Claim-check pattern for large payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
 - **[Go versioning guide](versioning.md)** - Patching API (`workflow.GetVersion`), Worker Versioning
