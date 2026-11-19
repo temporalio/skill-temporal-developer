@@ -45,7 +45,7 @@ public class ShippingWorkflowImpl implements ShippingWorkflow {
 
 ### Choose the first version with a Worker provider
 
-Java SDK v1.37.0+ exposes the experimental `WorkerOptions.Builder.setPreferredVersionProvider`. Use it to stage a new `Workflow.getVersion` branch while both versions are supported. It runs during live execution before the SDK records a version marker for a change ID. Replay follows history, and a recorded version stays fixed for that run.
+Use the experimental `WorkerOptions.Builder.setPreferredVersionProvider` to stage a new `Workflow.getVersion` branch while both versions are supported. It runs during live execution before the SDK records a version marker for a change ID. Replay follows history, and a recorded version stays fixed for that run.
 
 ```java
 import io.temporal.worker.VersionPreference;

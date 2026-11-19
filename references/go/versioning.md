@@ -71,7 +71,7 @@ err = workflow.ExecuteActivity(ctx, ActivityD, data).Get(ctx, &result1)
 
 ### Choose the first version with a Worker provider
 
-Go SDK v1.47.0+ exposes the experimental `worker.Options.PreferredVersionProvider`. Use it to stage a new `workflow.GetVersion` branch while both versions are supported. The SDK calls the provider before writing the first version marker for a change ID during live execution. Replay follows history, and a recorded version stays fixed for that run.
+Use the experimental `worker.Options.PreferredVersionProvider` to stage a new `workflow.GetVersion` branch while both versions are supported. The SDK calls the provider before writing the first version marker for a change ID during live execution. Replay follows history, and a recorded version stays fixed for that run.
 
 ```go
 w := worker.New(c, "orders", worker.Options{
