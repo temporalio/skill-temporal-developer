@@ -161,7 +161,7 @@ func main() {
 
 ### Target a Workflow Execution Chain
 
-In Go SDK 1.48 or later, after `ExecuteWorkflow`, keep the Workflow ID from `run.GetID()` and the first execution Run ID from `run.GetFirstExecutionRunID()`. The first execution Run ID stays the same when the Workflow retries or Continues-As-New. `run.GetRunID()` identifies the run the handle was created for. A handle from `GetWorkflow` leaves `GetFirstExecutionRunID()` empty.
+After `ExecuteWorkflow`, keep the Workflow ID from `run.GetID()` and the first execution Run ID from `run.GetFirstExecutionRunID()`. The first execution Run ID stays the same when the Workflow retries or Continues-As-New. `run.GetRunID()` identifies the run the handle was created for. A handle from `GetWorkflow` leaves `GetFirstExecutionRunID()` empty.
 
 Use `CancelWorkflowWithOptions` or `TerminateWorkflowWithOptions` with `FirstExecutionRunID` to target the current run of that chain:
 
