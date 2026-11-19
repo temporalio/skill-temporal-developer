@@ -274,6 +274,7 @@ See [Go testing guide](testing.md) for info on writing tests.
 - **[Go observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
 - **[Go testing guide](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **[Go advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
+- **[Go Nexus guide](nexus.md)** - Register a Nexus Service and call its Operations from a Workflow
 - **[Go data handling guide](data-handling.md)** - Data converters, payload codecs, encryption
 - **[Go external storage guide](external-storage.md)** - Claim-check pattern for large payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
 - **[Go versioning guide](versioning.md)** - Patching API (`workflow.GetVersion`), Worker Versioning

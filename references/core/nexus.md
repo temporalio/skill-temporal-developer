@@ -1,6 +1,6 @@
 # Temporal Nexus
 
-See the [Python](../python/nexus.md), [TypeScript](../typescript/nexus.md), and [.NET](../dotnet/nexus.md) guides for implementation details and code examples.
+See the [Go](../go/nexus.md), [Java](../java/nexus.md), [Python](../python/nexus.md), [TypeScript](../typescript/nexus.md), and [.NET](../dotnet/nexus.md) guides for implementation details and code examples.
 
 ## Overview
 
@@ -39,7 +39,7 @@ The registry manages endpoint configuration. It is scoped to an Account in Tempo
 
 ### Operation Lifecycle
 
-A caller Workflow schedules an operation with `execute_operation()` or `start_operation()`. The Temporal Service records the request and routes it through the Nexus Endpoint to a Worker polling the handler's Task Queue. A synchronous handler returns its result during the request. A Workflow Run handler starts a Workflow and returns before it finishes; Temporal later delivers the Workflow's result through a completion callback.
+A caller Workflow uses its SDK's Nexus client to schedule an operation. The Temporal Service records the request and routes it through the Nexus Endpoint to a Worker polling the handler's Task Queue. A synchronous handler returns its result during the request. A Workflow Run handler starts a Workflow and returns before it finishes. Temporal later delivers the Workflow's result through a completion callback.
 
 ### Built-in Nexus Machinery
 
