@@ -274,7 +274,7 @@ public class MyWorkflowImpl implements MyWorkflow {
 
 ### Delay the first Workflow Task of the next run
 
-Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Java SDK v1.36.0+ takes the delay as a `Duration` on `ContinueAsNewOptions`.
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Set the delay as a `Duration` on `ContinueAsNewOptions`.
 
 ```java
 ContinueAsNewOptions options = ContinueAsNewOptions.newBuilder()

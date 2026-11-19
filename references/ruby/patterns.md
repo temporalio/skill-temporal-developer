@@ -200,7 +200,7 @@ end
 
 ### Delay the first Workflow Task of the next run
 
-Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Ruby SDK v1.6.0+ takes the delay in seconds as `backoff_start_interval:` on `ContinueAsNewError`.
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Pass the delay in seconds as `backoff_start_interval:` to `ContinueAsNewError`.
 
 ```ruby
 raise Temporalio::Workflow::ContinueAsNewError.new(state, backoff_start_interval: 30)

@@ -325,7 +325,7 @@ return "", workflow.NewContinueAsNewError(ctx, LongRunningWorkflow, state)
 
 ### Delay the first Workflow Task of the next run
 
-Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Go SDK v1.45.0+ takes the delay as a `time.Duration` in `workflow.ContinueAsNewErrorOptions.BackoffStartInterval`.
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Pass a `time.Duration` in `workflow.ContinueAsNewErrorOptions.BackoffStartInterval`.
 
 ```go
 return "", workflow.NewContinueAsNewErrorWithOptions(ctx, workflow.ContinueAsNewErrorOptions{

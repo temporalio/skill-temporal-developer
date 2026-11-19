@@ -200,7 +200,7 @@ class MyWorkflow:
 
 ### Delay the first Workflow Task of the next run
 
-Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Python SDK v1.30.0+ takes the delay as a `timedelta` on `workflow.continue_as_new`.
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Pass a `timedelta` as `backoff_start_interval` to `workflow.continue_as_new`.
 
 ```python
 from datetime import timedelta

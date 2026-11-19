@@ -223,7 +223,7 @@ export async function longRunningWorkflow(state: State): Promise<string> {
 
 ### Delay the first Workflow Task of the next run
 
-Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. TypeScript SDK v1.19.0+ takes the delay as milliseconds or a duration string in `ContinueAsNewOptions.backoffStartInterval`.
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Pass milliseconds or a duration string in `ContinueAsNewOptions.backoffStartInterval`.
 
 ```typescript
 import { makeContinueAsNewFunc } from '@temporalio/workflow';
