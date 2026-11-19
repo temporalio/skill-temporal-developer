@@ -2,7 +2,9 @@
 
 ## Overview
 
-The TypeScript SDK provides replay-aware logging, metrics, and integrations for production observability.
+The TypeScript SDK provides replay-aware logging, metrics, distributed tracing (OpenTelemetry), and visibility (Search Attributes) for production observability.
+
+These pillars are complementary: **logging** (below) captures discrete events, **metrics** capture aggregate worker health, **tracing** stitches a single request across Client/Workflow/Activity/Nexus boundaries, and **Search Attributes** make executions queryable.
 
 ## Replay-Aware Logging
 
@@ -100,13 +102,120 @@ Runtime.install({
 });
 ```
 
-### Custom metrics & buffered metrics
 
-For emitting application metrics with the `MetricMeter` API (Counter, UpDownCounter, Gauge, Histogram) or forwarding all metric updates to a custom transport via `MetricsBuffer`, see `references/typescript/buffered-metrics.md`.
+### Custom Metrics
+
+Use the `metricMeter` export from `@temporalio/workflow` in Workflows or `@temporalio/activity` inside an Activity. In Worker process code, use `Runtime.instance().metricMeter`. These meters use the export configured on the Runtime. The Workflow meter skips updates during replay.
+
+```typescript
+import { metricMeter } from '@temporalio/activity';
+
+export async function processOrder(orderId: string): Promise<string> {
+  metricMeter.createCounter('orders_processed').add(1);
+  return orderId;
+}
+```
+
+### Buffered Metrics
+
+For a custom exporter, enable the experimental `MetricsBuffer` in the Worker process before starting the Worker. Choose one export per Runtime. The other options are Prometheus and OTLP.
+
+```typescript
+import { MetricsBuffer, Runtime } from '@temporalio/worker';
+
+const buffer = new MetricsBuffer({ maxBufferSize: 10_000 });
+Runtime.install({ telemetryOptions: { metrics: { buffer } } });
+
+function drainMetrics() {
+  for (const { metric, value, attributes } of buffer.retrieveUpdates()) {
+    console.info(metric.name, value, attributes);
+  }
+}
+```
+
+Call the drain function periodically while the Worker is running. Replace the log call with your exporter. The buffer drops new updates when full. Each update contains a counter increment, a gauge value, or a histogram observation according to `metric.kind`.
+
+## Distributed Tracing (OpenTelemetry)
+
+See [OpenTelemetry TypeScript integration guide](integrations/opentelemetry.md).
 
 ## Search Attributes (Visibility)
 
-See the Search Attributes section of `references/typescript/data-handling.md`
+Custom searchable fields for workflow visibility.
+
+### Setting Search Attributes at Start
+
+```typescript
+import { Client } from '@temporalio/client';
+import { defineSearchAttributeKey, SearchAttributeType } from '@temporalio/common';
+
+const client = new Client();
+
+const ORDER_ID = defineSearchAttributeKey('OrderId', SearchAttributeType.KEYWORD);
+const CUSTOMER_TYPE = defineSearchAttributeKey('CustomerType', SearchAttributeType.KEYWORD);
+const ORDER_TOTAL = defineSearchAttributeKey('OrderTotal', SearchAttributeType.DOUBLE);
+const CREATED_AT = defineSearchAttributeKey('CreatedAt', SearchAttributeType.DATETIME);
+
+await client.workflow.start('orderWorkflow', {
+  taskQueue: 'orders',
+  workflowId: `order-${orderId}`,
+  args: [order],
+  typedSearchAttributes: [
+    { key: ORDER_ID, value: orderId },
+    { key: CUSTOMER_TYPE, value: 'premium' },
+    { key: ORDER_TOTAL, value: 99.99 },
+    { key: CREATED_AT, value: new Date() },
+  ],
+});
+```
+
+### Upserting Search Attributes from Workflow
+
+```typescript
+import { defineSearchAttributeKey, SearchAttributeType } from '@temporalio/common';
+import { upsertSearchAttributes } from '@temporalio/workflow';
+
+const ORDER_STATUS = defineSearchAttributeKey('OrderStatus', SearchAttributeType.KEYWORD);
+
+export async function orderWorkflow(order: Order): Promise<string> {
+  // Update status as workflow progresses
+  upsertSearchAttributes([{ key: ORDER_STATUS, value: 'processing' }]);
+
+  await processOrder(order);
+
+  upsertSearchAttributes([{ key: ORDER_STATUS, value: 'completed' }]);
+
+  return 'done';
+}
+```
+
+### Reading Search Attributes
+
+```typescript
+import { defineSearchAttributeKey, SearchAttributeType } from '@temporalio/common';
+import { workflowInfo } from '@temporalio/workflow';
+
+const ORDER_ID = defineSearchAttributeKey('OrderId', SearchAttributeType.KEYWORD);
+
+export async function orderWorkflow(): Promise<void> {
+  const info = workflowInfo();
+  const orderId = info.typedSearchAttributes.get(ORDER_ID);
+  // ...
+}
+```
+
+### Querying Workflows by Search Attributes
+
+```typescript
+const client = new Client();
+
+// List workflows using search attributes
+for await (const workflow of client.workflow.list({
+  query: 'OrderStatus = "processing" AND CustomerType = "premium"',
+})) {
+  console.log(`Workflow ${workflow.workflowId} is still processing`);
+}
+```
 
 ## Best Practices
 
@@ -115,3 +224,5 @@ See the Search Attributes section of `references/typescript/data-handling.md`
 3. Configure Winston or similar for production log aggregation
 4. Monitor Prometheus metrics for worker health
 5. Use Event History for debugging workflow issues
+6. Use Search Attributes for business-level visibility and filtering
+7. Use the `OpenTelemetryPlugin` for distributed tracing across Client/Workflow/Activity/Nexus boundaries.
