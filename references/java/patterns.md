@@ -198,6 +198,23 @@ ProcessOrderWorkflow child = Workflow.newChildWorkflowStub(
     ProcessOrderWorkflow.class, options);
 ```
 
+### Set defaults when registering the parent
+
+On Java SDK 1.39.0 or later, set defaults on the `WorkflowImplementationOptions` used to register the parent Workflow implementation. They apply to typed and untyped Child Workflow stubs created by that implementation.
+
+```java
+WorkflowImplementationOptions parentOptions = WorkflowImplementationOptions.newBuilder()
+    .setDefaultChildWorkflowOptions(ChildWorkflowOptions.newBuilder()
+        .setWorkflowExecutionTimeout(Duration.ofMinutes(10))
+        .build())
+    .setChildWorkflowOptions(Collections.singletonMap("ProcessOrder",
+        ChildWorkflowOptions.newBuilder().setTaskQueue("order-tasks").build()))
+    .build();
+worker.registerWorkflowImplementationTypes(parentOptions, MyWorkflowImpl.class);
+```
+
+Use the registered Child Workflow Type name as the map key, for example `ProcessOrder` from `@WorkflowMethod(name = "ProcessOrder")`. Each field specified in the per-type options overrides the corresponding default. Options passed directly to `Workflow.newChildWorkflowStub(...)` take highest precedence. Give each Child Workflow its ID at the call site so repeated starts can use distinct IDs.
+
 ## Handles to External Workflows
 
 ```java
@@ -274,7 +291,7 @@ public class MyWorkflowImpl implements MyWorkflow {
 
 ## Saga Pattern (Compensations)
 
-**Important:** Compensation activities should be idempotent — they may be retried (as with ALL activities).
+**Important:** Compensation activities should be idempotent — they may be retried. Forward activities should throw a non-retryable error for permanent business failures such as payment declines, so compensation can begin.
 
 ```java
 public class MyWorkflowImpl implements MyWorkflow {

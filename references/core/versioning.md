@@ -101,7 +101,7 @@ Create a new workflow type (e.g., `OrderWorkflowV2`) instead of patching.
 
 ### Concept
 
-Manage versions through Worker Deployments. Multiple Worker Deployment Versions can run simultaneously, and each version is identified by a deployment name and Build ID.
+Worker Versioning is **generally available** with Temporal Server v1.31.0+ and Temporal Cloud. Manage versions through Worker Deployments. Multiple Worker Deployment Versions can run simultaneously, and each version is identified by a deployment name and Build ID. Prefer it for production Workflow code deployments when you can run versioned Workers.
 
 > [!IMPORTANT]
 > This is the current Worker Deployment-based versioning model. Do not confuse it with the legacy Build ID-based Worker Versioning APIs, which manage compatibility sets directly. Those APIs are deprecated.
@@ -131,15 +131,46 @@ Worker Deployment Version (deployment: order-service, build: def456)
 ### When to Use PINNED
 
 - Short-running workflows (minutes to hours)
+- Long-running Workflows that upgrade at Continue-as-New boundaries; no patching is needed within a pinned run
 - Consistency is critical
 - Want simplest development experience
 - Building new applications
 
 ### When to Use AUTO_UPGRADE
 
-- Long-running workflows (weeks or months)
+- Long-running workflows without Continue-as-New
 - Workflows need bug fixes during execution
 - Still requires patching for version transitions
+- Default for blue-green deployments; Pinning fits rainbow deployments
+
+### Rollout and recovery
+
+Use a Current Version for normal traffic and a Ramping Version to send a percentage of new executions to a candidate build. The [Worker Controller](https://docs.temporal.io/production-deployment/worker-deployments/worker-controller) automates versioned Worker rollouts on Kubernetes.
+
+If a rollout is faulty, stop ramping or restore the previous Current Version first. Existing pinned Workflows still need recovery. For an execution whose history can replay on the target build, apply a Versioning Override:
+
+```bash
+temporal workflow update-options \
+  --workflow-id order-123 \
+  --versioning-override-behavior pinned \
+  --versioning-override-deployment-name order-service \
+  --versioning-override-build-id good-build
+```
+
+If recovery needs a fresh history, Reset-with-Move atomically resets and changes the pinned version. Confirm the chosen reset point and whether Signals and Updates should be reapplied. This example restarts from the first Workflow Task and excludes both:
+
+```bash
+temporal workflow reset with-workflow-update-options \
+  --workflow-id order-123 \
+  --type FirstWorkflowTask \
+  --reason "Recover faulty deployment" \
+  --reapply-exclude All \
+  --versioning-override-behavior pinned \
+  --versioning-override-deployment-name order-service \
+  --versioning-override-build-id good-build
+```
+
+Reset creates a new run; account for already completed external side effects. See [recover pinned Workflows](https://docs.temporal.io/production-deployment/worker-deployments/recover-pinned-workflows) for recovery choices, batch queries, and eventual consistency.
 
 ## Upgrading on Continue-as-New
 
@@ -164,11 +195,11 @@ By default, Pinned Workflows stay on their original Worker Deployment Version ev
 
 ### Detection flag
 
-Active Workflows detect a Target Version change by checking a per-Workflow flag exposed on `WorkflowInfo` (called `target_worker_deployment_version_changed` in the docs).  The flag is refreshed after each Workflow Task completes; check it from code that runs as part of a Workflow Task (for example, before accepting an Update, starting an Activity, or starting a child Workflow). See the per-language `references/{your_language}/versioning.md` for the SDK-specific call.
+Active Workflows detect a Target Version change by checking a per-Workflow flag exposed on `WorkflowInfo` (called `target_worker_deployment_version_changed` in the docs). The flag is refreshed after each Workflow Task completes; check it from code that runs as part of a Workflow Task (for example, before accepting an Update, starting an Activity, or starting a child Workflow). See the per-language `references/{your_language}/versioning.md` for the SDK-specific call.
 
 ### Triggering the new run
 
-When the flag is set, return a Continue-as-New error with the new run's initial Versioning Behavior set to `AutoUpgrade`. This makes the new run start on the Target Version of its Worker Deployment.  The Workflow Type itself retains its Pinned annotation; only the *initial* behavior of the *new* run is overridden so it picks up the Target Version. Once the new run is on the new version, the per-Workflow-type annotation continues to apply on subsequent CaN.
+When the flag is set, return a Continue-as-New error with the new run's initial Versioning Behavior set to `AutoUpgrade`. This makes the new run start on the Target Version of its Worker Deployment. The Workflow Type itself retains its Pinned annotation; only the *initial* behavior of the *new* run is overridden so it picks up the Target Version. Once the new run is on the new version, the per-Workflow-type annotation continues to apply on subsequent CaN.
 
 ### Limitations
 
@@ -187,12 +218,12 @@ For long-running Workflows that cannot use Continue-as-New (e.g., compliance aud
 ## Choosing an Approach
 
 | Scenario | Recommended Approach |
-|----------|---------------------|
+| -- | -- |
 | Small change, few running workflows | Patching API |
 | Major rewrite | Workflow Type Versioning |
 | Many short workflows, frequent deploys | Worker Versioning (PINNED) |
-| Long-running workflows, uses Continue-as-New | Worker Versioning (PINNED) + upgrade on Continue-as-New  |
-| Long-running workflows, no Continue-as-New | Worker Versioning (AUTO_UPGRADE) + Patching  |
+| Long-running workflows, uses Continue-as-New | Worker Versioning (PINNED) + upgrade on Continue-as-New |
+| Long-running workflows, no Continue-as-New | Worker Versioning (AUTO_UPGRADE) + Patching |
 | Quick fix, can wait for completion | Wait for workflows to complete |
 
 ## Best Practices
@@ -204,6 +235,14 @@ For long-running Workflows that cannot use Continue-as-New (e.g., compliance aud
 5. **Monitor old workflow counts** during migration
 
 ## Finding Workflows by Version
+
+`TemporalChangeVersion` is a Visibility Search Attribute that records version markers emitted by the Workflow's patching or versioning API. A Workflow can have multiple values, and the values accumulate as it passes through version changes. Some SDKs encode those values automatically, and others require an explicit option or a manual upsert.
+
+For Worker Versioning, use `TemporalWorkerDeploymentVersion` for the current version, `TemporalUsedWorkerDeploymentVersions` for versions used by the execution, and `TemporalWorkflowVersioningBehavior` for Pinned versus Auto-Upgrade. These identify deployment routing rather than patch markers.
+
+Use it to find open Workflows whose history has recorded a particular change. A matching value identifies a Workflow that recorded that marker; it does not identify the Workflow's deployment or guarantee that the Workflow is currently executing that code path. `TemporalChangeVersion IS NULL` finds executions with no value upserted, which can include pre-versioning histories and SDKs or code paths that do not populate the attribute.
+
+Use the value format for your SDK, and include `ExecutionStatus = "Running"` when you only want open executions.
 
 ```bash
 # Find workflows with specific patch
