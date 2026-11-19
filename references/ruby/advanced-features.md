@@ -159,6 +159,7 @@ Temporalio::Worker.new(
 ```
 
 **Tips:**
+
 - Set to `[Exception]` in tests so any unhandled exception fails the workflow immediately rather than retrying the workflow task forever. Surfaces bugs faster.
 - Include `Temporalio::Workflow::NondeterminismError` to fail the workflow instead of leaving it in a retrying state on non-determinism errors.
 

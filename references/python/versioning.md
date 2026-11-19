@@ -1,6 +1,6 @@
 # Python SDK Versioning
 
-For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
+For conceptual overview and guidance on choosing an approach, see [Temporal versioning guide](../core/versioning.md).
 
 ## Patching API
 
@@ -31,11 +31,28 @@ class ShippingWorkflow:
 
 **How it works:**
 
-- For new executions: `patched()` returns `True` and records a marker in the Workflow history
+- On the first live call for a new patch ID, `patched()` defaults to `True` and records a marker in Workflow history
 - For replay with the marker: `patched()` returns `True` (history includes this patch)
 - For replay without the marker: `patched()` returns `False` (history predates this patch)
 
-**Python-specific behavior:** The `patched()` return value is memoized on first call. This means you cannot reliably use `patched()` in loops—it will return the same value every iteration. Workaround: append a sequence number to the patch ID for each iteration (e.g., `f"my-change-{i}"`).
+Repeated calls with the same patch ID reuse the memoized decision.
+
+### Gate a new patch during rollout
+
+Python SDK v1.31.0+ exposes the experimental `Worker(..., patch_activation_callback=...)` option. It receives `PatchActivationInput` at the first live encounter with a non-deprecated patch ID. Returning `False` leaves `workflow.patched()` false and writes no marker. Returning `True` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
+
+```python
+worker = Worker(
+    client,
+    task_queue="orders",
+    workflows=[MyWorkflow],
+    patch_activation_callback=lambda patch: (
+        patch.patch_id != "send-email-instead-of-fax" or enable_email_path
+    ),
+)
+```
+
+Read `enable_email_path` from Worker configuration. Keep the `workflow.patched("send-email-instead-of-fax")` guard and both branches during rollout. The callback runs in a read-only Workflow context. Use it only to decide whether to activate the patch.
 
 ### Three-Step Patching Process
 
@@ -195,7 +212,7 @@ Worker Versioning manages versions at the deployment level, allowing multiple Wo
 ### Configuring Workers for Versioning
 
 ```python
-from temporalio.common import WorkerDeploymentVersion
+from temporalio.common import VersioningBehavior, WorkerDeploymentVersion
 from temporalio.worker import Worker, WorkerDeploymentConfig
 
 worker = Worker(
@@ -209,9 +226,13 @@ worker = Worker(
             build_id="v1.0.0",  # or git commit hash
         ),
         use_worker_versioning=True,
+        default_versioning_behavior=VersioningBehavior.PINNED,
     ),
 )
 ```
+
+> [!IMPORTANT]
+> With `use_worker_versioning=True`, every registered Workflow must declare a versioning behavior (`@workflow.defn(versioning_behavior=...)`, see below) unless `default_versioning_behavior` is set. Otherwise the `Worker` constructor raises `ValueError: Workflow ... must specify a versioning behavior`.
 
 `WorkerDeploymentConfig` accepts exactly three parameters:
 
@@ -332,11 +353,11 @@ temporal workflow list --query \
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `workflow.info()` and continue-as-new with `ContinueAsNewVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version. See `references/core/versioning.md` for the conceptual model.
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `workflow.info()` and continue-as-new with `ContinueAsNewVersioningBehavior.AUTO_UPGRADE` so the new run starts on the Target Version. See [Temporal versioning guide](../core/versioning.md) for the conceptual model.
 
 ### Detecting the Target Version change
 
-`workflow.info().is_target_worker_deployment_version_changed()` returns `True` when a new Current or Ramping Version is available for this Workflow's Worker Deployment.  The flag is refreshed after each Workflow Task completes.
+`workflow.info().is_target_worker_deployment_version_changed()` returns `True` when a new Current or Ramping Version is available for this Workflow's Worker Deployment. The flag is refreshed after each Workflow Task completes.
 
 Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
 

@@ -1,6 +1,6 @@
 # .NET SDK Versioning
 
-For conceptual overview and guidance on choosing an approach, see `references/core/versioning.md`.
+For conceptual overview and guidance on choosing an approach, see [Temporal versioning guide](../core/versioning.md).
 
 ## Patching API
 
@@ -35,9 +35,23 @@ public class ShippingWorkflow
 
 **How it works:**
 
-- For new executions: `Patched()` returns `true` and records a marker in the Workflow history
+- On the first live call for a new patch ID, `Patched()` defaults to `true` and records a marker in Workflow history
 - For replay with the marker: `Patched()` returns `true` (history includes this patch)
 - For replay without the marker: `Patched()` returns `false` (history predates this patch)
+
+### Gate a new patch during rollout
+
+The experimental `TemporalWorkerOptions.PatchActivationCallback` runs at the first live encounter with a non-deprecated patch ID. Returning `false` leaves `Workflow.Patched()` false and writes no marker. Returning `true` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
+
+```csharp
+var options = new TemporalWorkerOptions("orders")
+{
+    PatchActivationCallback = patch =>
+        patch.PatchId != "send-email-instead-of-fax" || enableEmailPath,
+};
+```
+
+Read `enableEmailPath` from Worker configuration. Keep the `Workflow.Patched("send-email-instead-of-fax")` guard and both branches during rollout. The callback runs in a read-only Workflow context. Keep it synchronous and free of Workflow commands.
 
 ### Three-Step Patching Process
 
@@ -192,6 +206,7 @@ Worker Versioning manages versions at the deployment level, allowing multiple Wo
 ### Configuring Workers for Versioning
 
 ```csharp
+using Temporalio.Common;
 using Temporalio.Worker;
 
 var worker = new TemporalWorker(
@@ -199,9 +214,10 @@ var worker = new TemporalWorker(
     new TemporalWorkerOptions("my-task-queue")
     {
         DeploymentOptions = new WorkerDeploymentOptions(
-            DeploymentName: "my-service",
-            BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
-        UseWorkerVersioning = true,
+            new WorkerDeploymentVersion(
+                DeploymentName: "my-service",
+                BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
+            useWorkerVersioning: true),
     }
     .AddWorkflow<MyWorkflow>()
     .AddAllActivities(new MyActivities()));
@@ -209,9 +225,10 @@ var worker = new TemporalWorker(
 
 **Configuration parameters:**
 
-- `UseWorkerVersioning`: Enables Worker Versioning
-- `DeploymentOptions`: Identifies the Worker Deployment Version (deployment name + build ID)
+- `DeploymentOptions`: A `WorkerDeploymentOptions` holding the `Version` (a `WorkerDeploymentVersion` of deployment name + build ID), `UseWorkerVersioning`, and optional `DefaultVersioningBehavior`
 - Build ID: Typically a git commit hash, version number, or timestamp
+
+Do not set `UseWorkerVersioning` or `BuildId` directly on `TemporalWorkerOptions`; those are obsolete legacy Build ID-based options.
 
 ### PINNED vs AUTO_UPGRADE Behaviors
 
@@ -220,6 +237,9 @@ var worker = new TemporalWorker(
 Workflows stay locked to their original Worker version:
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Workflows;
+
 [Workflow(VersioningBehavior = VersioningBehavior.Pinned)]
 public class StableWorkflow { /* ... */ }
 ```
@@ -236,6 +256,9 @@ public class StableWorkflow { /* ... */ }
 Workflows can move to newer versions:
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Workflows;
+
 [Workflow(VersioningBehavior = VersioningBehavior.AutoUpgrade)]
 public class UpgradableWorkflow { /* ... */ }
 ```
@@ -252,17 +275,21 @@ public class UpgradableWorkflow { /* ... */ }
 ### Worker Configuration with Default Behavior
 
 ```csharp
+using Temporalio.Common;
+using Temporalio.Worker;
+
 var worker = new TemporalWorker(
     client,
     new TemporalWorkerOptions("my-task-queue")
     {
         DeploymentOptions = new WorkerDeploymentOptions(
-            DeploymentName: "order-service",
-            BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev")
+            new WorkerDeploymentVersion(
+                DeploymentName: "order-service",
+                BuildId: Environment.GetEnvironmentVariable("BUILD_ID") ?? "dev"),
+            useWorkerVersioning: true)
         {
             DefaultVersioningBehavior = VersioningBehavior.Pinned,
         },
-        UseWorkerVersioning = true,
     }
     .AddWorkflow<OrderWorkflow>()
     .AddAllActivities(new OrderActivities()));
@@ -301,11 +328,11 @@ temporal workflow list --query \
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.TargetWorkerDeploymentVersionChanged` and continue-as-new with `InitialVersioningBehavior.AutoUpgrade` so the new run starts on the Target Version. See `references/core/versioning.md` for the conceptual model.
+For long-running Pinned Workflows that use Continue-as-New, detect a new Target Worker Deployment Version on `Workflow.TargetWorkerDeploymentVersionChanged` and continue-as-new with `InitialVersioningBehavior.AutoUpgrade` so the new run starts on the Target Version. See [Temporal versioning guide](../core/versioning.md) for the conceptual model.
 
 ### Detecting the Target Version change
 
-`Workflow.TargetWorkerDeploymentVersionChanged` is `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment.  The flag is refreshed after each Workflow Task completes.
+`Workflow.TargetWorkerDeploymentVersionChanged` is `true` when a new Current or Ramping Version is available for this Workflow's Worker Deployment. The flag is refreshed after each Workflow Task completes.
 
 Check the flag from code that runs as part of a Workflow Task — for example, before accepting an Update, starting an Activity, or starting a child Workflow.
 

@@ -30,6 +30,24 @@ Maven:
 </dependency>
 ```
 
+**GreetingInput.java** - Shared input class (the public no-argument constructor and fields support JSON conversion):
+
+```java
+package greetingapp;
+
+public class GreetingInput {
+    public String firstName;
+    public String lastName;
+
+    public GreetingInput() {}
+
+    public GreetingInput(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+}
+```
+
 **GreetActivities.java** - Activity interface:
 
 ```java
@@ -42,7 +60,7 @@ import io.temporal.activity.ActivityMethod;
 public interface GreetActivities {
 
     @ActivityMethod
-    String greet(String name);
+    String greet(GreetingInput input);
 }
 ```
 
@@ -54,8 +72,8 @@ package greetingapp;
 public class GreetActivitiesImpl implements GreetActivities {
 
     @Override
-    public String greet(String name) {
-        return "Hello, " + name + "!";
+    public String greet(GreetingInput input) {
+        return "Hello, " + input.firstName + " " + input.lastName + "!";
     }
 }
 ```
@@ -72,7 +90,7 @@ import io.temporal.workflow.WorkflowMethod;
 public interface GreetingWorkflow {
 
     @WorkflowMethod
-    String greet(String name);
+    String greet(GreetingInput input);
 }
 ```
 
@@ -96,8 +114,8 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
     );
 
     @Override
-    public String greet(String name) {
-        return activities.greet(name);
+    public String greet(GreetingInput input) {
+        return activities.greet(input);
     }
 }
 ```
@@ -169,13 +187,13 @@ public class Starter {
                 .build()
         );
 
-        String result = workflow.greet("my name");
+        String result = workflow.greet(new GreetingInput("Ada", "Lovelace"));
         System.out.println("Result: " + result);
     }
 }
 ```
 
-**Run the workflow:** Run `Starter.main()`. Should output: `Result: Hello, my name!`.
+**Run the workflow:** Run `Starter.main()`. Should output: `Result: Hello, Ada Lovelace!`.
 
 ## Key Concepts
 
@@ -196,6 +214,10 @@ public class Starter {
 - Implementation class can throw any exception
 - Call from workflow via `Workflow.newActivityStub()`
 
+### Evolving Inputs and Results
+
+Prefer one serializable request record or class for Workflow and Activity inputs that may grow, and a response type for results that may grow. Handle missing new fields with compatible defaults; changing an existing primitive input to an object requires a migration because old payloads remain in history. See Temporal's [Java message-passing guide](https://docs.temporal.io/develop/java/workflows/message-passing#writing-message-handlers) for the same single-class recommendation.
+
 ### Worker Setup
 
 - Load connection settings with `ClientConfigProfile.load()` and use the profile to configure both service stubs and the client
@@ -205,7 +227,7 @@ public class Starter {
 - `Worker` -- polls a single Task Queue, register workflows and activities on it
 - Call `factory.start()` to begin polling
 
-For Spring Boot apps, `temporal-spring-boot-starter` handles all of the above automatically via auto-configuration. See `references/java/integrations/spring-boot.md`.
+For Spring Boot apps, `temporal-spring-boot-starter` handles all of the above automatically via auto-configuration. See [Spring Boot Java integration guide](integrations/spring-boot.md).
 
 ## File Organization Best Practice
 
@@ -213,6 +235,7 @@ For Spring Boot apps, `temporal-spring-boot-starter` handles all of the above au
 
 ```
 greetingapp/
+├── GreetingInput.java          # Shared input class
 ├── GreetActivities.java        # Activity interface
 ├── GreetActivitiesImpl.java    # Activity implementation
 ├── GreetingWorkflow.java       # Workflow interface
@@ -244,7 +267,7 @@ The Java SDK has **no sandbox**. The developer is fully responsible for writing 
 - `Workflow.newRandom()` for random numbers
 - `Workflow.getLogger()` for replay-safe logging
 
-See `references/core/determinism.md` for detailed determinism rules.
+See [Temporal determinism rules](../core/determinism.md) for detailed determinism rules.
 
 ## Common Pitfalls
 
@@ -260,23 +283,24 @@ See `references/core/determinism.md` for detailed determinism rules.
 
 ## Writing Tests
 
-See `references/java/testing.md` for info on writing tests.
+See [Java testing guide](testing.md) for info on writing tests.
 
 ## Additional Resources
 
 ### Reference Files
 
-- **`references/java/patterns.md`** - Signals, queries, child workflows, saga pattern, etc.
-- **`references/java/determinism.md`** - Determinism rules and safe alternatives for Java
-- **`references/java/gotchas.md`** - Java-specific mistakes and anti-patterns
-- **`references/java/error-handling.md`** - ApplicationFailure, retry policies, non-retryable errors
-- **`references/java/observability.md`** - Logging, metrics, tracing, Search Attributes
-- **`references/java/testing.md`** - TestWorkflowEnvironment, time-skipping, activity mocking
-- **`references/java/advanced-features.md`** - Schedules, worker tuning, and more
-- **`references/java/data-handling.md`** - Data converters, Jackson, payload encryption
-- **`references/java/versioning.md`** - Patching API, workflow type versioning, Worker Versioning
-- **`references/java/standalone-activities.md`** - Standalone Activities: run an Activity directly from a Client without a Workflow (Public Preview). Concept overview at `references/core/standalone-activities.md`.
+- **[Java workflow patterns](patterns.md)** - Signals, queries, child workflows, saga pattern, etc.
+- **[Java determinism rules](determinism.md)** - Determinism rules and safe alternatives for Java
+- **[Java common pitfalls](gotchas.md)** - Java-specific mistakes and anti-patterns
+- **[Java error handling guide](error-handling.md)** - ApplicationFailure, retry policies, non-retryable errors
+- **[Java observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
+- **[Java testing guide](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
+- **[Java advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
+- **[Java data handling guide](data-handling.md)** - Data converters, Jackson, payload encryption
+- **[Java versioning guide](versioning.md)** - Patching API, workflow type versioning, Worker Versioning
+- **[Java standalone Activities guide](standalone-activities.md)** - Standalone Activities: run an Activity directly from a Client without a Workflow. Concept overview at [Temporal standalone Activities guide](../core/standalone-activities.md).
+- **[Java Task Queue priority and fairness guide](priority-fairness.md)** - Task Queue Priority and Fairness SDK options and examples. Concept overview at [Temporal Task Queue priority and fairness guide](../core/priority-fairness.md).
 
 ### Java Integrations
 
-For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see `references/integrations.md` and filter for Java. Reference files live under `references/java/integrations/`.
+For Java-specific third-party integrations (Spring Boot, Spring AI, etc.), see [integrations catalog](../integrations.md) and filter for Java. Reference files live under `references/java/integrations/`.
