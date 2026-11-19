@@ -206,6 +206,7 @@ See [TypeScript testing guide](testing.md) for info on writing tests.
 - **[TypeScript observability guide](observability.md)** - Logging, metrics, tracing, Search Attributes
 - **[TypeScript testing guide](testing.md)** - TestWorkflowEnvironment, time-skipping, activity mocking
 - **[TypeScript advanced features guide](advanced-features.md)** - Schedules, worker tuning, and more
+- **[TypeScript Worker connections guide](worker-connections.md)** - Connection setup, Cloud authentication, and shutdown
 - **[TypeScript data handling guide](data-handling.md)** - Data converters, payload encryption, etc.
 - **[TypeScript external storage guide](external-storage.md)** - Claim-check pattern for large Payloads (S3 and GCS drivers, custom drivers, codec-server handling, multi-region durability)
 - **[TypeScript versioning guide](versioning.md)** - Patching API, workflow type versioning, Worker Versioning
