@@ -41,7 +41,14 @@ Repeated calls with the same patch ID reuse the memoized decision.
 
 The experimental `Worker(..., patch_activation_callback=...)` option receives `PatchActivationInput` at the first live encounter with a non-deprecated patch ID. Returning `False` leaves `workflow.patched()` false and writes no marker. Returning `True` activates the patch and records a marker. Replay follows history, and a recorded patch bypasses the callback.
 
+Read the rollout flag in Worker startup code and capture its Boolean value in the callback.
+
 ```python
+import os
+
+from temporalio.worker import Worker
+
+enable_email_path = os.environ.get("ENABLE_EMAIL_PATH") == "true"
 worker = Worker(
     client,
     task_queue="orders",
@@ -52,7 +59,7 @@ worker = Worker(
 )
 ```
 
-Read `enable_email_path` from Worker configuration. Keep the `workflow.patched("send-email-instead-of-fax")` guard and both branches during rollout. The callback runs in a read-only Workflow context. Use it only to decide whether to activate the patch.
+In the Workflow, use `workflow.patched("send-email-instead-of-fax")` to choose between the two branches. The callback returns only the rollout decision. The Workflow branch schedules the Activity.
 
 ### Three-Step Patching Process
 
