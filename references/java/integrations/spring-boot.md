@@ -7,24 +7,29 @@
 ## Dependency Setup
 
 Maven:
+
 ```xml
 <dependency>
     <groupId>io.temporal</groupId>
     <artifactId>temporal-spring-boot-starter</artifactId>
-    <version>[1.0,)</version>
+    <version>1.40.0</version>
 </dependency>
 ```
 
 Gradle:
+
 ```groovy
-implementation 'io.temporal:temporal-spring-boot-starter:1.+'
+implementation 'io.temporal:temporal-spring-boot-starter:1.40.0'
 ```
 
 The starter transitively includes `temporal-sdk` and the autoconfigure module. You can declare both `temporal-sdk` and `temporal-spring-boot-starter` explicitly, but the starter alone is sufficient.
 
+Spring Boot 3 and Spring Boot 4 are supported; Boot 4 / Jackson 3 support requires Java SDK 1.34+. Keep Temporal dependencies aligned. Spring AI integrations have separate Boot 3 / AI 1 and Boot 4 / AI 2 coordinates; see [Spring AI](spring-ai.md).
+
 ## Minimal Configuration
 
 `application.properties`:
+
 ```properties
 spring.temporal.connection.target=local
 spring.temporal.start-workers=true
@@ -32,6 +37,7 @@ spring.temporal.workersAutoDiscovery.packages=greetingapp
 ```
 
 `application.yml` equivalent:
+
 ```yaml
 spring:
   temporal:
@@ -47,6 +53,7 @@ spring:
 ```
 
 For self-hosted Temporal, replace `local` with the server address:
+
 ```properties
 spring.temporal.connection.target=temporal.internal:7233
 ```
@@ -56,6 +63,7 @@ spring.temporal.connection.target=temporal.internal:7233
 The key concept: Temporal SDK annotations go on **interfaces**, Spring Boot autoconfigure annotations go on **implementation classes**. This is identical to non-Spring usage at the interface level.
 
 ### Workflow Interface (unchanged from non-Spring)
+
 ```java
 package greetingapp;
 
@@ -70,6 +78,7 @@ public interface GreetingWorkflow {
 ```
 
 ### Workflow Implementation
+
 ```java
 package greetingapp;
 
@@ -101,6 +110,7 @@ public class GreetingWorkflowImpl implements GreetingWorkflow {
 ```
 
 ### Activity Interface (unchanged from non-Spring)
+
 ```java
 package greetingapp;
 
@@ -115,6 +125,7 @@ public interface GreetActivities {
 ```
 
 ### Activity Implementation
+
 ```java
 package greetingapp;
 
@@ -152,14 +163,16 @@ Missing either one results in silent non-registration — no error, nothing poll
 
 The `taskQueues` attribute routes implementations to the right worker when multiple task queues exist. A worker configured with task queue `"greeting-queue"` only picks up implementations annotated with `taskQueues = "greeting-queue"`.
 
-**Important:** `@ActivityImpl(taskQueues = "greeting-queue")` only registers the activity bean with that worker. It does not route individual activity task executions. Inside the workflow, `ActivityOptions.setTaskQueue("greeting-queue")` must also be set on the activity stub to route activity tasks to the correct queue.
+**Important:** `@ActivityImpl(taskQueues = "greeting-queue")` only registers the activity bean with that worker. It does not route individual activity task executions. Activity stubs default to the Task Queue the Workflow was started on. Set `ActivityOptions.setTaskQueue(...)` only to route Activities to a different queue.
 
 ### Comparison: Auto-Discovery vs Explicit YAML Registration
 
 Auto-discovery via annotations:
+
 ```properties
 spring.temporal.workersAutoDiscovery.packages=greetingapp
 ```
+
 ```java
 @Component
 @ActivityImpl(taskQueues = "greeting-queue")
@@ -167,6 +180,7 @@ public class GreetActivitiesImpl implements GreetActivities { ... }
 ```
 
 Explicit YAML registration (alternative):
+
 ```yaml
 spring:
   temporal:
@@ -234,19 +248,22 @@ public class GreetingStarter {
 Workers start on `ApplicationReadyEvent` — after the full Spring context is initialized (DB migrations run, all beans wired). This means activity beans are fully ready before any workflow tasks are processed.
 
 To run a client-only app (one that submits workflows but does not execute them):
+
 ```properties
 spring.temporal.start-workers=false
 ```
 
 ## Testing Strategies
 
-See `references/java/testing.md` for full details on both approaches.
+See [Java testing guide](../testing.md) for full details on both approaches.
 
 **Spring integration tests** — uses an embedded Temporal test server wired into the Spring context:
+
 ```properties
 # src/test/resources/application-test.properties
 spring.temporal.test-server.enabled=true
 ```
+
 ```java
 @SpringBootTest
 @ActiveProfiles("test")
@@ -259,6 +276,7 @@ class GreetingIntegrationTest {
 ```
 
 **Unit tests without Spring** — use `TestWorkflowEnvironment` or `TestWorkflowExtension` directly. No Spring context, faster startup, full time-skipping support:
+
 ```java
 @RegisterExtension
 static final TestWorkflowExtension testWorkflow = TestWorkflowExtension.newBuilder()
@@ -280,8 +298,8 @@ Temporal may invoke activity methods concurrently across many workflow execution
 **`@WorkflowImpl` / `@ActivityImpl` without `workersAutoDiscovery.packages` → silently ignored**
 This is the most common setup mistake. If auto-discovery packages are not configured, the annotations are never scanned and nothing registers with the worker. Verify with the Temporal UI that the worker is registering the expected workflow/activity types.
 
-**`ActivityOptions.setTaskQueue(...)` is required on activity stubs**
-`@ActivityImpl(taskQueues = "greeting-queue")` registers the activity bean with the worker — it does not set the default task queue for activity execution. Inside workflow code, always set `.setTaskQueue(...)` in `ActivityOptions` to explicitly route activity tasks to the correct worker.
+**Activity stubs inherit the Workflow Task Queue**
+`@ActivityImpl(taskQueues = "greeting-queue")` registers the activity bean with the worker — it does not set the default task queue for activity execution. An Activity stub defaults to the Task Queue the Workflow was started on; set `.setTaskQueue(...)` when the Activity Worker polls a different queue.
 
 **Multiple `DataConverter` beans**
 If you define more than one `DataConverter` bean (e.g., a custom JSON converter and a default), the autoconfigure fails with an ambiguity error. Name one of them `mainDataConverter` to designate it as the primary.

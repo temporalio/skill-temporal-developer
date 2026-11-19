@@ -7,6 +7,7 @@ The Temporal Ruby SDK provides testing utilities compatible with any Ruby test f
 ## Workflow Test Environment
 
 The core pattern:
+
 1. Start a test `WorkflowEnvironment` with `start_local`
 2. Create a Worker in that environment with your Workflows and Activities registered
 3. Execute the Workflow using the environment's client
@@ -177,6 +178,12 @@ end
 ```
 
 ## Workflow Replay Testing
+
+For replay tests that read history from a JSON file, use the [CLI export command](../core/cli-workflow-commands.md#workflow-show) to create that file.
+
+For worker integration tests that should replay workflow history on every Workflow Task, configure the worker with `max_cached_workflows: 0`. This complements replaying saved histories with `WorkflowReplayer`.
+
+To make nondeterminism fail the Workflow Execution immediately in a test, pass `workflow_failure_exception_types: [Temporalio::Workflow::NondeterminismError]` to `Worker`.
 
 Use `WorkflowReplayer` to verify that workflow code changes remain compatible with existing histories:
 

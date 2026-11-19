@@ -2,11 +2,11 @@
 
 ## Overview
 
-The .NET SDK has NO runtime sandbox (unlike Python/TypeScript). Workflows must be deterministic for replay, and determinism is enforced by developer convention and runtime task detection via an `EventListener` (see `references/dotnet/determinism-protection.md`).
+The .NET SDK has NO runtime sandbox (unlike Python/TypeScript). Workflows must be deterministic for replay, and determinism is enforced by developer convention and runtime task detection via an `EventListener` (see [.NET determinism protection guide](determinism-protection.md)).
 
 ## Why Determinism Matters: History Replay
 
-Temporal provides durable execution through **History Replay**. When a Worker restores workflow state, it re-executes workflow code from the beginning. This requires the code to be **deterministic**. See `references/core/determinism.md` for a deep explanation.
+Temporal provides durable execution through **History Replay**. When a Worker restores workflow state, it re-executes workflow code from the beginning. This requires the code to be **deterministic**. See [Temporal determinism rules](../core/determinism.md) for a deep explanation.
 
 ## Forbidden Operations in Workflows
 
@@ -28,7 +28,7 @@ Most non-determinism and side effects should be wrapped in Activities.
 ## Safe Builtin Alternatives
 
 | Forbidden | Safe Alternative |
-|-----------|------------------|
+| -- | -- |
 | `DateTime.Now` / `DateTime.UtcNow` | `Workflow.UtcNow` |
 | `Random` | `Workflow.Random` |
 | `Guid.NewGuid()` | `Workflow.NewGuid()` |
@@ -43,7 +43,7 @@ Most non-determinism and side effects should be wrapped in Activities.
 
 ## Testing Replay Compatibility
 
-Use `WorkflowReplayer` to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of `references/dotnet/testing.md`.
+Use `WorkflowReplayer` to verify your code changes are compatible with existing histories. See the Workflow Replay Testing section of [.NET testing guide](testing.md).
 
 ## Best Practices
 
