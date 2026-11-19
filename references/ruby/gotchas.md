@@ -1,6 +1,6 @@
 # Ruby Gotchas
 
-Ruby-specific mistakes and anti-patterns. See also [Common Gotchas](references/core/gotchas.md) for language-agnostic concepts.
+Ruby-specific mistakes and anti-patterns. See also [Common Gotchas](../core/gotchas.md) for language-agnostic concepts.
 
 ## File Organization
 
@@ -57,7 +57,7 @@ require_relative 'activities/my_activity'
 
 ## Wrong Retry Classification
 
-Transient network errors should be retried. Authentication errors should not be. See `references/ruby/error-handling.md` to understand how to classify errors with `non_retryable: true` and `non_retryable_error_types`.
+Transient network errors should be retried. Authentication errors should not be. See [Ruby error handling guide](error-handling.md) to understand how to classify errors with `non_retryable: true` and `non_retryable_error_types`.
 
 ## Heartbeating
 
@@ -175,11 +175,11 @@ end
 
 ### Not Testing Failures
 
-Make sure workflows work as expected under failure paths, not just happy paths. See `references/ruby/testing.md` for more info.
+Make sure workflows work as expected under failure paths, not just happy paths. See [Ruby testing guide](testing.md) for more info.
 
 ### Not Testing Replay
 
-Replay tests help you detect hidden sources of non-determinism in your workflow code and should be considered in addition to standard testing. See `references/ruby/testing.md` for more info.
+Replay tests help you detect hidden sources of non-determinism in your workflow code and should be considered in addition to standard testing. See [Ruby testing guide](testing.md) for more info.
 
 ## Timers and Sleep
 

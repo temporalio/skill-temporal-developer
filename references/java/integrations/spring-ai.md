@@ -2,29 +2,56 @@
 
 ## Overview
 
-`temporal-spring-ai`  makes [Spring AI](https://docs.spring.io/spring-ai/reference/) agents durable on the Temporal Java SDK: chat-model calls run through Temporal Activities that are recorded in Workflow history, and tools are dispatched per their declared type so each kind lands in the right place in Workflow execution.
+The Temporal Spring AI integration makes [Spring AI](https://docs.spring.io/spring-ai/reference/) agents durable: chat-model calls run as Activities, and tools dispatch to their declared Temporal primitives.
 
-The integration is built on the Java SDK Plugin system  and ships as the `io.temporal:temporal-spring-ai`  module alongside the existing [`temporal-spring-boot-starter`](spring-boot.md) — which is a **required companion module**.
+Choose the artifact for the application's Spring generation. Both lines require [`temporal-spring-boot-starter`](spring-boot.md) and a model provider starter.
 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
-For general Temporal AI/LLM patterns (retries, rate limits, timeouts, multi-agent orchestration) see `references/core/ai-patterns.md`. For Spring Boot autoconfigure mechanics (worker lifecycle, `@WorkflowImpl`, `@ActivityImpl`, auto-discovery) see `references/java/integrations/spring-boot.md`.
+For general Temporal AI/LLM patterns (retries, rate limits, timeouts, multi-agent orchestration) see [Temporal AI integration patterns](../../core/ai-patterns.md). For Spring Boot autoconfigure mechanics (worker lifecycle, `@WorkflowImpl`, `@ActivityImpl`, auto-discovery) see [Spring Boot Java integration guide](spring-boot.md).
 
-## Prerequisites
+## Spring Boot 4 / Spring AI 2
+
+Use the standalone `io.temporal:spring-ai:0.1.0` integration (Public Preview), with Java 17+, Spring AI 2.0.x, Spring Boot 4, and Temporal Java SDK / `temporal-spring-boot-starter` 1.40.0+. The [upstream README](https://github.com/temporalio/ai-integrations/tree/main/java/spring-ai) documents tested Spring versions and provider configuration.
+
+```groovy
+implementation 'io.temporal:spring-ai:0.1.0'
+implementation 'io.temporal:temporal-spring-boot-starter:1.40.0'
+implementation 'io.temporal:temporal-sdk:1.40.0'
+```
+
+In Workflow code, use the ChatClient advisor loop to execute tools:
+
+```java
+var chatClient = TemporalChatClient.builder(ActivityChatModel.forDefault())
+    .defaultSystem("You are a helpful assistant.")
+    .defaultTools(weatherTool)
+    .build();
+```
+
+The `TemporalChatClient`, `ActivityChatModel`, and Temporal tool annotations retain their package names. Spring AI 2 uses immutable options and Jackson 3: pass option builders to ChatClient. Streaming and tool context are unsupported.
+
+**Existing Spring AI 1 histories are not replay-compatible with this line.** Complete those executions or keep them on separate Worker Deployment Versions before moving to Boot 4 / AI 2.
+
+## Spring Boot 3 / Spring AI 1
+
+Stay on `io.temporal:temporal-spring-ai:1.40.x` for Boot 3 / AI 1 applications. The remaining examples in this guide target that line; do not copy its advisors or provider option handling into a Boot 4 application without checking the current upstream API.
+
+### Prerequisites
 
 The integration is auto-configured only when **all four** are on the classpath at or above these versions:
 
-| Dependency        | Minimum version |
-| ----------------- | --------------- |
-| Java              | 17              |
-| Spring Boot       | 3.x             |
-| Spring AI         | 1.1.0           |
-| Temporal Java SDK | 1.35.0          |
+| Dependency | Minimum version |
+| -- | -- |
+| Java | 17 |
+| Spring Boot | 3.x |
+| Spring AI | 1.1.0 |
+| Temporal Java SDK | 1.35.0 |
 
 You also need `temporal-spring-boot-starter` and a Spring AI **model starter** — for example `spring-ai-starter-model-openai`. `temporal-spring-ai` does not pull in a model provider on its own.
 
-## Add the dependency
+### Add the dependency
 
 **Maven:**
 
@@ -42,13 +69,13 @@ You also need `temporal-spring-boot-starter` and a Spring AI **model starter** �
 implementation "io.temporal:temporal-spring-ai:${temporalSdkVersion}"
 ```
 
-With `temporal-spring-ai` on the classpath, `SpringAiPlugin` auto-registers `ChatModelActivity`  with every Temporal Worker created by the Spring Boot integration. Three more Activities auto-register when their dependencies are also present:
+With `temporal-spring-ai` on the classpath, `SpringAiPlugin` auto-registers `ChatModelActivity` with every Temporal Worker created by the Spring Boot integration. Three more Activities auto-register when their dependencies are also present:
 
-| Feature      | Required dependency | Auto-registered Activity  |
-| ------------ | ------------------- | ------------------------- |
-| Vector store | `spring-ai-rag`     | `VectorStoreActivity`     |
-| Embeddings   | `spring-ai-rag`     | `EmbeddingModelActivity`  |
-| MCP          | `spring-ai-mcp`     | `McpClientActivity`       |
+| Feature | Required dependency | Auto-registered Activity |
+| -- | -- | -- |
+| Vector store | `spring-ai-rag` | `VectorStoreActivity` |
+| Embeddings | `spring-ai-rag` | `EmbeddingModelActivity` |
+| MCP | `spring-ai-mcp` | `McpClientActivity` |
 
 Two name pairs are easy to confuse:
 
@@ -90,7 +117,7 @@ public ChatWorkflowImpl(String systemPrompt) {
 }
 ```
 
-`ActivityChatModel.forDefault()` resolves to the default Spring AI `ChatModel` bean.  To target a specific model in a multi-model application, pass its bean name: `ActivityChatModel.forModel("openai")`.
+`ActivityChatModel.forDefault()` resolves to the default Spring AI `ChatModel` bean. To target a specific model in a multi-model application, pass its bean name: `ActivityChatModel.forModel("openai")`.
 
 **Streaming responses are not currently supported.**
 
@@ -100,7 +127,7 @@ The integration extends Spring AI's tool-registration model by inspecting the ty
 
 ### Activity stubs
 
-An interface annotated with both `@ActivityInterface` and Spring AI `@Tool` methods is auto-detected and executed as a Temporal Activity.  Use this for external calls that need retries and timeouts.
+An interface annotated with both `@ActivityInterface` and Spring AI `@Tool` methods is auto-detected and executed as a Temporal Activity. Use this for external calls that need retries and timeouts.
 
 ```java
 @ActivityInterface
@@ -147,7 +174,7 @@ public class StringTools {
 }
 ```
 
-Determinism still applies: plain tools execute on the workflow thread, so they must follow the same rules as workflow code (no I/O, no system clock, no random sources). See `references/java/determinism.md` and `references/core/determinism.md`.
+Determinism still applies: plain tools execute on the workflow thread, so they must follow the same rules as workflow code (no I/O, no system clock, no random sources). See [Java determinism rules](../determinism.md) and [Temporal determinism rules](../../core/determinism.md).
 
 ## Activity options and retry behavior
 
@@ -233,7 +260,7 @@ new McpPlugin();
 
 ## Common pitfalls
 
-- **Auto-configuration silently skipped.** The plugin only runs when Java ≥ 17, Spring Boot 3.x, Spring AI ≥ 1.1.0, and Temporal Java SDK ≥ 1.35.0 are *all* present.  If you upgrade one and not the others, the integration won't auto-register and tool dispatch falls back to plain Spring AI behavior.
+- **Auto-configuration silently skipped.** The plugin only runs when Java ≥ 17, Spring Boot 3.x, Spring AI ≥ 1.1.0, and Temporal Java SDK ≥ 1.35.0 are *all* present. If you upgrade one and not the others, the integration won't auto-register and tool dispatch falls back to plain Spring AI behavior.
 - **Missing model starter.** `temporal-spring-ai` does not bring its own model provider; you also need a Spring AI model starter such as `spring-ai-starter-model-openai`.
 - **Streaming.** Streaming responses are not currently supported — use non-streaming `call(...)` paths.
 - **Typos in `ChatModelActivityOptions` keys fail at startup, not at first call.** Any key that isn't a registered `ChatModel` bean name and isn't the literal `"default"` (`ChatModelTypes.DEFAULT_MODEL_NAME`) prevents plugin construction.
@@ -242,6 +269,6 @@ new McpPlugin();
 
 ## Resources
 
-- `references/java/integrations/spring-boot.md` — required companion module; covers `WorkflowClient` injection, worker lifecycle, auto-discovery, testing.
-- `references/core/ai-patterns.md` — language-agnostic AI/LLM patterns (Activities wrap LLM calls, retry centralization, multi-agent orchestration).
-- `references/java/determinism.md` and `references/core/determinism.md` — replay rules that plain tools and `@SideEffectTool` tools must respect.
+- [Spring Boot Java integration guide](spring-boot.md) — required companion module; covers `WorkflowClient` injection, worker lifecycle, auto-discovery, testing.
+- [Temporal AI integration patterns](../../core/ai-patterns.md) — language-agnostic AI/LLM patterns (Activities wrap LLM calls, retry centralization, multi-agent orchestration).
+- [Java determinism rules](../determinism.md) and [Temporal determinism rules](../../core/determinism.md) — replay rules that plain tools and `@SideEffectTool` tools must respect.
