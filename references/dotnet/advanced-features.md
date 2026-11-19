@@ -30,6 +30,22 @@ await handle.TriggerAsync(); // Run immediately
 await handle.DeleteAsync();
 ```
 
+## Record Local Activity arguments in Event History
+
+Set `LocalActivityOptions.IncludeArgumentsInMarker` when calling `Workflow.ExecuteLocalActivityAsync` to record the serialized inputs alongside the Local Activity outcome.
+
+```csharp
+var greeting = await Workflow.ExecuteLocalActivityAsync(
+    (GreetingActivities a) => a.Greet(name),
+    new LocalActivityOptions
+    {
+        StartToCloseTimeout = TimeSpan.FromSeconds(5),
+        IncludeArgumentsInMarker = true,
+    });
+```
+
+In the Workflow Event History, inspect the `input` entry under the Local Activity's `MarkerRecorded` event details. The option defaults to `false`. Enabling it increases history size and makes the serialized inputs available to anyone who can read the history.
+
 ## Async Activity Completion
 
 For activities that complete asynchronously (e.g., human tasks, external callbacks).
