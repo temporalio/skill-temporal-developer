@@ -201,3 +201,7 @@ public class MyActivities
 ```
 
 **Note:** Dependency injection is NOT available in workflows — workflows must be self-contained for determinism.
+
+## Experimental Workflow Streams and Event Groups
+
+SDK 1.20+ provides `Temporalio.Extensions.WorkflowStreams` for durable batched publish/subscribe streams hosted by Workflows. SDK 1.21+ adds Event Groups through `Workflow.CreateEventGroup` and `Workflow.WithEventGroups` to associate related history events. Both are Experimental; inform the user before using them and consult the [1.20 release](https://github.com/temporalio/sdk-dotnet/releases/tag/1.20.0) and [1.21 release](https://github.com/temporalio/sdk-dotnet/releases/tag/1.21.0) for setup and compatibility.

@@ -1,32 +1,14 @@
+# gRPC transport compression
 
-# Transport Compression (gRPC)
+The connection options below control compression of gRPC messages on the wire. Use a payload codec to compress payloads stored in Workflow Event History. The Service still enforces its [payload size limits](gotchas.md#payload-size-limits) when transport compression is enabled.
 
-Temporal SDKs use gRPC for client connections. Transport compression is per-RPC message compression performed by gRPC. Most SDKs now default to gzip and offer an option to disable it. Some SDKs automatically retry the RPC without compression if a method/endpoint does not support it.
+Keep the SDK default unless a server or proxy has trouble with gzip. If a connection fails because the peer cannot decompress its requests, use the opt-out for that connection.
 
-[!NOTE]
-This is different from payload compression via data converters or a codec server. Payload compression affects the encoded payloads inside a request/response; transport compression affects the gRPC frames on the wire. The 4 MB per-message gRPC limit still applies regardless of transport compression.
-
-## Defaults and opt-out, by language
-
-- Go — Default gzip; retries uncompressed if unsupported. Opt out via GrpcCompressionNone in client.Options.
-- Java — Default GZIP; opt out with ServiceStubsOptions#setGrpcCompression(GrpcCompression.NONE).
-- Python — Default GZIP; opt out with Client.connect(..., grpc_compression=GrpcCompression.NONE).
-- .NET — Default Gzip; opt out with TemporalConnectionOptions.GrpcCompression = GrpcCompression.None.
-- Ruby — Default gzip; opt out with grpc_compression: Temporalio::Client::Connection::GrpcCompressionOptions::None.new.
-- TypeScript — Default enabled; opt out with grpcCompression: { codec: none } on connection options.
-
-## Guidance
-
-- Prefer the default (gzip). Disable only when communicating with proxies/servers that cannot accept compressed gRPC frames.
-- Do not confuse transport compression with payload compression. See references/python/data-handling.md, references/typescript/external-storage.md, and similar per-language data handling pages for payload-level patterns.
-
-## See also
-
-- Language-specific details and examples:
-  - references/go/transport-compression.md
-  - references/java/transport-compression.md
-  - references/python/transport-compression.md
-  - references/dotnet/transport-compression.md
-  - references/ruby/transport-compression.md
-  - references/typescript/transport-compression.md
-
+| SDK | Gzip by default since | Connection option to opt out |
+| --- | --- | --- |
+| Go | 1.45.0 | Set `client.Options.ConnectionOptions.GrpcCompression` to `&client.GrpcCompressionNone{}` when dialing. |
+| Java | 1.36.0 | Call `setGrpcCompression(GrpcCompression.NONE)` on the `WorkflowServiceStubsOptions` builder. Import `io.temporal.serviceclient.GrpcCompression`. |
+| Python | 1.29.0 | Pass `grpc_compression=GrpcCompression.NONE` to `Client.connect()`. Import `GrpcCompression` from `temporalio.service`. |
+| .NET | 1.17.0 | Set `TemporalClientConnectOptions.GrpcCompression` to `new GrpcCompression.None()` when connecting. Import `Temporalio.Client`. |
+| Ruby | 1.6.0 | Pass `grpc_compression: Temporalio::Client::Connection::GrpcCompressionOptions::None.new` to `Temporalio::Client.connect`. |
+| TypeScript | 1.19.0 | Pass `grpcCompression: { codec: 'none' }` to `NativeConnection.connect()` from `@temporalio/worker`. This option applies to `NativeConnection`. |
