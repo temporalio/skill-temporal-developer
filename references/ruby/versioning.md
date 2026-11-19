@@ -1,6 +1,6 @@
 # Ruby SDK Versioning
 
-For conceptual overview, see `references/core/versioning.md`.
+For conceptual overview, see [Temporal versioning guide](../core/versioning.md).
 
 ## Patching API
 
@@ -29,6 +29,7 @@ end
 ```
 
 **How it works:**
+
 - For new executions: `patched()` returns `true` and records a marker in the Workflow history
 - For replay with the marker: `patched()` returns `true` (history includes this patch)
 - For replay without the marker: `patched()` returns `false` (history predates this patch)
@@ -182,7 +183,7 @@ temporal workflow list --query 'WorkflowType = "MyWorkflow" AND ExecutionStatus 
 
 ## Worker Versioning
 
-Worker Versioning manages versions at the deployment level, allowing multiple Worker versions to run simultaneously. Requires Ruby SDK v0.5.0+.
+Worker Versioning is GA and manages versions at the deployment level, allowing multiple Worker versions to run simultaneously. Requires Ruby SDK v1.3.0+. See the [core guide](../core/versioning.md) for rollout and recovery tooling.
 
 ### Key Concepts
 
@@ -216,7 +217,7 @@ Workflows stay locked to their original Worker version. Set on the workflow defi
 
 ```ruby
 class StableWorkflow < Temporalio::Workflow::Definition
-  workflow_versioning_behavior :pinned
+  workflow_versioning_behavior Temporalio::VersioningBehavior::PINNED
 
   def execute
     Temporalio::Workflow.execute_activity(
@@ -228,7 +229,9 @@ end
 ```
 
 **When to use PINNED:**
+
 - Short-running workflows (minutes to hours)
+- Long-running Workflows that upgrade on Continue-as-New, without patching within each run
 - Consistency is critical (e.g., financial transactions)
 - You want to eliminate version compatibility complexity
 - Building new applications and want simplest development experience
@@ -239,7 +242,7 @@ Workflows can move to newer versions:
 
 ```ruby
 class LongRunningWorkflow < Temporalio::Workflow::Definition
-  workflow_versioning_behavior :auto_upgrade
+  workflow_versioning_behavior Temporalio::VersioningBehavior::AUTO_UPGRADE
 
   def execute
     # This workflow may be picked up by a newer Worker version
@@ -252,7 +255,8 @@ end
 ```
 
 **When to use AUTO_UPGRADE:**
-- Long-running workflows (weeks or months)
+
+- Long-running workflows without Continue-as-New
 - Workflows need to benefit from bug fixes during execution
 - Migrating from traditional rolling deployments
 - You are already using patching APIs for version transitions
@@ -283,6 +287,7 @@ worker = Temporalio::Worker.new(
 **Blue-Green Deployments**
 
 Maintain two environments and switch traffic between them:
+
 1. Deploy new code to idle environment
 2. Run tests and validation
 3. Switch traffic to new environment
@@ -291,6 +296,7 @@ Maintain two environments and switch traffic between them:
 **Rainbow Deployments**
 
 Multiple versions run simultaneously:
+
 - New workflows use latest version
 - Existing workflows complete on their original version
 - Add new versions alongside existing ones
@@ -306,12 +312,30 @@ temporal workflow list --query \
   'TemporalWorkerDeploymentVersion = "my-service:v1.0.0" AND ExecutionStatus = "Running"'
 ```
 
+## Upgrading on Continue-as-New
+
+> [!NOTE]
+> Upgrade-on-Continue-as-New is Public Preview. Inform the user when using it. Requires Ruby SDK v1.4.0+.
+
+Check the Target Version flag at a natural Workflow Task boundary, such as before starting an Activity or processing an Update. When it changes, start the next run on the Target Version:
+
+```ruby
+if Temporalio::Workflow.target_worker_deployment_version_changed?
+  raise Temporalio::Workflow::ContinueAsNewError.new(
+    next_input,
+    initial_versioning_behavior: Temporalio::ContinueAsNewVersioningBehavior::AUTO_UPGRADE
+  )
+end
+```
+
+The Workflow Type remains Pinned. Do not busy-poll the flag; send a Signal to wake an idle Workflow if needed. Keep inputs compatible across versions and wait for unfinished handlers before continuing. See the [core limitations](../core/versioning.md#limitations).
+
 ## Best Practices
 
 1. **Check for open executions** before removing old code paths
 2. **Use descriptive patch IDs** that explain the change (e.g., "add-fraud-check" not "patch-1")
 3. **Deploy patches incrementally**: patch, deprecate, remove
-4. **Use PINNED for short workflows** to simplify version management
-5. **Use AUTO_UPGRADE with patching** for long-running workflows that need updates
+4. **Use PINNED for short runs or upgrade on Continue-as-New** to simplify version management
+5. **Use AUTO_UPGRADE with patching** for long-running workflows without Continue-as-New
 6. **Generate Build IDs from code** (git hash) to ensure changes produce new versions
 7. **Avoid rolling deployments** for high-availability services with long-running workflows
