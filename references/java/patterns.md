@@ -200,7 +200,7 @@ ProcessOrderWorkflow child = Workflow.newChildWorkflowStub(
 
 ### Set defaults when registering the parent
 
-On Java SDK 1.39.0 or later, set defaults on the `WorkflowImplementationOptions` used to register the parent Workflow implementation. They apply to typed and untyped Child Workflow stubs created by that implementation.
+Set defaults on the `WorkflowImplementationOptions` used to register the parent Workflow implementation. They apply to typed and untyped Child Workflow stubs created by that implementation.
 
 ```java
 WorkflowImplementationOptions parentOptions = WorkflowImplementationOptions.newBuilder()
