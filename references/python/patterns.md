@@ -282,9 +282,13 @@ class MyWorkflow:
             raise
 ```
 
-## Cancellation Handling - leverages standard asyncio cancellation
+## Cancellation Handling
+
+Cancelling a workflow cancels the activity it is awaiting. The await then raises `ActivityError` with a `temporalio.exceptions.CancelledError` cause, not `asyncio.CancelledError`, so `except asyncio.CancelledError` does not catch it. Use `is_cancelled_exception`, which matches both forms, or `try/finally` (see [gotchas](gotchas.md)).
 
 ```python
+from temporalio.exceptions import is_cancelled_exception
+
 @workflow.defn
 class MyWorkflow:
     @workflow.run
@@ -295,7 +299,9 @@ class MyWorkflow:
                 start_to_close_timeout=timedelta(hours=1),
             )
             return "completed"
-        except asyncio.CancelledError:
+        except BaseException as e:
+            if not is_cancelled_exception(e):
+                raise
             # Workflow was cancelled - perform cleanup
             workflow.logger.info("Workflow cancelled, running cleanup")
             # Cleanup activities still run even after cancellation
