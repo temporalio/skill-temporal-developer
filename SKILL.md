@@ -93,6 +93,14 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 - **[Temporal Nexus guide](references/core/nexus.md)** - Nexus: cross-namespace service contracts, operations, endpoints
   - SDK implementation: [Go](references/go/nexus.md), [Java](references/java/nexus.md), [Python](references/python/nexus.md), [TypeScript](references/typescript/nexus.md), [.NET](references/dotnet/nexus.md)
 
+## Task Queue Priority
+
+Consider **Priority** when some work should be dispatched ahead of other work sharing a Task Queue—for example, online requests ahead of offline batch jobs. See the [Priority guide](references/core/priority-fairness.md#priority).
+
+## Task Queue Fairness
+
+Consider **Fairness** when customers, tenants, or workloads share a Task Queue and one group’s backlog could delay others. This includes noisy neighbor problems, sharing capacity across tenants or tiers, and preventing a high-volume job type or source from dominating a queue. See the [Fairness guide](references/core/priority-fairness.md#fairness).
+
 ## Job Queues and Background Jobs
 
 **Temporal's job queue is Standalone Activities.** When the developer asks for a job queue, background or async jobs, a work queue, or whether Temporal can replace Celery, Sidekiq, BullMQ, Resque, Hangfire, or SQS-plus-workers, build it with a Standalone Activity — not a Workflow wrapping a single Activity, and not a dispatcher Workflow that receives jobs by Signal. PHP has no released Standalone Activity support. For PHP, use the fallback in the [Temporal job queue guide](references/core/job-queue.md).
