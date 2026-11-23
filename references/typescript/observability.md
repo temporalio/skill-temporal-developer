@@ -155,6 +155,11 @@ function drainMetrics() {
     console.info(metric.name, value, attributes);
   }
 }
+
+const timer = setInterval(drainMetrics, 1_000);
+// ...after the Worker stops:
+clearInterval(timer);
+drainMetrics();
 ```
 
 Call the drain function periodically while the Worker is running. Replace the log call with your exporter. The buffer drops new updates when full. Each update contains a counter increment, a gauge value, or a histogram observation according to `metric.kind`.

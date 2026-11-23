@@ -1,6 +1,6 @@
 ---
 name: temporal-developer
-description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, PHP, Ruby, and Rust. Use when the user is building workflows, activities, workers, or background job queues with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, running Temporal with Docker Compose, instrumenting Workers and Clients (metrics export, OpenTelemetry tracing, logging, heartbeats), using Nexus for cross-namespace calls, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update". Not for querying or alerting on Temporal metrics (temporal-observability).
+description: Develop, debug, and manage Temporal applications across Python, TypeScript, Go, Java, .NET, PHP, Ruby, and Rust. Use when the user is building workflows, activities, workers, or background job queues with a Temporal SDK, debugging issues like non-determinism errors, stuck workflows, or activity retries, using Temporal CLI, Temporal Server, or Temporal Cloud, running Temporal with Docker Compose, instrumenting Workers and Clients (metrics export, tracing, logging, Worker heartbeat settings), using Nexus, or working with durable execution concepts like signals, queries, heartbeats, versioning, continue-as-new, child workflows, or saga patterns. Also use when the user mentions "run a Temporal workflow from the CLI", "start a dev server", "run temporal server start-dev", "temporal workflow start", "temporal workflow execute", "temporal workflow signal", "temporal workflow query", "temporal workflow update". Not for metric queries or alerts (temporal-observability) or serverless Workers (temporal-serverless).
 ---
 
 # Skill: temporal-developer
@@ -12,21 +12,15 @@ Temporal is a durable execution platform that makes workflows survive failures a
 ## Out of Scope
 
 - **Operational CLI commands** such as batch operations, health queries, Cloud administration, `tcld`, and scripting → use the [temporal-ops skill](https://github.com/temporalio/skill-temporal-ops).
-- **Serverless Worker deployment and troubleshooting** → use the [temporal-serverless skill](https://github.com/temporalio/skill-temporal-serverless).
+- **Serverless Workers**, including deployment, troubleshooting, and the packages `temporalio.contrib.aws.lambda_worker`, `temporalio.contrib.gcp.cloud_run`, `go.temporal.io/sdk/contrib/aws/lambdaworker`, and `go.temporal.io/sdk/contrib/gcp/cloudrun` with their OpenTelemetry helpers → use the [temporal-serverless skill](https://github.com/temporalio/skill-temporal-serverless). Changes to those packages belong to that skill, not this one.
 - **First-time Temporal Cloud setup** including a Namespace, API key, sample app, and first Workflow → use the [temporal-cloud-setup skill](https://github.com/temporalio/skill-temporal-cloud-setup).
-- **Observability tasks outside Worker and Client code** → see [Observability ownership](#observability-ownership).
+- **Monitoring Temporal**, including the Temporal Cloud metrics endpoint, self-hosted Temporal Service monitoring, metric queries, dashboards, alerts, what each SDK metric means, and the documentation under `docs/cloud/metrics/` and `docs/production-deployment/cloud/metrics/` → use the [temporal-observability skill](https://github.com/temporalio/skill-temporal-observability).
 
 If a task shifts into one of these areas, follow the relevant skill. Local development and developer-facing Workflow CLI commands remain covered here.
 
-### Observability ownership
+## Observability scope
 
-| Task | Skill |
-| --- | --- |
-| Emit or configure telemetry in Worker or Client code: SDK metrics exporters, custom metrics, tracing plugins, logging, Worker heartbeats | [temporal-developer](https://github.com/temporalio/skill-temporal-developer) |
-| OpenTelemetry for Workers on AWS Lambda or Google Cloud Run | [temporal-serverless](https://github.com/temporalio/skill-temporal-serverless) |
-| Collect, query, dashboard, alert on, or diagnose from telemetry: Cloud metrics endpoint, self-hosted Temporal Service metrics, SDK metric meanings | [temporal-observability](https://github.com/temporalio/skill-temporal-observability) |
-
-A new or renamed SDK metric belongs to temporal-observability.
+This skill covers emitting and configuring telemetry in Worker and Client code: SDK metrics exporters, custom metrics, tracing plugins such as `contrib/opentelemetry`, logging, and Worker heartbeat settings, as documented under `docs/develop/<language>/observability.mdx`. Out of Scope lists the observability tasks other skills own.
 
 ## Core Architecture
 
@@ -126,6 +120,7 @@ When a developer says "task queue" they may mean "job queue": Celery, Dramatiq, 
 
 - **`references/{your_language}/observability.md`** - Instrumenting Workers and Clients: replay-safe logging, SDK metrics export and custom metrics, tracing, Worker heartbeat settings, and Search Attributes
   - OpenTelemetry plugins: `references/{your_language}/integrations/opentelemetry.md` (Go, Python, TypeScript); other SDKs cover tracing in `observability.md`
+  - Rust: the Observability section of `references/rust/rust.md`
 - **`references/{your_language}/advanced-features.md`** - See for language-specific guidance on advanced Temporal features and language-specific features
 
 ## Third-Party Integrations

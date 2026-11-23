@@ -1,5 +1,7 @@
 # Temporal OpenTelemetry Integration (Python)
 
+Contents: [Overview](#overview) · [Install the plugin](#install-the-plugin) · [`OpenTelemetryPlugin`](#opentelemetryplugin) · [Replay-safe meters and loggers](#replay-safe-meters-and-loggers) · [Metrics export](#metrics-export) · [Common mistakes](#common-mistakes)
+
 ## Overview
 
 `temporalio.contrib.opentelemetry` wires OpenTelemetry tracing into Temporal through the `OpenTelemetryPlugin`. It propagates W3C TraceContext + Baggage across Client, Workflow, Activity, and Nexus code and supports replay-safe custom Workflow spans.

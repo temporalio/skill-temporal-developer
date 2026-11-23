@@ -83,7 +83,7 @@ runtime = Runtime(
 )
 ```
 
-With `forwarding` set, Clients and Workers each hold a clone of the Runtime, so Core log forwarding stops only when the last clone is dropped. Dropping one Client or Worker does not stop it.
+With `forwarding` set (Python SDK 1.35.0 or later), Clients and Workers each hold a clone of the Runtime, so Core log forwarding stops only when the last clone is dropped. Dropping one Client or Worker does not stop it.
 
 ## Metrics
 

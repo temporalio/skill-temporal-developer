@@ -81,6 +81,24 @@ func MyWorkflow(ctx workflow.Context) error {
 }
 ```
 
+## v1 setup
+
+The v1 module provides a tracing interceptor and a metrics handler that you register on the Client yourself:
+
+```go
+import (
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/interceptor"
+)
+
+tracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{})
+c, err := client.Dial(client.Options{
+	Interceptors:   []interceptor.ClientInterceptor{tracingInterceptor},
+	MetricsHandler: opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{}),
+})
+```
+
 ## v1 metrics handler
 
 `MetricsHandlerOptions.UseMonotonicCounters` defaults to `false`, which records SDK counters as OpenTelemetry `Int64UpDownCounter`. Set it to `true` to record them as `Int64Counter`, which exporters classify as monotonic sums. Counter increments must then be non-negative.

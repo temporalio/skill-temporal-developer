@@ -129,7 +129,19 @@ WorkflowServiceStubs service = WorkflowServiceStubs.newServiceStubs(
 
 ## Tracing (OpenTracing)
 
-The `temporal-opentracing` module traces Client, Workflow, and Activity calls.
+The `temporal-opentracing` module traces Client, Workflow, and Activity calls. Register its Client interceptor on the `WorkflowClient` and its Worker interceptor on the `WorkerFactory`:
+
+```java
+WorkflowClient client = WorkflowClient.newInstance(service,
+    WorkflowClientOptions.newBuilder()
+        .setInterceptors(new OpenTracingClientInterceptor())
+        .build());
+
+WorkerFactory factory = WorkerFactory.newInstance(client,
+    WorkerFactoryOptions.newBuilder()
+        .setWorkerInterceptors(new OpenTracingWorkerInterceptor())
+        .build());
+```
 
 - For Standalone Activities, register `OpenTracingActivityClientInterceptor` with `ActivityClientOptions.newBuilder().setInterceptors(...)`.
 - `updateWithStart` calls appear as the `UpdateWithStartWorkflow` operation.

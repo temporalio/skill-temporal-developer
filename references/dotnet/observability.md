@@ -111,7 +111,16 @@ To export histograms over OTLP as base-2 exponential histograms (Prometheus nati
 
 ## Tracing (OpenTelemetry)
 
-`Temporalio.Extensions.OpenTelemetry` provides `TracingInterceptor`. Add its activity sources to the tracer provider, including `TracingInterceptor.NexusSource.Name` for Nexus spans:
+`Temporalio.Extensions.OpenTelemetry` provides `TracingInterceptor`. Add it to the Client; Workers created from that Client use it too:
+
+```csharp
+var client = await TemporalClient.ConnectAsync(new("localhost:7233")
+{
+    Interceptors = new[] { new TracingInterceptor() },
+});
+```
+
+Add its activity sources to the tracer provider, including `TracingInterceptor.NexusSource.Name` for Nexus spans:
 
 ```csharp
 using var tracerProvider = Sdk.CreateTracerProviderBuilder()

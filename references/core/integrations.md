@@ -64,7 +64,7 @@ Framework integrations, observability packages, community integrations, and samp
 | OpenRouter | TypeScript | Model-gateway sample patterns in Activities | [TypeScript sample](https://github.com/temporalio/samples-typescript/tree/main/openrouter) |
 | OpenTelemetry (`temporalio[opentelemetry]`) | Python | Distributed tracing for Temporal apps with OpenTelemetry | [OpenTelemetry Python integration guide](../python/integrations/opentelemetry.md) |
 | OpenTelemetry (`@temporalio/interceptors-opentelemetry`) | TypeScript | Distributed tracing for Temporal apps using OpenTelemetry JS 1.x | [OpenTelemetry TypeScript integration guide](../typescript/integrations/opentelemetry.md) |
-| OpenTelemetry v2 (`go.temporal.io/sdk/contrib/opentelemetry-v2`, Pre-release) | Go | Context propagation, replay-safe tracing, and optional SDK metrics | [OpenTelemetry Go integration guide](../go/integrations/opentelemetry.md) |
+| OpenTelemetry v2 (`go.temporal.io/sdk/contrib/opentelemetry-v2`, Experimental) | Go | Context propagation, replay-safe tracing, and optional SDK metrics | [OpenTelemetry Go integration guide](../go/integrations/opentelemetry.md) |
 | OpenTelemetry v2 (`@temporalio/interceptors-opentelemetry-v2`, Experimental) | TypeScript | Workflow and Activity tracing using OpenTelemetry JS 2.x | [OpenTelemetry TypeScript integration guide](../typescript/integrations/opentelemetry.md#v1-and-v2-packages) |
 | Parseable | Java | Execution-event observability | [Java guide](https://github.com/parseablehq/temporal-plugin-java/blob/main/INTEGRATION.md) |
 | Parseable | Python | Execution-event observability | [Python guide](https://github.com/parseablehq/temporal-plugin-python/blob/main/INTEGRATION.MD) |

@@ -240,7 +240,8 @@ let client_options = ClientOptions::new("default")
 
 A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default; `temporal worker list` and `temporal worker describe` show what it reports.
 
-- Set the `heartbeat_interval` builder option on `RuntimeOptions` to change the interval.
+- Set the `heartbeat_interval` builder option on `RuntimeOptions` to change the interval. It must be between 1 and 60 seconds; `None` disables heartbeats.
+- Keep heartbeats enabled unless the user asks otherwise, because disabling them leaves those commands with missing or inaccurate Workers.
 - Set `disable_environment_info` to omit runtime, hosting, and platform info.
 
 ## Rust-Specific References Status
