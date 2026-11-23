@@ -238,7 +238,10 @@ let client_options = ClientOptions::new("default")
 
 ### Worker heartbeating
 
-Workers send a heartbeat to the Temporal Service every 60 seconds by default, used to list Workers and show their configuration (`temporal worker list`, `temporal worker describe`). Set the `heartbeat_interval` and `disable_environment_info` builder options on `RuntimeOptions` to change the interval or omit runtime, hosting, and platform info.
+A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default; `temporal worker list` and `temporal worker describe` show what it reports.
+
+- Set the `heartbeat_interval` builder option on `RuntimeOptions` to change the interval.
+- Set `disable_environment_info` to omit runtime, hosting, and platform info.
 
 ## Rust-Specific References Status
 

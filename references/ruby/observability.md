@@ -80,7 +80,7 @@ Set the default runtime **before** creating any clients or workers.
 
 ## Worker Heartbeating
 
-Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default. `temporal worker list` and `temporal worker describe` show what the heartbeats report, including Worker configuration, host load, SDK runtime, and OS. Set the interval between 1 and 60 seconds. Keep heartbeats enabled unless the user asks otherwise, because disabling them leaves those commands with missing or inaccurate Workers.
 
 ```ruby
 runtime = Temporalio::Runtime.new(

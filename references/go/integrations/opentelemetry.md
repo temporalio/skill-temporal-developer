@@ -44,9 +44,20 @@ c, err := client.Dial(client.Options{Plugins: []client.Plugin{plugin}})
 w := worker.New(c, "my-task-queue", worker.Options{})
 ```
 
-- By default the plugin only propagates trace context through Temporal headers and creates no spans of its own. Set `PluginOptions.TracerOptions.AddTemporalSpans` (from `go.temporal.io/sdk/interceptor/tracing`) to emit a span per Temporal operation, such as `StartWorkflow`, `RunWorkflow`, `RunActivity`, `ContinueAsNew`, and `StartActivity` for a Standalone Activity (tagged with the Activity ID).
-- Set `PluginOptions.MetricsHandlerOptions` (non-nil) to replace the Client's metrics handler with an OpenTelemetry one. OpenTelemetry's default global Meter Provider is a no-op, so call `otel.SetMeterProvider` before creating the plugin or pass a meter in `MetricsHandlerOptions.Meter`. Without `Meter`, the handler uses the global provider's meter named `temporal-sdk-go`.
-- `MetricsHandlerOptions.UseMonotonicCounters` is described under [v1 metrics handler](#v1-metrics-handler) and works the same way here.
+### Spans
+
+By default the plugin only propagates trace context through Temporal headers. It creates no spans of its own.
+
+To emit a span per Temporal operation, set `PluginOptions.TracerOptions.AddTemporalSpans`. `TracerOptions` comes from `go.temporal.io/sdk/interceptor/tracing`. Span names include `StartWorkflow`, `RunWorkflow`, `RunActivity`, and `ContinueAsNew`. Starting a Standalone Activity adds a `StartActivity` span tagged with the Activity ID.
+
+### Metrics
+
+Set `PluginOptions.MetricsHandlerOptions` to a non-nil value to replace the Client's metrics handler with an OpenTelemetry one.
+
+- Configure a Meter Provider first. OpenTelemetry's default global Meter Provider records nothing.
+- Either call `otel.SetMeterProvider` before creating the plugin or pass a meter in `MetricsHandlerOptions.Meter`.
+- Without `Meter`, the handler uses the global provider's meter named `temporal-sdk-go`.
+- `UseMonotonicCounters` works as described in [v1 metrics handler](#v1-metrics-handler).
 
 ```go
 plugin, err := temporalotel.NewPlugin(temporalotel.PluginOptions{
@@ -57,7 +68,9 @@ plugin, err := temporalotel.NewPlugin(temporalotel.PluginOptions{
 
 ### Custom spans
 
-In Workflow code, build the tracer with `temporalotel.Tracer("name")` and start spans from the Workflow context; these spans are replay-safe. In Client and Activity code, use `otel.Tracer(...)`.
+In Workflow code, build the tracer with `temporalotel.Tracer("name")` and start spans from the Workflow context. These spans are replay-safe.
+
+In Client and Activity code, use `otel.Tracer(...)`.
 
 ```go
 func MyWorkflow(ctx workflow.Context) error {
@@ -70,12 +83,11 @@ func MyWorkflow(ctx workflow.Context) error {
 
 ## v1 metrics handler
 
-`MetricsHandlerOptions.UseMonotonicCounters` defaults to `false`, so SDK counters are OpenTelemetry `Int64UpDownCounter`. Set it to `true` to use `Int64Counter`, so exporters classify the counters as monotonic sums; counter increments must then be non-negative.
+`MetricsHandlerOptions.UseMonotonicCounters` defaults to `false`, which records SDK counters as OpenTelemetry `Int64UpDownCounter`. Set it to `true` to record them as `Int64Counter`, which exporters classify as monotonic sums. Counter increments must then be non-negative.
 
 The v1 tracing interceptor also creates a `StartActivity` span, tagged with the Activity ID, when a Client starts a Standalone Activity.
 
 ## Common mistakes
 
 - **Setting a plain `sdktrace.TracerProvider` as the global provider.** The v2 plugin requires the global provider to come from `NewReplaySafeTracerProvider`; the Workflow tracer panics otherwise.
-- **Setting `MetricsHandlerOptions` without a configured Meter Provider.** Nothing is recorded with the no-op default provider.
 - **Using `otel.Tracer` inside Workflow code.** Use `temporalotel.Tracer` so spans stay replay-safe.

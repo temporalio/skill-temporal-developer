@@ -89,9 +89,18 @@ var client = await TemporalClient.ConnectAsync(
 
 Alternatively, use `Temporalio.Extensions.DiagnosticSource` to bridge metrics to a .NET `System.Diagnostics.Metrics.Meter` for integration with OpenTelemetry or other .NET metrics pipelines.
 
-`PrometheusOptions` leaves names bare by default. Set `HasCounterTotalSuffix` to add `_total` to counters, `HasUnitSuffix` to add the unit to histogram names, and `UseSecondsForDuration` to report durations in seconds instead of milliseconds.
+`PrometheusOptions` leaves metric names bare by default. Match dashboard and alert queries to the names you choose:
 
-For OTLP export, set `OpenTelemetryOptions.HistogramAggregation` to `new OpenTelemetryHistogramAggregation.Base2Exponential()` to export every histogram, including custom ones, as a base-2 exponential histogram (a Prometheus native histogram). The default is `ExplicitBuckets`, and `Base2Exponential` cannot be combined with `HistogramBucketOverrides`. `NameSuffix` defaults to `_native` and is appended to every histogram name; `MaxSize` defaults to 160 and `MaxScale` to 20 (range -10 to 20).
+- `HasCounterTotalSuffix` adds `_total` to counter names.
+- `HasUnitSuffix` adds the unit to histogram names.
+- `UseSecondsForDuration` reports durations in seconds instead of milliseconds.
+
+To export histograms over OTLP as base-2 exponential histograms (Prometheus native histograms), set `OpenTelemetryOptions.HistogramAggregation` to `new OpenTelemetryHistogramAggregation.Base2Exponential()`. The default is `ExplicitBuckets`.
+
+- The setting applies to every histogram, including custom ones.
+- It cannot be combined with `HistogramBucketOverrides`.
+- `NameSuffix` is appended to every histogram name and defaults to `_native`.
+- `MaxSize` defaults to 160. `MaxScale` defaults to 20 and accepts -10 to 20.
 
 ### Key SDK Metrics
 
@@ -118,7 +127,7 @@ Starting a Standalone Activity from a Client creates a `StartActivity:<activity 
 
 ## Worker Heartbeating
 
-Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default. `temporal worker list` and `temporal worker describe` show what the heartbeats report, including Worker configuration, host load, SDK runtime, and OS. Set the interval between 1 and 60 seconds. Keep heartbeats enabled unless the user asks otherwise, because disabling them leaves those commands with missing or inaccurate Workers.
 
 Set `WorkerHeartbeatInterval` on `TemporalRuntimeOptions` (`null` disables heartbeats), and set `DisableEnvironmentInfo` to omit runtime, hosting, and platform info.
 

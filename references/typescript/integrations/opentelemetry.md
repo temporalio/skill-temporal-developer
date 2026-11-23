@@ -18,8 +18,9 @@ For observability beyond OpenTelemetry tracing (metrics, runtime logger, sinks) 
 | `@temporalio/interceptors-opentelemetry` | SDK v1 | Public Preview |
 | `@temporalio/interceptors-opentelemetry-v2` | SDK v2 | Experimental |
 
-- The v2 package produces histories incompatible with the v1 package. Replaying a Workflow that first ran with the v1 package, using the v2 package, can cause a non-determinism error. Plan the switch with [versioning](../versioning.md).
-- In both packages, import Workflow interceptors from `<package>/workflow`, and use the package root for the plugin, Client interceptors, and Worker interceptors.
+- The two packages produce incompatible histories. A Workflow that started under the v1 package can fail with a non-determinism error when a Worker using the v2 package replays it. Plan the switch with [versioning](../versioning.md).
+- Import Workflow interceptors from `<package>/workflow`.
+- Import the plugin, Client interceptors, and Worker interceptors from the package root.
 
 The examples below use the v1 package.
 

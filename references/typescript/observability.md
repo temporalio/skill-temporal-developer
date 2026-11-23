@@ -121,7 +121,11 @@ Runtime.install({
 ```
 
 
-The Prometheus exporter leaves names bare by default. Set `countersTotalSuffix: true` to add `_total` to counters, `unitSuffix: true` to add the unit (for example `_milliseconds`) to histogram names, and `useSecondsForDurations: true` to report durations in seconds instead of milliseconds. Dashboards and alerts must match the names you choose.
+The Prometheus exporter leaves metric names bare by default. Match dashboard and alert queries to the names you choose:
+
+- `countersTotalSuffix: true` adds `_total` to counter names.
+- `unitSuffix: true` adds the unit, such as `_milliseconds`, to histogram names.
+- `useSecondsForDurations: true` reports durations in seconds instead of milliseconds.
 
 ### Custom Metrics
 
@@ -161,7 +165,7 @@ See [OpenTelemetry TypeScript integration guide](integrations/opentelemetry.md).
 
 ## Worker Heartbeating
 
-Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default. `temporal worker list` and `temporal worker describe` show what the heartbeats report, including Worker configuration, host load, SDK runtime, and OS. Set the interval between 1 and 60 seconds. Keep heartbeats enabled unless the user asks otherwise, because disabling them leaves those commands with missing or inaccurate Workers.
 
 Set `workerHeartbeatInterval` on `RuntimeOptions` (milliseconds or an `ms`-formatted string); `0` disables heartbeats.
 

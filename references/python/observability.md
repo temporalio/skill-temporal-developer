@@ -108,7 +108,11 @@ Runtime.set_default(runtime, error_if_already_set=True)
 # ...elsewhere, client = ... as usual
 ```
 
-`PrometheusConfig` leaves Prometheus names bare by default. Set `counters_total_suffix=True` to add `_total` to counters, `unit_suffix=True` to add the unit to histogram names, and `durations_as_seconds=True` to report durations in seconds instead of milliseconds. Dashboards and alerts must match the names you choose.
+`PrometheusConfig` leaves metric names bare by default. Match dashboard and alert queries to the names you choose:
+
+- `counters_total_suffix=True` adds `_total` to counter names.
+- `unit_suffix=True` adds the unit to histogram names.
+- `durations_as_seconds=True` reports durations in seconds instead of milliseconds.
 
 To send SDK metrics into an OpenTelemetry `MeterProvider`, use `MetricsExporter`; see the [OpenTelemetry Python integration guide](integrations/opentelemetry.md#metrics-export).
 
@@ -125,7 +129,7 @@ See [OpenTelemetry Python integration guide](integrations/opentelemetry.md).
 
 ## Worker Heartbeating
 
-Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default. `temporal worker list` and `temporal worker describe` show what the heartbeats report, including Worker configuration, host load, SDK runtime, and OS. Set the interval between 1 and 60 seconds. Keep heartbeats enabled unless the user asks otherwise, because disabling them leaves those commands with missing or inaccurate Workers.
 
 ```python
 from datetime import timedelta

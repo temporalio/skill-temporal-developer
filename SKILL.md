@@ -14,23 +14,22 @@ Temporal is a durable execution platform that makes workflows survive failures a
 - **Operational CLI commands** such as batch operations, health queries, Cloud administration, `tcld`, and scripting → use the [temporal-ops skill](https://github.com/temporalio/skill-temporal-ops).
 - **Serverless Worker deployment and troubleshooting** → use the [temporal-serverless skill](https://github.com/temporalio/skill-temporal-serverless).
 - **First-time Temporal Cloud setup** including a Namespace, API key, sample app, and first Workflow → use the [temporal-cloud-setup skill](https://github.com/temporalio/skill-temporal-cloud-setup).
-- **Collecting, querying, dashboarding, and alerting on Temporal metrics** (Cloud OpenMetrics endpoint, self-hosted Temporal Service metrics, SDK metric queries, metric-driven diagnosis) → use the [temporal-observability skill](https://github.com/temporalio/skill-temporal-observability).
 
 If a task shifts into one of these areas, follow the relevant skill. Local development and developer-facing Workflow CLI commands remain covered here.
 
 ### Observability ownership
 
-Three skills split Temporal observability. Each row has one owner.
+Route each observability task to the skill that owns it:
 
-| Observability concern | Skill |
-|---|---|
-| Code and configuration inside a Worker or Client process, except the serverless helpers in the last row: SDK metrics export (Prometheus, OTLP, buffered), custom metrics, OpenTelemetry and OpenTracing plugins and interceptors, replay-safe loggers, meters and tracers, Runtime telemetry and logging, and Worker heartbeat settings | [temporal-developer](https://github.com/temporalio/skill-temporal-developer) |
-| Everything after telemetry leaves the process: the Temporal Cloud OpenMetrics endpoint and `temporal_cloud_v1_*` metrics, self-hosted Temporal Service metrics, scraping SDK metrics, what each `temporal_*` SDK metric means and its units, PromQL, DQL and NRQL queries, dashboards, alerts, platform integrations (Datadog, Grafana, New Relic, ClickStack, OpenTelemetry Collector), and metric-driven diagnosis | [temporal-observability](https://github.com/temporalio/skill-temporal-observability) |
-| OpenTelemetry on serverless Workers: AWS Lambda ADOT helpers, the Cloud Run OpenTelemetry plugin and Collector sidecar, and flushing telemetry before shutdown | [temporal-serverless](https://github.com/temporalio/skill-temporal-serverless) |
+| The task involves | Examples | Skill |
+| --- | --- | --- |
+| Emitting or configuring telemetry from a Worker or Client process | SDK metrics exporters, custom metrics, tracing plugins, replay-safe logging, Worker heartbeat settings | [temporal-developer](https://github.com/temporalio/skill-temporal-developer) |
+| OpenTelemetry for Workers on AWS Lambda or Google Cloud Run | ADOT layer setup, the Cloud Run OpenTelemetry plugin, the Collector sidecar, flushing before shutdown | [temporal-serverless](https://github.com/temporalio/skill-temporal-serverless) |
+| Telemetry after it leaves the process | The Cloud metrics endpoint, self-hosted Temporal Service metrics, SDK metric meanings and units, queries, dashboards, alerts, metric-driven diagnosis | [temporal-observability](https://github.com/temporalio/skill-temporal-observability) |
 
-A new or renamed SDK metric belongs to temporal-observability. A new API or option that emits, exports or configures telemetry belongs to temporal-developer.
-
-Changes limited to a row owned by temporal-observability or temporal-serverless are out of scope for this skill: for example the Cloud metrics endpoint or catalog, monitoring-platform setup, self-hosted Temporal Service monitoring, or the Lambda and Cloud Run OpenTelemetry helpers.
+- A new or renamed SDK metric belongs to temporal-observability.
+- A new API or option that emits, exports, or configures telemetry belongs to temporal-developer.
+- This skill does not cover changes limited to the Cloud metrics endpoint or catalog, monitoring-platform setup, self-hosted Temporal Service monitoring, or the Lambda and Cloud Run OpenTelemetry helpers.
 
 ## Core Architecture
 
