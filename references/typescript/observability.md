@@ -57,6 +57,14 @@ const logger = new DefaultLogger('DEBUG', ({ level, message }) => {
 Runtime.install({ logger });
 ```
 
+### Core Log Format
+
+Core (the Rust engine under the SDK) writes its own logs to the console as `'compact'` (default), `'pretty'`, or `'json'`:
+
+```typescript
+Runtime.install({ telemetryOptions: { logging: { console: { format: 'json' } } } });
+```
+
 ### Winston Integration
 
 ```typescript
@@ -113,6 +121,8 @@ Runtime.install({
 ```
 
 
+The Prometheus exporter leaves names bare by default. Set `countersTotalSuffix: true` to add `_total` to counters, `unitSuffix: true` to add the unit (for example `_milliseconds`) to histogram names, and `useSecondsForDurations: true` to report durations in seconds instead of milliseconds. Dashboards and alerts must match the names you choose.
+
 ### Custom Metrics
 
 Use the `metricMeter` export from `@temporalio/workflow` in Workflows or `@temporalio/activity` inside an Activity. In Worker process code, use `Runtime.instance().metricMeter`. These meters use the export configured on the Runtime. The Workflow meter skips updates during replay.
@@ -148,6 +158,16 @@ Call the drain function periodically while the Worker is running. Replace the lo
 ## Distributed Tracing (OpenTelemetry)
 
 See [OpenTelemetry TypeScript integration guide](integrations/opentelemetry.md).
+
+## Worker Heartbeating
+
+Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+
+Set `workerHeartbeatInterval` on `RuntimeOptions` (milliseconds or an `ms`-formatted string); `0` disables heartbeats.
+
+```typescript
+Runtime.install({ workerHeartbeatInterval: '30s' });
+```
 
 ## Search Attributes (Visibility)
 

@@ -168,6 +168,18 @@ Key SDK metrics:
 - `temporal_request` -- Client requests to server
 - `temporal_activity_schedule_to_start_latency` -- Time from scheduling to start
 
+## Distributed Tracing (OpenTelemetry)
+
+See the [OpenTelemetry Go integration guide](integrations/opentelemetry.md).
+
+## Worker Heartbeating
+
+Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+
+- Set `client.Options.WorkerHeartbeatInterval` (Experimental); a negative value disables heartbeats.
+- Report host CPU and memory by setting `worker.Options.SysInfoProvider` to `sysinfo.SysInfoProvider()` from `go.temporal.io/sdk/contrib/sysinfo`.
+- Set `client.Options.DisableWorkerEnvironmentInfo` (Experimental) to omit runtime, hosting, and platform info.
+
 ## Search Attributes (Visibility)
 
 Set at workflow start:

@@ -66,6 +66,25 @@ logging.basicConfig(
 )
 ```
 
+### Core Log Format and Forwarding
+
+Core (the Rust engine under the SDK) writes its own logs to the console as `compact` (default), `pretty`, or `json`. Set the format on the Runtime's `LoggingConfig`; it is ignored when `forwarding` is set.
+
+```python
+from temporalio.runtime import LoggingConfig, LoggingFormat, Runtime, TelemetryConfig, TelemetryFilter
+
+runtime = Runtime(
+    telemetry=TelemetryConfig(
+        logging=LoggingConfig(
+            filter=TelemetryFilter(core_level="WARN", other_level="ERROR"),
+            format=LoggingFormat.JSON,
+        )
+    )
+)
+```
+
+With `forwarding` set, Clients and Workers each hold a clone of the Runtime, so Core log forwarding stops only when the last clone is dropped. Dropping one Client or Worker does not stop it.
+
 ## Metrics
 
 ### Enabling SDK Metrics
@@ -89,6 +108,10 @@ Runtime.set_default(runtime, error_if_already_set=True)
 # ...elsewhere, client = ... as usual
 ```
 
+`PrometheusConfig` leaves Prometheus names bare by default. Set `counters_total_suffix=True` to add `_total` to counters, `unit_suffix=True` to add the unit to histogram names, and `durations_as_seconds=True` to report durations in seconds instead of milliseconds. Dashboards and alerts must match the names you choose.
+
+To send SDK metrics into an OpenTelemetry `MeterProvider`, use `MetricsExporter`; see the [OpenTelemetry Python integration guide](integrations/opentelemetry.md#metrics-export).
+
 ### Key SDK Metrics
 
 - `temporal_request` - Client requests to server
@@ -99,6 +122,21 @@ Runtime.set_default(runtime, error_if_already_set=True)
 ## Distributed Tracing (OpenTelemetry)
 
 See [OpenTelemetry Python integration guide](integrations/opentelemetry.md).
+
+## Worker Heartbeating
+
+Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+
+```python
+from datetime import timedelta
+from temporalio.runtime import Runtime, TelemetryConfig
+
+runtime = Runtime(
+    telemetry=TelemetryConfig(),
+    worker_heartbeat_interval=timedelta(seconds=30),  # None disables heartbeats
+    disable_environment_info=True,  # omit runtime, hosting, and platform info
+)
+```
 
 ## Search Attributes (Visibility)
 

@@ -215,6 +215,31 @@ my_temporal_app/
 2. **Mixing Worker and Workflow concerns** - Runtime setup, clients, secrets, environment config, and external logging sinks belong outside Workflow code.
 3. **Missing macro dependencies** - Include `temporalio-workflow` and `futures` directly; macro expansion references them.
 
+## Observability
+
+### OpenTelemetry tracing
+
+`temporalio_sdk::opentelemetry::OpenTelemetryPlugin` is Experimental. Enable both the `experimental` and `opentelemetry` crate features. Register it on the Client:
+
+```rust
+use temporalio_client::ClientOptions;
+use temporalio_sdk::opentelemetry::OpenTelemetryPlugin;
+
+let client_options = ClientOptions::new("default")
+    .plugin(OpenTelemetryPlugin::builder().build())
+    .build();
+```
+
+- The application configures and shuts down its own OpenTelemetry provider and exporters.
+- Trace context travels in the cross-SDK `_tracer-data` header. W3C Trace Context and W3C Baggage are the default propagators.
+- `OpenTelemetryPluginBuilder::encode_client_headers(true)` applies the Client's codec to the plugin's tracing header only. It defaults to `false`.
+- The plugin does not export Workflow spans during replay. Use `WorkflowIdGenerator` in the tracer provider for replay-safe Workflow spans, and wrap each span processor in `WorkflowSpanProcessor` if application code creates Workflow spans.
+- The Rust interceptor API does not support inbound Nexus handler interception.
+
+### Worker heartbeating
+
+Workers send a heartbeat to the Temporal Service every 60 seconds by default, used to list Workers and show their configuration (`temporal worker list`, `temporal worker describe`). Set the `heartbeat_interval` and `disable_environment_info` builder options on `RuntimeOptions` to change the interval or omit runtime, hosting, and platform info.
+
 ## Rust-Specific References Status
 
 Beyond this guide, use the official Rust SDK docs, docs.rs, and [`sdk-rust` examples](https://github.com/temporalio/sdk-rust/tree/main/crates/sdk/examples) for child Workflows, Continue-as-New, message handlers, cancellation, timers, timeouts, Nexus, and Serverless Workers. For SDK-neutral Temporal concepts, use the core references under `references/core/`.

@@ -36,6 +36,15 @@ client = Temporalio::Client.connect(
 )
 ```
 
+### Core Log Format
+
+Core (the Rust engine under the SDK) writes its own logs to the console as compact (default), pretty, or JSON:
+
+```ruby
+logging = Temporalio::Runtime::LoggingOptions.new(log_format: Temporalio::Runtime::ConsoleLogFormat::JSON)
+runtime = Temporalio::Runtime.new(telemetry: Temporalio::Runtime::TelemetryOptions.new(logging:))
+```
+
 ## Metrics
 
 ### Enabling SDK Metrics
@@ -68,6 +77,17 @@ Set the default runtime **before** creating any clients or workers.
 - `temporal_activity_execution_latency` - activity duration
 - `temporal_sticky_cache_hit` - workflow cache hits
 - `temporal_workflow_task_execution_latency` - workflow task duration
+
+## Worker Heartbeating
+
+Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+
+```ruby
+runtime = Temporalio::Runtime.new(
+  worker_heartbeat_interval: 30,   # seconds; nil disables heartbeats
+  disable_environment_info: true   # omit runtime, hosting, and platform info
+)
+```
 
 ## Search Attributes (Visibility)
 

@@ -9,7 +9,7 @@ For observability beyond OpenTelemetry tracing (metrics, logging, Search Attribu
 > [!NOTE]
 > This feature is Pre-release. It is acceptable to use it on behalf of a user, but inform them that it is Pre-release.
 
-The module also exports `MetricsExporter` for SDK/Core metrics through the OpenTelemetry metrics API, plus `ReplaySafeMeterProvider` and `ReplaySafeLoggerProvider` for Workflow-safe metrics and logging. Use the [upstream module reference](https://python.temporal.io/temporalio.contrib.opentelemetry.html) for provider setup and replay behavior.
+The module also exports `MetricsExporter` for SDK/Core metrics through the OpenTelemetry metrics API, plus `ReplaySafeMeterProvider` and `ReplaySafeLoggerProvider` for Workflow-safe metrics and logging; see [Replay-safe meters and loggers](#replay-safe-meters-and-loggers) and [Metrics export](#metrics-export).
 
 ## Install the plugin
 
@@ -53,6 +53,42 @@ class MyWorkflow:
                 start_to_close_timeout=timedelta(seconds=30),
             )
 ```
+
+### Plugin behavior
+
+- `add_temporal_spans` defaults to `False`; set it to `True` to add Temporal spans such as `StartWorkflow` and `RunWorkflow`.
+- Spans are exported for rejected Updates and failed Queries. Replay-safe spans end when running read-only code (Queries and Update validators), even when holding a non-failure exception.
+
+## Replay-safe meters and loggers
+
+`ReplaySafeMeterProvider` and `ReplaySafeLoggerProvider` (Experimental) drop recordings made from Workflow code only while the Workflow is replaying history. Queries and Update validators still record.
+
+`ReplaySafeMeterProvider` wraps counters, up-down counters, histograms, and gauges. Observable instruments pass through unwrapped.
+
+## Metrics export
+
+`MetricsExporter` (Experimental; Python SDK 1.31.0 or later) sends the SDK's own metrics into an OpenTelemetry `MeterProvider`. It drains a `temporalio.runtime.MetricBuffer` every `poll_interval` (default 1 second).
+
+```python
+from opentelemetry.sdk.metrics import MeterProvider
+from temporalio.client import Client
+from temporalio.contrib.opentelemetry import MetricsExporter
+from temporalio.runtime import MetricBuffer, Runtime, TelemetryConfig
+
+buffer = MetricBuffer(10_000)
+runtime = Runtime(telemetry=TelemetryConfig(metrics=buffer))
+meter_provider = MeterProvider(metric_readers=[...])  # your OpenTelemetry exporter
+
+async with MetricsExporter(buffer, meter_provider):
+    client = await Client.connect("localhost:7233", runtime=runtime)
+    ...  # run Workers
+```
+
+- Create the `Runtime` that uses the buffer before starting the exporter. `run()` raises `RuntimeError` if the buffer was never attached to a `Runtime`.
+- A full buffer drops updates; the running exporter is what drains it. Size the buffer for the poll interval.
+- Start it with `async with` or `run()`. `shutdown()` stops it after a final drain.
+- `on_error` is called, in addition to logging, when draining or applying one update fails. If it raises, that is logged and ignored.
+- Counters are added, histograms recorded, and gauges exported as an observable gauge holding the latest value per attribute set.
 
 ## Common mistakes
 

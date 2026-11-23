@@ -89,12 +89,38 @@ var client = await TemporalClient.ConnectAsync(
 
 Alternatively, use `Temporalio.Extensions.DiagnosticSource` to bridge metrics to a .NET `System.Diagnostics.Metrics.Meter` for integration with OpenTelemetry or other .NET metrics pipelines.
 
+`PrometheusOptions` leaves names bare by default. Set `HasCounterTotalSuffix` to add `_total` to counters, `HasUnitSuffix` to add the unit to histogram names, and `UseSecondsForDuration` to report durations in seconds instead of milliseconds.
+
+For OTLP export, set `OpenTelemetryOptions.HistogramAggregation` to `new OpenTelemetryHistogramAggregation.Base2Exponential()` to export every histogram, including custom ones, as a base-2 exponential histogram (a Prometheus native histogram). The default is `ExplicitBuckets`, and `Base2Exponential` cannot be combined with `HistogramBucketOverrides`. `NameSuffix` defaults to `_native` and is appended to every histogram name; `MaxSize` defaults to 160 and `MaxScale` to 20 (range -10 to 20).
+
 ### Key SDK Metrics
 
 - `temporal_request` — Client requests to server
 - `temporal_workflow_task_execution_latency` — Workflow task processing time
 - `temporal_activity_execution_latency` — Activity execution time
 - `temporal_workflow_task_replay_latency` — Replay duration
+
+## Tracing (OpenTelemetry)
+
+`Temporalio.Extensions.OpenTelemetry` provides `TracingInterceptor`. Add its activity sources to the tracer provider, including `TracingInterceptor.NexusSource.Name` for Nexus spans:
+
+```csharp
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource(
+        TracingInterceptor.ClientSource.Name,
+        TracingInterceptor.WorkflowsSource.Name,
+        TracingInterceptor.ActivitiesSource.Name,
+        TracingInterceptor.NexusSource.Name)
+    .Build();
+```
+
+Starting a Standalone Activity from a Client creates a `StartActivity:<activity type>` span, tagged with the Activity ID under `TracingInterceptorOptions.TagNameActivityId` (default `temporalActivityID`; `null` omits the tag).
+
+## Worker Heartbeating
+
+Workers send a heartbeat to the Temporal Service every 60 seconds by default, starting once the Worker runs. The Service uses it to list Workers and show their configuration and host load (`temporal worker list`, `temporal worker describe`). The interval must be between 1 and 60 seconds; disabling heartbeats leaves those Worker lists missing or inaccurate. Heartbeats also report the SDK runtime, hosting environment, and OS/architecture once per Worker.
+
+Set `WorkerHeartbeatInterval` on `TemporalRuntimeOptions` (`null` disables heartbeats), and set `DisableEnvironmentInfo` to omit runtime, hosting, and platform info.
 
 ## Search Attributes (Visibility)
 
