@@ -84,6 +84,16 @@ const logger = new DefaultLogger('DEBUG', (entry) => {
 Runtime.install({ logger });
 ```
 
+### Flushable Runtime Logger (experimental)
+
+The Runtime logger passed to `Runtime.install({ logger })` may implement `FlushableLogger` from `@temporalio/worker`. This interface adds an optional `flush()` hook to `Logger`. The Workflow and Activity `log` objects do not have this hook. When `flush()` exists, the SDK may call it in situations where buffered log messages should be flushed immediately, such as when a Worker or Runtime terminates.
+
+When implementing `flush()`:
+
+- Flush buffered entries synchronously.
+- Expect repeated calls, including calls when there are no new entries.
+- Leave the logger usable after each call.
+
 ## Metrics
 
 ### Prometheus Metrics

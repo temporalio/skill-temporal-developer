@@ -114,6 +114,8 @@ Use `client.start_activity(...)` to durably enqueue the Activity and get back a 
 activity_handle = await client.start_activity(...)
 ```
 
+For a one-time delayed job, pass `start_delay=timedelta(minutes=10)` to `client.start_activity`. The delay applies to the first attempt.
+
 ### Get a handle to an existing Activity execution
 
 Use `client.get_activity_handle(...)` to attach a handle to a previously started Standalone Activity. Omitting `run_id` (or passing `None`) targets the latest run of that Activity ID.
@@ -129,6 +131,24 @@ result = await activity_handle.result()
 ```
 
 Calling `execute_activity` is equivalent to `start_activity` followed by `await activity_handle.result()`.
+
+### Inspect execution details
+
+Call `await activity_handle.describe()` for metadata such as status, attempt, and Task Queue. Include the payloads you need using these keyword arguments, which default to `False`:
+
+| Keyword argument | Async accessor on the description |
+| --- | --- |
+| `include_input` | `input()` for the original arguments |
+| `include_outcome` | `result()` after success or `outcome_failure()` after a terminal failure |
+| `include_heartbeat_details` | `heartbeat_details()` for the latest recorded checkpoint |
+| `include_last_failure` | `last_failure()` for the most recent failed attempt, even during retries |
+
+```python
+description = await activity_handle.describe(include_heartbeat_details=True)
+checkpoint = await description.heartbeat_details()
+```
+
+The accessors decode with the Client's Data Converter and return `None` when a payload is unavailable. Use the same Payload Codec configuration as the producing application when it encodes or encrypts payloads. To wait for an unfinished Activity, call `activity_handle.result()`.
 
 ### List Standalone Activities
 

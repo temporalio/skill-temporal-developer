@@ -26,16 +26,26 @@ export async function myWorkflow(): Promise<void> {
 
 **How it works:**
 
-- If the Workflow is running for the first time, `patched()` returns `true` and inserts a marker into the Event History
+- On the first live call for a new patch ID, `patched()` defaults to `true` and records a marker in Event History
 - During replay, if the history contains a marker with the same `patchId`, `patched()` returns `true`
 - During replay, if no matching marker exists, `patched()` returns `false`
 
-**TypeScript-specific behavior:** Unlike Python/.NET/Ruby, `patched()` is not memoized when it returns `false`. This means you can use `patched()` in loops. However, if a single patch requires coordinated behavioral changes at different points in your workflow, you may need to manually memoize the result:
+The SDK memoizes the live activation decision for a patch ID. A replay call without a marker can still reach a live activation later.
+
+### Gate a new patch during rollout
+
+The experimental `WorkerOptions.patchActivationCallback` runs on the Worker for the first live encounter with a non-deprecated patch ID. Returning `false` makes `patched()` return `false` without recording a marker. Returning `true` activates the new branch and records the marker. Replay follows history, and a recorded patch bypasses this callback.
 
 ```typescript
-const useNewBehavior = patched('my-change');
-// Use useNewBehavior at multiple points in workflow
+const worker = await Worker.create({
+  taskQueue: 'orders',
+  workflowsPath: require.resolve('./workflows'),
+  patchActivationCallback: ({ patchId }) =>
+    patchId !== 'my-change-id' || enableNewOrderPath,
+});
 ```
+
+Read `enableNewOrderPath` from Worker configuration. Keep the `patched('my-change-id')` guard and both branches during rollout. The callback must return a boolean synchronously. Keep it fast because it blocks the Worker main thread.
 
 ### Three-Step Patching Process
 

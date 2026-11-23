@@ -4,7 +4,7 @@
 
 The Temporal Python SDK (`temporalio`) provides a fully async, type-safe approach to building durable workflows. SDK 1.36+ requires Python 3.11+; see the [package requirements](https://pypi.org/project/temporalio/1.36.0/). Workflows run in a sandbox by default for determinism protection.
 
-For AI integration packages, import paths, and plugin registration, see the [integrations catalog](../integrations.md).
+For AI integration packages, import paths, and plugin registration, see the [integrations catalog](../core/integrations.md).
 
 ## Quick Demo of Temporal
 
@@ -228,4 +228,4 @@ See [Python testing guide](testing.md) for info on writing tests.
 
 ### Python Integrations
 
-For Python-specific third-party integrations (OpenAI Agents SDK, Google ADK, etc.), see [integrations catalog](../integrations.md) and filter for Python. Reference files live under `references/python/integrations/`.
+For Python-specific third-party integrations (OpenAI Agents SDK, Google ADK, etc.), see [integrations catalog](../core/integrations.md) and filter for Python. Reference files live under `references/python/integrations/`.

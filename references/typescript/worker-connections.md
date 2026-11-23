@@ -76,6 +76,32 @@ await connection.setApiKey(newApiKey);
 
 An explicit `authorization` entry in the connection metadata takes precedence over the new key.
 
+## HTTP/2 keepalive (experimental)
+
+`NativeConnection.connect()` accepts a `keepAlive` option that controls HTTP/2 keepalive on the connection. Pass a `KeepAliveConfig` or `false`:
+
+- `interval`: the time between HTTP/2 keepalive pings.
+- `timeout`: how long to wait for a ping response before closing the connection.
+- `keepAlive: false` disables keepalive.
+
+Keepalive is on by default, with a 30-second ping interval and a 15-second response timeout. Both fields take a `Duration`, either milliseconds or a duration string:
+
+```typescript
+const connection = await NativeConnection.connect({
+  address: 'localhost:7233',
+  keepAlive: { interval: '30s', timeout: '15s' }, // illustrative values
+});
+```
+
+## Poller behavior
+
+`Worker.create()` accepts `workflowTaskPollerBehavior`, `activityTaskPollerBehavior`, and `nexusTaskPollerBehavior`. Each takes a `PollerBehavior`, which is one of:
+
+- `{ type: 'simple-maximum' }`
+- `{ type: 'autoscaling' }`: scales the number of pollers based on feedback from the server. A slot must be available before polling begins.
+
+Each option defaults to a fixed maximum of 5 pollers.
+
 ## Lifecycle and shutdown
 
 Workers begin shutdown on `SIGINT`, `SIGTERM`, `SIGQUIT`, or `SIGUSR2` by default. For programmatic shutdown, call `worker.shutdown()` to begin draining. Wait for `worker.run()` to settle, then close the connection in `finally` as shown above.

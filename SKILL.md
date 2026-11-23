@@ -81,6 +81,7 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
 - **[Temporal Workflow random streams guide](references/core/random-streams.md)** - SDK-provided named deterministic random streams for Workflow code, plugins, and interceptors
   - Language-specific info at `references/{your_language}/random-streams.md` (Go and TypeScript)
 - **[Temporal troubleshooting guide](references/core/troubleshooting.md)** - Decision trees, recovery procedures
+- **[gRPC transport compression](references/core/transport-compression.md)** - Connection defaults and SDK-specific opt-out settings
 - **[Temporal error reference](references/core/error-reference.md)** - Common error types, workflow status reference
 - **[Temporal interactive workflow guide](references/core/interactive-workflows.md)** - Testing signals, updates, queries
 - **[Temporal development management guide](references/core/dev-management.md)** - Dev cycle & management of server and workers
@@ -90,7 +91,15 @@ For tasks that use Temporal CLI or start a local dev server, check whether `temp
   - Language-specific info at `references/{your_language}/ai-patterns.md`, if available. Currently Python only.
 
 - **[Temporal Nexus guide](references/core/nexus.md)** - Nexus: cross-namespace service contracts, operations, endpoints
-  - Python implementation: [Python Nexus guide](references/python/nexus.md)
+  - SDK implementation: [Go](references/go/nexus.md), [Java](references/java/nexus.md), [Python](references/python/nexus.md), [TypeScript](references/typescript/nexus.md), [.NET](references/dotnet/nexus.md)
+
+## Task Queue Priority
+
+Consider **Priority** when some work should be dispatched ahead of other work sharing a Task Queue—for example, online requests ahead of offline batch jobs. See the [Priority guide](references/core/priority-fairness.md#priority).
+
+## Task Queue Fairness
+
+Consider **Fairness** when customers, tenants, or workloads share a Task Queue and one group’s backlog could delay others. This includes noisy neighbor problems, sharing capacity across tenants or tiers, and preventing a high-volume job type or source from dominating a queue. See the [Fairness guide](references/core/priority-fairness.md#fairness).
 
 ## Job Queues and Background Jobs
 
@@ -109,7 +118,7 @@ When a developer says "task queue" they may mean "job queue": Celery, Dramatiq, 
 
 ## Third-Party Integrations
 
-For Temporal plugins and integrations with third-party frameworks and SDKs (Spring Boot, Spring AI, OpenAI Agents SDK, Google ADK, etc.), see **[integrations catalog](references/integrations.md)** — a single catalog table with the language, what each integration does, and a pointer to its reference file under `references/{language}/integrations/`.
+For Temporal plugins and integrations with third-party frameworks and SDKs (Claude Agent SDK, OpenAI Agents SDK, OpenAI Codex SDK, Google ADK, LangGraph, DeepAgents, etc.), see the **[integrations catalog](references/core/integrations.md)** for supported languages, what each integration does, and local references or upstream guides.
 
 ## Feedback
 

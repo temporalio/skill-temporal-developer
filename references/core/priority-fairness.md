@@ -130,7 +130,7 @@ Use `key=default` to remove one override or `--fairness-key-weight-clear-all` to
 
 When Fairness is enabled with an active backlog, existing queued Tasks are processed before new Fairness-mode Tasks. Disabling Fairness likewise drains the existing Fairness-ordered backlog before returning to Priority and FIFO ordering.
 
-**Temporal Cloud**: enable Fairness for the Namespace from its Overview page or with `temporal cloud namespace fairness set --namespace my-namespace --enable-task-queue-fairness`. Billing applies while Fairness is enabled, even if individual Tasks do not use fairness keys.
+**Temporal Cloud**: enable Fairness with `temporal cloud namespace fairness set --namespace my-namespace.my-account --enable-task-queue-fairness=true`. While enabled, each Namespace Action incurs an additional 0.1 Action, even if individual Tasks do not use fairness keys. See [Fairness pricing](https://docs.temporal.io/cloud/pricing#fairness-pricing).
 
 **Self-hosted**: set the `matching.enableFairness` dynamic configuration setting to `true` for the relevant Namespace, Task Queue, or globally. Priority uses the new matcher by default; setting `matching.useNewMatcher` to `false` disables it for the selected scope.
 

@@ -24,6 +24,22 @@ class OrderWorkflow:
         return f"Processed {len(self._items)} items"
 ```
 
+### Signal with Start
+
+With the default conflict policy, Signal-with-Start sends a Signal to the running execution for a Workflow ID. If none is running, it starts a Workflow and sends the Signal in one Client call. The Client returns a Workflow handle without waiting for the Signal handler to finish.
+
+```python
+handle = await client.start_workflow(
+    OrderWorkflow.run,
+    id="order-123",
+    task_queue="orders",
+    start_signal="add_item",
+    start_signal_args=["tea"],
+)
+```
+
+Initialize state used by Signal handlers in `__init__`. The Signal handler can run before `run`. If the caller needs the handler's result, use Update-with-Start.
+
 ### Dynamic Signal Handlers
 
 For handling signals with names not known at compile time. Use cases for this pattern are rare — most workflows should use statically defined signal handlers.
@@ -171,11 +187,12 @@ Generally, asyncio is OK to use in Temoral workflows. But some asyncio calls are
 # workflow.wait() - like asyncio.wait()
 done, pending = await workflow.wait(
     futures,
-    return_when=workflow.WaitConditionResult.FIRST_COMPLETED
+    return_when=asyncio.FIRST_COMPLETED
 )
 
 # workflow.as_completed() - like asyncio.as_completed()
-async for future in workflow.as_completed(futures):
+# Returns a plain iterator of awaitables: use `for`, not `async for`
+for future in workflow.as_completed(futures):
     result = await future
     # Process each result as it completes
 ```
@@ -196,6 +213,16 @@ class MyWorkflow:
             # Continue with fresh history before hitting limits
             if workflow.info().is_continue_as_new_suggested():
                 workflow.continue_as_new(args=[state])
+```
+
+### Delay the first Workflow Task of the next run
+
+Set the Continue-as-New backoff when the current run should close immediately and the next run should wait before its first Workflow Task. Pass a `timedelta` as `backoff_start_interval` to `workflow.continue_as_new`.
+
+```python
+from datetime import timedelta
+
+workflow.continue_as_new(args=[state], backoff_start_interval=timedelta(seconds=30))
 ```
 
 ## Saga Pattern (Compensations)
@@ -256,9 +283,13 @@ class MyWorkflow:
             raise
 ```
 
-## Cancellation Handling - leverages standard asyncio cancellation
+## Cancellation Handling
+
+Cancelling a workflow cancels the activity it is awaiting. The await then raises `ActivityError` with a `temporalio.exceptions.CancelledError` cause, not `asyncio.CancelledError`, so `except asyncio.CancelledError` does not catch it. Use `is_cancelled_exception`, which matches both forms, or `try/finally` (see [gotchas](gotchas.md)).
 
 ```python
+from temporalio.exceptions import is_cancelled_exception
+
 @workflow.defn
 class MyWorkflow:
     @workflow.run
@@ -269,7 +300,9 @@ class MyWorkflow:
                 start_to_close_timeout=timedelta(hours=1),
             )
             return "completed"
-        except asyncio.CancelledError:
+        except BaseException as e:
+            if not is_cancelled_exception(e):
+                raise
             # Workflow was cancelled - perform cleanup
             workflow.logger.info("Workflow cancelled, running cleanup")
             # Cleanup activities still run even after cancellation

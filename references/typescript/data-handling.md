@@ -14,6 +14,40 @@ Most serialization customization belongs in a `PayloadConverter`; encryption and
 
 Since SDK 1.21, Workers validate outbound payload sizes, log `[TMPRL1103]`, and fail oversized Workflow/Activity Tasks retryably before sending them. Prefer smaller payloads or [External Storage](external-storage.md). If a downstream proxy transforms payloads after the Worker (for example, compression or externalization), `WorkerOptions.disablePayloadErrorLimit: true` defers enforcement to the server; it does not raise the server limit.
 
+## Experimental payload cache
+
+`WorkerOptions.payloadCache` (experimental) sets the payload cache shared by the Worker. Pass a `PayloadCache` object to enable caching, or `false` to disable it. The default is `false`.
+
+`PayloadCache` (from `@temporalio/common`) has two async methods:
+
+- `get(key: string): Promise<Payload | undefined>` resolves to the stored payload, or `undefined` on a miss.
+- `set(key: string, payload: Payload): Promise<boolean>` resolves to whether the cache accepted the payload.
+
+Implementations should not throw or reject. Return `undefined` or `false` instead. The SDK treats a failed `get` as a miss and ignores a failed `set`.
+
+```typescript
+import type { Payload, PayloadCache } from '@temporalio/common';
+
+// Illustrative in-memory cache; not a built-in or default.
+class MapPayloadCache implements PayloadCache {
+  private readonly entries = new Map<string, Payload>();
+
+  async get(key: string): Promise<Payload | undefined> {
+    return this.entries.get(key);
+  }
+
+  async set(key: string, payload: Payload): Promise<boolean> {
+    this.entries.set(key, payload);
+    return true;
+  }
+}
+
+const worker = await Worker.create({
+  payloadCache: new MapPayloadCache(),
+  // ...
+});
+```
+
 ## Default Payload Converter
 
 The default payload converter handles:
@@ -88,19 +122,30 @@ export const payloadConverter = new CompositePayloadConverter(
 
 ## Protobuf Support
 
-Using Protocol Buffers for type-safe serialization.
-
-**Note:** JSON serialization (the default) is preferred for TypeScript applications—it's simpler and more performant. Use Protobuf only when interoperating with services that require it.
+Configure a Protobuf payload converter when Workflow, Signal, or Activity payloads contain Protobuf message instances. Export `payloadConverter` from a module with the generated Protobuf root and pass the same `payloadConverterPath` to the Client and Worker. Also pass that path to `bundleWorkflowCode` if building the Workflow bundle separately.
 
 ```typescript
-import { DefaultPayloadConverterWithProtobufs } from '@temporalio/common/lib/protobufs';
+// payload-converter.ts
+import { DefaultPayloadConverterWithProtobufs } from '@temporalio/common/protobufs';
+import root from './generated/root';
 
-const dataConverter: DataConverter = {
-  payloadConverter: new DefaultPayloadConverterWithProtobufs({
-    protobufRoot: myProtobufRoot,
-  }),
-};
+export const payloadConverter = new DefaultPayloadConverterWithProtobufs({ protobufRoot: root });
 ```
+
+```typescript
+const dataConverter = { payloadConverterPath: require.resolve('./payload-converter') };
+```
+
+### Protobuf.js compatibility
+
+Use Protobuf.js v8 when supplying a custom root to the current SDK's Protobuf payload converter. A v7 root can decode binary payloads, but Protobuf JSON decoding fails with `TypeError: type must be a Type`. If your package manager leaves `protobufjs` or `long` unresolved, install them using the peer dependency ranges declared by your installed `@temporalio/common`.
+
+- Construct generated messages with `Message.create({...})`.
+- Read default-valued fields directly. They can return the default even when the field is missing from `Object.keys()` or an object spread.
+
+### Older SDK import path
+
+If your installed `@temporalio/common` only provides the converter at `@temporalio/common/lib/protobufs`, import it from that path.
 
 ## Payload Codec (Encryption)
 
