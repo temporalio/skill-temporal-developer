@@ -11,6 +11,19 @@ For observability beyond OpenTelemetry tracing (metrics, runtime logger, sinks) 
 > [!NOTE]
 > This feature is in Public Preview. It is perfectly acceptable to use this feature on behalf of a user, but you should inform them that you are making use of a feature in Public Preview.
 
+## v1 and v2 packages
+
+| Package | OpenTelemetry JS | Stage |
+|---|---|---|
+| `@temporalio/interceptors-opentelemetry` | SDK v1 | Public Preview |
+| `@temporalio/interceptors-opentelemetry-v2` | SDK v2 | Experimental |
+
+- The two packages produce incompatible histories. A Workflow that started under the v1 package can fail with a non-determinism error when a Worker using the v2 package replays it. Plan the switch with [versioning](../versioning.md).
+- Import Workflow interceptors from `<package>/workflow`.
+- Import the plugin, Client interceptors, and Worker interceptors from the package root.
+
+The examples below use the v1 package.
+
 ## Install the plugin
 
 Install `@temporalio/interceptors-opentelemetry` plus the OpenTelemetry peer packages you use — typically `@opentelemetry/api`, `@opentelemetry/sdk-trace-base`, and `@opentelemetry/resources` (plus an exporter package such as `@opentelemetry/exporter-trace-otlp-grpc` when you ship spans to a collector).

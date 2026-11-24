@@ -89,12 +89,56 @@ var client = await TemporalClient.ConnectAsync(
 
 Alternatively, use `Temporalio.Extensions.DiagnosticSource` to bridge metrics to a .NET `System.Diagnostics.Metrics.Meter` for integration with OpenTelemetry or other .NET metrics pipelines.
 
+`PrometheusOptions` leaves metric names bare by default. Match dashboard and alert queries to the names you choose:
+
+- `HasCounterTotalSuffix` adds `_total` to counter names.
+- `HasUnitSuffix` adds the unit to histogram names.
+- `UseSecondsForDuration` reports durations in seconds instead of milliseconds.
+
+To export histograms over OTLP as base-2 exponential histograms (Prometheus native histograms), set `OpenTelemetryOptions.HistogramAggregation` to `new OpenTelemetryHistogramAggregation.Base2Exponential()`. The default is `ExplicitBuckets`.
+
+- The setting applies to every histogram, including custom ones.
+- It cannot be combined with `HistogramBucketOverrides`.
+- `NameSuffix` is appended to every histogram name and defaults to `_native`.
+- `MaxSize` defaults to 160. `MaxScale` defaults to 20 and accepts -10 to 20.
+
 ### Key SDK Metrics
 
 - `temporal_request` — Client requests to server
 - `temporal_workflow_task_execution_latency` — Workflow task processing time
 - `temporal_activity_execution_latency` — Activity execution time
 - `temporal_workflow_task_replay_latency` — Replay duration
+
+## Tracing (OpenTelemetry)
+
+`Temporalio.Extensions.OpenTelemetry` provides `TracingInterceptor`. Add it to the Client; Workers created from that Client use it too:
+
+```csharp
+var client = await TemporalClient.ConnectAsync(new("localhost:7233")
+{
+    Interceptors = new[] { new TracingInterceptor() },
+});
+```
+
+Add its activity sources to the tracer provider, including `TracingInterceptor.NexusSource.Name` for Nexus spans:
+
+```csharp
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource(
+        TracingInterceptor.ClientSource.Name,
+        TracingInterceptor.WorkflowsSource.Name,
+        TracingInterceptor.ActivitiesSource.Name,
+        TracingInterceptor.NexusSource.Name)
+    .Build();
+```
+
+Starting a Standalone Activity from a Client creates a `StartActivity:<activity type>` span, tagged with the Activity ID under `TracingInterceptorOptions.TagNameActivityId` (default `temporalActivityID`; `null` omits the tag).
+
+## Worker Heartbeating
+
+A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default. `temporal worker list` and `temporal worker describe` show what the heartbeats report, including Worker configuration, host load, SDK runtime, and OS. Set the interval between 1 and 60 seconds. Keep heartbeats enabled unless the user asks otherwise, because disabling them leaves those commands with missing or inaccurate Workers.
+
+Set `WorkerHeartbeatInterval` on `TemporalRuntimeOptions` (`null` disables heartbeats), and set `DisableEnvironmentInfo` to omit runtime, hosting, and platform info.
 
 ## Search Attributes (Visibility)
 

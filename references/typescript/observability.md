@@ -57,6 +57,14 @@ const logger = new DefaultLogger('DEBUG', ({ level, message }) => {
 Runtime.install({ logger });
 ```
 
+### Core Log Format
+
+Core (the Rust engine under the SDK) writes its own logs to the console as `'compact'` (default), `'pretty'`, or `'json'`:
+
+```typescript
+Runtime.install({ telemetryOptions: { logging: { console: { format: 'json' } } } });
+```
+
 ### Winston Integration
 
 ```typescript
@@ -112,9 +120,63 @@ Runtime.install({
 });
 ```
 
+
+The Prometheus exporter leaves metric names bare by default. Match dashboard and alert queries to the names you choose:
+
+- `countersTotalSuffix: true` adds `_total` to counter names.
+- `unitSuffix: true` adds the unit, such as `_milliseconds`, to histogram names.
+- `useSecondsForDurations: true` reports durations in seconds instead of milliseconds.
+
+### Custom Metrics
+
+Use the `metricMeter` export from `@temporalio/workflow` in Workflows or `@temporalio/activity` inside an Activity. In Worker process code, use `Runtime.instance().metricMeter`. These meters use the export configured on the Runtime. The Workflow meter skips updates during replay.
+
+```typescript
+import { metricMeter } from '@temporalio/activity';
+
+export async function processOrder(orderId: string): Promise<string> {
+  metricMeter.createCounter('orders_processed').add(1);
+  return orderId;
+}
+```
+
+### Buffered Metrics
+
+For a custom exporter, enable the experimental `MetricsBuffer` in the Worker process before starting the Worker. Choose one export per Runtime. The other options are Prometheus and OTLP.
+
+```typescript
+import { MetricsBuffer, Runtime } from '@temporalio/worker';
+
+const buffer = new MetricsBuffer({ maxBufferSize: 10_000 });
+Runtime.install({ telemetryOptions: { metrics: { buffer } } });
+
+function drainMetrics() {
+  for (const { metric, value, attributes } of buffer.retrieveUpdates()) {
+    console.info(metric.name, value, attributes);
+  }
+}
+
+const timer = setInterval(drainMetrics, 1_000);
+// ...after the Worker stops:
+clearInterval(timer);
+drainMetrics();
+```
+
+Call the drain function periodically while the Worker is running. Replace the log call with your exporter. The buffer drops new updates when full. Each update contains a counter increment, a gauge value, or a histogram observation according to `metric.kind`.
+
 ## Distributed Tracing (OpenTelemetry)
 
 See [OpenTelemetry TypeScript integration guide](integrations/opentelemetry.md).
+
+## Worker Heartbeating
+
+A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default. `temporal worker list` and `temporal worker describe` show what the heartbeats report, including Worker configuration, host load, SDK runtime, and OS. Set the interval between 1 and 60 seconds. Keep heartbeats enabled unless the user asks otherwise, because disabling them leaves those commands with missing or inaccurate Workers.
+
+Set `workerHeartbeatInterval` on `RuntimeOptions` (milliseconds or an `ms`-formatted string); `0` disables heartbeats.
+
+```typescript
+Runtime.install({ workerHeartbeatInterval: '30s' });
+```
 
 ## Search Attributes (Visibility)
 

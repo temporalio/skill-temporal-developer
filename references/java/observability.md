@@ -127,6 +127,31 @@ WorkflowServiceStubs service = WorkflowServiceStubs.newServiceStubs(
 - `temporal_activity_execution_latency` — Activity execution time
 - `temporal_workflow_task_replay_latency` — Replay duration
 
+## Tracing (OpenTracing)
+
+The `temporal-opentracing` module traces Client, Workflow, and Activity calls. Register its Client interceptor on the `WorkflowClient` and its Worker interceptor on the `WorkerFactory`:
+
+```java
+WorkflowClient client = WorkflowClient.newInstance(service,
+    WorkflowClientOptions.newBuilder()
+        .setInterceptors(new OpenTracingClientInterceptor())
+        .build());
+
+WorkerFactory factory = WorkerFactory.newInstance(client,
+    WorkerFactoryOptions.newBuilder()
+        .setWorkerInterceptors(new OpenTracingWorkerInterceptor())
+        .build());
+```
+
+- For Standalone Activities, register `OpenTracingActivityClientInterceptor` with `ActivityClientOptions.newBuilder().setInterceptors(...)`.
+- `updateWithStart` calls appear as the `UpdateWithStartWorkflow` operation.
+
+## Worker Heartbeating
+
+A running Worker sends a heartbeat to the Temporal Service every 60 seconds by default. `temporal worker list` and `temporal worker describe` show what the heartbeats report, including Worker configuration, host load, SDK runtime, and OS. Set the interval between 1 and 60 seconds. Keep heartbeats enabled unless the user asks otherwise, because disabling them leaves those commands with missing or inaccurate Workers.
+
+Set the interval with `WorkflowClientOptions.newBuilder().setWorkerHeartbeatInterval(Duration)` (Experimental); a negative `Duration` disables heartbeats.
+
 ## Search Attributes (Visibility)
 
 Custom searchable fields for workflow visibility.
